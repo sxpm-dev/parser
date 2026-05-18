@@ -1,5 +1,6 @@
 export {
   parse,
+  countTokens,
   stringify,
   tokenize,
   type CssAtRule,

@@ -5,7 +5,7 @@ import { tokenize as stylisTokenize } from 'stylis';
 import moo from 'moo';
 import CSSOM from 'cssom';
 import rework from 'rework';
-import { tokenize } from '../src/index.ts';
+import { countTokens, tokenize } from '../src/index.ts';
 import { type BenchResult, type Contestant, runBenchTable } from './common.ts';
 
 const require = createRequire(import.meta.url);
@@ -27,6 +27,11 @@ const mooLexer = moo.compile({
 });
 
 const contestants: Contestant[] = [
+  {
+    label: 'parser2 css scan',
+    unit: 'tokens',
+    fn: (input: string): BenchResult => ({ units: countTokens(input) }),
+  },
   {
     label: 'parser2 css tokenize',
     unit: 'tokens',

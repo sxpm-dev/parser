@@ -44,6 +44,9 @@ function consumeName(input: string, i: number): number {
   return i;
 }
 function trim(input: string, start: number, end: number): string { while (start < end && isWs(input.charCodeAt(start))) start++; while (end > start && isWs(input.charCodeAt(end - 1))) end--; return input.slice(start, end); }
+function isUrlName(input: string, start: number, end: number): boolean {
+  return end - start === 3 && (input.charCodeAt(start) | 32) === 117 && (input.charCodeAt(start + 1) | 32) === 114 && (input.charCodeAt(start + 2) | 32) === 108;
+}
 function isImportant(value: string): number {
   let i = value.length - 1;
   if ((value.charCodeAt(i) | 32) !== 116) return -1;
@@ -51,6 +54,105 @@ function isImportant(value: string): number {
   for (let j = word.length - 1; j >= 0; j--, i--) if ((value.charCodeAt(i) | 32) !== word.charCodeAt(j)) return -1;
   while (i >= 0 && isWs(value.charCodeAt(i))) i--;
   return value.charCodeAt(i) === C.Bang ? i : -1;
+}
+
+class CssToken implements Token {
+  constructor(
+    readonly type: string,
+    private readonly input: string,
+    readonly start: number,
+    readonly end: number,
+  ) {}
+
+  get value(): string {
+    return this.input.slice(this.start, this.end);
+  }
+}
+
+function token(input: string, type: string, start: number, end: number): Token {
+  return new CssToken(type, input, start, end);
+}
+
+export function countTokens(input: string): number {
+  let tokens = 0;
+  let i = 0;
+  while (i < input.length) {
+    const c = input.charCodeAt(i);
+    if (c === C.Space || c === C.Tab || c === C.LF || c === C.CR || c === C.FF) {
+      i++;
+      while (i < input.length) {
+        const d = input.charCodeAt(i);
+        if (d !== C.Space && d !== C.Tab && d !== C.LF && d !== C.CR && d !== C.FF) break;
+        i++;
+      }
+      tokens++;
+    } else if (c === C.Slash && input.charCodeAt(i + 1) === C.Star) {
+      i += 2;
+      while (i < input.length && !(input.charCodeAt(i) === C.Star && input.charCodeAt(i + 1) === C.Slash)) i++;
+      i = Math.min(input.length, i + 2);
+      tokens++;
+    } else if (c === C.Lt && input.charCodeAt(i + 1) === C.Bang && input.charCodeAt(i + 2) === C.Minus && input.charCodeAt(i + 3) === C.Minus) {
+      i += 4;
+      tokens++;
+    } else if (c === C.Minus && input.charCodeAt(i + 1) === C.Minus && input.charCodeAt(i + 2) === C.Gt) {
+      i += 3;
+      tokens++;
+    } else if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
+      i += 2;
+      let n = 0;
+      while (n < 6 && (isHex(input.charCodeAt(i)) || input.charCodeAt(i) === C.Question)) { i++; n++; }
+      if (input.charCodeAt(i) === C.Minus) { i++; n = 0; while (n < 6 && isHex(input.charCodeAt(i))) { i++; n++; } }
+      tokens++;
+    } else if (c === C.Quote || c === C.SQuote) {
+      const q = c; i++;
+      while (i < input.length) { const d = input.charCodeAt(i++); if (d === C.Backslash && !isNewline(input.charCodeAt(i))) i++; else if (d === q || isNewline(d)) break; }
+      tokens++;
+    } else if (c === C.At && startsIdent(input, i + 1)) {
+      i = consumeName(input, i + 1);
+      tokens++;
+    } else if (c === C.Hash && (isName(input.charCodeAt(i + 1)) || validEscape(input, i + 1))) {
+      i = consumeName(input, i + 1);
+      tokens++;
+    } else if (isDigit(c) || (c === C.Dot && isDigit(input.charCodeAt(i + 1))) || ((c === C.Plus || c === C.Minus) && (isDigit(input.charCodeAt(i + 1)) || input.charCodeAt(i + 1) === C.Dot))) {
+      if (input.charCodeAt(i) === C.Plus || input.charCodeAt(i) === C.Minus) i++;
+      while (i < input.length && isDigit(input.charCodeAt(i))) i++;
+      if (input.charCodeAt(i) === C.Dot) { i++; while (i < input.length && isDigit(input.charCodeAt(i))) i++; }
+      if ((input.charCodeAt(i) === 69 || input.charCodeAt(i) === 101) && (isDigit(input.charCodeAt(i + 1)) || ((input.charCodeAt(i + 1) === C.Plus || input.charCodeAt(i + 1) === C.Minus) && isDigit(input.charCodeAt(i + 2))))) {
+        i += input.charCodeAt(i + 1) === C.Plus || input.charCodeAt(i + 1) === C.Minus ? 2 : 1;
+        while (i < input.length && isDigit(input.charCodeAt(i))) i++;
+      }
+      if (input.charCodeAt(i) === C.Percent) i++;
+      else if (startsIdent(input, i)) i = consumeName(input, i);
+      tokens++;
+    } else if (startsIdent(input, i)) {
+      const start = i;
+      i = consumeName(input, i);
+      if (input.charCodeAt(i) === C.LParen && isUrlName(input, start, i)) {
+        i++;
+        while (i < input.length) {
+          const d = input.charCodeAt(i);
+          if (d !== C.Space && d !== C.Tab && d !== C.LF && d !== C.CR && d !== C.FF) break;
+          i++;
+        }
+        if (input.charCodeAt(i) !== C.Quote && input.charCodeAt(i) !== C.SQuote) {
+          while (i < input.length) {
+            const d = input.charCodeAt(i);
+            if (d === C.RParen) { i++; break; }
+            i += d === C.Backslash && validEscape(input, i) ? 2 : 1;
+          }
+          tokens++;
+        } else {
+          tokens += 2;
+        }
+      } else {
+        tokens++;
+      }
+    } else {
+      i++;
+      tokens++;
+    }
+  }
+  return tokens;
 }
 
 export function tokenize(input: string): Token[] {
@@ -62,35 +164,35 @@ export function tokenize(input: string): Token[] {
     if (isWs(c)) {
       i++;
       while (i < input.length && isWs(input.charCodeAt(i))) i++;
-      out.push({ type: 'whitespace', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'whitespace', start, i));
     } else if (c === C.Slash && input.charCodeAt(i + 1) === C.Star) {
       i += 2;
       while (i < input.length && !(input.charCodeAt(i) === C.Star && input.charCodeAt(i + 1) === C.Slash)) i++;
       i = Math.min(input.length, i + 2);
-      out.push({ type: 'comment', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'comment', start, i));
     } else if (c === C.Lt && input.charCodeAt(i + 1) === C.Bang && input.charCodeAt(i + 2) === C.Minus && input.charCodeAt(i + 3) === C.Minus) {
       i += 4;
-      out.push({ type: 'cdo', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'cdo', start, i));
     } else if (c === C.Minus && input.charCodeAt(i + 1) === C.Minus && input.charCodeAt(i + 2) === C.Gt) {
       i += 3;
-      out.push({ type: 'cdc', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'cdc', start, i));
     } else if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
       i += 2;
       let n = 0;
       while (n < 6 && (isHex(input.charCodeAt(i)) || input.charCodeAt(i) === C.Question)) { i++; n++; }
       if (input.charCodeAt(i) === C.Minus) { i++; n = 0; while (n < 6 && isHex(input.charCodeAt(i))) { i++; n++; } }
-      out.push({ type: 'unicodeRange', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'unicodeRange', start, i));
     } else if (c === C.Quote || c === C.SQuote) {
       const q = c; i++;
       let bad = false;
       while (i < input.length) { const d = input.charCodeAt(i++); if (d === C.Backslash && !isNewline(input.charCodeAt(i))) i++; else if (d === q) break; else if (isNewline(d)) { bad = true; break; } }
-      out.push({ type: bad ? 'badString' : 'string', value: input.slice(start, i), start, end: i });
+      out.push(token(input, bad ? 'badString' : 'string', start, i));
     } else if (c === C.At && startsIdent(input, i + 1)) {
       i = consumeName(input, i + 1);
-      out.push({ type: 'atKeyword', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'atKeyword', start, i));
     } else if (c === C.Hash && (isName(input.charCodeAt(i + 1)) || validEscape(input, i + 1))) {
       i = consumeName(input, i + 1);
-      out.push({ type: 'hash', value: input.slice(start, i), start, end: i });
+      out.push(token(input, 'hash', start, i));
     } else if (isDigit(c) || (c === C.Dot && isDigit(input.charCodeAt(i + 1))) || ((c === C.Plus || c === C.Minus) && (isDigit(input.charCodeAt(i + 1)) || input.charCodeAt(i + 1) === C.Dot))) {
       if (input.charCodeAt(i) === C.Plus || input.charCodeAt(i) === C.Minus) i++;
       while (i < input.length && isDigit(input.charCodeAt(i))) i++;
@@ -100,12 +202,12 @@ export function tokenize(input: string): Token[] {
         while (i < input.length && isDigit(input.charCodeAt(i))) i++;
       }
       const numberEnd = i;
-      if (input.charCodeAt(i) === C.Percent) { i++; out.push({ type: 'percentage', value: input.slice(start, i), start, end: i }); }
-      else if (startsIdent(input, i)) { i = consumeName(input, i); out.push({ type: 'dimension', value: input.slice(start, i), start, end: i }); }
-      else out.push({ type: 'number', value: input.slice(start, numberEnd), start, end: numberEnd });
+      if (input.charCodeAt(i) === C.Percent) { i++; out.push(token(input, 'percentage', start, i)); }
+      else if (startsIdent(input, i)) { i = consumeName(input, i); out.push(token(input, 'dimension', start, i)); }
+      else out.push(token(input, 'number', start, numberEnd));
     } else if (startsIdent(input, i)) {
       i = consumeName(input, i);
-      if (input.charCodeAt(i) === C.LParen && input.slice(start, i).toLowerCase() === 'url') {
+      if (input.charCodeAt(i) === C.LParen && isUrlName(input, start, i)) {
         i++;
         while (i < input.length && isWs(input.charCodeAt(i))) i++;
         if (input.charCodeAt(i) !== C.Quote && input.charCodeAt(i) !== C.SQuote) {
@@ -117,19 +219,18 @@ export function tokenize(input: string): Token[] {
             if (d === C.Backslash && !validEscape(input, i)) bad = true;
             i += d === C.Backslash && validEscape(input, i) ? 2 : 1;
           }
-          out.push({ type: bad ? 'badUrl' : 'url', value: input.slice(start, i), start, end: i });
+          out.push(token(input, bad ? 'badUrl' : 'url', start, i));
         } else {
-          out.push({ type: 'function', value: input.slice(start, i - 1), start, end: i - 1 });
-          out.push({ type: 'lparen', value: '(', start: i - 1, end: i });
+          out.push(token(input, 'function', start, i - 1));
+          out.push(token(input, 'lparen', i - 1, i));
         }
       } else {
-        out.push({ type: input.charCodeAt(i) === C.LParen ? 'function' : 'ident', value: input.slice(start, i), start, end: i });
+        out.push(token(input, input.charCodeAt(i) === C.LParen ? 'function' : 'ident', start, i));
       }
     } else {
       i++;
-      const value = input.slice(start, i);
       const type = c === C.LBrace ? 'lbrace' : c === C.RBrace ? 'rbrace' : c === C.Colon ? 'colon' : c === C.Semi ? 'semicolon' : c === C.LParen ? 'lparen' : c === C.RParen ? 'rparen' : c === C.LBracket ? 'lbracket' : c === C.RBracket ? 'rbracket' : c === C.Comma ? 'comma' : 'delim';
-      out.push({ type, value, start, end: i });
+      out.push(token(input, type, start, i));
     }
   }
   return out;

@@ -27,7 +27,18 @@ export default defineSchema({
         { type: 'ClassDeclaration', startsWith: ['class'] },
         { type: 'WithStatement', startsWith: ['with'] },
       ],
-      blockStartKeywords: ['function', 'class', 'if', 'for', 'while', 'switch', 'try', 'with', 'export'],
+      blockStartKeywords: ['function', 'class', 'if', 'for', 'while', 'switch', 'try', 'catch', 'finally', 'with', 'export'],
+      noLineTerminatorAfter: ['throw'],
+      numberLiteral: {
+        separator: '_',
+        bigintSuffix: 'n',
+        rejectIdentifierAfter: true,
+        prefixes: [
+          { prefixes: ['0b', '0B'], digits: '01' },
+          { prefixes: ['0o', '0O'], digits: '01234567' },
+          { prefixes: ['0x', '0X'], digits: '0123456789abcdefABCDEF' },
+        ],
+      },
     },
     stringify: {
       kind: 'statement-list',

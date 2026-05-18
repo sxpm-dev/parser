@@ -53,6 +53,19 @@ test('falls back to script mode for script-only syntax', () => {
   assert.deepEqual(ast.body.map((node) => (node as { type: string }).type), ['WithStatement']);
 });
 
+test('rejects schema-declared line terminator restricted keywords', () => {
+  assert.throws(() => parse('throw\n1;'), SyntaxError);
+  assert.doesNotThrow(() => parse('throw 1;'));
+});
+
+test('validates schema-declared numeric literals', () => {
+  assert.doesNotThrow(() => parse('0b1010; 0o755; 0xFFn; 1_000.25e+2;'));
+  assert.throws(() => parse('0b2;'), SyntaxError);
+  assert.throws(() => parse('0o8;'), SyntaxError);
+  assert.throws(() => parse('1__0;'), SyntaxError);
+  assert.throws(() => parse('123abc;'), SyntaxError);
+});
+
 test('stringifies modified ESTree-compatible programs', () => {
   const ast = parse('const answer = 42;');
   assert.equal(stringify({ ...ast, source: undefined }), 'const answer = 42;');

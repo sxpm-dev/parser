@@ -239,11 +239,25 @@ export type RuntimeStatementListParser = {
   readonly scriptIfStatementType: string;
   readonly statements: readonly RuntimeStatementRule[];
   readonly blockStartKeywords: readonly string[];
+  readonly noLineTerminatorAfter?: readonly string[];
+  readonly numberLiteral?: RuntimeNumberLiteralRule;
 };
 
 export type RuntimeStatementRule = {
   readonly type: string;
   readonly startsWith: readonly string[];
+};
+
+export type RuntimeNumberLiteralRule = {
+  readonly separator?: string;
+  readonly bigintSuffix?: string;
+  readonly rejectIdentifierAfter?: boolean;
+  readonly prefixes?: readonly RuntimeNumberRadixPrefix[];
+};
+
+export type RuntimeNumberRadixPrefix = {
+  readonly prefixes: readonly string[];
+  readonly digits: string;
 };
 
 export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify | RuntimeStatementListStringify;

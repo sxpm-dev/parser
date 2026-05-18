@@ -16,6 +16,15 @@ export function emitStatementListParser(schema: CodegenInput): string {
     return `  if (${checks}) return ${JSON.stringify(statement.type)};`;
   }).join('\n');
   const blockStartCheck = parser.blockStartKeywords.map((keyword) => `startsWithWord(input, s, ${JSON.stringify(keyword)})`).join(' || ') || 'false';
+  const restrictedKeywordCheck = (parser.noLineTerminatorAfter ?? [])
+    .map((keyword) => `(word === ${JSON.stringify(keyword)} && hasLineTerminatorBeforeOperand(input, i))`)
+    .join(' || ');
+  const numberRule = parser.numberLiteral;
+  const numberCheck = numberRule ? '(isDigit(ch) || (ch === 46 && isDigit(input.charCodeAt(i + 1))))' : 'false';
+  const numberPrefixes = JSON.stringify(numberRule?.prefixes ?? []);
+  const numberSeparator = JSON.stringify(numberRule?.separator ?? '');
+  const bigintSuffix = JSON.stringify(numberRule?.bigintSuffix ?? '');
+  const rejectIdentifierAfter = numberRule?.rejectIdentifierAfter ? 'true' : 'false';
 
   return String.raw`export type Token = {
   readonly type: string;
@@ -63,8 +72,8 @@ export function tokenize(input: string): Token[] {
       continue;
     }
     if (isDigit(ch)) {
-      i++;
-      while (i < input.length && (isIdentifierPart(input.charCodeAt(i)) || input.charCodeAt(i) === 46)) i++;
+      i = ${numberRule ? 'skipNumberLiteral(input, i)' : 'i + 1'};
+      ${numberRule ? '' : 'while (i < input.length && (isIdentifierPart(input.charCodeAt(i)) || input.charCodeAt(i) === 46)) i++;'}
       out.push({ type: 'num', value: input.slice(start, i), start, end: i });
       continue;
     }
@@ -97,8 +106,16 @@ export function parse(input: string): ${programAlias} {
   let i = statementStart;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
+    if (i === 0 && ch === 35 && input.charCodeAt(1) === 33) {
+      i = skipLineComment(input, 2);
+      continue;
+    }
     if (ch === 34 || ch === 39) {
       i = skipString(input, i, ch);
+      continue;
+    }
+    if (ch === 92 && input.charCodeAt(i + 1) === 117) {
+      i = skipUnicodeEscape(input, i);
       continue;
     }
     if (ch === 96) {
@@ -116,6 +133,17 @@ export function parse(input: string): ${programAlias} {
         if (i < 0) throw new SyntaxError('Unterminated block comment');
         continue;
       }
+    }
+    if (isIdentifierStart(ch)) {
+      const start = i++;
+      while (i < input.length && isIdentifierPart(input.charCodeAt(i))) i++;
+      const word = input.slice(start, i);
+      if (${restrictedKeywordCheck || 'false'}) throw new SyntaxError('Line terminator after restricted keyword');
+      continue;
+    }
+    if (${numberCheck}) {
+      i = skipNumberLiteral(input, i);
+      continue;
     }
     if (ch === 40) parenDepth++;
     else if (ch === 41) {
@@ -167,6 +195,103 @@ function isBlockStatementStart(input: string, start: number): boolean {
 
 function startsWithWord(input: string, index: number, word: string): boolean {
   return input.startsWith(word, index) && !isIdentifierPart(input.charCodeAt(index + word.length));
+}
+
+function hasLineTerminatorBeforeOperand(input: string, index: number): boolean {
+  let i = index;
+  while (i < input.length) {
+    const ch = input.charCodeAt(i);
+    if (ch === 10 || ch === 13) return true;
+    if (ch === 32 || ch === 9) {
+      i++;
+      continue;
+    }
+    if (ch === 47 && input.charCodeAt(i + 1) === 47) return true;
+    if (ch === 47 && input.charCodeAt(i + 1) === 42) {
+      for (i += 2; i < input.length - 1; i++) {
+        const c = input.charCodeAt(i);
+        if (c === 10 || c === 13) return true;
+        if (c === 42 && input.charCodeAt(i + 1) === 47) {
+          i += 2;
+          break;
+        }
+      }
+      continue;
+    }
+    return false;
+  }
+  return false;
+}
+
+const numberPrefixes = ${numberPrefixes} as readonly { readonly prefixes: readonly string[]; readonly digits: string }[];
+const numberSeparator = ${numberSeparator};
+const bigintSuffix = ${bigintSuffix};
+
+function skipNumberLiteral(input: string, index: number): number {
+  let i = index;
+  let integer = true;
+  if (input.charCodeAt(i) === 48) {
+    const prefix = numberPrefixes.find((entry) => entry.prefixes.some((value) => input.startsWith(value, i)));
+    if (prefix) {
+      i += prefix.prefixes[0]?.length ?? 0;
+      i = scanDigits(input, i, prefix.digits, true);
+      if (bigintSuffix && input.startsWith(bigintSuffix, i)) i += bigintSuffix.length;
+      if (${rejectIdentifierAfter} && (isDigit(input.charCodeAt(i)) || isIdentifierStart(input.charCodeAt(i)) || input.charCodeAt(i) === 95)) throw new SyntaxError('Invalid numeric literal');
+      return i;
+    }
+  }
+  if (input.charCodeAt(i) === 46) {
+    integer = false;
+    i = scanDigits(input, i + 1, '0123456789', true);
+  } else {
+    i = scanDigits(input, i, '0123456789', true);
+    if (input.charCodeAt(i) === 46) {
+      integer = false;
+      i = scanDigits(input, i + 1, '0123456789', false);
+    }
+  }
+  const e = input.charCodeAt(i);
+  if (e === 69 || e === 101) {
+    integer = false;
+    i++;
+    const sign = input.charCodeAt(i);
+    if (sign === 43 || sign === 45) i++;
+    i = scanDigits(input, i, '0123456789', true);
+  }
+  if (integer && bigintSuffix && input.startsWith(bigintSuffix, i)) i += bigintSuffix.length;
+  if (${rejectIdentifierAfter} && isIdentifierStart(input.charCodeAt(i))) throw new SyntaxError('Invalid numeric literal');
+  return i;
+}
+
+function scanDigits(input: string, index: number, digits: string, required: boolean): number {
+  let i = index;
+  let seen = false;
+  let separated = false;
+  while (i < input.length) {
+    const ch = input.charAt(i);
+    if (numberSeparator && ch === numberSeparator) {
+      if (!seen || separated || digits.indexOf(input.charAt(i + 1)) < 0) throw new SyntaxError('Invalid numeric separator');
+      separated = true;
+      i++;
+      continue;
+    }
+    if (digits.indexOf(ch) < 0) break;
+    seen = true;
+    separated = false;
+    i++;
+  }
+  if (required && !seen) throw new SyntaxError('Invalid numeric literal');
+  return i;
+}
+
+function skipUnicodeEscape(input: string, index: number): number {
+  let i = index + 2;
+  if (input.charCodeAt(i) === 123) {
+    i++;
+    while (i < input.length && input.charCodeAt(i) !== 125) i++;
+    return i < input.length ? i + 1 : i;
+  }
+  return i + 4;
 }
 
 function skipTrivia(input: string, index: number): number {

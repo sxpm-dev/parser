@@ -1,0 +1,34 @@
+{
+  "name": "parser2",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run generate && tsc -b",
+    "generate": "tsx packages/compiler/src/cli.ts packages/css/schema.ts && tsx packages/compiler/src/cli.ts packages/js/schema.ts",
+    "test": "npm run generate && node --test --loader tsx packages/css/test/*.test.ts packages/js/test/*.test.ts",
+    "bench:css:ast": "npm run generate && tsx packages/css/bench/ast.ts",
+    "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "tinybench": "^2.9.0"
+  },
+  "optionalDependencies": {
+    "@csstools/css-tokenizer": "^3.0.4",
+    "css-tree": "^3.1.0",
+    "css-tokenize": "^1.0.1",
+    "cssom": "^0.5.0",
+    "moo": "^0.5.2",
+    "postcss": "^8.4.49",
+    "rework": "^1.0.1",
+    "stylis": "^4.3.4",
+    "tree-sitter": "^0.22.4",
+    "tree-sitter-css": "^0.23.2"
+  }
+}

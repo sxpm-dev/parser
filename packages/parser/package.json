@@ -1,0 +1,8 @@
+{
+  "name": "@parser2/parser",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

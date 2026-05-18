@@ -1,0 +1,61 @@
+import * as cssTree from 'css-tree';
+import postcss from 'postcss';
+import CSSOM from 'cssom';
+import rework from 'rework';
+import { parse, type CssNode, type CssRoot } from '../src/index.ts';
+import { type BenchResult, type Contestant, runBenchTable } from './common.ts';
+
+const contestants: Contestant[] = [
+  {
+    label: 'parser2 css parse',
+    unit: 'nodes',
+    fn: (input: string): BenchResult => ({ units: countAst(parse(input)) }),
+  },
+  {
+    label: 'postcss parse',
+    unit: 'nodes',
+    fn: (input: string): BenchResult => {
+      const root = postcss.parse(input, { from: undefined });
+      let nodes = 0;
+      root.walk(() => { nodes++; });
+      return { units: nodes };
+    },
+  },
+  {
+    label: 'css-tree parse',
+    unit: 'nodes',
+    fn: (input: string): BenchResult => {
+      const ast = cssTree.parse(input, { positions: false });
+      let nodes = 0;
+      cssTree.walk(ast, () => { nodes++; });
+      return { units: nodes };
+    },
+  },
+  {
+    label: 'cssom parse',
+    unit: 'rules',
+    fn: (input: string): BenchResult => ({ units: CSSOM.parse(input).cssRules.length }),
+  },
+  {
+    label: 'rework parse',
+    unit: 'rules',
+    fn: (input: string): BenchResult => {
+      const obj = rework(input).obj as { stylesheet?: { rules: unknown[] } };
+      return { units: obj.stylesheet?.rules.length ?? 0 };
+    },
+  },
+];
+
+await runBenchTable('CSS package AST parse - parser2 vs popular parsers', contestants);
+
+function countAst(root: CssRoot): number {
+  let nodes = 1;
+  const visit = (node: CssNode): void => {
+    nodes++;
+    if ('nodes' in node && node.nodes) {
+      for (const child of node.nodes) visit(child);
+    }
+  };
+  for (const node of root.nodes) visit(node);
+  return nodes;
+}

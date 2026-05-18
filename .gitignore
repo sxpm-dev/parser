@@ -1,0 +1,7 @@
+node_modules/
+.omx/
+*.tsbuildinfo
+*.d.ts
+*.d.ts.map
+dist/
+coverage/

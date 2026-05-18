@@ -1,5 +1,7 @@
 node_modules/
 .omx/
+.conformance/
+.idea/
 *.tsbuildinfo
 *.d.ts
 *.d.ts.map

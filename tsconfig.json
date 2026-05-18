@@ -4,6 +4,7 @@
     { "path": "./packages/parser" },
     { "path": "./packages/compiler" },
     { "path": "./packages/css" },
-    { "path": "./packages/js" }
+    { "path": "./packages/js" },
+    { "path": "./packages/json" }
   ]
 }

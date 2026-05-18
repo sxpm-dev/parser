@@ -1,4 +1,4 @@
-import type { CodegenInput } from '@parser2/parser';
+type CodegenInput = unknown;
 
 export function generateCssParser(_schema: CodegenInput): string {
   return `import type { Token } from '@parser2/parser';

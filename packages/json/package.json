@@ -1,0 +1,11 @@
+{
+  "name": "@parser2/json",
+  "version": "0.0.0",
+  "type": "commonjs",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0"
+  }
+}

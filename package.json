@@ -8,21 +8,32 @@
   ],
   "scripts": {
     "build": "npm run generate && tsc -b",
-    "generate": "tsx packages/compiler/src/cli.ts packages/css/schema.ts && tsx packages/compiler/src/cli.ts packages/js/schema.ts",
-    "test": "npm run generate && node --test --loader tsx packages/css/test/*.test.ts packages/js/test/*.test.ts",
+    "build:tools": "tsc -b packages/parser packages/compiler",
+    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css/schema.ts && tsx packages/compiler/src/cli.ts packages/js/schema.ts && tsx packages/compiler/src/cli.ts packages/json/schema.ts",
+    "test": "npm run generate && node --test --loader tsx packages/compiler/test/*.test.ts packages/css/test/*.test.ts packages/js/test/*.test.ts packages/json/test/*.test.ts",
     "bench:css:ast": "npm run generate && tsx packages/css/bench/ast.ts",
-    "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts"
+    "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts",
+    "bench:js": "npm run generate && tsx packages/js/bench/index.ts",
+    "bench:json": "npm run generate && tsx packages/json/bench/index.ts"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.3",
     "@types/node": "^20.12.12",
+    "acorn": "^8.16.0",
+    "comment-json": "^5.0.0",
+    "esprima": "^4.0.1",
+    "jsonparse": "^1.3.1",
+    "meriyah": "^6.1.4",
+    "parse-json": "^8.3.0",
+    "tinybench": "^2.9.0",
+    "tree-sitter-json": "^0.24.8",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "tinybench": "^2.9.0"
+    "typescript": "^5.6.3"
   },
   "optionalDependencies": {
     "@csstools/css-tokenizer": "^3.0.4",
-    "css-tree": "^3.1.0",
     "css-tokenize": "^1.0.1",
+    "css-tree": "^3.1.0",
     "cssom": "^0.5.0",
     "moo": "^0.5.2",
     "postcss": "^8.4.49",

@@ -82,7 +82,11 @@ export async function runBenchTable(title: string, contestants: readonly Contest
       if (sane instanceof Error) return false;
       return (sane?.units ?? 0) > 0 || input.length === 0;
     };
-    const baselineLabel = contestants.find((c) => hasCoverage(c.label))?.label ?? contestants[0]?.label ?? '';
+    const baselineLabel =
+      contestants.find((c) => c.label.includes('parser2') && hasCoverage(c.label))?.label ??
+      contestants.find((c) => hasCoverage(c.label))?.label ??
+      contestants[0]?.label ??
+      '';
     const baseResult = tasks.get(baselineLabel)?.result as BenchTaskResult | undefined;
     const base = baseResult?.hz ?? 0;
 

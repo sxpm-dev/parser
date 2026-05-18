@@ -42,6 +42,17 @@ const contestants: Contestant[] = [
     },
   },
   {
+    label: 'css-tree materialize',
+    unit: 'tokens',
+    fn: (input: string): BenchResult => {
+      const tokens: Array<{ type: unknown; value: string; start: number; end: number }> = [];
+      cssTree.tokenize(input, (type, start, end) => {
+        tokens.push({ type, value: input.slice(start, end), start, end });
+      });
+      return { units: tokens.length };
+    },
+  },
+  {
     label: 'css-tokenize',
     unit: 'events',
     fn: (input: string): BenchResult => {

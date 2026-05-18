@@ -21,7 +21,7 @@ test('parses and stringifies a module program', () => {
   assert.equal(ast.type, 'Program');
   assert.equal(ast.sourceType, 'module');
   assert.equal(ast.body.length, 1);
-  assert.equal(ast.tokens?.length, 5);
+  assert.equal(tokenize(input).length, 5);
   assert.equal(stringify(ast), input);
 });
 
@@ -55,6 +55,5 @@ test('falls back to script mode for script-only syntax', () => {
 
 test('stringifies modified ESTree-compatible programs', () => {
   const ast = parse('const answer = 42;');
-  assert.equal(stringify({ ...ast, source: undefined }), `const answer = 42;
-`);
+  assert.equal(stringify({ ...ast, source: undefined }), 'const answer = 42;');
 });

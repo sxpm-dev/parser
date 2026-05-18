@@ -1,9 +1,35 @@
 import { defineSchema, ex } from '@parser2/parser';
-import { generateCssParser } from './src/generator.ts';
 
 export default defineSchema({
   name: 'css',
-  generate: generateCssParser,
+  standard: {
+    name: 'CSS Syntax Module',
+    version: 'Level 3',
+    url: 'https://www.w3.org/TR/css-syntax-3/',
+    conformanceSuite: 'https://wpt.fyi/css/css-syntax/',
+  },
+  rules: [
+    ex.rule('stylesheet')
+      .from('%rule*%').node('stylesheet'),
+    ex.rule('rule')
+      .from('%qualified-rule%').node('rule')
+      .from('%at-rule%').node('atrule'),
+    ex.rule('qualified-rule')
+      .from('%component-value-list%%simple-block%').node('rule'),
+    ex.rule('at-rule')
+      .from('@%ident%%component-value-list%;').node('atrule')
+      .from('@%ident%%component-value-list%%simple-block%').node('atrule'),
+    ex.rule('simple-block')
+      .from('{%component-value*%}').node('block')
+      .from('[%component-value*%]').node('block')
+      .from('(%component-value*%)').node('block'),
+    ex.rule('component-value-list')
+      .from('%component-value*%').node('component-value-list'),
+    ex.rule('component-value')
+      .from('%preserved-token%').node('token')
+      .from('%function-block%').node('function')
+      .from('%simple-block%').node('block'),
+  ],
   examples: [
     ex('.foo { color: red; }')
       .token('delim', '.')

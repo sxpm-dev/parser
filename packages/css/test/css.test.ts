@@ -94,6 +94,7 @@ test('counts tokens with the same coverage as tokenize', () => {
     '.card, #panel { color: red; margin: 1px 2px; background: url("asset.svg"); }',
     '@media screen and (max-width: 720px) { .card:hover { transform: translate(1px, 2px); } }',
     '/* theme */ [data-state="open"]::before { content: "{ item; }"; padding: calc(100% - 1px); }',
+    '@\\63\\68\\61\\72\\73\\65\\74 "Shift-JIS"; .example { color: red; }',
   ].join('\n');
   assert.equal(countTokens(input), tokenize(input).length);
 });
@@ -146,4 +147,40 @@ test('recovers past malformed declarations and preserves following rules', () =>
   assert.equal(ast.nodes[0]?.type, 'rule');
   assert.deepEqual(ast.nodes[0]?.nodes, [{ type: 'decl', prop: 'background', value: 'blue' }]);
   assert.equal(ast.nodes[1]?.type, 'rule');
+});
+
+test('recovers an unclosed rule at eof according to schema policy', () => {
+  const ast = parse('.a { color: red;');
+  assert.deepEqual(ast, {
+    type: 'stylesheet',
+    nodes: [
+      {
+        type: 'rule',
+        selector: '.a',
+        nodes: [{ type: 'decl', prop: 'color', value: 'red' }],
+      },
+    ],
+  });
+});
+
+test('rejects invalid top-level stylesheet constructs instead of dropping them', () => {
+  assert.throws(() => parse('.foo }'), /Unexpected \}/);
+  assert.throws(() => parse('}'), /Unexpected \}/);
+  assert.throws(() => parse('{'), /Expected selector before \{/);
+  assert.throws(() => parse('['), /Expected \{/);
+  assert.throws(() => parse('x'), /Expected \{/);
+  assert.throws(() => parse('.'), /Expected \{/);
+  assert.throws(() => parse('huy'), /Expected \{/);
+  assert.throws(() => parse('. {}'), /Invalid selector|Expected selector/);
+  assert.throws(() => parse('# {}'), /Invalid selector|Expected selector/);
+  assert.throws(() => parse(': {}'), /Invalid selector|Expected selector/);
+  assert.throws(() => parse('.foo, { color: red }'), /Expected selector/);
+  assert.throws(() => parse('.foo > { color: red }'), /Expected selector/);
+});
+
+test('reports syntax errors with source pointers', () => {
+  assert.throws(
+    () => parse('a:lit% {}'),
+    /Invalid selector\n 1 \| a:lit% \{\}\n   \| {6}\^/,
+  );
 });

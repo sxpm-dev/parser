@@ -1,6 +1,16 @@
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import type { CodegenInput, ExampleStep, GrammarExpr, ParserSchema, PatternRule } from '@parser2/parser';
+import { basename, dirname, join } from 'node:path';
+import type {
+  CodegenInput,
+  ExampleStep,
+  GrammarExpr,
+  InferredAst,
+  InferredAstField,
+  InferredAstNode,
+  InferredRecovery,
+  ParserSchema,
+  PatternRule,
+} from '@parser2/parser';
 import { generateCssParser } from './css-template.js';
 import { generateJsonParser } from './json-template.js';
 
@@ -30,9 +40,146 @@ export function inferSchema(schema: ParserSchema): InferredSchema {
     nodes: [...nodes].sort(),
     fields: [...fields].sort(),
     examples: schema.examples.length,
+    ast: inferAst(schema),
+    recoveries: inferRecoveries(schema),
     grammar: inferGrammarFromPatterns(schema.rules),
-    standard: schema.standard,
   };
+}
+
+type AstOccurrence = {
+  readonly fields: Map<string, Set<string>>;
+  readonly hasChildren: boolean;
+};
+
+function inferAst(schema: ParserSchema): InferredAst {
+  const occurrences = new Map<string, AstOccurrence[]>();
+  const topLevelNodes: string[] = [];
+
+  const visit = (steps: readonly ExampleStep[], depth: number): void => {
+    for (const step of steps) {
+      if (step.kind !== 'node') continue;
+      if (depth === 0) topLevelNodes.push(step.type);
+      const fields = new Map<string, Set<string>>();
+      let hasChildren = false;
+      for (const child of step.children) {
+        if (child.kind === 'field') {
+          const values = fields.get(child.name) ?? new Set<string>();
+          values.add(fieldTypeSource(child.value));
+          fields.set(child.name, values);
+        } else if (child.kind === 'node') {
+          hasChildren = true;
+        }
+      }
+      const seen = occurrences.get(step.type) ?? [];
+      seen.push({ fields, hasChildren });
+      occurrences.set(step.type, seen);
+      visit(step.children, depth + 1);
+    }
+  };
+
+  for (const example of schema.examples) visit(example.steps, 0);
+
+  const nodeTypes = [...occurrences.keys()].sort();
+  const rootType =
+    nodeTypes.find((type) => type === schema.rules?.[0]?.name) ??
+    topLevelNodes[0] ??
+    nodeTypes[0] ??
+    'Root';
+  const prefix = pascal(schema.name);
+  const rootAlias = `${prefix}Root`;
+  const nodeUnionAlias = `${prefix}Node`;
+  const nodes: InferredAstNode[] = nodeTypes.map((type) => {
+    const nodeOccurrences = occurrences.get(type) ?? [];
+    const fieldNames = new Set<string>();
+    let childOccurrences = 0;
+    for (const occurrence of nodeOccurrences) {
+      for (const field of occurrence.fields.keys()) fieldNames.add(field);
+      if (occurrence.hasChildren) childOccurrences++;
+    }
+
+    const fields: InferredAstField[] = [...fieldNames].sort().map((name) => {
+      const typeSources = new Set<string>();
+      let present = 0;
+      for (const occurrence of nodeOccurrences) {
+        const values = occurrence.fields.get(name);
+        if (!values) continue;
+        present++;
+        for (const value of values) typeSources.add(value);
+      }
+      return {
+        name,
+        typeSource: unionType([...typeSources].sort()),
+        optional: present < nodeOccurrences.length,
+      };
+    });
+
+    return {
+      type,
+      alias: type === rootType ? rootAlias : `${prefix}${pascal(type)}`,
+      isRoot: type === rootType,
+      fields,
+      nodesField: childOccurrences > 0 ? { optional: childOccurrences < nodeOccurrences.length } : undefined,
+    };
+  });
+
+  return {
+    rootType,
+    rootAlias,
+    nodeUnionAlias,
+    nodes,
+    typeSource: emitAstTypes(rootAlias, nodeUnionAlias, nodes),
+  };
+}
+
+function emitAstTypes(rootAlias: string, nodeUnionAlias: string, nodes: readonly InferredAstNode[]): string {
+  const root = nodes.find((node) => node.isRoot);
+  const members = nodes.filter((node) => !node.isRoot);
+  const lines: string[] = [];
+
+  if (root) lines.push(`export type ${rootAlias} = ${emitNodeShape(root, nodeUnionAlias)};`);
+  else lines.push(`export type ${rootAlias} = { type: string };`);
+  lines.push(`export type ${nodeUnionAlias} = ${members.length > 0 ? members.map((node) => node.alias).join(' | ') : 'never'};`);
+  for (const node of members) lines.push(`export type ${node.alias} = ${emitNodeShape(node, nodeUnionAlias)};`);
+  return lines.join('\n');
+}
+
+function emitNodeShape(node: InferredAstNode, nodeUnionAlias: string): string {
+  const fields = [`type: ${JSON.stringify(node.type)}`];
+  if (node.nodesField) fields.push(`nodes${node.nodesField.optional ? '?' : ''}: ${nodeUnionAlias}[]`);
+  for (const field of node.fields) fields.push(`${field.name}${field.optional ? '?' : ''}: ${field.typeSource}`);
+  return `{ ${fields.join('; ')} }`;
+}
+
+function fieldTypeSource(value: unknown): string {
+  if (value === true) return 'true';
+  if (value === false) return 'false';
+  if (value === null) return 'null';
+  if (typeof value === 'string') return 'string';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  return 'unknown';
+}
+
+function unionType(types: readonly string[]): string {
+  return types.length === 0 ? 'unknown' : types.join(' | ');
+}
+
+function pascal(value: string): string {
+  const words = value.match(/[a-zA-Z0-9]+/g) ?? [value];
+  return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+}
+
+function inferRecoveries(schema: ParserSchema): InferredRecovery[] {
+  return schema.examples
+    .filter((example) => example.invalid || example.recovery)
+    .map((example) => ({
+      input: example.input,
+      reason: example.invalid?.reason ?? 'invalid',
+      context: example.recovery?.context,
+      on: example.recovery?.on,
+      skipUntil: example.recovery?.skipUntil ?? [],
+      action: example.recovery?.action ?? 'drop',
+    }));
 }
 
 function inferGrammarFromPatterns(rules: readonly PatternRule[] | undefined): CodegenInput['grammar'] {
@@ -70,7 +217,8 @@ function inferPatternExpr(pattern: string): GrammarExpr {
 
 export async function generateParser(schema: ParserSchema, schemaPath: string): Promise<string> {
   const inferred = inferSchema(schema);
-  const outFile = join(dirname(schemaPath), 'src', '_generated', 'parser.ts');
+  const srcDir = basename(dirname(schemaPath)) === 'src' ? dirname(schemaPath) : join(dirname(schemaPath), 'src');
+  const outFile = join(srcDir, '_generated', 'parser.ts');
   await mkdir(dirname(outFile), { recursive: true });
   await writeFile(outFile, header(inferred) + emitParser(inferred));
   return outFile;
@@ -79,8 +227,7 @@ export async function generateParser(schema: ParserSchema, schemaPath: string): 
 function header(inferred: InferredSchema): string {
   return `/* eslint-disable */
 // Generated by @parser2/compiler. Do not edit directly.
-// Schema: ${inferred.name}; examples=${inferred.examples}; tokens=${inferred.tokens.join(',')}; nodes=${inferred.nodes.join(',')}
-${inferred.standard ? `// Standard: ${inferred.standard.name}${inferred.standard.version ? ` ${inferred.standard.version}` : ''}; suite=${inferred.standard.conformanceSuite ?? 'n/a'}\n` : ''}
+// Schema: ${inferred.name}; examples=${inferred.examples}; recoveries=${inferred.recoveries.length}; tokens=${inferred.tokens.join(',')}; nodes=${inferred.nodes.join(',')}
 
 `;
 }
@@ -88,7 +235,7 @@ ${inferred.standard ? `// Standard: ${inferred.standard.name}${inferred.standard
 function emitParser(inferred: InferredSchema): string {
   if (inferred.grammar?.root === 'JsonDocument') return emitJsonParser(inferred);
   if (inferred.nodes.includes('Program')) return emitProgramParser(inferred);
-  if (inferred.nodes.includes('stylesheet')) return emitStylesheetParser();
+  if (inferred.nodes.includes('stylesheet')) return emitStylesheetParser(inferred);
   throw new Error(`Cannot infer parser generator for schema ${inferred.name}`);
 }
 
@@ -351,8 +498,8 @@ export function stringify(ast: JsNode): string {
 `;
 }
 
-function emitStylesheetParser(): string {
-  return generateCssParser(undefined);
+function emitStylesheetParser(inferred: InferredSchema): string {
+  return generateCssParser(inferred);
 }
 
 function emitJsonParser(inferred: InferredSchema): string {

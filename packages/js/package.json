@@ -2,6 +2,15 @@
   "name": "@parser2/js",
   "version": "0.0.0",
   "type": "commonjs",
+  "scripts": {
+    "fetch": "node conformance/fetch.mjs",
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "build": "tsc -b",
+    "test": "tsx --test test/*.test.ts",
+    "test:unit": "tsx --test test/js.test.ts",
+    "test:conformance": "PARSER2_CONFORMANCE=1 tsx --test test/conformance.test.ts",
+    "bench": "tsx bench/index.ts"
+  },
   "exports": {
     ".": "./dist/index.js"
   },

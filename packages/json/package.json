@@ -2,6 +2,15 @@
   "name": "@parser2/json",
   "version": "0.0.0",
   "type": "commonjs",
+  "scripts": {
+    "fetch": "echo '@parser2/json conformance suite is not configured yet'",
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "build": "tsc -b",
+    "test": "tsx --test test/*.test.ts",
+    "test:unit": "tsx --test test/json.test.ts",
+    "test:conformance": "echo '@parser2/json conformance suite is not configured yet'",
+    "bench": "tsx bench/index.ts"
+  },
   "exports": {
     ".": "./dist/index.js"
   },

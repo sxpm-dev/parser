@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
-import * as cssSchemaModule from '../../css/schema.ts';
-import * as jsonSchemaModule from '../../json/schema.ts';
-import * as jsSchemaModule from '../../js/schema.ts';
+import * as cssSchemaModule from '../../css/src/schema.ts';
+import * as jsonSchemaModule from '../../json/src/schema.ts';
+import * as jsSchemaModule from '../../js/src/schema.ts';
 import type { ParserSchema } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 
@@ -21,18 +21,51 @@ function readSchema(module: unknown): ParserSchema {
   return value as ParserSchema;
 }
 
-test('js schema declares ECMA-262 conformance target', () => {
-  assert.equal(jsSchema.standard?.name, 'ECMA-262');
-  assert.match(jsSchema.standard?.url ?? '', /tc39\.es\/ecma262/);
-  assert.match(jsSchema.standard?.conformanceSuite ?? '', /tc39\/test262/);
+test('js schema infers program grammar without standard metadata', () => {
+  assert.equal('standard' in (jsSchema as unknown as Record<string, unknown>), false);
   assert.equal(inferSchema(jsSchema).grammar?.root, 'Program');
 });
 
-test('css schema declares CSS Syntax conformance target', () => {
-  assert.equal(cssSchema.standard?.name, 'CSS Syntax Module');
-  assert.match(cssSchema.standard?.url ?? '', /css-syntax-3/);
-  assert.match(cssSchema.standard?.conformanceSuite ?? '', /css\/css-syntax/);
+test('css schema infers stylesheet grammar without standard metadata', () => {
+  assert.equal('standard' in (cssSchema as unknown as Record<string, unknown>), false);
   assert.equal(inferSchema(cssSchema).grammar?.root, 'stylesheet');
+});
+
+test('css public AST types are inferred from schema examples', () => {
+  const css = inferSchema(cssSchema);
+  assert.match(css.ast.typeSource, /export type CssRoot = \{ type: "stylesheet"; nodes: CssNode\[\] \}/);
+  assert.match(css.ast.typeSource, /export type CssNode = .*CssDecl/);
+  assert.match(css.ast.typeSource, /export type CssDecl = \{ type: "decl"; important\?: true; prop: string; value: string \}/);
+  assert.doesNotMatch(css.ast.typeSource, /CssDeclaration/);
+});
+
+test('css schema declares recovery examples as parser policy', () => {
+  const css = inferSchema(cssSchema);
+  assert.deepEqual(
+    css.recoveries.map((recovery) => ({
+      reason: recovery.reason,
+      context: recovery.context,
+      on: recovery.on,
+      skipUntil: recovery.skipUntil,
+      action: recovery.action,
+    })),
+    [
+      {
+        reason: 'missing-colon',
+        context: 'Declaration',
+        on: 'fail',
+        skipUntil: [';', '}'],
+        action: 'drop',
+      },
+      {
+        reason: 'eof-in-block',
+        context: 'Rule',
+        on: 'unexpected:eof',
+        skipUntil: [],
+        action: 'close',
+      },
+    ],
+  );
 });
 
 test('pattern slots infer repeat modifiers', () => {
@@ -72,6 +105,7 @@ test('parser packages expose examples and rules only', () => {
     assert.ok(schema.examples.length > 0);
     assert.ok((schema.rules?.length ?? 0) > 0);
     assert.equal('grammar' in (schema as unknown as Record<string, unknown>), false);
+    assert.equal('standard' in (schema as unknown as Record<string, unknown>), false);
   }
 });
 
@@ -88,6 +122,13 @@ test('parser packages do not own generators or parser-library runtime fallbacks'
     assert.doesNotMatch(generated, /\bfrom ['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]/);
     assert.doesNotMatch(generated, /\brequire\(['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]\)/);
   }
+});
+
+test('css generated parser carries schema recovery metadata', () => {
+  const generated = readFileSync(join(root, 'packages', 'css', 'src', '_generated', 'parser.ts'), 'utf8');
+  assert.match(generated, /recoveries=2/);
+  assert.match(generated, /"reason":"missing-colon"/);
+  assert.match(generated, /"context":"Declaration"/);
 });
 
 test('json generated parser exposes executable inferred grammar', () => {

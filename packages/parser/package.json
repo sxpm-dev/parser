@@ -2,6 +2,12 @@
   "name": "@parser2/parser",
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "fetch": "echo '@parser2/parser has no conformance suite'",
+    "generate": "echo '@parser2/parser has no generated parser'",
+    "build": "tsc -b",
+    "test": "tsx --test"
+  },
   "exports": {
     ".": "./dist/index.js"
   }

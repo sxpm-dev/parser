@@ -2,12 +2,6 @@ import { defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
   name: 'js',
-  standard: {
-    name: 'ECMA-262',
-    version: '2026 draft',
-    url: 'https://tc39.es/ecma262/2026/',
-    conformanceSuite: 'https://github.com/tc39/test262',
-  },
   rules: [
     ex.rule('Program')
       .from('%Script%').node('Program')

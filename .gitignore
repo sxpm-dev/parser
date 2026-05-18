@@ -1,6 +1,7 @@
 node_modules/
 .omx/
 .conformance/
+packages/*/.conformance/
 .idea/
 *.tsbuildinfo
 *.d.ts

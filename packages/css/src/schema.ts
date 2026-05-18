@@ -2,12 +2,6 @@ import { defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
   name: 'css',
-  standard: {
-    name: 'CSS Syntax Module',
-    version: 'Level 3',
-    url: 'https://www.w3.org/TR/css-syntax-3/',
-    conformanceSuite: 'https://wpt.fyi/css/css-syntax/',
-  },
   rules: [
     ex.rule('stylesheet')
       .from('%rule*%').node('stylesheet'),
@@ -58,6 +52,45 @@ export default defineSchema({
           .node('rule', (rule) => rule
             .field('selector', '.foo:hover')
             .node('decl', (decl) => decl.field('prop', 'margin').field('value', 'calc(100% - 1px)')))))
+      .build(),
+    ex('@charset "utf-8";')
+      .token('atKeyword', '@charset')
+      .node('stylesheet', (sheet) => sheet
+        .node('atrule', (rule) => rule.field('name', 'charset').field('prelude', '"utf-8"')))
+      .build(),
+    ex('/* theme */')
+      .token('comment', '/* theme */')
+      .node('stylesheet', (sheet) => sheet
+        .node('comment', (comment) => comment.field('value', ' theme ')))
+      .build(),
+    ex('.foo { color: red !important; }')
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', '.foo')
+          .node('decl', (decl) => decl.field('prop', 'color').field('value', 'red').field('important', true))))
+      .build(),
+    ex('.a { color red; background: blue; }')
+      .invalid('missing-colon')
+      .recover((recovery) => recovery
+        .at('Declaration')
+        .onFail()
+        .skipUntil(';', '}')
+        .drop())
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', '.a')
+          .node('decl', (decl) => decl.field('prop', 'background').field('value', 'blue'))))
+      .build(),
+    ex('.a { color: red;')
+      .invalid('eof-in-block')
+      .recover((recovery) => recovery
+        .at('Rule')
+        .onUnexpected('eof')
+        .close())
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', '.a')
+          .node('decl', (decl) => decl.field('prop', 'color').field('value', 'red'))))
       .build(),
   ],
 });

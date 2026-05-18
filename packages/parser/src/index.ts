@@ -21,6 +21,21 @@ export type ExampleStep = TokenExample | FieldExample | NodeExample;
 export type ParserExample = {
   readonly input: string;
   readonly steps: readonly ExampleStep[];
+  readonly invalid?: InvalidExample;
+  readonly recovery?: RecoveryExample;
+};
+
+export type InvalidExample = {
+  readonly reason: string;
+};
+
+export type RecoveryAction = 'drop' | 'close' | 'throw';
+
+export type RecoveryExample = {
+  readonly context?: string;
+  readonly on?: string;
+  readonly skipUntil?: readonly string[];
+  readonly action: RecoveryAction;
 };
 
 export type PatternAlternative = {
@@ -51,28 +66,56 @@ export type GrammarSchema = {
   readonly rules: readonly GrammarRule[];
 };
 
-export type StandardSchema = {
-  readonly name: string;
-  readonly version?: string;
-  readonly url: string;
-  readonly conformanceSuite?: string;
-};
-
 export type CodegenInput = {
   readonly name: string;
   readonly tokens: readonly string[];
   readonly nodes: readonly string[];
   readonly fields: readonly string[];
   readonly examples: number;
+  readonly ast: InferredAst;
+  readonly recoveries: readonly InferredRecovery[];
   readonly grammar?: GrammarSchema;
-  readonly standard?: StandardSchema;
+};
+
+export type InferredAst = {
+  readonly rootType: string;
+  readonly rootAlias: string;
+  readonly nodeUnionAlias: string;
+  readonly nodes: readonly InferredAstNode[];
+  readonly typeSource: string;
+};
+
+export type InferredAstNode = {
+  readonly type: string;
+  readonly alias: string;
+  readonly isRoot: boolean;
+  readonly fields: readonly InferredAstField[];
+  readonly nodesField?: InferredAstNodesField;
+};
+
+export type InferredAstNodesField = {
+  readonly optional: boolean;
+};
+
+export type InferredAstField = {
+  readonly name: string;
+  readonly typeSource: string;
+  readonly optional: boolean;
+};
+
+export type InferredRecovery = {
+  readonly input: string;
+  readonly reason: string;
+  readonly context?: string;
+  readonly on?: string;
+  readonly skipUntil: readonly string[];
+  readonly action: RecoveryAction;
 };
 
 export type ParserSchema = {
   readonly name: string;
   readonly examples: readonly ParserExample[];
   readonly rules?: readonly PatternRule[];
-  readonly standard?: StandardSchema;
 };
 
 export type Token = {
@@ -109,6 +152,9 @@ export class NodeBuilder {
 }
 
 export class ExampleBuilder extends NodeBuilder {
+  private invalidExample?: InvalidExample;
+  private recoveryExample?: RecoveryExample;
+
   constructor(readonly input: string) {
     super();
   }
@@ -118,8 +164,74 @@ export class ExampleBuilder extends NodeBuilder {
     return this;
   }
 
+  invalid(reason: string): this {
+    this.invalidExample = { reason };
+    return this;
+  }
+
+  recover(build: (recovery: RecoveryBuilder) => RecoveryBuilder): this {
+    this.recoveryExample = build(new RecoveryBuilder()).build();
+    return this;
+  }
+
   build(): ParserExample {
-    return { input: this.input, steps: this.steps };
+    return {
+      input: this.input,
+      steps: this.steps,
+      invalid: this.invalidExample,
+      recovery: this.recoveryExample,
+    };
+  }
+}
+
+export class RecoveryBuilder {
+  private context?: string;
+  private trigger?: string;
+  private boundaries: string[] = [];
+  private recoveryAction: RecoveryAction = 'drop';
+
+  at(context: string): this {
+    this.context = context;
+    return this;
+  }
+
+  onFail(): this {
+    this.trigger = 'fail';
+    return this;
+  }
+
+  onUnexpected(token: string): this {
+    this.trigger = `unexpected:${token}`;
+    return this;
+  }
+
+  skipUntil(...tokens: string[]): this {
+    this.boundaries = tokens;
+    return this;
+  }
+
+  drop(): this {
+    this.recoveryAction = 'drop';
+    return this;
+  }
+
+  close(): this {
+    this.recoveryAction = 'close';
+    return this;
+  }
+
+  throw(): this {
+    this.recoveryAction = 'throw';
+    return this;
+  }
+
+  build(): RecoveryExample {
+    return {
+      context: this.context,
+      on: this.trigger,
+      skipUntil: this.boundaries,
+      action: this.recoveryAction,
+    };
   }
 }
 

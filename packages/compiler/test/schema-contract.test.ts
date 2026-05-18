@@ -31,12 +31,23 @@ test('css schema infers stylesheet grammar without standard metadata', () => {
   assert.equal(inferSchema(cssSchema).grammar?.root, 'stylesheet');
 });
 
-test('css public AST types are inferred from schema examples', () => {
+test('css public structure types are inferred from schema examples', () => {
   const css = inferSchema(cssSchema);
-  assert.match(css.ast.typeSource, /export type CssRoot = \{ type: "stylesheet"; nodes: CssNode\[\] \}/);
-  assert.match(css.ast.typeSource, /export type CssNode = .*CssDecl/);
-  assert.match(css.ast.typeSource, /export type CssDecl = \{ type: "decl"; important\?: true; prop: string; value: string \}/);
-  assert.doesNotMatch(css.ast.typeSource, /CssDeclaration/);
+  assert.equal(css.structure, css.ast);
+  assert.match(css.structure.typeSource, /export type CssRoot = \{ type: "stylesheet"; nodes: CssNode\[\] \}/);
+  assert.match(css.structure.typeSource, /export type CssNode = .*CssDecl/);
+  assert.match(css.structure.typeSource, /export type CssDecl = \{ type: "decl"; important\?: true; prop: string; value: string \}/);
+  assert.doesNotMatch(css.structure.typeSource, /CssDeclaration/);
+  assert.deepEqual(css.structure.exampleOutputs[0], {
+    type: 'stylesheet',
+    rules: [
+      {
+        selector: '.foo',
+        declarations: [{ prop: 'color', value: 'red' }],
+      },
+    ],
+    hoverSelectors: [],
+  });
 });
 
 test('css schema declares recovery examples as parser policy', () => {
@@ -81,6 +92,14 @@ test('pattern slots infer repeat modifiers', () => {
 test('json schema infers recursive grammar from example patterns', () => {
   const inferred = inferSchema(jsonSchema);
   assert.equal(inferred.grammar?.root, 'JsonDocument');
+  assert.deepEqual(inferred.structure.exampleOutputs[0], {
+    type: 'JsonDocument',
+    rootProps: ['name', 'count', 'ok', 'items'],
+    numberPaths: [
+      { path: ['count'], value: 2 },
+      { path: ['items', 1], value: 1.5 },
+    ],
+  });
 
   const value = inferred.grammar?.rules.find((rule) => rule.name === 'value');
   assert.equal(value?.expr.kind, 'choice');

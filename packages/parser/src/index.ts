@@ -21,6 +21,7 @@ export type ExampleStep = TokenExample | FieldExample | NodeExample;
 export type ParserExample = {
   readonly input: string;
   readonly steps: readonly ExampleStep[];
+  readonly structure?: unknown;
   readonly invalid?: InvalidExample;
   readonly recovery?: RecoveryExample;
 };
@@ -72,36 +73,52 @@ export type CodegenInput = {
   readonly nodes: readonly string[];
   readonly fields: readonly string[];
   readonly examples: number;
+  readonly structure: InferredStructure;
+  /** @deprecated Use structure. */
   readonly ast: InferredAst;
   readonly recoveries: readonly InferredRecovery[];
   readonly grammar?: GrammarSchema;
+  readonly runtime?: RuntimeSchema;
 };
 
-export type InferredAst = {
+export type InferredStructure = {
   readonly rootType: string;
   readonly rootAlias: string;
   readonly nodeUnionAlias: string;
-  readonly nodes: readonly InferredAstNode[];
+  readonly nodes: readonly InferredStructureNode[];
   readonly typeSource: string;
+  readonly exampleOutputs: readonly unknown[];
 };
 
-export type InferredAstNode = {
+/** @deprecated Use InferredStructure. */
+export type InferredAst = InferredStructure;
+
+export type InferredStructureNode = {
   readonly type: string;
   readonly alias: string;
   readonly isRoot: boolean;
-  readonly fields: readonly InferredAstField[];
-  readonly nodesField?: InferredAstNodesField;
+  readonly fields: readonly InferredStructureField[];
+  readonly nodesField?: InferredStructureNodesField;
 };
 
-export type InferredAstNodesField = {
+/** @deprecated Use InferredStructureNode. */
+export type InferredAstNode = InferredStructureNode;
+
+export type InferredStructureNodesField = {
   readonly optional: boolean;
 };
 
-export type InferredAstField = {
+/** @deprecated Use InferredStructureNodesField. */
+export type InferredAstNodesField = InferredStructureNodesField;
+
+export type InferredStructureField = {
   readonly name: string;
   readonly typeSource: string;
   readonly optional: boolean;
 };
+
+/** @deprecated Use InferredStructureField. */
+export type InferredAstField = InferredStructureField;
 
 export type InferredRecovery = {
   readonly input: string;
@@ -116,6 +133,105 @@ export type ParserSchema = {
   readonly name: string;
   readonly examples: readonly ParserExample[];
   readonly rules?: readonly PatternRule[];
+  readonly runtime?: RuntimeSchema;
+};
+
+export type RuntimeSchema = {
+  readonly tokenize?: RuntimeTokenizer;
+  readonly parse?: RuntimeParser;
+  readonly stringify?: RuntimeStringify;
+};
+
+export type RuntimeTokenizer = RuntimeStandardTokenizer | RuntimeBlockStyleTokenizer;
+
+export type RuntimeStandardTokenizer = {
+  readonly kind: 'standard';
+  readonly whitespace?: RuntimeWhitespaceToken;
+  readonly string?: RuntimeStringToken;
+  readonly number?: RuntimeNumberToken;
+  readonly keywords?: readonly RuntimeKeywordToken[];
+  readonly punctuators?: readonly RuntimePunctuatorToken[];
+};
+
+export type RuntimeBlockStyleTokenizer = {
+  readonly kind: 'block-style';
+};
+
+export type RuntimeWhitespaceToken = {
+  readonly token: string;
+  readonly emit: boolean;
+  readonly chars: string;
+};
+
+export type RuntimeStringToken = {
+  readonly token: string;
+  readonly quote: string;
+  readonly escapes: boolean;
+  readonly unicodeEscape?: RuntimeUnicodeEscape;
+};
+
+export type RuntimeUnicodeEscape = {
+  readonly prefix: string;
+  readonly digits: number;
+};
+
+export type RuntimeNumberToken = {
+  readonly token: string;
+  readonly minus: boolean;
+  readonly fraction: boolean;
+  readonly exponent: boolean;
+  readonly leadingZero: 'reject' | 'allow';
+};
+
+export type RuntimeKeywordToken = {
+  readonly token: string;
+  readonly text: string;
+  readonly value?: unknown;
+};
+
+export type RuntimePunctuatorToken = {
+  readonly token: string;
+  readonly text: string;
+};
+
+export type RuntimeParser = RuntimeValueDocumentParser | RuntimeBlockStyleParser;
+
+export type RuntimeValueDocumentParser = {
+  readonly kind: 'value-document';
+  readonly engine?: 'generated' | 'native-json';
+  readonly documentType: string;
+  readonly valueField: string;
+  readonly object: {
+    readonly open: string;
+    readonly close: string;
+    readonly keyToken: string;
+    readonly pairSeparator: string;
+    readonly separator: string;
+  };
+  readonly array: {
+    readonly open: string;
+    readonly close: string;
+    readonly separator: string;
+  };
+  readonly stringToken: string;
+  readonly numberToken: string;
+  readonly primitiveTokens: readonly RuntimeKeywordToken[];
+  readonly parseTree?: boolean;
+};
+
+export type RuntimeBlockStyleParser = {
+  readonly kind: 'block-style';
+};
+
+export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify;
+
+export type RuntimeNativeJsonStringify = {
+  readonly kind: 'native-json';
+  readonly valueField: string;
+};
+
+export type RuntimeBlockStyleStringify = {
+  readonly kind: 'block-style';
 };
 
 export type Token = {
@@ -125,15 +241,18 @@ export type Token = {
   readonly end: number;
 };
 
-export type AstNode = {
+export type StructureNode = {
   readonly type: string;
   readonly [field: string]: unknown;
 };
 
-export interface ParserApi<TNode = AstNode> {
-  parse(input: string): TNode;
+/** @deprecated Use StructureNode. */
+export type AstNode = StructureNode;
+
+export interface ParserApi<TStructure = StructureNode> {
+  parse(input: string): TStructure;
   tokenize(input: string): Token[];
-  stringify(ast: TNode): string;
+  stringify(structure: TStructure): string;
 }
 
 export class NodeBuilder {
@@ -154,6 +273,7 @@ export class NodeBuilder {
 export class ExampleBuilder extends NodeBuilder {
   private invalidExample?: InvalidExample;
   private recoveryExample?: RecoveryExample;
+  private structureExample?: unknown;
 
   constructor(readonly input: string) {
     super();
@@ -174,10 +294,16 @@ export class ExampleBuilder extends NodeBuilder {
     return this;
   }
 
+  structure(value: unknown): this {
+    this.structureExample = value;
+    return this;
+  }
+
   build(): ParserExample {
     return {
       input: this.input,
       steps: this.steps,
+      structure: this.structureExample,
       invalid: this.invalidExample,
       recovery: this.recoveryExample,
     };

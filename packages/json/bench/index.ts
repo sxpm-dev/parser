@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { parse as parser2Parse } from '../src/index.ts';
 import { runBenchTable, type BenchResult, type Contestant } from './common.ts';
 
-const require = createRequire(__filename);
+const require = createRequire(import.meta.url);
 const commentJson = require('comment-json') as { parse(input: string): unknown };
 const JsonParse = require('jsonparse') as new () => {
   onValue?: (value: unknown) => void;

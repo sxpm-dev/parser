@@ -40,6 +40,11 @@ export default defineSchema({
       .token('number', '42')
       .token('punct', ';')
       .node('Program', (program) => program.field('source', 'const answer = 42;'))
+      .structure({
+        type: 'Program',
+        sourceType: 'module',
+        statements: [{ type: 'VariableDeclaration', raw: 'const answer = 42;' }],
+      })
       .build(),
     ex('import data from "./x.json" with { type: "json" }; using resource = open(); await Promise.resolve(data); export class Box { #value = 1_000n; }')
       .node('Program', (program) => program
@@ -47,9 +52,19 @@ export default defineSchema({
         .node('VariableDeclaration')
         .node('ExpressionStatement')
         .node('ExportNamedDeclaration'))
+      .structure({
+        type: 'Program',
+        sourceType: 'module',
+        statements: ['ImportDeclaration', 'VariableDeclaration', 'ExpressionStatement', 'ExportNamedDeclaration'],
+      })
       .build(),
     ex('with (scope) { answer = value; }')
       .node('Program', (program) => program.node('WithStatement'))
+      .structure({
+        type: 'Program',
+        sourceType: 'script',
+        statements: ['WithStatement'],
+      })
       .build(),
   ],
 });

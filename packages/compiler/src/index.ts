@@ -4,13 +4,14 @@ import type {
   CodegenInput,
   ExampleStep,
   GrammarExpr,
-  InferredAst,
-  InferredAstField,
-  InferredAstNode,
+  InferredStructure,
+  InferredStructureField,
+  InferredStructureNode,
   InferredRecovery,
   ParserSchema,
   PatternRule,
 } from '@parser2/parser';
+import { emitGenericParser } from './emitter.js';
 
 export type InferredSchema = CodegenInput;
 export type ParserEmitter = (inferred: InferredSchema) => string;
@@ -33,15 +34,18 @@ export function inferSchema(schema: ParserSchema): InferredSchema {
 
   for (const example of schema.examples) visit(example.steps);
 
+  const structure = inferStructure(schema);
   return {
     name: schema.name,
     tokens: [...tokens].sort(),
     nodes: [...nodes].sort(),
     fields: [...fields].sort(),
     examples: schema.examples.length,
-    ast: inferAst(schema),
+    structure,
+    ast: structure,
     recoveries: inferRecoveries(schema),
     grammar: inferGrammarFromPatterns(schema.rules),
+    runtime: schema.runtime,
   };
 }
 
@@ -50,7 +54,7 @@ type AstOccurrence = {
   readonly hasChildren: boolean;
 };
 
-function inferAst(schema: ParserSchema): InferredAst {
+function inferStructure(schema: ParserSchema): InferredStructure {
   const occurrences = new Map<string, AstOccurrence[]>();
   const topLevelNodes: string[] = [];
 
@@ -87,7 +91,7 @@ function inferAst(schema: ParserSchema): InferredAst {
   const prefix = pascal(schema.name);
   const rootAlias = `${prefix}Root`;
   const nodeUnionAlias = `${prefix}Node`;
-  const nodes: InferredAstNode[] = nodeTypes.map((type) => {
+  const nodes: InferredStructureNode[] = nodeTypes.map((type) => {
     const nodeOccurrences = occurrences.get(type) ?? [];
     const fieldNames = new Set<string>();
     let childOccurrences = 0;
@@ -96,7 +100,7 @@ function inferAst(schema: ParserSchema): InferredAst {
       if (occurrence.hasChildren) childOccurrences++;
     }
 
-    const fields: InferredAstField[] = [...fieldNames].sort().map((name) => {
+    const fields: InferredStructureField[] = [...fieldNames].sort().map((name) => {
       const typeSources = new Set<string>();
       let present = 0;
       for (const occurrence of nodeOccurrences) {
@@ -126,11 +130,14 @@ function inferAst(schema: ParserSchema): InferredAst {
     rootAlias,
     nodeUnionAlias,
     nodes,
-    typeSource: emitAstTypes(rootAlias, nodeUnionAlias, nodes),
+    typeSource: emitStructureTypes(rootAlias, nodeUnionAlias, nodes),
+    exampleOutputs: schema.examples
+      .map((example) => example.structure)
+      .filter((structure) => structure !== undefined),
   };
 }
 
-function emitAstTypes(rootAlias: string, nodeUnionAlias: string, nodes: readonly InferredAstNode[]): string {
+function emitStructureTypes(rootAlias: string, nodeUnionAlias: string, nodes: readonly InferredStructureNode[]): string {
   const root = nodes.find((node) => node.isRoot);
   const members = nodes.filter((node) => !node.isRoot);
   const lines: string[] = [];
@@ -142,7 +149,7 @@ function emitAstTypes(rootAlias: string, nodeUnionAlias: string, nodes: readonly
   return lines.join('\n');
 }
 
-function emitNodeShape(node: InferredAstNode, nodeUnionAlias: string): string {
+function emitNodeShape(node: InferredStructureNode, nodeUnionAlias: string): string {
   const fields = [`type: ${JSON.stringify(node.type)}`];
   if (node.nodesField) fields.push(`nodes${node.nodesField.optional ? '?' : ''}: ${nodeUnionAlias}[]`);
   for (const field of node.fields) fields.push(`${field.name}${field.optional ? '?' : ''}: ${field.typeSource}`);
@@ -214,7 +221,7 @@ function inferPatternExpr(pattern: string): GrammarExpr {
   return items.length === 1 ? items[0] ?? { kind: 'literal', value: '' } : { kind: 'seq', items };
 }
 
-export async function generateParser(schema: ParserSchema, schemaPath: string, emitParser: ParserEmitter): Promise<string> {
+export async function generateParser(schema: ParserSchema, schemaPath: string, emitParser: ParserEmitter = emitGenericParser): Promise<string> {
   const inferred = inferSchema(schema);
   const srcDir = basename(dirname(schemaPath)) === 'src' ? dirname(schemaPath) : join(dirname(schemaPath), 'src');
   const outFile = join(srcDir, '_generated', 'parser.ts');

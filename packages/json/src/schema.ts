@@ -2,6 +2,44 @@ import { defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
   name: 'json',
+  runtime: {
+    tokenize: {
+      kind: 'standard',
+      whitespace: { token: 'whitespace', emit: false, chars: ' \t\r\n' },
+      string: { token: 'string', quote: '"', escapes: true, unicodeEscape: { prefix: 'u', digits: 4 } },
+      number: { token: 'number', minus: true, fraction: true, exponent: true, leadingZero: 'reject' },
+      keywords: [
+        { token: 'true', text: 'true', value: true },
+        { token: 'false', text: 'false', value: false },
+        { token: 'null', text: 'null', value: null },
+      ],
+      punctuators: [
+        { token: 'lbrace', text: '{' },
+        { token: 'rbrace', text: '}' },
+        { token: 'lbracket', text: '[' },
+        { token: 'rbracket', text: ']' },
+        { token: 'colon', text: ':' },
+        { token: 'comma', text: ',' },
+      ],
+    },
+    parse: {
+      kind: 'value-document',
+      engine: 'native-json',
+      documentType: 'JsonDocument',
+      valueField: 'value',
+      object: { open: '{', close: '}', keyToken: 'string', pairSeparator: ':', separator: ',' },
+      array: { open: '[', close: ']', separator: ',' },
+      stringToken: 'string',
+      numberToken: 'number',
+      primitiveTokens: [
+        { token: 'true', text: 'true', value: true },
+        { token: 'false', text: 'false', value: false },
+        { token: 'null', text: 'null', value: null },
+      ],
+      parseTree: true,
+    },
+    stringify: { kind: 'native-json', valueField: 'value' },
+  },
   rules: [
     ex.rule('JsonDocument')
       .from('%value%').node('JsonDocument'),
@@ -64,6 +102,14 @@ export default defineSchema({
         .node('number')
         .node('boolean')
         .node('null'))
+      .structure({
+        type: 'JsonDocument',
+        rootProps: ['name', 'count', 'ok', 'items'],
+        numberPaths: [
+          { path: ['count'], value: 2 },
+          { path: ['items', 1], value: 1.5 },
+        ],
+      })
       .build(),
   ],
 });

@@ -63,7 +63,7 @@ function isImportant(value: string): number {
   return value.charCodeAt(i) === C.Bang ? i : -1;
 }
 
-class CssToken implements Token {
+class SpanToken implements Token {
   constructor(
     readonly type: string,
     private readonly input: string,
@@ -77,7 +77,7 @@ class CssToken implements Token {
 }
 
 function token(input: string, type: string, start: number, end: number): Token {
-  return new CssToken(type, input, start, end);
+  return new SpanToken(type, input, start, end);
 }
 
 export function countTokens(input: string): number {
@@ -303,11 +303,11 @@ export function tokenize(input: string): Token[] {
 }
 
 export function parse(input: string): CssRoot {
-  const p = new CssParser(input);
+  const p = new BlockStyleParser(input);
   return { type: 'stylesheet', nodes: p.list(0) };
 }
 
-class CssParser {
+class BlockStyleParser {
   i: number;
   input: string;
   constructor(input: string) {

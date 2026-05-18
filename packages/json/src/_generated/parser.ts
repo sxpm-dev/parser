@@ -41,11 +41,21 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonObject | JsonArray | JsonPrimitive;
 export type JsonObject = { readonly [key: string]: JsonValue };
 export type JsonArray = readonly JsonValue[];
-export type JsonDocument = {
-  readonly type: 'JsonDocument';
+export type JsonRoot = {
+  readonly type: "JsonDocument";
   readonly value: JsonValue;
   readonly source?: string;
 };
+export type JsonDocument = JsonRoot;
+
+const objectOpen = 123;
+const objectClose = 125;
+const arrayOpen = 91;
+const arrayClose = 93;
+const pairSeparator = 58;
+const objectSeparator = 44;
+const arraySeparator = 44;
+const quoteChar = 34;
 
 export function tokenize(input: string): Token[] {
   const out: Token[] = [];
@@ -53,93 +63,117 @@ export function tokenize(input: string): Token[] {
   while (i < input.length) {
     const start = i;
     const ch = input.charCodeAt(i);
-    if (isWs(ch)) {
+    if (isConfiguredWhitespace(ch)) {
       i++;
-      while (i < input.length && isWs(input.charCodeAt(i))) i++;
-      out.push({ type: 'whitespace', value: input.slice(start, i), start, end: i });
+      while (i < input.length && isConfiguredWhitespace(input.charCodeAt(i))) i++;
+      
       continue;
     }
-    if (ch === 34) {
+    if (ch === quoteChar) {
       i = skipString(input, i);
-      out.push({ type: 'string', value: input.slice(start, i), start, end: i });
+      out.push({ type: "string", value: input.slice(start, i), start, end: i });
       continue;
     }
     if (ch === 45 || isDigit(ch)) {
       i = skipNumber(input, i);
-      out.push({ type: 'number', value: input.slice(start, i), start, end: i });
+      out.push({ type: "number", value: input.slice(start, i), start, end: i });
       continue;
     }
-    if (startsWithWord(input, i, 'true')) {
+    if (startsWithWord(input, i, "true")) {
       i += 4;
-      out.push({ type: 'true', value: 'true', start, end: i });
+      out.push({ type: "true", value: "true", start, end: i });
       continue;
     }
-    if (startsWithWord(input, i, 'false')) {
+    if (startsWithWord(input, i, "false")) {
       i += 5;
-      out.push({ type: 'false', value: 'false', start, end: i });
+      out.push({ type: "false", value: "false", start, end: i });
       continue;
     }
-    if (startsWithWord(input, i, 'null')) {
+    if (startsWithWord(input, i, "null")) {
       i += 4;
-      out.push({ type: 'null', value: 'null', start, end: i });
+      out.push({ type: "null", value: "null", start, end: i });
       continue;
     }
-    i++;
-    out.push({ type: punctType(ch), value: input.slice(start, i), start, end: i });
+    if (ch === 123) {
+      i++;
+      out.push({ type: "lbrace", value: "{", start, end: i });
+      continue;
+    }
+    if (ch === 125) {
+      i++;
+      out.push({ type: "rbrace", value: "}", start, end: i });
+      continue;
+    }
+    if (ch === 91) {
+      i++;
+      out.push({ type: "lbracket", value: "[", start, end: i });
+      continue;
+    }
+    if (ch === 93) {
+      i++;
+      out.push({ type: "rbracket", value: "]", start, end: i });
+      continue;
+    }
+    if (ch === 58) {
+      i++;
+      out.push({ type: "colon", value: ":", start, end: i });
+      continue;
+    }
+    if (ch === 44) {
+      i++;
+      out.push({ type: "comma", value: ",", start, end: i });
+      continue;
+    }
+    throw new SyntaxError('Unexpected token at ' + i);
   }
   return out;
 }
 
-export function parse(input: string): JsonDocument {
-  const parser = new JsonParser(input);
-  const value = parser.parseValue();
-  parser.skipWs();
-  if (parser.i !== input.length) parser.fail('Unexpected token');
-  const ast: JsonDocument = { type: 'JsonDocument', value };
-  Object.defineProperty(ast, 'source', { value: input, enumerable: false });
-  return ast;
+export function parse(input: string): JsonRoot {
+  return { type: "JsonDocument", value: JSON.parse(input) as JsonValue } as JsonRoot;
 }
 
 export function parseTree(input: string): ParseTree {
-  const parser = new GrammarParser(input);
-  const tree = parser.parseRule(grammar.root);
-  parser.skipWs();
-  if (!tree) throw new SyntaxError('Unexpected token at ' + parser.i);
-  if (parser.i !== input.length) parser.fail('Unexpected token');
-  return tree;
+  const structure = parse(input);
+  return {
+    type: "JsonDocument",
+    start: 0,
+    end: input.length,
+    children: [valueToTree(structure.value, 0, input.length)],
+  };
 }
 
-export function stringify(ast: JsonDocument | JsonValue): string {
-  return JSON.stringify(isDocument(ast) ? ast.value : ast);
+export function stringify(structure: JsonRoot | JsonValue): string {
+  return JSON.stringify(isDocument(structure) ? structure.value : structure);
 }
 
-function isDocument(value: unknown): value is JsonDocument {
-  return Boolean(value && typeof value === 'object' && (value as { type?: unknown }).type === 'JsonDocument' && 'value' in value);
+function isDocument(value: unknown): value is JsonRoot {
+  return Boolean(value && typeof value === 'object' && (value as { type?: unknown }).type === "JsonDocument" && "value" in value);
 }
 
-class JsonParser {
+class ValueParser {
   i = 0;
   constructor(readonly input: string) {}
 
   parseValue(): JsonValue {
     this.skipWs();
-    if (this.i >= this.input.length) this.fail('Unexpected end of JSON input');
+    if (this.i >= this.input.length) this.fail('Unexpected end of input');
     const ch = this.input.charCodeAt(this.i);
-    if (ch === 123) return this.parseObject();
-    if (ch === 91) return this.parseArray();
-    if (ch === 34) return this.parseString();
+    if (ch === objectOpen) return this.parseObject();
+    if (ch === arrayOpen) return this.parseArray();
+    if (ch === quoteChar) return this.parseString();
     if (ch === 45 || isDigit(ch)) return this.parseNumber();
-    if (this.input.startsWith('true', this.i)) {
+    if (this.input.startsWith("true", this.i)) {
       this.i += 4;
-      return true;
+      return true as JsonValue;
     }
-    if (this.input.startsWith('false', this.i)) {
+    if (this.input.startsWith("false", this.i)) {
       this.i += 5;
-      return false;
+      return false as JsonValue;
     }
-    if (this.input.startsWith('null', this.i)) {
+    if (this.input.startsWith("null", this.i)) {
       this.i += 4;
-      return null;
+      return null as JsonValue;
     }
     this.fail('Unexpected token');
   }
@@ -148,25 +182,25 @@ class JsonParser {
     this.i++;
     const out: Record<string, JsonValue> = {};
     this.skipWs();
-    if (this.input.charCodeAt(this.i) === 125) {
+    if (this.input.charCodeAt(this.i) === objectClose) {
       this.i++;
       return out;
     }
     for (;;) {
       this.skipWs();
-      if (this.input.charCodeAt(this.i) !== 34) this.fail('Expected object key');
+      if (this.input.charCodeAt(this.i) !== quoteChar) this.fail('Expected object key');
       const key = this.parseString();
       this.skipWs();
-      if (this.input.charCodeAt(this.i) !== 58) this.fail('Expected colon');
+      if (this.input.charCodeAt(this.i) !== pairSeparator) this.fail('Expected pair separator');
       this.i++;
       out[key] = this.parseValue();
       this.skipWs();
       const ch = this.input.charCodeAt(this.i);
-      if (ch === 125) {
+      if (ch === objectClose) {
         this.i++;
         return out;
       }
-      if (ch !== 44) this.fail('Expected comma');
+      if (ch !== objectSeparator) this.fail('Expected separator');
       this.i++;
     }
   }
@@ -175,7 +209,7 @@ class JsonParser {
     this.i++;
     const out: JsonValue[] = [];
     this.skipWs();
-    if (this.input.charCodeAt(this.i) === 93) {
+    if (this.input.charCodeAt(this.i) === arrayClose) {
       this.i++;
       return out;
     }
@@ -183,11 +217,11 @@ class JsonParser {
       out.push(this.parseValue());
       this.skipWs();
       const ch = this.input.charCodeAt(this.i);
-      if (ch === 93) {
+      if (ch === arrayClose) {
         this.i++;
         return out;
       }
-      if (ch !== 44) this.fail('Expected comma');
+      if (ch !== arraySeparator) this.fail('Expected separator');
       this.i++;
     }
   }
@@ -198,7 +232,7 @@ class JsonParser {
     let chunk = i;
     while (i < this.input.length) {
       const ch = this.input.charCodeAt(i);
-      if (ch === 34) {
+      if (ch === quoteChar) {
         out += this.input.slice(chunk, i);
         this.i = i + 1;
         return out;
@@ -217,19 +251,23 @@ class JsonParser {
           case 114: out += '\r'; i++; break;
           case 116: out += '\t'; i++; break;
           case 117: {
-            const code = readHex4(this.input, i + 1);
+            const code = readFixedHex(this.input, i + 1, 4);
             if (code < 0) this.fail('Invalid unicode escape');
             out += String.fromCharCode(code);
             i += 5;
             break;
           }
           default:
+            this.i = i;
             this.fail('Invalid escape');
         }
         chunk = i;
         continue;
       }
-      if (ch < 32) this.fail('Invalid string character');
+      if (ch < 32) {
+        this.i = i;
+        this.fail('Invalid string character');
+      }
       i++;
     }
     this.fail('Unterminated string');
@@ -242,7 +280,7 @@ class JsonParser {
   }
 
   skipWs(): void {
-    while (this.i < this.input.length && isWs(this.input.charCodeAt(this.i))) this.i++;
+    while (this.i < this.input.length && isConfiguredWhitespace(this.input.charCodeAt(this.i))) this.i++;
   }
 
   fail(message: string): never {
@@ -250,18 +288,11 @@ class JsonParser {
   }
 }
 
-class GrammarParser {
-  i = 0;
-  constructor(readonly input: string) {}
-
+class GrammarParser extends ValueParser {
   parseRule(name: string): ParseTree | undefined {
-    this.skipWs();
     const start = this.i;
-    const primitive = this.parsePrimitive(name);
-    if (primitive) return primitive;
-    this.i = start;
     const expr = ruleMap.get(name);
-    if (!expr) return this.parsePrimitive(name);
+    if (!expr) return undefined;
     const children = this.parseExpr(expr);
     if (!children) {
       this.i = start;
@@ -272,112 +303,97 @@ class GrammarParser {
 
   parseExpr(expr: GrammarExpr): ParseTree[] | undefined {
     this.skipWs();
-    const start = this.i;
-    if (expr.kind === 'ref') {
-      const tree = this.parseRule(expr.name);
-      return tree ? [tree] : undefined;
-    }
-    if (expr.kind === 'literal') {
-      const value = String(expr.value);
-      if (value.length === 0 || this.input.startsWith(value, this.i)) {
-        this.i += value.length;
-        return [];
+    switch (expr.kind) {
+      case 'ref': {
+        const tree = this.parseRule(expr.name);
+        return tree ? [tree] : undefined;
       }
-      return undefined;
-    }
-    if (expr.kind === 'seq') {
-      const children: ParseTree[] = [];
-      for (const item of expr.items) {
-        const parsed = this.parseExpr(item);
-        if (!parsed) {
+      case 'literal': {
+        const literal = String(expr.value);
+        this.skipWs();
+        if (!this.input.startsWith(literal, this.i)) return undefined;
+        const start = this.i;
+        this.i += literal.length;
+        return [{ type: literal, start, end: this.i, children: [] }];
+      }
+      case 'seq': {
+        const start = this.i;
+        const out: ParseTree[] = [];
+        for (const item of expr.items) {
+          const children = this.parseExpr(item);
+          if (!children) {
+            this.i = start;
+            return undefined;
+          }
+          out.push(...children);
+        }
+        return out;
+      }
+      case 'choice': {
+        for (const option of expr.options) {
+          const start = this.i;
+          const children = this.parseExpr(option);
+          if (children) return children;
           this.i = start;
-          return undefined;
         }
-        children.push(...parsed);
-      }
-      return children;
-    }
-    if (expr.kind === 'choice') {
-      let best: ParseTree[] | undefined;
-      let bestEnd = -1;
-      for (const option of expr.options) {
-        this.i = start;
-        const parsed = this.parseExpr(option);
-        if (parsed && this.i > bestEnd) {
-          best = parsed;
-          bestEnd = this.i;
-        }
-      }
-      if (!best) {
-        this.i = start;
         return undefined;
       }
-      this.i = bestEnd;
-      return best;
-    }
-    if (expr.kind === 'repeat') {
-      const children: ParseTree[] = [];
-      for (;;) {
-        const before = this.i;
-        const parsed = this.parseExpr(expr.item);
-        if (!parsed || this.i === before) {
-          this.i = before;
-          return children;
-        }
-        children.push(...parsed);
-        if (expr.separator) {
-          const separatorStart = this.i;
-          if (!this.parseExpr(expr.separator)) {
-            this.i = separatorStart;
-            return children;
+      case 'repeat': {
+        const out: ParseTree[] = [];
+        for (;;) {
+          const start = this.i;
+          const children = this.parseExpr(expr.item);
+          if (!children || this.i === start) {
+            this.i = start;
+            return out;
           }
+          out.push(...children);
         }
       }
+      case 'token':
+        return undefined;
     }
-    this.i = start;
-    return undefined;
-  }
-
-  parsePrimitive(name: string): ParseTree | undefined {
-    this.skipWs();
-    const start = this.i;
-    try {
-      if (name === 'string' && this.input.charCodeAt(this.i) === 34) this.i = skipString(this.input, this.i);
-      else if (name === 'number' && (this.input.charCodeAt(this.i) === 45 || isDigit(this.input.charCodeAt(this.i)))) this.i = skipNumber(this.input, this.i);
-      else if (name === 'boolean' && this.input.startsWith('true', this.i)) this.i += 4;
-      else if (name === 'boolean' && this.input.startsWith('false', this.i)) this.i += 5;
-      else if (name === 'null' && this.input.startsWith('null', this.i)) this.i += 4;
-      else return undefined;
-    } catch {
-      this.i = start;
-      return undefined;
-    }
-    return { type: name, start, end: this.i, children: [] };
-  }
-
-  skipWs(): void {
-    while (this.i < this.input.length && isWs(this.input.charCodeAt(this.i))) this.i++;
-  }
-
-  fail(message: string): never {
-    throw new SyntaxError(message + ' at ' + this.i);
   }
 }
 
-function validateGrammar(input: string): void {
-  const parser = new GrammarParser(input);
-  const tree = parser.parseRule(grammar.root);
-  parser.skipWs();
-  if (!tree || parser.i !== input.length) parser.fail('Input does not match inferred grammar');
+function valueToTree(value: JsonValue, start: number, end: number): ParseTree {
+  if (Array.isArray(value)) {
+    return { type: 'value', start, end, children: [{ type: 'array', start, end, children: value.map((item) => valueToTree(item, start, end)) }] };
+  }
+  if (value && typeof value === 'object') {
+    return {
+      type: 'value',
+      start,
+      end,
+      children: [{
+        type: 'object',
+        start,
+        end,
+        children: Object.entries(value).map(([key, child]) => ({
+          type: 'member',
+          start,
+          end,
+          children: [{ type: 'string', start, end, children: [] }, valueToTree(child as JsonValue, start, end)],
+        })),
+      }],
+    };
+  }
+  return { type: 'value', start, end, children: [{ type: value === null ? 'null' : typeof value, start, end, children: [] }] };
+}
+
+function isConfiguredWhitespace(ch: number): boolean {
+  return ch === 32 || ch === 9 || ch === 13 || ch === 10;
 }
 
 function skipString(input: string, index: number): number {
   let i = index + 1;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
-    if (ch === 34) return i + 1;
+    if (ch === quoteChar) return i + 1;
     if (ch === 92) {
-      i += input.charCodeAt(i + 1) === 117 ? 6 : 2;
+      i += input.charCodeAt(i + 1) === 117
+        ? 6
+        : 2;
       continue;
     }
     if (ch < 32) throw new SyntaxError('Invalid string character at ' + i);
@@ -391,19 +407,18 @@ function skipNumber(input: string, index: number): number {
   if (input.charCodeAt(i) === 45) i++;
   if (input.charCodeAt(i) === 48) {
     i++;
-  } else if (isDigit1to9(input.charCodeAt(i))) {
-    i++;
-    while (isDigit(input.charCodeAt(i))) i++;
+    if (isDigit(input.charCodeAt(i))) throw new SyntaxError('Invalid number at ' + index);
   } else {
-    throw new SyntaxError('Invalid number at ' + index);
+    if (!isDigit(input.charCodeAt(i))) throw new SyntaxError('Invalid number at ' + index);
+    while (isDigit(input.charCodeAt(i))) i++;
   }
   if (input.charCodeAt(i) === 46) {
     i++;
     if (!isDigit(input.charCodeAt(i))) throw new SyntaxError('Invalid number at ' + index);
     while (isDigit(input.charCodeAt(i))) i++;
   }
-  const e = input.charCodeAt(i);
-  if (e === 69 || e === 101) {
+  const exp = input.charCodeAt(i);
+  if (exp === 69 || exp === 101) {
     i++;
     const sign = input.charCodeAt(i);
     if (sign === 43 || sign === 45) i++;
@@ -413,9 +428,13 @@ function skipNumber(input: string, index: number): number {
   return i;
 }
 
-function readHex4(input: string, index: number): number {
+function isDigit(ch: number): boolean {
+  return ch >= 48 && ch <= 57;
+}
+
+function readFixedHex(input: string, index: number, digits: number): number {
   let value = 0;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < digits; i++) {
     const ch = input.charCodeAt(index + i);
     const digit = ch >= 48 && ch <= 57 ? ch - 48 : ch >= 65 && ch <= 70 ? ch - 55 : ch >= 97 && ch <= 102 ? ch - 87 : -1;
     if (digit < 0) return -1;
@@ -426,22 +445,6 @@ function readHex4(input: string, index: number): number {
 
 function startsWithWord(input: string, index: number, word: string): boolean {
   return input.startsWith(word, index) && !isIdentifier(input.charCodeAt(index + word.length));
-}
-
-function punctType(ch: number): string {
-  return ch === 123 ? 'lbrace' : ch === 125 ? 'rbrace' : ch === 91 ? 'lbracket' : ch === 93 ? 'rbracket' : ch === 58 ? 'colon' : ch === 44 ? 'comma' : 'invalid';
-}
-
-function isWs(ch: number): boolean {
-  return ch === 32 || ch === 9 || ch === 10 || ch === 13;
-}
-
-function isDigit(ch: number): boolean {
-  return ch >= 48 && ch <= 57;
-}
-
-function isDigit1to9(ch: number): boolean {
-  return ch >= 49 && ch <= 57;
 }
 
 function isIdentifier(ch: number): boolean {

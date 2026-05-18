@@ -2,6 +2,11 @@ import { defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
   name: 'css',
+  runtime: {
+    tokenize: { kind: 'block-style' },
+    parse: { kind: 'block-style' },
+    stringify: { kind: 'block-style' },
+  },
   rules: [
     ex.rule('stylesheet')
       .from('%rule*%').node('stylesheet'),
@@ -42,6 +47,16 @@ export default defineSchema({
         .node('rule', (rule) => rule
           .field('selector', '.foo')
           .node('decl', (decl) => decl.field('prop', 'color').field('value', 'red'))))
+      .structure({
+        type: 'stylesheet',
+        rules: [
+          {
+            selector: '.foo',
+            declarations: [{ prop: 'color', value: 'red' }],
+          },
+        ],
+        hoverSelectors: [],
+      })
       .build(),
     ex('@media screen { .foo:hover { margin: calc(100% - 1px); } }')
       .token('atKeyword', '@media')
@@ -52,6 +67,12 @@ export default defineSchema({
           .node('rule', (rule) => rule
             .field('selector', '.foo:hover')
             .node('decl', (decl) => decl.field('prop', 'margin').field('value', 'calc(100% - 1px)')))))
+      .structure({
+        type: 'stylesheet',
+        atRules: [{ name: 'media', prelude: 'screen' }],
+        hoverSelectors: ['.foo:hover'],
+        declarations: [{ prop: 'margin', value: 'calc(100% - 1px)' }],
+      })
       .build(),
     ex('@charset "utf-8";')
       .token('atKeyword', '@charset')

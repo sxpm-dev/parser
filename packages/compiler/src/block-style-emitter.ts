@@ -1,35 +1,17 @@
-type CodegenInput = {
-  readonly ast: {
-    readonly rootAlias: string;
-    readonly nodeUnionAlias: string;
-    readonly nodes: readonly {
-      readonly type: string;
-      readonly alias: string;
-    }[];
-    readonly typeSource: string;
-  };
-  readonly recoveries?: readonly {
-    readonly input: string;
-    readonly reason: string;
-    readonly context?: string;
-    readonly on?: string;
-    readonly skipUntil: readonly string[];
-    readonly action: string;
-  }[];
-};
+import type { CodegenInput } from '@parser2/parser';
 
-export function generateCssParser(schema: CodegenInput): string {
+export function emitBlockStyleParser(schema: CodegenInput): string {
   const recoveryJson = JSON.stringify(schema.recoveries ?? []);
-  const rootAlias = schema.ast.rootAlias;
-  const nodeAlias = schema.ast.nodeUnionAlias;
-  const aliasFor = (type: string): string => schema.ast.nodes.find((node) => node.type === type)?.alias ?? `${schema.ast.nodeUnionAlias}`;
+  const rootAlias = schema.structure.rootAlias;
+  const nodeAlias = schema.structure.nodeUnionAlias;
+  const aliasFor = (type: string): string => schema.structure.nodes.find((node) => node.type === type)?.alias ?? `${schema.structure.nodeUnionAlias}`;
   const ruleAlias = aliasFor('rule');
   const atRuleAlias = aliasFor('atrule');
   const declAlias = aliasFor('decl');
   const commentAlias = aliasFor('comment');
   return `import type { Token } from '@parser2/parser';
 
-${schema.ast.typeSource}
+${schema.structure.typeSource}
 
 const recoverySchema = ${recoveryJson} as const;
 const declarationDropRecovery = recoverySchema.find((entry) => entry.context === 'Declaration' && entry.on === 'fail' && entry.action === 'drop');
@@ -83,7 +65,7 @@ function isImportant(value: string): number {
   return value.charCodeAt(i) === C.Bang ? i : -1;
 }
 
-class CssToken implements Token {
+class SpanToken implements Token {
   constructor(
     readonly type: string,
     private readonly input: string,
@@ -97,7 +79,7 @@ class CssToken implements Token {
 }
 
 function token(input: string, type: string, start: number, end: number): Token {
-  return new CssToken(type, input, start, end);
+  return new SpanToken(type, input, start, end);
 }
 
 export function countTokens(input: string): number {
@@ -323,11 +305,11 @@ export function tokenize(input: string): Token[] {
 }
 
 export function parse(input: string): ${rootAlias} {
-  const p = new CssParser(input);
+  const p = new BlockStyleParser(input);
   return { type: 'stylesheet', nodes: p.list(0) };
 }
 
-class CssParser {
+class BlockStyleParser {
   i: number;
   input: string;
   constructor(input: string) {
@@ -637,5 +619,3 @@ function stringifyNode(node: ${nodeAlias}): string {
 `;
 }
 
-export const emitParser = generateCssParser;
-export default emitParser;

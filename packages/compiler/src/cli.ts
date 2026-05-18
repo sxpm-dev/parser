@@ -16,7 +16,8 @@ if (!schema) {
   throw new Error(`No default schema export found in ${schemaPath}`);
 }
 
-const emitParser = ((mod.emitParser ?? mod.codegen ?? mod.generate) as ParserEmitter | undefined) ?? await loadAdjacentEmitter(schemaPath);
+const emitParser = ((mod.emitParser ?? mod.codegen ?? mod.generate) as ParserEmitter | undefined) ??
+  (schema.runtime ? undefined : await loadAdjacentEmitter(schemaPath));
 const outFile = await generateParser(schema, schemaPath, emitParser);
 console.log(`generated ${outFile}`);
 

@@ -77,71 +77,104 @@ function token(input: string, type: string, start: number, end: number): Token {
 }
 
 export function countTokens(input: string): number {
+  return countTokensFast(input);
+}
+
+function countTokensFast(input: string): number {
   let tokens = 0;
   let i = 0;
-  while (i < input.length) {
+  const len = input.length;
+  while (i < len) {
     const c = input.charCodeAt(i);
     if (c === C.Space || c === C.Tab || c === C.LF || c === C.CR || c === C.FF) {
       i++;
-      while (i < input.length) {
+      while (i < len) {
         const d = input.charCodeAt(i);
         if (d !== C.Space && d !== C.Tab && d !== C.LF && d !== C.CR && d !== C.FF) break;
         i++;
       }
       tokens++;
-    } else if (c === C.Slash && input.charCodeAt(i + 1) === C.Star) {
+      continue;
+    }
+    if (c === C.Slash && input.charCodeAt(i + 1) === C.Star) {
       i += 2;
-      while (i < input.length && !(input.charCodeAt(i) === C.Star && input.charCodeAt(i + 1) === C.Slash)) i++;
-      i = Math.min(input.length, i + 2);
+      while (i < len && !(input.charCodeAt(i) === C.Star && input.charCodeAt(i + 1) === C.Slash)) i++;
+      i = i + 2 > len ? len : i + 2;
       tokens++;
-    } else if (c === C.Lt && input.charCodeAt(i + 1) === C.Bang && input.charCodeAt(i + 2) === C.Minus && input.charCodeAt(i + 3) === C.Minus) {
+      continue;
+    }
+    if (c === C.Lt && input.charCodeAt(i + 1) === C.Bang && input.charCodeAt(i + 2) === C.Minus && input.charCodeAt(i + 3) === C.Minus) {
       i += 4;
       tokens++;
-    } else if (c === C.Minus && input.charCodeAt(i + 1) === C.Minus && input.charCodeAt(i + 2) === C.Gt) {
+      continue;
+    }
+    if (c === C.Minus && input.charCodeAt(i + 1) === C.Minus && input.charCodeAt(i + 2) === C.Gt) {
       i += 3;
       tokens++;
-    } else if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
+      continue;
+    }
+    if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
       i += 2;
       let n = 0;
       while (n < 6 && (isHex(input.charCodeAt(i)) || input.charCodeAt(i) === C.Question)) { i++; n++; }
       if (input.charCodeAt(i) === C.Minus) { i++; n = 0; while (n < 6 && isHex(input.charCodeAt(i))) { i++; n++; } }
       tokens++;
-    } else if (c === C.Quote || c === C.SQuote) {
+      continue;
+    }
+    if (c === C.Quote || c === C.SQuote) {
       const q = c; i++;
-      while (i < input.length) { const d = input.charCodeAt(i++); if (d === C.Backslash && !isNewline(input.charCodeAt(i))) i++; else if (d === q || isNewline(d)) break; }
+      while (i < len) { const d = input.charCodeAt(i++); if (d === C.Backslash && !isNewline(input.charCodeAt(i))) i++; else if (d === q || isNewline(d)) break; }
       tokens++;
-    } else if (c === C.At && startsIdent(input, i + 1)) {
-      i = consumeName(input, i + 1);
+      continue;
+    }
+    if (c === C.At) {
+      const next = input.charCodeAt(i + 1);
+      if (isAsciiNameStart(next) || next === C.Minus || next >= 128) {
+        i = consumeAsciiName(input, i + 1, len);
+      } else {
+        i++;
+      }
       tokens++;
-    } else if (c === C.Hash && (isName(input.charCodeAt(i + 1)) || validEscape(input, i + 1))) {
-      i = consumeName(input, i + 1);
+      continue;
+    }
+    if (c === C.Hash) {
+      const next = input.charCodeAt(i + 1);
+      if (isAsciiName(next) || next === C.Backslash || next >= 128) i = consumeAsciiName(input, i + 1, len);
+      else i++;
       tokens++;
-    } else if (isDigit(c) || (c === C.Dot && isDigit(input.charCodeAt(i + 1))) || ((c === C.Plus || c === C.Minus) && (isDigit(input.charCodeAt(i + 1)) || input.charCodeAt(i + 1) === C.Dot))) {
-      if (input.charCodeAt(i) === C.Plus || input.charCodeAt(i) === C.Minus) i++;
-      while (i < input.length && isDigit(input.charCodeAt(i))) i++;
-      if (input.charCodeAt(i) === C.Dot) { i++; while (i < input.length && isDigit(input.charCodeAt(i))) i++; }
+      continue;
+    }
+    if (isDigit(c) || (c === C.Dot && isDigit(input.charCodeAt(i + 1))) || ((c === C.Plus || c === C.Minus) && (isDigit(input.charCodeAt(i + 1)) || input.charCodeAt(i + 1) === C.Dot))) {
+      if (c === C.Plus || c === C.Minus) i++;
+      while (i < len && isDigit(input.charCodeAt(i))) i++;
+      if (input.charCodeAt(i) === C.Dot) { i++; while (i < len && isDigit(input.charCodeAt(i))) i++; }
       if ((input.charCodeAt(i) === 69 || input.charCodeAt(i) === 101) && (isDigit(input.charCodeAt(i + 1)) || ((input.charCodeAt(i + 1) === C.Plus || input.charCodeAt(i + 1) === C.Minus) && isDigit(input.charCodeAt(i + 2))))) {
         i += input.charCodeAt(i + 1) === C.Plus || input.charCodeAt(i + 1) === C.Minus ? 2 : 1;
-        while (i < input.length && isDigit(input.charCodeAt(i))) i++;
+        while (i < len && isDigit(input.charCodeAt(i))) i++;
       }
       if (input.charCodeAt(i) === C.Percent) i++;
-      else if (startsIdent(input, i)) i = consumeName(input, i);
+      else {
+        const d = input.charCodeAt(i);
+        if (isAsciiNameStart(d) || d === C.Minus || d === C.Backslash || d >= 128) i = consumeAsciiName(input, i, len);
+      }
       tokens++;
-    } else if (startsIdent(input, i)) {
+      continue;
+    }
+    if (isAsciiNameStart(c) || c === C.Minus || c === C.Backslash || c >= 128) {
       const start = i;
-      i = consumeName(input, i);
-      if (input.charCodeAt(i) === C.LParen && isUrlName(input, start, i)) {
+      i = consumeAsciiName(input, i, len);
+      if (input.charCodeAt(i) === C.LParen && i - start === 3 && (input.charCodeAt(start) | 32) === 117 && (input.charCodeAt(start + 1) | 32) === 114 && (input.charCodeAt(start + 2) | 32) === 108) {
         i++;
-        while (i < input.length) {
+        while (i < len) {
           const d = input.charCodeAt(i);
           if (d !== C.Space && d !== C.Tab && d !== C.LF && d !== C.CR && d !== C.FF) break;
           i++;
         }
         if (input.charCodeAt(i) !== C.Quote && input.charCodeAt(i) !== C.SQuote) {
-          while (i < input.length) {
+          while (i < len) {
             const d = input.charCodeAt(i);
             if (d === C.RParen) { i++; break; }
-            i += d === C.Backslash && validEscape(input, i) ? 2 : 1;
+            i += d === C.Backslash ? 2 : 1;
           }
           tokens++;
         } else {
@@ -150,12 +183,38 @@ export function countTokens(input: string): number {
       } else {
         tokens++;
       }
-    } else {
-      i++;
-      tokens++;
+      continue;
     }
+    i++;
+    tokens++;
   }
   return tokens;
+}
+
+function isAsciiNameStart(c: number): boolean {
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === C.Underscore;
+}
+
+function isAsciiName(c: number): boolean {
+  return isAsciiNameStart(c) || (c >= 48 && c <= 57) || c === C.Minus;
+}
+
+function consumeAsciiName(input: string, i: number, len: number): number {
+  while (i < len) {
+    const c = input.charCodeAt(i);
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === C.Minus || c === C.Underscore || c >= 128) {
+      i++;
+    } else if (c === C.Backslash) {
+      i += 2;
+      let hex = 0;
+      while (hex < 5 && i < len && isHex(input.charCodeAt(i))) { i++; hex++; }
+      const ws = input.charCodeAt(i);
+      if (ws === C.Space || ws === C.Tab || ws === C.LF || ws === C.CR || ws === C.FF) i++;
+    } else {
+      break;
+    }
+  }
+  return i;
 }
 
 export function tokenize(input: string): Token[] {

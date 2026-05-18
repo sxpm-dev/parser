@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, stringify, tokenize } from '../src/index.ts';
+import { countTokens, parse, stringify, tokenize } from '../src/index.ts';
 
 test('tokenizes a simple rule', () => {
   assert.deepEqual(
@@ -87,6 +87,15 @@ test('tokenizes core CSS Syntax tokens beyond simple identifiers', () => {
       'cdc',
     ],
   );
+});
+
+test('counts tokens with the same coverage as tokenize', () => {
+  const input = [
+    '.card, #panel { color: red; margin: 1px 2px; background: url("asset.svg"); }',
+    '@media screen and (max-width: 720px) { .card:hover { transform: translate(1px, 2px); } }',
+    '/* theme */ [data-state="open"]::before { content: "{ item; }"; padding: calc(100% - 1px); }',
+  ].join('\n');
+  assert.equal(countTokens(input), tokenize(input).length);
 });
 
 test('parses representative modern CSS constructs', () => {

@@ -449,3 +449,6 @@ function isIdentifier(ch: number): boolean {
 }
 `;
 }
+
+export const emitParser = generateJsonParser;
+export default emitParser;

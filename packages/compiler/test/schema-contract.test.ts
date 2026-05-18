@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import * as cssSchemaModule from '../../css/src/schema.ts';
@@ -109,7 +109,7 @@ test('parser packages expose examples and rules only', () => {
   }
 });
 
-test('parser packages do not own generators or parser-library runtime fallbacks', () => {
+test('parser packages do not use parser-library runtime fallbacks', () => {
   for (const name of ['css', 'js', 'json']) {
     assert.equal(existsSync(join(root, 'packages', name, 'src', 'generator.ts')), false);
 
@@ -121,7 +121,37 @@ test('parser packages do not own generators or parser-library runtime fallbacks'
     const generated = readFileSync(join(root, 'packages', name, 'src', '_generated', 'parser.ts'), 'utf8');
     assert.doesNotMatch(generated, /\bfrom ['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]/);
     assert.doesNotMatch(generated, /\brequire\(['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]\)/);
+
+    for (const source of packageSourceFiles(join(root, 'packages', name, 'src'))) {
+      const text = readFileSync(source, 'utf8');
+      assert.doesNotMatch(text, /\bfrom ['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]/);
+      assert.doesNotMatch(text, /\brequire\(['"](?:acorn|meriyah|esprima|@babel\/parser|postcss|css-tree|cssom|rework)['"]\)/);
+    }
   }
+});
+
+function packageSourceFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) {
+      out.push(...packageSourceFiles(path));
+    } else if (entry.endsWith('.ts')) {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
+test('compiler source stays domain agnostic', () => {
+  const srcDir = join(root, 'packages', 'compiler', 'src');
+  for (const file of ['index.ts', 'cli.ts']) {
+    const source = readFileSync(join(srcDir, file), 'utf8');
+    assert.doesNotMatch(source, /\b(?:Program|stylesheet|JsonDocument|Css[A-Z]\w*|Json[A-Z]\w*|Js[A-Z]\w*|generateCssParser|generateJsonParser)\b|['"](?:css|json|js)['"]/);
+  }
+  assert.equal(existsSync(join(srcDir, 'css-template.ts')), false);
+  assert.equal(existsSync(join(srcDir, 'json-template.ts')), false);
 });
 
 test('css generated parser carries schema recovery metadata', () => {

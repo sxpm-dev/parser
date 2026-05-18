@@ -1,7 +1,7 @@
 {
   "name": "@parser2/json",
   "version": "0.0.0",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "fetch": "echo '@parser2/json conformance suite is not configured yet'",
     "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",

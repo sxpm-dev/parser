@@ -53,6 +53,7 @@ function startsIdent(input: string, i: number): boolean {
   if (isNameStart(a)) return true;
   return a === C.Backslash && !isNewline(b) && c !== Number.NaN;
 }
+
 function consumeName(input: string, i: number): number {
   while (i < input.length) {
     const c = input.charCodeAt(i);
@@ -635,3 +636,6 @@ function stringifyNode(node: ${nodeAlias}): string {
 }
 `;
 }
+
+export const emitParser = generateCssParser;
+export default emitParser;

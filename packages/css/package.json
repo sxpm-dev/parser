@@ -10,7 +10,14 @@
     "test:unit": "tsx --test test/css.test.ts",
     "test:conformance": "PARSER2_CONFORMANCE=1 tsx --test test/conformance.test.ts",
     "bench:ast": "tsx bench/ast.ts",
-    "bench:tokenize": "tsx bench/tokenize.ts"
+    "bench:tokenize": "tsx bench/tokenize.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts css",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts css --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts css",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts css --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts css",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
   },
   "exports": {
     ".": "./dist/index.js"

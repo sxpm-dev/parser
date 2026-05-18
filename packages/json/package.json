@@ -9,7 +9,14 @@
     "test": "tsx --test test/*.test.ts",
     "test:unit": "tsx --test test/json.test.ts",
     "test:conformance": "echo '@parser2/json conformance suite is not configured yet'",
-    "bench": "tsx bench/index.ts"
+    "bench": "tsx bench/index.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts json",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts json --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts json",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts json --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts json",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
   },
   "exports": {
     ".": "./dist/index.js"

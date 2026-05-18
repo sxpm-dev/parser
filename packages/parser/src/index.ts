@@ -142,7 +142,7 @@ export type RuntimeSchema = {
   readonly stringify?: RuntimeStringify;
 };
 
-export type RuntimeTokenizer = RuntimeStandardTokenizer | RuntimeBlockStyleTokenizer;
+export type RuntimeTokenizer = RuntimeStandardTokenizer | RuntimeBlockStyleTokenizer | RuntimeStatementListTokenizer;
 
 export type RuntimeStandardTokenizer = {
   readonly kind: 'standard';
@@ -155,6 +155,11 @@ export type RuntimeStandardTokenizer = {
 
 export type RuntimeBlockStyleTokenizer = {
   readonly kind: 'block-style';
+};
+
+export type RuntimeStatementListTokenizer = {
+  readonly kind: 'statement-list';
+  readonly keywords: readonly string[];
 };
 
 export type RuntimeWhitespaceToken = {
@@ -194,7 +199,7 @@ export type RuntimePunctuatorToken = {
   readonly text: string;
 };
 
-export type RuntimeParser = RuntimeValueDocumentParser | RuntimeBlockStyleParser;
+export type RuntimeParser = RuntimeValueDocumentParser | RuntimeBlockStyleParser | RuntimeStatementListParser;
 
 export type RuntimeValueDocumentParser = {
   readonly kind: 'value-document';
@@ -223,7 +228,25 @@ export type RuntimeBlockStyleParser = {
   readonly kind: 'block-style';
 };
 
-export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify;
+export type RuntimeStatementListParser = {
+  readonly kind: 'statement-list';
+  readonly programAlias: string;
+  readonly statementAlias: string;
+  readonly sourceTypeField: string;
+  readonly bodyField: string;
+  readonly moduleSourceType: string;
+  readonly scriptSourceType: string;
+  readonly scriptIfStatementType: string;
+  readonly statements: readonly RuntimeStatementRule[];
+  readonly blockStartKeywords: readonly string[];
+};
+
+export type RuntimeStatementRule = {
+  readonly type: string;
+  readonly startsWith: readonly string[];
+};
+
+export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify | RuntimeStatementListStringify;
 
 export type RuntimeNativeJsonStringify = {
   readonly kind: 'native-json';
@@ -232,6 +255,11 @@ export type RuntimeNativeJsonStringify = {
 
 export type RuntimeBlockStyleStringify = {
   readonly kind: 'block-style';
+};
+
+export type RuntimeStatementListStringify = {
+  readonly kind: 'statement-list';
+  readonly bodyField: string;
 };
 
 export type Token = {

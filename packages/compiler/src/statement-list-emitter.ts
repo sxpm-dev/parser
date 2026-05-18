@@ -1,6 +1,22 @@
 import type { CodegenInput } from '@parser2/parser';
 
-export function emitParser(_schema: CodegenInput): string {
+export function emitStatementListParser(schema: CodegenInput): string {
+  const tokenizer = schema.runtime?.tokenize;
+  const parser = schema.runtime?.parse;
+  const stringify = schema.runtime?.stringify;
+  if (tokenizer?.kind !== 'statement-list' || parser?.kind !== 'statement-list' || stringify?.kind !== 'statement-list') {
+    throw new Error(`Schema ${schema.name} does not declare a statement-list runtime`);
+  }
+  const programAlias = parser.programAlias;
+  const statementAlias = parser.statementAlias;
+  const rootType = schema.structure.rootType;
+  const keywordCases = tokenizer.keywords.map((keyword) => `    case ${JSON.stringify(keyword)}:`).join('\n');
+  const statementBranches = parser.statements.map((statement) => {
+    const checks = statement.startsWith.map((keyword) => `startsWithWord(input, index, ${JSON.stringify(keyword)})`).join(' || ');
+    return `  if (${checks}) return ${JSON.stringify(statement.type)};`;
+  }).join('\n');
+  const blockStartCheck = parser.blockStartKeywords.map((keyword) => `startsWithWord(input, s, ${JSON.stringify(keyword)})`).join(' || ') || 'false';
+
   return String.raw`export type Token = {
   readonly type: string;
   readonly value: string;
@@ -8,15 +24,15 @@ export function emitParser(_schema: CodegenInput): string {
   readonly end: number;
 };
 
-export type JsNode = {
-  readonly type: 'Program';
-  readonly sourceType: 'script' | 'module';
-  readonly body: readonly JsStatement[];
+export type ${programAlias} = {
+  readonly type: ${JSON.stringify(rootType)};
+  readonly ${parser.sourceTypeField}: ${JSON.stringify(parser.scriptSourceType)} | ${JSON.stringify(parser.moduleSourceType)};
+  readonly ${parser.bodyField}: readonly ${statementAlias}[];
   readonly source?: string;
   readonly [key: string]: unknown;
 };
 
-export type JsStatement = {
+export type ${statementAlias} = {
   readonly type: string;
   readonly start: number;
   readonly end: number;
@@ -65,28 +81,15 @@ export function tokenize(input: string): Token[] {
 
 function keywordToken(value: string): string {
   switch (value) {
-    case 'const':
-    case 'let':
-    case 'var':
-    case 'function':
-    case 'if':
-    case 'for':
-    case 'switch':
-    case 'import':
-    case 'export':
-    case 'class':
-    case 'with':
-    case 'using':
-    case 'await':
-    case 'return':
+${keywordCases}
       return value;
     default:
       return 'name';
   }
 }
 
-export function parse(input: string): JsNode {
-  const body: JsStatement[] = [];
+export function parse(input: string): ${programAlias} {
+  const body: ${statementAlias}[] = [];
   let statementStart = skipTrivia(input, 0);
   let parenDepth = 0;
   let bracketDepth = 0;
@@ -141,33 +144,25 @@ export function parse(input: string): JsNode {
     i++;
   }
   if (skipTrivia(input, statementStart) < input.length) body.push(makeStatement(input, statementStart, input.length));
-  const sourceType = body.some((node) => node.type === 'WithStatement') ? 'script' : 'module';
-  const ast = { type: 'Program', sourceType, body } as JsNode;
+  const sourceType = body.some((node) => node.type === ${JSON.stringify(parser.scriptIfStatementType)}) ? ${JSON.stringify(parser.scriptSourceType)} : ${JSON.stringify(parser.moduleSourceType)};
+  const ast = { type: ${JSON.stringify(rootType)}, ${parser.sourceTypeField}: sourceType, ${parser.bodyField}: body } as ${programAlias};
   Object.defineProperty(ast, 'source', { value: input, enumerable: false });
   return ast;
 }
 
-function makeStatement(input: string, start: number, end: number): JsStatement {
+function makeStatement(input: string, start: number, end: number): ${statementAlias} {
   const s = skipTrivia(input, start);
   return { type: statementType(input, s), start, end, raw: input.slice(start, end) };
 }
 
 function statementType(input: string, index: number): string {
-  if (startsWithWord(input, index, 'import')) return 'ImportDeclaration';
-  if (startsWithWord(input, index, 'export')) return 'ExportNamedDeclaration';
-  if (startsWithWord(input, index, 'const') || startsWithWord(input, index, 'let') || startsWithWord(input, index, 'var') || startsWithWord(input, index, 'using')) return 'VariableDeclaration';
-  if (startsWithWord(input, index, 'if')) return 'IfStatement';
-  if (startsWithWord(input, index, 'for')) return 'ForStatement';
-  if (startsWithWord(input, index, 'switch')) return 'SwitchStatement';
-  if (startsWithWord(input, index, 'function')) return 'FunctionDeclaration';
-  if (startsWithWord(input, index, 'class')) return 'ClassDeclaration';
-  if (startsWithWord(input, index, 'with')) return 'WithStatement';
+${statementBranches}
   return 'ExpressionStatement';
 }
 
 function isBlockStatementStart(input: string, start: number): boolean {
   const s = skipTrivia(input, start);
-  return startsWithWord(input, s, 'function') || startsWithWord(input, s, 'class') || startsWithWord(input, s, 'if') || startsWithWord(input, s, 'for') || startsWithWord(input, s, 'while') || startsWithWord(input, s, 'switch') || startsWithWord(input, s, 'try') || startsWithWord(input, s, 'with') || startsWithWord(input, s, 'export');
+  return ${blockStartCheck};
 }
 
 function startsWithWord(input: string, index: number, word: string): boolean {
@@ -252,11 +247,11 @@ function isIdentifierPart(ch: number): boolean {
   return isIdentifierStart(ch) || isDigit(ch);
 }
 
-export function stringify(ast: JsNode): string {
+export function stringify(ast: ${programAlias}): string {
   if (typeof ast.source === 'string') return ast.source;
-  return ast.body.map((node) => node.raw ?? '').join('');
+  return ast.${stringify.bodyField}.map((node) => node.raw ?? '').join('');
 }
 `;
 }
 
-export default emitParser;
+export default emitStatementListParser;

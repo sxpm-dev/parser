@@ -1,5 +1,6 @@
 import type { CodegenInput, RuntimeStandardTokenizer } from '@parser2/parser';
 import { emitBlockStyleParser } from './block-style-emitter.js';
+import { emitStatementListParser } from './statement-list-emitter.js';
 
 export function emitGenericParser(schema: CodegenInput): string {
   if (!schema.runtime?.tokenize || !schema.runtime.parse || !schema.runtime.stringify) {
@@ -11,6 +12,13 @@ export function emitGenericParser(schema: CodegenInput): string {
     schema.runtime.stringify.kind === 'block-style'
   ) {
     return emitBlockStyleParser(schema);
+  }
+  if (
+    schema.runtime.tokenize.kind === 'statement-list' &&
+    schema.runtime.parse.kind === 'statement-list' &&
+    schema.runtime.stringify.kind === 'statement-list'
+  ) {
+    return emitStatementListParser(schema);
   }
   return emitRuntimeParser(schema);
 }

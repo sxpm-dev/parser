@@ -2,6 +2,38 @@ import { defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
   name: 'js',
+  runtime: {
+    tokenize: {
+      kind: 'statement-list',
+      keywords: ['const', 'let', 'var', 'function', 'if', 'for', 'switch', 'import', 'export', 'class', 'with', 'using', 'await', 'return'],
+    },
+    parse: {
+      kind: 'statement-list',
+      programAlias: 'JsNode',
+      statementAlias: 'JsStatement',
+      sourceTypeField: 'sourceType',
+      bodyField: 'body',
+      moduleSourceType: 'module',
+      scriptSourceType: 'script',
+      scriptIfStatementType: 'WithStatement',
+      statements: [
+        { type: 'ImportDeclaration', startsWith: ['import'] },
+        { type: 'ExportNamedDeclaration', startsWith: ['export'] },
+        { type: 'VariableDeclaration', startsWith: ['const', 'let', 'var', 'using'] },
+        { type: 'IfStatement', startsWith: ['if'] },
+        { type: 'ForStatement', startsWith: ['for'] },
+        { type: 'SwitchStatement', startsWith: ['switch'] },
+        { type: 'FunctionDeclaration', startsWith: ['function'] },
+        { type: 'ClassDeclaration', startsWith: ['class'] },
+        { type: 'WithStatement', startsWith: ['with'] },
+      ],
+      blockStartKeywords: ['function', 'class', 'if', 'for', 'while', 'switch', 'try', 'with', 'export'],
+    },
+    stringify: {
+      kind: 'statement-list',
+      bodyField: 'body',
+    },
+  },
   rules: [
     ex.rule('Program')
       .from('%Script%').node('Program')

@@ -10,8 +10,8 @@ export type Token = {
 };
 
 export type JsNode = {
-  readonly type: 'Program';
-  readonly sourceType: 'script' | 'module';
+  readonly type: "Program";
+  readonly sourceType: "script" | "module";
   readonly body: readonly JsStatement[];
   readonly source?: string;
   readonly [key: string]: unknown;
@@ -66,20 +66,20 @@ export function tokenize(input: string): Token[] {
 
 function keywordToken(value: string): string {
   switch (value) {
-    case 'const':
-    case 'let':
-    case 'var':
-    case 'function':
-    case 'if':
-    case 'for':
-    case 'switch':
-    case 'import':
-    case 'export':
-    case 'class':
-    case 'with':
-    case 'using':
-    case 'await':
-    case 'return':
+    case "const":
+    case "let":
+    case "var":
+    case "function":
+    case "if":
+    case "for":
+    case "switch":
+    case "import":
+    case "export":
+    case "class":
+    case "with":
+    case "using":
+    case "await":
+    case "return":
       return value;
     default:
       return 'name';
@@ -142,8 +142,8 @@ export function parse(input: string): JsNode {
     i++;
   }
   if (skipTrivia(input, statementStart) < input.length) body.push(makeStatement(input, statementStart, input.length));
-  const sourceType = body.some((node) => node.type === 'WithStatement') ? 'script' : 'module';
-  const ast = { type: 'Program', sourceType, body } as JsNode;
+  const sourceType = body.some((node) => node.type === "WithStatement") ? "script" : "module";
+  const ast = { type: "Program", sourceType: sourceType, body: body } as JsNode;
   Object.defineProperty(ast, 'source', { value: input, enumerable: false });
   return ast;
 }
@@ -154,21 +154,21 @@ function makeStatement(input: string, start: number, end: number): JsStatement {
 }
 
 function statementType(input: string, index: number): string {
-  if (startsWithWord(input, index, 'import')) return 'ImportDeclaration';
-  if (startsWithWord(input, index, 'export')) return 'ExportNamedDeclaration';
-  if (startsWithWord(input, index, 'const') || startsWithWord(input, index, 'let') || startsWithWord(input, index, 'var') || startsWithWord(input, index, 'using')) return 'VariableDeclaration';
-  if (startsWithWord(input, index, 'if')) return 'IfStatement';
-  if (startsWithWord(input, index, 'for')) return 'ForStatement';
-  if (startsWithWord(input, index, 'switch')) return 'SwitchStatement';
-  if (startsWithWord(input, index, 'function')) return 'FunctionDeclaration';
-  if (startsWithWord(input, index, 'class')) return 'ClassDeclaration';
-  if (startsWithWord(input, index, 'with')) return 'WithStatement';
+  if (startsWithWord(input, index, "import")) return "ImportDeclaration";
+  if (startsWithWord(input, index, "export")) return "ExportNamedDeclaration";
+  if (startsWithWord(input, index, "const") || startsWithWord(input, index, "let") || startsWithWord(input, index, "var") || startsWithWord(input, index, "using")) return "VariableDeclaration";
+  if (startsWithWord(input, index, "if")) return "IfStatement";
+  if (startsWithWord(input, index, "for")) return "ForStatement";
+  if (startsWithWord(input, index, "switch")) return "SwitchStatement";
+  if (startsWithWord(input, index, "function")) return "FunctionDeclaration";
+  if (startsWithWord(input, index, "class")) return "ClassDeclaration";
+  if (startsWithWord(input, index, "with")) return "WithStatement";
   return 'ExpressionStatement';
 }
 
 function isBlockStatementStart(input: string, start: number): boolean {
   const s = skipTrivia(input, start);
-  return startsWithWord(input, s, 'function') || startsWithWord(input, s, 'class') || startsWithWord(input, s, 'if') || startsWithWord(input, s, 'for') || startsWithWord(input, s, 'while') || startsWithWord(input, s, 'switch') || startsWithWord(input, s, 'try') || startsWithWord(input, s, 'with') || startsWithWord(input, s, 'export');
+  return startsWithWord(input, s, "function") || startsWithWord(input, s, "class") || startsWithWord(input, s, "if") || startsWithWord(input, s, "for") || startsWithWord(input, s, "while") || startsWithWord(input, s, "switch") || startsWithWord(input, s, "try") || startsWithWord(input, s, "with") || startsWithWord(input, s, "export");
 }
 
 function startsWithWord(input: string, index: number, word: string): boolean {

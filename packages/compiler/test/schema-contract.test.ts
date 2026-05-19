@@ -5,7 +5,7 @@ import test from 'node:test';
 import * as cssSchemaModule from '../../css/src/schema.ts';
 import * as jsonSchemaModule from '../../json/src/schema.ts';
 import * as jsSchemaModule from '../../js/src/schema.ts';
-import type { ParserSchema } from '@parser2/parser';
+import { cap, defineSchema, ex, node, type ParserSchema } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 
 const cssSchema = readSchema(cssSchemaModule);
@@ -81,12 +81,68 @@ test('css schema declares recovery examples as parser policy', () => {
 
 test('pattern slots infer repeat modifiers', () => {
   const js = inferSchema(jsSchema);
-  const script = js.grammar?.rules.find((rule) => rule.name === 'Script');
-  assert.deepEqual(script?.expr, { kind: 'repeat', item: { kind: 'ref', name: 'StatementListItem' } });
+  const program = js.grammar?.rules.find((rule) => rule.name === 'Program');
+  assert.deepEqual(program?.expr, { kind: 'repeat', item: { kind: 'ref', name: 'StatementListItem' } });
 
   const css = inferSchema(cssSchema);
   const stylesheet = css.grammar?.rules.find((rule) => rule.name === 'stylesheet');
   assert.deepEqual(stylesheet?.expr, { kind: 'repeat', item: { kind: 'ref', name: 'rule' } });
+});
+
+test('js grammar is inferred from example-owned generalizations', () => {
+  const js = inferSchema(jsSchema);
+  assert.ok(js.patterns.some((pattern) => pattern.rule === 'Statement' && pattern.pattern === 'if ( %Expression% ) %Statement%'));
+  assert.ok(js.patterns.some((pattern) => pattern.rule === 'Expression' && pattern.pattern === '( %Expression% )'));
+});
+
+test('example chains carry captures, syntax, structure, and recovery together', () => {
+  const schema = defineSchema({
+    name: 'mini-css',
+    examples: [
+      ex('.foo {}')
+        .capture('selector', '.foo')
+        .syntax('Rule', (s) => s.seq(
+          s.capture('selector', s.selector()),
+          s.token('{'),
+          s.repeat('Declaration'),
+          s.token('}'),
+        ))
+        .recover((recovery) => recovery
+          .syncAfter(['}', ';'])
+          .missing('}', 'close rule block'))
+        .structure({
+          type: 'Rule',
+          selector: cap('selector'),
+          declarations: [node('Declaration')],
+        })
+        .node('Rule')
+        .build(),
+    ],
+  });
+
+  const inferred = inferSchema(schema);
+  assert.deepEqual(schema.examples[0]?.captures, [{ name: 'selector', pattern: '.foo' }]);
+  assert.ok(inferred.patterns.some((pattern) => pattern.rule === 'Rule' && pattern.pattern === '%selector% { %Declaration*% }'));
+  assert.deepEqual(inferred.recoveries[0]?.missing, [{ token: '}', reason: 'close rule block' }]);
+  assert.deepEqual(inferred.structure.exampleOutputs[0], {
+    type: 'Rule',
+    selector: cap('selector'),
+    declarations: [node('Declaration')],
+  });
+});
+
+test('invalid examples remain assertions and do not infer validator patterns', () => {
+  const schema = defineSchema({
+    name: 'invalid-assertion',
+    examples: [
+      ex('ok').syntax('Root', (s) => s.token('ok')).node('Root').build(),
+      ex('bad').invalid('not covered by valid grammar').build(),
+    ],
+  });
+
+  const inferred = inferSchema(schema);
+  assert.equal('invalidPatterns' in inferred, false);
+  assert.deepEqual(inferred.patterns.map((pattern) => pattern.pattern), ['ok']);
 });
 
 test('json schema infers recursive grammar from example patterns', () => {
@@ -122,7 +178,7 @@ test('json schema infers recursive grammar from example patterns', () => {
 test('parser packages expose examples and rules only', () => {
   for (const schema of [cssSchema, jsSchema, jsonSchema]) {
     assert.ok(schema.examples.length > 0);
-    assert.ok((schema.rules?.length ?? 0) > 0);
+    assert.ok((schema.rules?.length ?? 0) > 0 || schema.examples.some((example) => (example.generalizations?.length ?? 0) > 0));
     assert.equal('grammar' in (schema as unknown as Record<string, unknown>), false);
     assert.equal('standard' in (schema as unknown as Record<string, unknown>), false);
   }

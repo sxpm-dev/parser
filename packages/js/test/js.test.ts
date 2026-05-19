@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, stringify, tokenize } from '../src/index.ts';
+import { parse, parseWithRecovery, stringify, tokenize } from '../src/index.ts';
 
 test('tokenizes basic JavaScript through the generated spec parser', () => {
   assert.deepEqual(
@@ -70,6 +70,62 @@ test('validates schema-declared hashbang placement', () => {
   assert.doesNotThrow(() => parse('#!/usr/bin/env node\nconst ok = 1;'));
   assert.throws(() => parse(' #!\n'), SyntaxError);
   assert.throws(() => parse('\\u0023!'), SyntaxError);
+});
+
+test('accepts expression families through example-owned grammar generalizations', () => {
+  assert.doesNotThrow(() => parse('if (a) {}'));
+  assert.doesNotThrow(() => parse('if (a == true) {}'));
+  assert.doesNotThrow(() => parse('if (a === true) {}'));
+  assert.doesNotThrow(() => parse('if (!!a === !0) {}'));
+  assert.doesNotThrow(() => parse('if (((a))) {}'));
+  assert.doesNotThrow(() => parse('if ((((((1)))))) {}'));
+  assert.doesNotThrow(() => parse('if ((() => 1)()) {}'));
+});
+
+test('parses slash literals without treating delimiters as groups', () => {
+  assert.doesNotThrow(() => parse('const r = /}/; const s = /]/;'));
+  assert.doesNotThrow(() => parse('/[\\]/]/.test(value);'));
+});
+
+test('accepts representative for headers without semantic validation', () => {
+  assert.doesNotThrow(() => parse('for (let i = 0; i < 3; i++) {}'));
+  assert.doesNotThrow(() => parse('for (const item of items) {}'));
+});
+
+test('accepts import call families covered by example-owned grammar', () => {
+  assert.doesNotThrow(() => parse("import('x');"));
+  assert.doesNotThrow(() => parse("import('x'); import('x', { with: { type: 'json' } });"));
+  assert.doesNotThrow(() => parse("import('x', { with: { type: 'json' } },); import.meta.url;"));
+  assert.doesNotThrow(() => parse('new import.meta(); ({ get import() { return 1; } });'));
+  assert.doesNotThrow(() => parse("import.source('x'); import.defer('x');"));
+  assert.doesNotThrow(() => parse('object.import();'));
+});
+
+test('keeps declaration parsing syntax-focused for this phase', () => {
+  assert.doesNotThrow(() => parse('const x = 1, y = 2;'));
+  assert.throws(() => parse('const x;'), SyntaxError);
+  assert.doesNotThrow(() => parse('for (const x of xs) {}'));
+  assert.doesNotThrow(() => parse('{ using\nlet = "value"; }'));
+  assert.doesNotThrow(() => parse('async function f() { await using[x]; }'));
+  assert.throws(() => parse('using resource;'), SyntaxError);
+});
+
+test('rejects declaration headers that do not match inferred syntax grammar', () => {
+  assert.doesNotThrow(() => parse('function foo(a){}'));
+  assert.throws(() => parse('function foo(1){}'), SyntaxError);
+  assert.doesNotThrow(() => parse('class A {}'));
+  assert.throws(() => parse('class (a){}'), SyntaxError);
+  assert.throws(() => parse('fu(a){}'), SyntaxError);
+});
+
+test('recovers partial AST, tokens, and errors for incomplete syntax', () => {
+  assert.throws(() => parse('if (a) {'), SyntaxError);
+  const recovered = parseWithRecovery('if (a) {');
+  assert.equal(recovered.ast.type, 'Program');
+  assert.ok(recovered.ast.body.length >= 1);
+  assert.ok(recovered.tokens.length >= 4);
+  assert.equal(recovered.errors.length, 1);
+  assert.equal(recovered.errors[0]?.action, 'partial');
 });
 
 test('stringifies modified ESTree-compatible programs', () => {

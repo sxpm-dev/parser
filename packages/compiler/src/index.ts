@@ -35,6 +35,7 @@ export function inferSchema(schema: ParserSchema): InferredSchema {
   for (const example of schema.examples) visit(example.steps);
 
   const structure = inferStructure(schema);
+  const patternRules = collectPatternRules(schema);
   return {
     name: schema.name,
     tokens: [...tokens].sort(),
@@ -44,9 +45,28 @@ export function inferSchema(schema: ParserSchema): InferredSchema {
     structure,
     ast: structure,
     recoveries: inferRecoveries(schema),
-    grammar: inferGrammarFromPatterns(schema.rules),
+    patterns: inferPatterns(patternRules),
+    grammar: inferGrammarFromPatterns(patternRules),
     runtime: schema.runtime,
   };
+}
+
+function inferPatterns(rules: readonly PatternRule[]): CodegenInput['patterns'] {
+  return rules.flatMap((rule) =>
+    rule.alternatives
+      .map((alternative) => ({
+        rule: rule.name,
+        pattern: alternative.pattern,
+        nodeType: alternative.steps.find((step) => step.kind === 'node')?.type,
+      })),
+  );
+}
+
+function collectPatternRules(schema: ParserSchema): PatternRule[] {
+  return [
+    ...(schema.rules ?? []),
+    ...schema.examples.flatMap((example) => example.generalizations ?? []),
+  ];
 }
 
 type AstOccurrence = {
@@ -84,7 +104,7 @@ function inferStructure(schema: ParserSchema): InferredStructure {
 
   const nodeTypes = [...occurrences.keys()].sort();
   const rootType =
-    nodeTypes.find((type) => type === schema.rules?.[0]?.name) ??
+    nodeTypes.find((type) => type === collectPatternRules(schema)[0]?.name) ??
     topLevelNodes[0] ??
     nodeTypes[0] ??
     'Root';
@@ -184,15 +204,17 @@ function inferRecoveries(schema: ParserSchema): InferredRecovery[] {
       context: example.recovery?.context,
       on: example.recovery?.on,
       skipUntil: example.recovery?.skipUntil ?? [],
+      missing: example.recovery?.missing ?? [],
       action: example.recovery?.action ?? 'drop',
     }));
 }
 
 function inferGrammarFromPatterns(rules: readonly PatternRule[] | undefined): CodegenInput['grammar'] {
   if (!rules || rules.length === 0) return undefined;
+  const validRules = rules.filter((rule) => rule.alternatives.length > 0);
   return {
-    root: rules[0]?.name ?? '',
-    rules: rules.map((rule) => ({
+    root: validRules[0]?.name ?? '',
+    rules: validRules.map((rule) => ({
       name: rule.name,
       expr: rule.alternatives.length === 1
         ? inferPatternExpr(rule.alternatives[0]?.pattern ?? '')

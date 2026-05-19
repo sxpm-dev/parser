@@ -89,6 +89,20 @@ test('tokenizes core CSS Syntax tokens beyond simple identifiers', () => {
   );
 });
 
+test('tokenizes selector matcher and column tokens', () => {
+  assert.deepEqual(
+    tokenize('~= |= ^= $= *= ||').filter((token) => token.type !== 'whitespace').map((token) => [token.type, token.value]),
+    [
+      ['includeMatch', '~='],
+      ['dashMatch', '|='],
+      ['prefixMatch', '^='],
+      ['suffixMatch', '$='],
+      ['substringMatch', '*='],
+      ['column', '||'],
+    ],
+  );
+});
+
 test('counts tokens with the same coverage as tokenize', () => {
   const input = [
     '.card, #panel { color: red; margin: 1px 2px; background: url("asset.svg"); }',
@@ -97,6 +111,37 @@ test('counts tokens with the same coverage as tokenize', () => {
     '@\\63\\68\\61\\72\\73\\65\\74 "Shift-JIS"; .example { color: red; }',
   ].join('\n');
   assert.equal(countTokens(input), tokenize(input).length);
+});
+
+test('parses full CSS syntax edge cases without false rejects', () => {
+  const ast = parse(`
+    .card {
+      &:hover, & > img { color: red; }
+      .title { margin: 0; }
+      --theme: { color: red };
+      background: paint(worklet, { fallback: blue });
+    }
+    svg|a, col || td, *|*, [data-state~="open"][href$=".pdf"] {
+      color: red;
+    }
+  `);
+
+  assert.equal(ast.nodes.length, 2);
+  const card = ast.nodes[0];
+  assert.equal(card?.type, 'rule');
+  assert.equal(card.selector, '.card');
+  assert.deepEqual(card.nodes.map((node) => node.type), ['rule', 'rule', 'decl', 'decl']);
+  assert.equal(card.nodes[0]?.type, 'rule');
+  assert.equal(card.nodes[0]?.selector, '&:hover, & > img');
+  assert.equal(card.nodes[2]?.type, 'decl');
+  assert.equal(card.nodes[2]?.prop, '--theme');
+  assert.equal(card.nodes[2]?.value, '{ color: red }');
+  assert.equal(card.nodes[3]?.type, 'decl');
+  assert.equal(card.nodes[3]?.value, 'paint(worklet, { fallback: blue })');
+
+  const namespaced = ast.nodes[1];
+  assert.equal(namespaced?.type, 'rule');
+  assert.equal(namespaced.selector, 'svg|a, col || td, *|*, [data-state~="open"][href$=".pdf"]');
 });
 
 test('parses representative modern CSS constructs', () => {

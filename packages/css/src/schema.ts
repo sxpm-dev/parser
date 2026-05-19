@@ -90,6 +90,30 @@ export default defineSchema({
           .field('selector', '.foo')
           .node('decl', (decl) => decl.field('prop', 'color').field('value', 'red').field('important', true))))
       .build(),
+    ex('.card { &:hover, & > img { color: red; } }')
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', '.card')
+          .node('rule', (nested) => nested
+            .field('selector', '&:hover, & > img')
+            .node('decl', (decl) => decl.field('prop', 'color').field('value', 'red')))))
+      .build(),
+    ex('svg|a, col || td, *|* { fill: red; }')
+      .token('column', '||')
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', 'svg|a, col || td, *|*')
+          .node('decl', (decl) => decl.field('prop', 'fill').field('value', 'red'))))
+      .build(),
+    ex('[data-state~="open"][href$=".pdf"] { --theme: { color: red }; color: blue; }')
+      .token('includeMatch', '~=')
+      .token('suffixMatch', '$=')
+      .node('stylesheet', (sheet) => sheet
+        .node('rule', (rule) => rule
+          .field('selector', '[data-state~="open"][href$=".pdf"]')
+          .node('decl', (decl) => decl.field('prop', '--theme').field('value', '{ color: red }'))
+          .node('decl', (decl) => decl.field('prop', 'color').field('value', 'blue'))))
+      .build(),
     ex('.a { color red; background: blue; }')
       .invalid('missing-colon')
       .recover((recovery) => recovery

@@ -26,6 +26,10 @@ export type CssConformanceResult = {
   jsStrings: number;
   skippedFiles: number;
   rejected: number;
+  expectedRejects: number;
+  unknownRejects: number;
+  falseRejects: number;
+  falseAccepts: number;
   passed: number;
   failed: number;
   failures: string[];
@@ -44,6 +48,10 @@ export async function runCssConformance(options: CssConformanceOptions): Promise
     jsStrings: 0,
     skippedFiles: 0,
     rejected: 0,
+    expectedRejects: 0,
+    unknownRejects: 0,
+    falseRejects: 0,
+    falseAccepts: 0,
     passed: 0,
     failed: 0,
     failures: [],
@@ -62,6 +70,7 @@ export async function runCssConformance(options: CssConformanceOptions): Promise
       try {
         parse(snippet.parseText);
         if (snippet.expectFailure) {
+          result.falseAccepts++;
           throw new Error('expected parse failure, got success');
         }
         const tokens = tokenize(snippet.tokenText);
@@ -73,7 +82,21 @@ export async function runCssConformance(options: CssConformanceOptions): Promise
       } catch (error) {
         if (error instanceof SyntaxError) {
           result.rejected++;
-          result.passed++;
+          if (snippet.expectFailure) {
+            result.expectedRejects++;
+            result.passed++;
+          } else if (snippet.expectFailure === false) {
+            result.falseRejects++;
+            result.failed++;
+            if (result.failures.length < 25) {
+              result.failures.push(
+                `case=${caseNumber} file=${relative(cwd, file)} kind=${snippet.kind} error=${error.name}: ${error.message.split('\n')[0]} snippet=${preview(snippet.tokenText)}`,
+              );
+            }
+          } else {
+            result.unknownRejects++;
+            result.passed++;
+          }
           continue;
         }
         result.failed++;
@@ -94,7 +117,7 @@ export function formatCssConformance(result: CssConformanceResult, root: string,
   const lines = [
     'WPT CSS extraction conformance',
     `root: ${relative(cwd, root)}`,
-    `tests=${result.snippets} accepted=${result.passed - result.rejected} rejected=${result.rejected} failed=${result.failed} skippedFiles=${result.skippedFiles}`,
+    `tests=${result.snippets} accepted=${result.passed - result.rejected} rejected=${result.rejected} expectedRejects=${result.expectedRejects} unknownRejects=${result.unknownRejects} falseRejects=${result.falseRejects} falseAccepts=${result.falseAccepts} failed=${result.failed} skippedFiles=${result.skippedFiles}`,
     ...result.failures.map((failure) => `FAIL ${failure}`),
   ];
   if (options?.verbose) {
@@ -153,7 +176,17 @@ async function extractCssSnippets(
     }
   }
 
-  const cssCallPattern = /\b(?:test_(?:valid|invalid)_[a-zA-Z0-9_]+|supports_css|parseRule|parseDeclaration|insertRule|replaceSync|replace)\s*\(\s*(['"`])([\s\S]*?)\1/g;
+  const testHelperPattern = /(?<!function\s)\b(test_(?:valid|invalid)_[a-zA-Z0-9_]+)\s*\(([\s\S]*?)\)\s*;/g;
+  for (const match of source.matchAll(testHelperPattern)) {
+    const helper = match[1] ?? '';
+    const args = extractQuotedArgs(match[2] ?? '');
+    const snippet = normalizeTestHelper(helper, args);
+    if (!snippet) continue;
+    result.jsStrings++;
+    snippets.push(snippet);
+  }
+
+  const cssCallPattern = /(?<!function\s)\b(?:supports_css|parseRule|parseDeclaration|insertRule|replaceSync|replace)\s*\(\s*(['"`])([\s\S]*?)\1/g;
   for (const match of source.matchAll(cssCallPattern)) {
     const raw = match[2] ?? '';
     const text = decodeJsString(raw, match[1] ?? "'");
@@ -165,6 +198,33 @@ async function extractCssSnippets(
   return snippets;
 }
 
+function normalizeTestHelper(helper: string, args: readonly string[]): CssConformanceSnippet | undefined {
+  const isValid = /^test_valid_/.test(helper);
+  if (args.length === 0 || args.every((arg) => arg.trim().length === 0)) return undefined;
+  if (args.some((arg) => arg.includes('${'))) return undefined;
+  if (/_selector/.test(helper)) {
+    return { kind: isValid ? 'js-valid-selector' : 'js-invalid-selector', tokenText: args[0] ?? '', parseText: `${args[0] ?? ''}{}`, expectFailure: isValid ? false : undefined };
+  }
+  if (/_rule/.test(helper)) {
+    return { kind: isValid ? 'js-valid-rule' : 'js-invalid-rule', tokenText: args[0] ?? '', parseText: args[0] ?? '', expectFailure: isValid ? false : undefined };
+  }
+  if (args.length >= 2) {
+    const text = `${args[0]}:${args[1]}`;
+    return { kind: isValid ? 'js-valid-declaration' : 'js-invalid-declaration', tokenText: text, parseText: `*{${text}}`, expectFailure: isValid ? false : undefined };
+  }
+  const text = `--wpt:${args[0] ?? ''}`;
+  return { kind: isValid ? 'js-valid-declaration' : 'js-invalid-declaration', tokenText: text, parseText: `*{${text}}`, expectFailure: isValid ? false : undefined };
+}
+
+function extractQuotedArgs(input: string): string[] {
+  const out: string[] = [];
+  const argPattern = /(['"`])((?:\\[\s\S]|(?!\1)[\s\S])*?)\1/g;
+  for (const match of input.matchAll(argPattern)) {
+    out.push(decodeJsString(match[2] ?? '', match[1] ?? '"'));
+  }
+  return out;
+}
+
 function normalizeJsSnippet(callPrefix: string, text: string): CssConformanceSnippet {
   if (/parseDeclaration\b/.test(callPrefix)) {
     return { kind: 'js-declaration', tokenText: text, parseText: `*{${text}}` };
@@ -172,7 +232,7 @@ function normalizeJsSnippet(callPrefix: string, text: string): CssConformanceSni
   if (/supports_css\b/.test(callPrefix) && !/[{};]/.test(text)) {
     return { kind: 'js-supports', tokenText: text, parseText: `*{${text}}` };
   }
-  return { kind: 'js-stylesheet', tokenText: text, parseText: text, expectFailure: hasExtraTopLevelBlockEnd(text) };
+  return { kind: 'js-stylesheet', tokenText: text, parseText: text, expectFailure: hasExtraTopLevelBlockEnd(text) ? true : undefined };
 }
 
 function hasExtraTopLevelBlockEnd(input: string): boolean {

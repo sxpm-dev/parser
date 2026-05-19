@@ -18,9 +18,16 @@ export type NodeExample = {
 
 export type ExampleStep = TokenExample | FieldExample | NodeExample;
 
+export type CaptureExample = {
+  readonly name: string;
+  readonly pattern: string;
+};
+
 export type ParserExample = {
   readonly input: string;
   readonly steps: readonly ExampleStep[];
+  readonly captures?: readonly CaptureExample[];
+  readonly generalizations?: readonly PatternRule[];
   readonly structure?: unknown;
   readonly invalid?: InvalidExample;
   readonly recovery?: RecoveryExample;
@@ -36,7 +43,13 @@ export type RecoveryExample = {
   readonly context?: string;
   readonly on?: string;
   readonly skipUntil?: readonly string[];
+  readonly missing?: readonly RecoveryMissingExample[];
   readonly action: RecoveryAction;
+};
+
+export type RecoveryMissingExample = {
+  readonly token: string;
+  readonly reason: string;
 };
 
 export type PatternAlternative = {
@@ -77,6 +90,7 @@ export type CodegenInput = {
   /** @deprecated Use structure. */
   readonly ast: InferredAst;
   readonly recoveries: readonly InferredRecovery[];
+  readonly patterns: readonly InferredPattern[];
   readonly grammar?: GrammarSchema;
   readonly runtime?: RuntimeSchema;
 };
@@ -126,7 +140,14 @@ export type InferredRecovery = {
   readonly context?: string;
   readonly on?: string;
   readonly skipUntil: readonly string[];
+  readonly missing: readonly RecoveryMissingExample[];
   readonly action: RecoveryAction;
+};
+
+export type InferredPattern = {
+  readonly rule: string;
+  readonly pattern: string;
+  readonly nodeType?: string;
 };
 
 export type ParserSchema = {
@@ -159,7 +180,7 @@ export type RuntimeBlockStyleTokenizer = {
 
 export type RuntimeStatementListTokenizer = {
   readonly kind: 'statement-list';
-  readonly keywords: readonly string[];
+  readonly keywords?: readonly string[];
 };
 
 export type RuntimeWhitespaceToken = {
@@ -230,18 +251,20 @@ export type RuntimeBlockStyleParser = {
 
 export type RuntimeStatementListParser = {
   readonly kind: 'statement-list';
-  readonly programAlias: string;
-  readonly statementAlias: string;
-  readonly sourceTypeField: string;
-  readonly bodyField: string;
-  readonly moduleSourceType: string;
-  readonly scriptSourceType: string;
-  readonly scriptIfStatementType: string;
-  readonly statements: readonly RuntimeStatementRule[];
-  readonly blockStartKeywords: readonly string[];
+  readonly programAlias?: string;
+  readonly statementAlias?: string;
+  readonly sourceTypeField?: string;
+  readonly bodyField?: string;
+  readonly moduleSourceType?: string;
+  readonly scriptSourceType?: string;
+  readonly scriptIfStatementType?: string;
+  readonly statements?: readonly RuntimeStatementRule[];
+  readonly blockStartKeywords?: readonly string[];
   readonly noLineTerminatorAfter?: readonly string[];
   readonly numberLiteral?: RuntimeNumberLiteralRule;
   readonly hashbang?: RuntimeHashbangRule;
+  readonly slashLiteral?: RuntimeSlashLiteralRule;
+  readonly requireBalancedEnd?: boolean;
 };
 
 export type RuntimeStatementRule = {
@@ -265,6 +288,13 @@ export type RuntimeHashbangRule = {
   readonly marker: string;
   readonly onlyAtStart: boolean;
   readonly rejectEscapedStart?: readonly string[];
+};
+
+export type RuntimeSlashLiteralRule = {
+  readonly token: string;
+  readonly allowAtStatementStart?: boolean;
+  readonly precededByChars?: readonly string[];
+  readonly precededByKeywords?: readonly string[];
 };
 
 export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify | RuntimeStatementListStringify;
@@ -304,6 +334,11 @@ export interface ParserApi<TStructure = StructureNode> {
   stringify(structure: TStructure): string;
 }
 
+export type StructureReference = {
+  readonly kind: 'capture' | 'node';
+  readonly name: string;
+};
+
 export class NodeBuilder {
   readonly steps: ExampleStep[] = [];
 
@@ -323,6 +358,8 @@ export class ExampleBuilder extends NodeBuilder {
   private invalidExample?: InvalidExample;
   private recoveryExample?: RecoveryExample;
   private structureExample?: unknown;
+  private captureExamples: CaptureExample[] = [];
+  private generalizationExamples: PatternRule[] = [];
 
   constructor(readonly input: string) {
     super();
@@ -338,6 +375,11 @@ export class ExampleBuilder extends NodeBuilder {
     return this;
   }
 
+  capture(name: string, pattern: string): this {
+    this.captureExamples.push({ name, pattern });
+    return this;
+  }
+
   recover(build: (recovery: RecoveryBuilder) => RecoveryBuilder): this {
     this.recoveryExample = build(new RecoveryBuilder()).build();
     return this;
@@ -348,10 +390,26 @@ export class ExampleBuilder extends NodeBuilder {
     return this;
   }
 
+  syntax(name: string, build: (syntax: SyntaxPatternBuilder) => GrammarExpr): this {
+    const expr = build(new SyntaxPatternBuilder());
+    this.generalizationExamples.push({
+      name,
+      alternatives: [{ pattern: grammarExprToPattern(expr), steps: [{ kind: 'node', type: name, children: [] }] }],
+    });
+    return this;
+  }
+
+  generalizes(name: string, build: (rule: PatternRuleBuilder) => PatternRuleBuilder): this {
+    this.generalizationExamples.push(build(new PatternRuleBuilder(name)).build());
+    return this;
+  }
+
   build(): ParserExample {
     return {
       input: this.input,
       steps: this.steps,
+      captures: this.captureExamples,
+      generalizations: this.generalizationExamples,
       structure: this.structureExample,
       invalid: this.invalidExample,
       recovery: this.recoveryExample,
@@ -363,6 +421,7 @@ export class RecoveryBuilder {
   private context?: string;
   private trigger?: string;
   private boundaries: string[] = [];
+  private missingExamples: RecoveryMissingExample[] = [];
   private recoveryAction: RecoveryAction = 'drop';
 
   at(context: string): this {
@@ -382,6 +441,16 @@ export class RecoveryBuilder {
 
   skipUntil(...tokens: string[]): this {
     this.boundaries = tokens;
+    return this;
+  }
+
+  syncAfter(tokens: readonly string[]): this {
+    this.boundaries = [...tokens];
+    return this;
+  }
+
+  missing(token: string, reason: string): this {
+    this.missingExamples.push({ token, reason });
     return this;
   }
 
@@ -405,8 +474,47 @@ export class RecoveryBuilder {
       context: this.context,
       on: this.trigger,
       skipUntil: this.boundaries,
+      missing: this.missingExamples,
       action: this.recoveryAction,
     };
+  }
+}
+
+export class SyntaxPatternBuilder {
+  ref(name: string): GrammarExpr {
+    return { kind: 'ref', name };
+  }
+
+  token(value: string): GrammarExpr {
+    return { kind: 'literal', value };
+  }
+
+  literal(value: unknown): GrammarExpr {
+    return { kind: 'literal', value };
+  }
+
+  seq(...items: readonly (GrammarExpr | string)[]): GrammarExpr {
+    return { kind: 'seq', items: items.map((item) => typeof item === 'string' ? this.token(item) : item) };
+  }
+
+  choice(...options: readonly (GrammarExpr | string)[]): GrammarExpr {
+    return { kind: 'choice', options: options.map((option) => typeof option === 'string' ? this.token(option) : option) };
+  }
+
+  repeat(item: GrammarExpr | string, separator?: GrammarExpr): GrammarExpr {
+    return { kind: 'repeat', item: typeof item === 'string' ? this.ref(item) : item, separator };
+  }
+
+  optional(item: GrammarExpr | string): GrammarExpr {
+    return { kind: 'choice', options: [{ kind: 'literal', value: '' }, typeof item === 'string' ? this.ref(item) : item] };
+  }
+
+  capture(_name: string, expr: GrammarExpr): GrammarExpr {
+    return expr;
+  }
+
+  selector(): GrammarExpr {
+    return this.ref('selector');
   }
 }
 
@@ -417,6 +525,13 @@ export class PatternRuleBuilder {
 
   from(pattern: string): PatternAlternativeBuilder {
     return new PatternAlternativeBuilder(this, pattern);
+  }
+
+  build(): PatternRule {
+    return {
+      name: this.name,
+      alternatives: this.alternatives,
+    };
   }
 }
 
@@ -460,6 +575,27 @@ export const ex: ExampleFactory = Object.assign(
   { rule: (name: string) => new PatternRuleBuilder(name) },
 );
 
+export function cap(name: string): StructureReference {
+  return { kind: 'capture', name };
+}
+
+export function node(name: string): StructureReference {
+  return { kind: 'node', name };
+}
+
 export function defineSchema(schema: ParserSchema): ParserSchema {
   return schema;
+}
+
+function grammarExprToPattern(expr: GrammarExpr): string {
+  if (expr.kind === 'ref') return `%${expr.name}%`;
+  if (expr.kind === 'token') return expr.type;
+  if (expr.kind === 'literal') return String(expr.value);
+  if (expr.kind === 'seq') return expr.items.map(grammarExprToPattern).join(' ');
+  if (expr.kind === 'choice') return expr.options.map(grammarExprToPattern).join(' | ');
+  if (expr.kind === 'repeat') {
+    if (expr.item.kind === 'ref') return `%${expr.item.name}*%`;
+    return `${grammarExprToPattern(expr.item)}*`;
+  }
+  return '';
 }

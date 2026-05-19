@@ -18,7 +18,7 @@ const declarationDropRecovery = recoverySchema.find((entry) => entry.context ===
 const declarationDropOnSemicolon = !declarationDropRecovery || declarationDropRecovery.skipUntil.includes(';');
 const declarationDropOnBlockEnd = !declarationDropRecovery || declarationDropRecovery.skipUntil.includes('}');
 
-const enum C { Tab = 9, LF = 10, FF = 12, CR = 13, Space = 32, Bang = 33, Quote = 34, Hash = 35, Percent = 37, SQuote = 39, LParen = 40, RParen = 41, Star = 42, Plus = 43, Comma = 44, Minus = 45, Dot = 46, Slash = 47, Colon = 58, Semi = 59, Lt = 60, Gt = 62, Question = 63, At = 64, Backslash = 92, LBracket = 91, RBracket = 93, Underscore = 95, LBrace = 123, RBrace = 125, Tilde = 126 }
+const enum C { Tab = 9, LF = 10, FF = 12, CR = 13, Space = 32, Bang = 33, Quote = 34, Hash = 35, Dollar = 36, Percent = 37, Amp = 38, SQuote = 39, LParen = 40, RParen = 41, Star = 42, Plus = 43, Comma = 44, Minus = 45, Dot = 46, Slash = 47, Colon = 58, Semi = 59, Lt = 60, Eq = 61, Gt = 62, Question = 63, At = 64, Backslash = 92, LBracket = 91, RBracket = 93, Caret = 94, Underscore = 95, LBrace = 123, Pipe = 124, RBrace = 125, Tilde = 126 }
 
 function isWs(c: number): boolean { return c === C.Space || c === C.Tab || c === C.LF || c === C.CR || c === C.FF; }
 function isNewline(c: number): boolean { return c === C.LF || c === C.CR || c === C.FF; }
@@ -63,6 +63,15 @@ function isImportant(value: string): number {
   for (let j = word.length - 1; j >= 0; j--, i--) if ((value.charCodeAt(i) | 32) !== word.charCodeAt(j)) return -1;
   while (i >= 0 && isWs(value.charCodeAt(i))) i--;
   return value.charCodeAt(i) === C.Bang ? i : -1;
+}
+function isDeclarationPropertyName(input: string): boolean {
+  let i = 0;
+  while (i < input.length && isWs(input.charCodeAt(i))) i++;
+  const start = i;
+  if (!startsIdent(input, i)) return false;
+  i = consumeName(input, i);
+  while (i < input.length && isWs(input.charCodeAt(i))) i++;
+  return i === input.length && i > start;
 }
 
 class SpanToken implements Token {
@@ -119,6 +128,14 @@ function countTokensFast(input: string): number {
       tokens++;
       continue;
     }
+    if (
+      ((c === C.Tilde || c === C.Pipe || c === C.Caret || c === C.Dollar || c === C.Star) && input.charCodeAt(i + 1) === C.Eq) ||
+      (c === C.Pipe && input.charCodeAt(i + 1) === C.Pipe)
+    ) {
+      i += 2;
+      tokens++;
+      continue;
+    }
     if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
       i += 2;
       let n = 0;
@@ -160,8 +177,7 @@ function countTokensFast(input: string): number {
       }
       if (input.charCodeAt(i) === C.Percent) i++;
       else {
-        const d = input.charCodeAt(i);
-        if (isAsciiNameStart(d) || d === C.Minus || d === C.Backslash || d >= 128) i = consumeAsciiName(input, i, len);
+        if (startsIdent(input, i)) i = consumeName(input, i);
       }
       tokens++;
       continue;
@@ -244,6 +260,24 @@ export function tokenize(input: string): Token[] {
     } else if (c === C.Minus && input.charCodeAt(i + 1) === C.Minus && input.charCodeAt(i + 2) === C.Gt) {
       i += 3;
       out.push(token(input, 'cdc', start, i));
+    } else if (c === C.Tilde && input.charCodeAt(i + 1) === C.Eq) {
+      i += 2;
+      out.push(token(input, 'includeMatch', start, i));
+    } else if (c === C.Pipe && input.charCodeAt(i + 1) === C.Eq) {
+      i += 2;
+      out.push(token(input, 'dashMatch', start, i));
+    } else if (c === C.Caret && input.charCodeAt(i + 1) === C.Eq) {
+      i += 2;
+      out.push(token(input, 'prefixMatch', start, i));
+    } else if (c === C.Dollar && input.charCodeAt(i + 1) === C.Eq) {
+      i += 2;
+      out.push(token(input, 'suffixMatch', start, i));
+    } else if (c === C.Star && input.charCodeAt(i + 1) === C.Eq) {
+      i += 2;
+      out.push(token(input, 'substringMatch', start, i));
+    } else if (c === C.Pipe && input.charCodeAt(i + 1) === C.Pipe) {
+      i += 2;
+      out.push(token(input, 'column', start, i));
     } else if ((c === 85 || c === 117) && input.charCodeAt(i + 1) === C.Plus && (isHex(input.charCodeAt(i + 2)) || input.charCodeAt(i + 2) === C.Question)) {
       i += 2;
       let n = 0;
@@ -393,8 +427,8 @@ class BlockStyleParser {
         j++;
         continue;
       }
-      if (code === C.LParen || code === C.LBracket) { depth++; continue; }
-      if (code === C.RParen || code === C.RBracket) { if (depth > 0) depth--; continue; }
+      if (code === C.LParen || code === C.LBracket || (stop !== 0 && colon >= 0 && code === C.LBrace && isDeclarationPropertyName(this.input.slice(start, colon)))) { depth++; continue; }
+      if (code === C.RParen || code === C.RBracket || (depth > 0 && code === C.RBrace)) { if (depth > 0) depth--; continue; }
       if (depth !== 0) continue;
       if (code === C.Colon && colon < 0) {
         colon = j;
@@ -474,30 +508,39 @@ function selectorSyntaxError(selector: string): SelectorSyntaxError | undefined 
   let sawItem = false;
   let expectItem = true;
   let lastSignificant = 0;
+  let sawWsAfterItem = false;
   while (i < selector.length) {
     const c = selector.charCodeAt(i);
-    if (isWs(c)) { i++; continue; }
+    if (isWs(c)) {
+      if (!expectItem) sawWsAfterItem = true;
+      i++;
+      continue;
+    }
     if (c === C.Comma) {
       if (expectItem) return { message: 'Expected selector before ,', offset: i };
       expectItem = true;
       sawItem = false;
       lastSignificant = i;
+      sawWsAfterItem = false;
       i++;
       continue;
     }
-    if (c === C.Gt || c === C.Plus || c === C.Tilde) {
-      if (expectItem) return { message: 'Expected selector before combinator', offset: i };
+    if (c === C.Gt || c === C.Plus || c === C.Tilde || (c === C.Pipe && selector.charCodeAt(i + 1) === C.Pipe)) {
+      if (expectItem && sawItem) return { message: 'Expected selector before combinator', offset: i };
       expectItem = true;
       lastSignificant = i;
-      i++;
+      sawWsAfterItem = false;
+      i += c === C.Pipe ? 2 : 1;
       continue;
     }
+    if (sawWsAfterItem) expectItem = true;
     const end = consumeSelectorComponent(selector, i);
     if (end <= i) return { message: 'Invalid selector', offset: i };
     i = end;
     lastSignificant = i - 1;
     sawItem = true;
     expectItem = false;
+    sawWsAfterItem = false;
   }
   if (expectItem || !sawItem) return { message: 'Expected selector', offset: Math.max(0, lastSignificant) };
   return undefined;
@@ -505,18 +548,22 @@ function selectorSyntaxError(selector: string): SelectorSyntaxError | undefined 
 
 function consumeSelectorComponent(input: string, i: number): number {
   const c = input.charCodeAt(i);
+  if (c === C.Percent) return -1;
+  if (c === C.Amp) return i + 1;
   if (c === C.Dot) return consumeNamedSelectorPart(input, i + 1);
   if (c === C.Hash) return consumeNamedSelectorPart(input, i + 1);
   if (c === C.Colon) {
     if (input.charCodeAt(i + 1) === C.Colon) i++;
     return consumeNamedSelectorPart(input, i + 1);
   }
-  if (c === C.Star) return i + 1;
+  if (c === C.Star) return consumeMaybeNamespacedSelectorPart(input, i + 1);
+  if (c === C.Pipe) return consumeMaybeNamespacedSelectorPart(input, i);
   if (c === C.LBracket) return consumeBalancedSelector(input, i, C.LBracket, C.RBracket);
   if (c === C.LParen) return consumeBalancedSelector(input, i, C.LParen, C.RParen);
   if (isDigit(c) || (c === C.Dot && isDigit(input.charCodeAt(i + 1)))) return consumeNumericSelectorPart(input, i);
   if (startsIdent(input, i)) {
     i = consumeName(input, i);
+    i = consumeMaybeNamespacedSelectorPart(input, i);
     if (input.charCodeAt(i) === C.LParen) return consumeBalancedSelector(input, i, C.LParen, C.RParen);
     return i;
   }
@@ -538,6 +585,14 @@ function consumeNamedSelectorPart(input: string, i: number): number {
   i = consumeName(input, i);
   if (input.charCodeAt(i) === C.LParen) return consumeBalancedSelector(input, i, C.LParen, C.RParen);
   return i;
+}
+
+function consumeMaybeNamespacedSelectorPart(input: string, i: number): number {
+  if (input.charCodeAt(i) !== C.Pipe || input.charCodeAt(i + 1) === C.Pipe) return i;
+  i++;
+  if (input.charCodeAt(i) === C.Star) return i + 1;
+  if (startsIdent(input, i)) return consumeName(input, i);
+  return -1;
 }
 
 function consumeBalancedSelector(input: string, i: number, open: number, close: number): number {
@@ -618,4 +673,3 @@ function stringifyNode(node: ${nodeAlias}): string {
 }
 `;
 }
-

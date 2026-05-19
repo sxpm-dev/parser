@@ -95,6 +95,7 @@ export function parse(input: string): JsNode {
   let i = statementStart;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
+    validateHashbang(input, i);
     if (i === 0 && ch === 35 && input.charCodeAt(1) === 33) {
       i = skipLineComment(input, 2);
       continue;
@@ -130,10 +131,11 @@ export function parse(input: string): JsNode {
       if ((word === "throw" && hasLineTerminatorBeforeOperand(input, i))) throw new SyntaxError('Line terminator after restricted keyword');
       continue;
     }
-    if ((isDigit(ch) || (ch === 46 && isDigit(input.charCodeAt(i + 1))))) {
+    if (((isDigit(ch) || (ch === 46 && isDigit(input.charCodeAt(i + 1)))) && input.charCodeAt(i - 1) !== 47 && input.charCodeAt(i - 1) !== 92)) {
       i = skipNumberLiteral(input, i);
       continue;
     }
+    if (ch === 42 && input.charCodeAt(i + 1) === 47) throw new SyntaxError('Unexpected block comment close');
     if (ch === 40) parenDepth++;
     else if (ch === 41) {
       if (parenDepth === 0) throw new SyntaxError('Unexpected )');
@@ -192,6 +194,20 @@ function isBlockStatementStart(input: string, start: number): boolean {
 
 function startsWithWord(input: string, index: number, word: string): boolean {
   return input.startsWith(word, index) && !isIdentifierPart(input.charCodeAt(index + word.length));
+}
+
+const hashbangMarker = "#!";
+const hashbangEscapes = ["#\\","\\043","\\u0023","\\u{23}","\\x23"] as readonly string[];
+
+function validateHashbang(input: string, index: number): void {
+  if (index === 0) {
+    for (const escaped of hashbangEscapes) {
+      if (input.startsWith(escaped)) throw new SyntaxError('Invalid hashbang');
+    }
+    if (input.charCodeAt(0) === 35 && hashbangMarker && !input.startsWith(hashbangMarker)) throw new SyntaxError('Invalid hashbang');
+    return;
+  }
+  if (hashbangMarker && input.startsWith(hashbangMarker, index)) throw new SyntaxError('Invalid hashbang');
 }
 
 function hasLineTerminatorBeforeOperand(input: string, index: number): boolean {
@@ -295,7 +311,7 @@ function skipTrivia(input: string, index: number): number {
   let i = index;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
-    if (ch === 32 || ch === 9 || ch === 10 || ch === 13) {
+    if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 8232 || ch === 8233) {
       i++;
       continue;
     }
@@ -344,7 +360,11 @@ function skipTemplate(input: string, index: number): number {
 
 function skipLineComment(input: string, index: number): number {
   let i = index;
-  while (i < input.length && input.charCodeAt(i) !== 10 && input.charCodeAt(i) !== 13) i++;
+  while (i < input.length) {
+    const ch = input.charCodeAt(i);
+    if (ch === 10 || ch === 13 || ch === 8232 || ch === 8233) break;
+    i++;
+  }
   return i;
 }
 

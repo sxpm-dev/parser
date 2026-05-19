@@ -20,11 +20,14 @@ export function emitStatementListParser(schema: CodegenInput): string {
     .map((keyword) => `(word === ${JSON.stringify(keyword)} && hasLineTerminatorBeforeOperand(input, i))`)
     .join(' || ');
   const numberRule = parser.numberLiteral;
-  const numberCheck = numberRule ? '(isDigit(ch) || (ch === 46 && isDigit(input.charCodeAt(i + 1))))' : 'false';
+  const numberCheck = numberRule ? '((isDigit(ch) || (ch === 46 && isDigit(input.charCodeAt(i + 1)))) && input.charCodeAt(i - 1) !== 47 && input.charCodeAt(i - 1) !== 92)' : 'false';
   const numberPrefixes = JSON.stringify(numberRule?.prefixes ?? []);
   const numberSeparator = JSON.stringify(numberRule?.separator ?? '');
   const bigintSuffix = JSON.stringify(numberRule?.bigintSuffix ?? '');
   const rejectIdentifierAfter = numberRule?.rejectIdentifierAfter ? 'true' : 'false';
+  const hashbangMarker = JSON.stringify(parser.hashbang?.marker ?? '');
+  const hashbangEscapes = JSON.stringify(parser.hashbang?.rejectEscapedStart ?? []);
+  const hashbangCheck = parser.hashbang ? 'validateHashbang(input, i);' : '';
 
   return String.raw`export type Token = {
   readonly type: string;
@@ -106,6 +109,7 @@ export function parse(input: string): ${programAlias} {
   let i = statementStart;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
+    ${hashbangCheck}
     if (i === 0 && ch === 35 && input.charCodeAt(1) === 33) {
       i = skipLineComment(input, 2);
       continue;
@@ -145,6 +149,7 @@ export function parse(input: string): ${programAlias} {
       i = skipNumberLiteral(input, i);
       continue;
     }
+    if (ch === 42 && input.charCodeAt(i + 1) === 47) throw new SyntaxError('Unexpected block comment close');
     if (ch === 40) parenDepth++;
     else if (ch === 41) {
       if (parenDepth === 0) throw new SyntaxError('Unexpected )');
@@ -195,6 +200,20 @@ function isBlockStatementStart(input: string, start: number): boolean {
 
 function startsWithWord(input: string, index: number, word: string): boolean {
   return input.startsWith(word, index) && !isIdentifierPart(input.charCodeAt(index + word.length));
+}
+
+const hashbangMarker = ${hashbangMarker};
+const hashbangEscapes = ${hashbangEscapes} as readonly string[];
+
+function validateHashbang(input: string, index: number): void {
+  if (index === 0) {
+    for (const escaped of hashbangEscapes) {
+      if (input.startsWith(escaped)) throw new SyntaxError('Invalid hashbang');
+    }
+    if (input.charCodeAt(0) === 35 && hashbangMarker && !input.startsWith(hashbangMarker)) throw new SyntaxError('Invalid hashbang');
+    return;
+  }
+  if (hashbangMarker && input.startsWith(hashbangMarker, index)) throw new SyntaxError('Invalid hashbang');
 }
 
 function hasLineTerminatorBeforeOperand(input: string, index: number): boolean {
@@ -298,7 +317,7 @@ function skipTrivia(input: string, index: number): number {
   let i = index;
   while (i < input.length) {
     const ch = input.charCodeAt(i);
-    if (ch === 32 || ch === 9 || ch === 10 || ch === 13) {
+    if (ch === 32 || ch === 9 || ch === 10 || ch === 13 || ch === 8232 || ch === 8233) {
       i++;
       continue;
     }
@@ -347,7 +366,11 @@ function skipTemplate(input: string, index: number): number {
 
 function skipLineComment(input: string, index: number): number {
   let i = index;
-  while (i < input.length && input.charCodeAt(i) !== 10 && input.charCodeAt(i) !== 13) i++;
+  while (i < input.length) {
+    const ch = input.charCodeAt(i);
+    if (ch === 10 || ch === 13 || ch === 8232 || ch === 8233) break;
+    i++;
+  }
   return i;
 }
 

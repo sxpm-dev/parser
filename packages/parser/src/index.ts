@@ -241,6 +241,7 @@ export type RuntimeStatementListParser = {
   readonly blockStartKeywords: readonly string[];
   readonly noLineTerminatorAfter?: readonly string[];
   readonly numberLiteral?: RuntimeNumberLiteralRule;
+  readonly hashbang?: RuntimeHashbangRule;
 };
 
 export type RuntimeStatementRule = {
@@ -258,6 +259,12 @@ export type RuntimeNumberLiteralRule = {
 export type RuntimeNumberRadixPrefix = {
   readonly prefixes: readonly string[];
   readonly digits: string;
+};
+
+export type RuntimeHashbangRule = {
+  readonly marker: string;
+  readonly onlyAtStart: boolean;
+  readonly rejectEscapedStart?: readonly string[];
 };
 
 export type RuntimeStringify = RuntimeNativeJsonStringify | RuntimeBlockStyleStringify | RuntimeStatementListStringify;

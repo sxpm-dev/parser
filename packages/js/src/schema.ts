@@ -39,6 +39,11 @@ export default defineSchema({
           { prefixes: ['0x', '0X'], digits: '0123456789abcdefABCDEF' },
         ],
       },
+      hashbang: {
+        marker: '#!',
+        onlyAtStart: true,
+        rejectEscapedStart: ['#\\', '\\043', '\\u0023', '\\u{23}', '\\x23'],
+      },
     },
     stringify: {
       kind: 'statement-list',

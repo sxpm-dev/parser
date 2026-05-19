@@ -66,6 +66,12 @@ test('validates schema-declared numeric literals', () => {
   assert.throws(() => parse('123abc;'), SyntaxError);
 });
 
+test('validates schema-declared hashbang placement', () => {
+  assert.doesNotThrow(() => parse('#!/usr/bin/env node\nconst ok = 1;'));
+  assert.throws(() => parse(' #!\n'), SyntaxError);
+  assert.throws(() => parse('\\u0023!'), SyntaxError);
+});
+
 test('stringifies modified ESTree-compatible programs', () => {
   const ast = parse('const answer = 42;');
   assert.equal(stringify({ ...ast, source: undefined }), 'const answer = 42;');

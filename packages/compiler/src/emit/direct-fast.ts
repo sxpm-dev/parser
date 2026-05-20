@@ -10,16 +10,16 @@ export function emitDirectFastPath(schema: InferredSchema): string | null {
 
 type FastShape = {
   readonly root: ObjectShape & { readonly childrenKey: string };
-  readonly comment: ObjectShape & { readonly textKey: string };
+  readonly comment: (ObjectShape & { readonly textKey: string }) | null;
   readonly block: ObjectShape & { readonly captureKey: string; readonly childrenKey: string };
   readonly pair: ObjectShape & { readonly leftKey: string; readonly rightKey: string; readonly flagKey: string | null };
-  readonly prefixed: ObjectShape & { readonly nameKey: string; readonly paramsKey: string; readonly childrenKey: string };
+  readonly prefixed: (ObjectShape & { readonly nameKey: string; readonly paramsKey: string; readonly childrenKey: string }) | null;
   readonly literals: {
     readonly open: string;
     readonly close: string;
     readonly pair: string;
     readonly separator: string;
-    readonly prefix: string;
+    readonly prefix: string | null;
     readonly flag: string | null;
   };
 };
@@ -65,7 +65,7 @@ function inferNestedBlockFastShape(schema: InferredSchema): FastShape | null {
     if (!prefixed) prefixed = inferPrefixedShape(info);
   }
 
-  if (!comment || !block || !pair || !prefixed) return null;
+  if (!block || !pair) return null;
   const literals = inferFastLiterals(block, pair, prefixed, rootRepeatModifier.sep);
   if (!literals) return null;
   return {
@@ -157,10 +157,11 @@ function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
 function inferFastLiterals(
   block: BlockShape,
   pair: PairShape,
-  prefixed: PrefixedShape,
+  prefixed: PrefixedShape | null,
   separator: string,
 ): FastShape['literals'] | null {
-  const literals = [block.openLiteral, block.closeLiteral, pair.pairLiteral, separator, prefixed.prefixLiteral];
+  const literals = [block.openLiteral, block.closeLiteral, pair.pairLiteral, separator];
+  if (prefixed) literals.push(prefixed.prefixLiteral);
   if (pair.flagLiteral) literals.push(pair.flagLiteral);
   if (literals.some((literal) => literal.length !== 1)) return null;
   return {
@@ -168,7 +169,7 @@ function inferFastLiterals(
     close: block.closeLiteral,
     pair: pair.pairLiteral,
     separator,
-    prefix: prefixed.prefixLiteral,
+    prefix: prefixed?.prefixLiteral ?? null,
     flag: pair.flagLiteral,
   };
 }
@@ -209,18 +210,63 @@ function findModifier<K extends ResolvedSpan['modifiers'][number]['kind']>(
 
 function emitNestedBlockFastPath(shape: FastShape): string {
   const rootType = typeProp(shape.root);
-  const commentType = typeProp(shape.comment);
+  const commentType = shape.comment ? typeProp(shape.comment) : '';
   const blockType = typeProp(shape.block);
   const pairType = typeProp(shape.pair);
-  const prefixedType = typeProp(shape.prefixed);
+  const prefixedType = shape.prefixed ? typeProp(shape.prefixed) : '';
   const pairFlag = shape.pair.flagKey ? `${prop(shape.pair.flagKey)}: true` : '';
-  const prefixCode = shape.literals.prefix.charCodeAt(0);
+  const prefixCode = shape.literals.prefix?.charCodeAt(0) ?? -1;
   const openCode = shape.literals.open.charCodeAt(0);
   const closeCode = shape.literals.close.charCodeAt(0);
   const pairCode = shape.literals.pair.charCodeAt(0);
   const separatorCode = shape.literals.separator.charCodeAt(0);
   const flagCode = shape.literals.flag ? shape.literals.flag.charCodeAt(0) : -1;
   const flagStopCheck = shape.literals.flag ? `state.scanStop === ${flagCode}` : 'false';
+  const commentRootBranch = shape.comment ? `    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
+      nodes[nodes.length] = parseDirectComment(state);
+      continue;
+    }
+` : '';
+  const commentFn = shape.comment ? `
+function parseDirectComment(state: DirectState): unknown {
+  const input = state.input;
+  const len = state.len;
+  const start = state.pos;
+  state.pos += 2;
+  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+  if (state.pos < len) state.pos += 2;
+  let textStart = start + 2;
+  let textEnd = state.pos - 2;
+  while (textStart < textEnd && isDirectWs(input.charCodeAt(textStart))) textStart++;
+  while (textEnd > textStart && isDirectWs(input.charCodeAt(textEnd - 1))) textEnd--;
+  return { ${joinProps(commentType, `${prop(shape.comment.textKey)}: input.slice(textStart, textEnd)`)} };
+}
+` : '';
+  const prefixedRootBranch = shape.prefixed ? `    if (c === ${prefixCode}) {
+      nodes[nodes.length] = parseDirectPrefixed(state);
+      continue;
+    }
+` : '';
+  const prefixedFn = shape.prefixed ? `
+function parseDirectPrefixed(state: DirectState): unknown {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const nameStart = state.pos;
+  readDirectIdent(state);
+  const name = input.slice(nameStart, state.pos);
+  scanDirectBoundary(state, ${separatorCode}, ${openCode}, ${closeCode});
+  const params = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+  state.pos = state.scanStopIdx;
+  if (state.scanStop === ${openCode}) {
+    state.pos++;
+    const nodes = parseDirectChildren(state);
+    return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `${prop(shape.prefixed.childrenKey)}: nodes`)} };
+  }
+  if (state.scanStop === ${separatorCode}) state.pos++;
+  return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`)} };
+}
+` : '';
 
   return `type DirectState = {
   readonly input: string;
@@ -232,9 +278,6 @@ function emitNestedBlockFastPath(shape: FastShape): string {
   scanCaptureEnd: number;
   scanColonIdx: number;
   scanBangIdx: number;
-  scanPairLeftEnd: number;
-  scanPairRightStart: number;
-  scanPairRightEnd: number;
 };
 
 function parseDirectFast(input: string): unknown {
@@ -248,72 +291,53 @@ function parseDirectFast(input: string): unknown {
     scanCaptureEnd: 0,
     scanColonIdx: -1,
     scanBangIdx: -1,
-    scanPairLeftEnd: -1,
-    scanPairRightStart: -1,
-    scanPairRightEnd: -1,
   };
-  const nodes = parseDirectChildren(state, -1);
+  const nodes = parseDirectRootChildren(state);
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
   return { ${joinProps(rootType, `${prop(shape.root.childrenKey)}: nodes`)} };
 }
 
-function parseDirectChildren(state: DirectState, close: number): unknown[] {
+function parseDirectRootChildren(state: DirectState): unknown[] {
   const nodes: unknown[] = [];
   const input = state.input;
   const len = state.len;
   while (true) {
-    skipDirectWsAndSeparators(state);
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (isDirectWs(ws) || ws === ${separatorCode}) state.pos++;
+      else break;
+    }
+    if (state.pos >= len) return nodes;
+    const c = input.charCodeAt(state.pos);
+    if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[state.pos]}' at position \${state.pos}\`);
+${commentRootBranch}${prefixedRootBranch}    nodes[nodes.length] = parseDirectBlockOrPair(state);
+  }
+}
+
+function parseDirectChildren(state: DirectState): unknown[] {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (isDirectWs(ws) || ws === ${separatorCode}) state.pos++;
+      else break;
+    }
     if (state.pos >= len) {
-      if (close >= 0) throw new SyntaxError(\`expected '\${String.fromCharCode(close)}' at position \${state.pos}\`);
-      return nodes;
+      throw new SyntaxError(\`expected '${shape.literals.close}' at position \${state.pos}\`);
     }
     const c = input.charCodeAt(state.pos);
-    if (close >= 0 && c === close) {
+    if (c === ${closeCode}) {
       state.pos++;
       return nodes;
     }
     if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[state.pos]}' at position \${state.pos}\`);
-    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
-      nodes[nodes.length] = parseDirectComment(state);
-      continue;
-    }
-    if (c === ${prefixCode}) {
-      nodes[nodes.length] = parseDirectPrefixed(state);
-      continue;
-    }
-    nodes[nodes.length] = parseDirectBlockOrPair(state);
+${commentRootBranch}${prefixedRootBranch}    nodes[nodes.length] = parseDirectBlockOrPair(state);
   }
 }
-
-function parseDirectComment(state: DirectState): unknown {
-  const input = state.input;
-  const len = state.len;
-  const start = state.pos;
-  state.pos += 2;
-  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
-  if (state.pos < len) state.pos += 2;
-  return { ${joinProps(commentType, `${prop(shape.comment.textKey)}: input.slice(start + 2, state.pos - 2).trim()`)} };
-}
-
-function parseDirectPrefixed(state: DirectState): unknown {
-  const input = state.input;
-  state.pos++;
-  skipDirectWs(state);
-  const nameStart = state.pos;
-  readDirectIdent(state);
-  const name = input.slice(nameStart, state.pos);
-  scanDirectBoundary(state, ${separatorCode}, ${openCode}, ${closeCode});
-  const params = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
-  state.pos = state.scanStopIdx;
-  if (state.scanStop === ${openCode}) {
-    state.pos++;
-    const nodes = parseDirectChildren(state, ${closeCode});
-    return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `${prop(shape.prefixed.childrenKey)}: nodes`)} };
-  }
-  if (state.scanStop === ${separatorCode}) state.pos++;
-  return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`)} };
-}
+${commentFn}${prefixedFn}
 
 function parseDirectBlockOrPair(state: DirectState): unknown {
   const input = state.input;
@@ -322,16 +346,23 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
   if (state.scanStop === ${openCode} && !rejectsBlock) {
     const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
     state.pos = state.scanStopIdx + 1;
-    const nodes = parseDirectChildren(state, ${closeCode});
+    const nodes = parseDirectChildren(state);
     return { ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: nodes`)} };
   }
   if (state.scanColonIdx < 0) throw new SyntaxError(\`expected ${shape.literals.pair} at position \${state.pos}\`);
-  const prop = input.slice(state.scanCaptureStart, state.scanPairLeftEnd);
+  let pairLeftEnd = state.scanColonIdx;
+  while (pairLeftEnd > state.scanCaptureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
+  const prop = input.slice(state.scanCaptureStart, pairLeftEnd);
   if (state.scanStop === ${openCode}) {
     state.pos = state.scanColonIdx + 1;
     return parseDirectDeclarationRest(state, prop);
   }
-  const value = input.slice(state.scanPairRightStart, state.scanPairRightEnd);
+  let pairRightStart = state.scanColonIdx + 1;
+  const rawRightEnd = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanCaptureEnd;
+  while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
+  let pairRightEnd = rawRightEnd;
+  while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
+  const value = input.slice(pairRightStart, pairRightEnd);
   state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
   if (state.scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
   if (state.scanStop === ${separatorCode}) state.pos++;
@@ -340,7 +371,7 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
 
 function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
   const input = state.input;
-  scanDirectPairBoundary(state, ${separatorCode}, ${closeCode}, ${flagCode});
+  scanDirectValueBoundary(state, ${separatorCode}, ${closeCode}, ${flagCode});
   const value = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
   state.pos = state.scanStopIdx;
   if (${flagStopCheck}) {
@@ -398,9 +429,6 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = -1;
   state.scanBangIdx = -1;
-  state.scanPairLeftEnd = -1;
-  state.scanPairRightStart = -1;
-  state.scanPairRightEnd = -1;
 }
 
 function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
@@ -437,27 +465,48 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
   while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
   let captureEnd = pos;
   while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
-  let pairLeftEnd = -1;
-  let pairRightStart = -1;
-  let pairRightEnd = -1;
-  if (colonIdx >= 0) {
-    pairLeftEnd = colonIdx;
-    while (pairLeftEnd > captureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
-    pairRightStart = colonIdx + 1;
-    const rawRightEnd = bangIdx >= 0 ? bangIdx : captureEnd;
-    while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
-    pairRightEnd = rawRightEnd;
-    while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
-  }
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = captureStart;
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = colonIdx;
   state.scanBangIdx = bangIdx;
-  state.scanPairLeftEnd = pairLeftEnd;
-  state.scanPairRightStart = pairRightStart;
-  state.scanPairRightEnd = pairRightEnd;
+}
+
+function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
+  const input = state.input;
+  const len = state.len;
+  let pos = state.pos;
+  let depth = 0;
+  while (pos < len) {
+    const c = input.charCodeAt(pos);
+    if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[pos]}' at position \${pos}\`);
+    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
+      pos = skipDirectString(input, pos, len);
+      continue;
+    }
+    if (c === 0x5c /* \\\\ */) {
+      pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth === 0 && (c === stop0 || c === stop1 || c === stop2)) break;
+    if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === ${openCode}) depth++;
+    else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === ${closeCode}) {
+      if (depth === 0) break;
+      depth--;
+    }
+    pos++;
+  }
+  let captureStart = state.pos;
+  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  let captureEnd = pos;
+  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
+  state.scanStopIdx = pos;
+  state.scanCaptureStart = captureStart;
+  state.scanCaptureEnd = captureEnd;
+  state.scanColonIdx = -1;
+  state.scanBangIdx = -1;
 }
 
 function skipDirectString(input: string, pos: number, len: number): number {

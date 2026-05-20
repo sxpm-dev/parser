@@ -1115,9 +1115,6 @@ type DirectState = {
   scanCaptureEnd: number;
   scanColonIdx: number;
   scanBangIdx: number;
-  scanPairLeftEnd: number;
-  scanPairRightStart: number;
-  scanPairRightEnd: number;
 };
 
 function parseDirectFast(input: string): unknown {
@@ -1131,28 +1128,53 @@ function parseDirectFast(input: string): unknown {
     scanCaptureEnd: 0,
     scanColonIdx: -1,
     scanBangIdx: -1,
-    scanPairLeftEnd: -1,
-    scanPairRightStart: -1,
-    scanPairRightEnd: -1,
   };
-  const nodes = parseDirectChildren(state, -1);
+  const nodes = parseDirectRootChildren(state);
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
   return { type: "root", nodes: nodes };
 }
 
-function parseDirectChildren(state: DirectState, close: number): unknown[] {
+function parseDirectRootChildren(state: DirectState): unknown[] {
   const nodes: unknown[] = [];
   const input = state.input;
   const len = state.len;
   while (true) {
-    skipDirectWsAndSeparators(state);
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (isDirectWs(ws) || ws === 59) state.pos++;
+      else break;
+    }
+    if (state.pos >= len) return nodes;
+    const c = input.charCodeAt(state.pos);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
+      nodes[nodes.length] = parseDirectComment(state);
+      continue;
+    }
+    if (c === 64) {
+      nodes[nodes.length] = parseDirectPrefixed(state);
+      continue;
+    }
+    nodes[nodes.length] = parseDirectBlockOrPair(state);
+  }
+}
+
+function parseDirectChildren(state: DirectState): unknown[] {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (isDirectWs(ws) || ws === 59) state.pos++;
+      else break;
+    }
     if (state.pos >= len) {
-      if (close >= 0) throw new SyntaxError(`expected '${String.fromCharCode(close)}' at position ${state.pos}`);
-      return nodes;
+      throw new SyntaxError(`expected '}' at position ${state.pos}`);
     }
     const c = input.charCodeAt(state.pos);
-    if (close >= 0 && c === close) {
+    if (c === 125) {
       state.pos++;
       return nodes;
     }
@@ -1176,7 +1198,11 @@ function parseDirectComment(state: DirectState): unknown {
   state.pos += 2;
   while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
   if (state.pos < len) state.pos += 2;
-  return { type: "comment", text: input.slice(start + 2, state.pos - 2).trim() };
+  let textStart = start + 2;
+  let textEnd = state.pos - 2;
+  while (textStart < textEnd && isDirectWs(input.charCodeAt(textStart))) textStart++;
+  while (textEnd > textStart && isDirectWs(input.charCodeAt(textEnd - 1))) textEnd--;
+  return { type: "comment", text: input.slice(textStart, textEnd) };
 }
 
 function parseDirectPrefixed(state: DirectState): unknown {
@@ -1191,12 +1217,13 @@ function parseDirectPrefixed(state: DirectState): unknown {
   state.pos = state.scanStopIdx;
   if (state.scanStop === 123) {
     state.pos++;
-    const nodes = parseDirectChildren(state, 125);
+    const nodes = parseDirectChildren(state);
     return { type: "atrule", name: name, params: params, nodes: nodes };
   }
   if (state.scanStop === 59) state.pos++;
   return { type: "atrule", name: name, params: params };
 }
+
 
 function parseDirectBlockOrPair(state: DirectState): unknown {
   const input = state.input;
@@ -1205,16 +1232,23 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
   if (state.scanStop === 123 && !rejectsBlock) {
     const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
     state.pos = state.scanStopIdx + 1;
-    const nodes = parseDirectChildren(state, 125);
+    const nodes = parseDirectChildren(state);
     return { type: "rule", selector: selector, nodes: nodes };
   }
   if (state.scanColonIdx < 0) throw new SyntaxError(`expected : at position ${state.pos}`);
-  const prop = input.slice(state.scanCaptureStart, state.scanPairLeftEnd);
+  let pairLeftEnd = state.scanColonIdx;
+  while (pairLeftEnd > state.scanCaptureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
+  const prop = input.slice(state.scanCaptureStart, pairLeftEnd);
   if (state.scanStop === 123) {
     state.pos = state.scanColonIdx + 1;
     return parseDirectDeclarationRest(state, prop);
   }
-  const value = input.slice(state.scanPairRightStart, state.scanPairRightEnd);
+  let pairRightStart = state.scanColonIdx + 1;
+  const rawRightEnd = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanCaptureEnd;
+  while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
+  let pairRightEnd = rawRightEnd;
+  while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
+  const value = input.slice(pairRightStart, pairRightEnd);
   state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
   if (state.scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
   if (state.scanStop === 59) state.pos++;
@@ -1223,7 +1257,7 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
 
 function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
   const input = state.input;
-  scanDirectPairBoundary(state, 59, 125, 33);
+  scanDirectValueBoundary(state, 59, 125, 33);
   const value = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
   state.pos = state.scanStopIdx;
   if (state.scanStop === 33) {
@@ -1281,9 +1315,6 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = -1;
   state.scanBangIdx = -1;
-  state.scanPairLeftEnd = -1;
-  state.scanPairRightStart = -1;
-  state.scanPairRightEnd = -1;
 }
 
 function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
@@ -1320,27 +1351,48 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
   while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
   let captureEnd = pos;
   while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
-  let pairLeftEnd = -1;
-  let pairRightStart = -1;
-  let pairRightEnd = -1;
-  if (colonIdx >= 0) {
-    pairLeftEnd = colonIdx;
-    while (pairLeftEnd > captureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
-    pairRightStart = colonIdx + 1;
-    const rawRightEnd = bangIdx >= 0 ? bangIdx : captureEnd;
-    while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
-    pairRightEnd = rawRightEnd;
-    while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
-  }
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = captureStart;
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = colonIdx;
   state.scanBangIdx = bangIdx;
-  state.scanPairLeftEnd = pairLeftEnd;
-  state.scanPairRightStart = pairRightStart;
-  state.scanPairRightEnd = pairRightEnd;
+}
+
+function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
+  const input = state.input;
+  const len = state.len;
+  let pos = state.pos;
+  let depth = 0;
+  while (pos < len) {
+    const c = input.charCodeAt(pos);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
+    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
+      pos = skipDirectString(input, pos, len);
+      continue;
+    }
+    if (c === 0x5c /* \\ */) {
+      pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth === 0 && (c === stop0 || c === stop1 || c === stop2)) break;
+    if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === 123) depth++;
+    else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === 125) {
+      if (depth === 0) break;
+      depth--;
+    }
+    pos++;
+  }
+  let captureStart = state.pos;
+  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  let captureEnd = pos;
+  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
+  state.scanStopIdx = pos;
+  state.scanCaptureStart = captureStart;
+  state.scanCaptureEnd = captureEnd;
+  state.scanColonIdx = -1;
+  state.scanBangIdx = -1;
 }
 
 function skipDirectString(input: string, pos: number, len: number): number {

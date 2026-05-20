@@ -19,7 +19,15 @@ export type StructureBindings = {
   readonly endOffExpr: ReadonlyMap<string, string>;
 };
 
-export function emitStructureExpr(value: StructureValue, bindings: StructureBindings): string {
+export type StructureEmitOptions = {
+  readonly omitRaws?: boolean;
+};
+
+export function emitStructureExpr(
+  value: StructureValue,
+  bindings: StructureBindings,
+  options: StructureEmitOptions = {},
+): string {
   if (value === null) return 'null';
   if (typeof value === 'string') return jsString(value);
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
@@ -74,13 +82,13 @@ export function emitStructureExpr(value: StructureValue, bindings: StructureBind
     return `commentRight(state.input.slice(${startExpr}, ${endExpr}))`;
   }
   if (Array.isArray(value)) {
-    const items = value.map((v) => emitStructureExpr(v, bindings));
+    const items = value.map((v) => emitStructureExpr(v, bindings, options));
     return `[${items.join(', ')}]`;
   }
   // Object literal
-  const entries = Object.entries(value as Record<string, StructureValue>).map(
-    ([key, val]) => `${jsObjectKey(key)}: ${emitStructureExpr(val, bindings)}`,
-  );
+  const entries = Object.entries(value as Record<string, StructureValue>)
+    .filter(([key]) => !(options.omitRaws && key === 'raws'))
+    .map(([key, val]) => `${jsObjectKey(key)}: ${emitStructureExpr(val, bindings, options)}`);
   return `{ ${entries.join(', ')} }`;
 }
 

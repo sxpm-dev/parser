@@ -57,7 +57,7 @@ for (const cssFile of cssFiles) {
 
     let actual: unknown;
     try {
-      actual = parse(css);
+      actual = parse(css, { mode: 'raws' });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(`parse threw on ${cssFile}: ${message}`);

@@ -72,10 +72,15 @@ packages/<schema>/src/_generated/parser.ts
 It exports:
 
 ```ts
-parse(input: string): Structure
+parse(input: string, options?: { mode?: 'fast' | 'raws' }): Structure
 tokenize(input: string): Token[]
 stringify(structure: Structure): string
 ```
+
+`parse()` defaults to `mode: 'fast'`, which emits the schema structure without
+formatting metadata. `mode: 'raws'` keeps source ranges and `raws` fields for
+callers that need formatting fidelity. The mode names are domain-neutral and
+apply to any generated parser.
 
 The `Structure` type is inferred from the schema's examples; see the DSL doc
 for the inference rules. `Token[]` is derived from the schema's spans and

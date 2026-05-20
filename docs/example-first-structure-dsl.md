@@ -381,8 +381,14 @@ Example: trailing `;` in a CSS rule is **tolerance** (the grammar accepts both
 
 ## Captured values and inferred types
 
-Each schema's exported `parse(input)` is typed by inference from all the
-schema's examples:
+Each schema's exported `parse(input, options?)` is typed by inference from all
+the schema's examples. The generated parser accepts a domain-neutral
+`options.mode`:
+
+- `fast` (default): omit generated formatting metadata such as `source` and
+  `raws`.
+- `raws`: include source ranges and `raws` fields for callers that need
+  formatting fidelity.
 
 - The return type is `Schema['rootType']`'s inferred shape.
 - For each node type, the inferred TypeScript shape is the **union** of all

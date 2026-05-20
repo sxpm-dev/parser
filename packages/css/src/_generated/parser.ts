@@ -158,8 +158,14 @@ type State = {
   pos: number;
   readonly input: string;
   readonly lineStarts: number[];
+  readonly mode: ParseMode;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
+};
+
+export type ParseMode = 'fast' | 'raws';
+export type ParseOptions = {
+  readonly mode?: ParseMode;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -473,8 +479,8 @@ function parseComment(state: State): unknown {
   const __text_end = state.tokens[state.pos - 1].end;
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "comment", text: text, raws: { left: commentLeft(state.input.slice(__text_start, __text_end)), right: commentRight(state.input.slice(__text_start, __text_end)) } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "comment", text: text, raws: { left: commentLeft(state.input.slice(__text_start, __text_end)), right: commentRight(state.input.slice(__text_start, __text_end)) } } : { type: "comment", text: text };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -495,8 +501,8 @@ function parseDeclaration__alt0(state: State): unknown {
   consumeOptionalLiteral(state, "semicolon", ";");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "decl", prop: prop, value: value, important: true, raws: { between: state.input.slice(__prop_end, __value_start) } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "decl", prop: prop, value: value, important: true, raws: { between: state.input.slice(__prop_end, __value_start) } } : { type: "decl", prop: prop, value: value, important: true };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -513,8 +519,8 @@ function parseDeclaration__alt1(state: State): unknown {
   consumeOptionalLiteral(state, "semicolon", ";");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "decl", prop: prop, value: value, raws: { between: state.input.slice(__prop_end, __value_start) } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "decl", prop: prop, value: value, raws: { between: state.input.slice(__prop_end, __value_start) } } : { type: "decl", prop: prop, value: value };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -560,10 +566,10 @@ function parseRule(state: State): unknown {
     }
     return parseDeclaration(state);
   })();
-    attachRawsBefore(state, __child, __prevEnd_nodes);
+    if (state.mode === 'raws') attachRawsBefore(state, __child, __prevEnd_nodes);
     nodes.push(__child);
     if (state.pos === __before) break;
-    __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
+    if (state.mode === 'raws') __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
     while (peekLiteral(state, "semicolon", ";")) {
       expectLiteral(state, "semicolon", ";");
     }
@@ -573,8 +579,8 @@ function parseRule(state: State): unknown {
   const __rbrace_end = state.tokens[state.pos - 1].end;
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "rule", selector: selector, nodes: nodes, raws: { between: state.input.slice(__selector_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "rule", selector: selector, nodes: nodes, raws: { between: state.input.slice(__selector_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } } : { type: "rule", selector: selector, nodes: nodes };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -614,10 +620,10 @@ function parseAtRule__alt0(state: State): unknown {
     }
     return parseDeclaration(state);
   })();
-    attachRawsBefore(state, __child, __prevEnd_nodes);
+    if (state.mode === 'raws') attachRawsBefore(state, __child, __prevEnd_nodes);
     nodes.push(__child);
     if (state.pos === __before) break;
-    __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
+    if (state.mode === 'raws') __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
     while (peekLiteral(state, "semicolon", ";")) {
       expectLiteral(state, "semicolon", ";");
     }
@@ -627,8 +633,8 @@ function parseAtRule__alt0(state: State): unknown {
   const __rbrace_end = state.tokens[state.pos - 1].end;
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "atrule", name: name, params: params, nodes: nodes, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "atrule", name: name, params: params, nodes: nodes, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } } : { type: "atrule", name: name, params: params, nodes: nodes };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -647,8 +653,8 @@ function parseAtRule__alt1(state: State): unknown {
   const __semi_end = semi !== null ? state.tokens[state.pos - 1].end : __semi_start;
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "atrule", name: name, params: params, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __semi_start) } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "atrule", name: name, params: params, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __semi_start) } } : { type: "atrule", name: name, params: params };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
@@ -683,29 +689,31 @@ function parseStylesheet(state: State): unknown {
     }
     return parseDeclaration(state);
   })();
-    attachRawsBefore(state, __child, __prevEnd_nodes);
+    if (state.mode === 'raws') attachRawsBefore(state, __child, __prevEnd_nodes);
     nodes.push(__child);
     if (state.pos === __before) break;
-    __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
+    if (state.mode === 'raws') __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
     while (peekLiteral(state, "semicolon", ";")) {
       expectLiteral(state, "semicolon", ";");
     }
   }
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "root", nodes: nodes, raws: { after: state.input.slice(__prevEnd_nodes, __endOff), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
-  __struct.source = makeSource(state, __startOff, __endOff);
+  const __struct: Record<string, unknown> = state.mode === 'raws' ? { type: "root", nodes: nodes, raws: { after: state.input.slice(__prevEnd_nodes, __endOff), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } } : { type: "root", nodes: nodes };
+  if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-export function parse(input: string): unknown {
+export function parse(input: string, options: ParseOptions = {}): unknown {
   const tokens = tokenize(input);
-  const lineStarts = computeLineStarts(input);
+  const mode = options.mode ?? 'fast';
+  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     tokens,
     pos: 0,
     input,
     lineStarts,
+    mode,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };

@@ -101,13 +101,15 @@ function emitProductionBody(production: Production, ctx: Ctx): string {
   lines.push(`const __lastTok = state.tokens[state.pos - 1];`);
   lines.push(`const __endOff = __lastTok ? __lastTok.end : __startOff;`);
 
-  const structure = emitStructureExpr(production.structure, {
+  const bindings = {
     valueExpr, presenceExpr, startOffExpr, endOffExpr,
-  });
+  };
+  const structure = emitStructureExpr(production.structure, bindings);
+  const fastStructure = emitStructureExpr(production.structure, bindings, { omitRaws: true });
   // Auto-attach source: { start, end }. The structure literal can't override
   // source — auto-attached after construction.
-  lines.push(`const __struct: Record<string, unknown> = ${structure};`);
-  lines.push(`__struct.source = makeSource(state, __startOff, __endOff);`);
+  lines.push(`const __struct: Record<string, unknown> = state.mode === 'raws' ? ${structure} : ${fastStructure};`);
+  lines.push(`if (state.mode === 'raws') __struct.source = makeSource(state, __startOff, __endOff);`);
   lines.push(`return __struct;`);
   return lines.join('\n');
 }
@@ -342,6 +344,9 @@ function emitRepeatedSpan(
   // $.gap that references the repeats span as 'from' can use the right
   // anchor — i.e. just after the opening literal, not advancing with the
   // loop.
+  const attachBefore = `if (state.mode === 'raws') attachRawsBefore(state, __child, __prevEnd_${listVar});`;
+  const updatePrevEnd = `if (state.mode === 'raws') __prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};`;
+
   if (!sep) {
     return `const __${listVar}_startOff = state.tokens[state.pos - 1]?.end ?? 0;
 const ${listVar}: unknown[] = [];
@@ -349,10 +354,10 @@ let __prevEnd_${listVar} = __${listVar}_startOff;
 while (!(${stopPredicate})) {
   const __before = state.pos;
   const __child = ${parseExpr};
-  attachRawsBefore(state, __child, __prevEnd_${listVar});
+  ${attachBefore}
   ${listVar}.push(__child);
   if (state.pos === __before) break;
-  __prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};
+  ${updatePrevEnd}
 }${minCheck}`;
   }
 
@@ -378,10 +383,10 @@ while (!(${stopPredicate})) {
   if (${stopPredicate}) break;
   const __before = state.pos;
   const __child = ${parseExpr};
-  attachRawsBefore(state, __child, __prevEnd_${listVar});
+  ${attachBefore}
   ${listVar}.push(__child);
   if (state.pos === __before) break;
-  __prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};
+  ${updatePrevEnd}
   while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
     expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
   }

@@ -24,14 +24,16 @@ function emitHeader(schema: InferredSchema): string {
 
 function emitPublicApi(schema: InferredSchema): string {
   const rootFn = parseFnName(schema.rootType);
-  return `export function parse(input: string): unknown {
+  return `export function parse(input: string, options: ParseOptions = {}): unknown {
   const tokens = tokenize(input);
-  const lineStarts = computeLineStarts(input);
+  const mode = options.mode ?? 'fast';
+  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     tokens,
     pos: 0,
     input,
     lineStarts,
+    mode,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };

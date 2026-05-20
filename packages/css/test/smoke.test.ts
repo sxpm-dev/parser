@@ -52,6 +52,18 @@ test('parses single rule with simple selector', () => {
   });
 });
 
+test('defaults to fast mode without formatting metadata', () => {
+  const ast = parse('foo { color: red }') as Record<string, unknown>;
+  assert.equal('source' in ast, false);
+  assert.equal('raws' in ast, false);
+});
+
+test('can parse with raws/source metadata when requested', () => {
+  const ast = parse('foo { color: red }', { mode: 'raws' }) as Record<string, unknown>;
+  assert.equal(typeof ast.source, 'object');
+  assert.equal(typeof ast.raws, 'object');
+});
+
 test('parses single rule with class selector', () => {
   assert.deepEqual(parseStripped('.foo { color: red }'), {
     type: 'root',

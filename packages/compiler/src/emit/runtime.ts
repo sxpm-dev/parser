@@ -10,8 +10,14 @@ export const PARSE_RUNTIME = `type State = {
   pos: number;
   readonly input: string;
   readonly lineStarts: number[];
+  readonly mode: ParseMode;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
+};
+
+export type ParseMode = 'fast' | 'raws';
+export type ParseOptions = {
+  readonly mode?: ParseMode;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };

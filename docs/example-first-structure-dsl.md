@@ -24,6 +24,60 @@ Three things follow from this pipeline:
   recursive-descent parser. The schema author writes examples; the compiler
   takes care of performance.
 
+## Mental model
+
+An example is not just a fixture. It is one grammar production plus the shape
+to return when that production matches.
+
+This CSS declaration example:
+
+```ts
+ex('color: red;')
+  .as('Declaration')
+  .span('prop', 'color').until([':', ';', '}'])
+  .span(':')
+  .span('value', 'red').until([';', '}'])
+  .span(';').optional()
+  .structure({ type: 'decl', prop: $.prop, value: $.value })
+  .build()
+```
+
+teaches the compiler:
+
+```txt
+Declaration :=
+  prop captured until ":" / ";" / "}"
+  then ":"
+  then value captured until ";" / "}"
+  then optional ";"
+
+return { type: "decl", prop, value }
+```
+
+The concrete text (`color`, `red`) is a teaching sample. The span modifiers
+tell the compiler which parts generalize.
+
+Node placement is explicit. Defining a `Comment` production teaches how to
+parse a comment node, but it does not automatically allow comments everywhere.
+Comments become valid children only where a recursive span lists `Comment` as
+one of its roles:
+
+```ts
+.span('nodes', 'color: red', ['Comment', 'AtRule', 'Rule', 'Declaration'])
+  .repeats({ sep: ';', trailing: 'allowed' })
+```
+
+Tokenization is separate from placement. The schema's `tokens` declaration
+tells the generated tokenizer which classes it must recognize even inside
+opaque `.until(...)` captures. For example, CSS declares:
+
+```ts
+tokens: ['number', 'string', 'comment']
+```
+
+so selectors, params, and values can contain numbers, strings, and comments
+without the scanner splitting them into unrelated punctuators.
+
 ## What every example carries
 
 For the compiler to learn from one example it must know all of:
@@ -150,6 +204,20 @@ tokens: [
 ]
 ```
 
+`tokens` does not say where a node is allowed. It only says what the tokenizer
+can recognize. Placement still comes from spans and recursive role lists.
+
+For comments this distinction matters:
+
+```ts
+tokens: ['comment']
+```
+
+means the tokenizer recognizes comments, including comments inside
+`.until(...)` captures. A `Comment` node appears in the output only when there
+is a `Comment` production and some parent span includes `Comment` in its role
+list.
+
 ### `whitespace` — implicit between spans
 
 By default the schema declares `whitespace: 'standard'`, meaning any whitespace
@@ -224,9 +292,9 @@ documented in `packages/compiler/README.md`.
 
 ### Refinements (closed, scoped per class)
 
-Refinements narrow a class's pattern and narrow the captured type. They are
-*enforced* by the generated parser: an input outside the refinement is
-rejected.
+Refinements narrow a class's pattern and narrow the captured type. Implemented
+refinements are *enforced* by the generated parser: an input outside the
+refinement is rejected.
 
 | Class | Refinements |
 |---|---|
@@ -237,6 +305,44 @@ rejected.
 
 Refinements compose only one deep — `.number().int()` is valid;
 `.number().int().positive()` is not (positivity is not a token-shape concern).
+
+#### Comments
+
+Comments are modeled with the generic `comment` class plus a shape refinement:
+
+```ts
+// Block comment shape
+ex('/* hello */')
+  .as('Comment')
+  .span('text', '/* hello */').comment().block('/*', '*/')
+  .structure({ type: 'comment', text: $.text })
+  .build()
+
+// Line comment shape
+ex('// hello')
+  .as('Comment')
+  .span('text', '// hello').comment().line('//')
+  .structure({ type: 'comment', text: $.text })
+  .build()
+```
+
+Then choose where comments may appear by listing `Comment` in recursive child
+roles:
+
+```ts
+.span('items', '/* hello */', ['Comment', 'Statement', 'Declaration'])
+  .repeats({ sep: ';', trailing: 'allowed' })
+```
+
+If a comment occurs inside an opaque capture, such as a CSS selector or value,
+it is captured as part of that string unless the parent grammar lists
+`Comment` as a separate child at that position.
+
+Current implementation note: the DSL exposes `.line(marker)` and
+`.block(open, close)` refinements, but generated comment tokenization is still
+being generalized. The CSS parser currently recognizes block comments
+`/* ... */`; schemas that need line comments such as `// ...` should add tests
+when the generic comment scanner is expanded.
 
 ### Modifiers (closed)
 
@@ -357,6 +463,39 @@ ex('@media screen { color: red }').as('AtRule')
   .structure({ type: 'atrule', name: $.name, params: $.params, nodes: $.nodes })
   .build(),
 ```
+
+### Recursive roles and "allowed everywhere"
+
+A common mistake is expecting a node type to become globally valid once it has
+an example. The compiler does not do that. A node type is only tried where a
+span references it.
+
+For example:
+
+```ts
+ex('/* x */')
+  .as('Comment')
+  .span('text', '/* x */').comment().block('/*', '*/')
+  .structure({ type: 'comment', text: $.text })
+  .build()
+```
+
+defines a `Comment` production. This parent span is what permits comments in
+a block body:
+
+```ts
+.span('nodes', '/* x */', ['Comment', 'Rule', 'Declaration'])
+  .repeats({ sep: ';', trailing: 'allowed' })
+```
+
+If another parent span lists only `['Rule', 'Declaration']`, then standalone
+comments are not valid children there, even though the `Comment` production
+exists.
+
+This is intentional. It keeps grammars local, predictable, and fast. If a
+language truly allows comments between almost every token, that should be
+modeled as tokenizer/whitespace behavior; if comments should appear in the
+returned structure, list `Comment` in the relevant child roles.
 
 At parse time the compiler dispatches between productions speculatively:
 tries the first; on failure rolls back the token cursor and tries the next;

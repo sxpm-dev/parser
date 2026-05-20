@@ -27,6 +27,13 @@ Everything the compiler emits is inferred from schema data — examples,
 operators, punctuators, whitespace policy, recovery declarations — through a
 small set of generic, reusable primitives.
 
+The compiler is allowed to recognize **generic structural patterns** in that
+schema data and emit faster code for them. For example, a repeated nested
+block body with pair-like children can compile to a direct character scanner
+instead of the normal token stream parser. That optimization is still
+domainless: it is triggered by the schema shape, literals, span modifiers, and
+structure fields, never by a package name such as `css`.
+
 If a language feature cannot be expressed today:
 
 1. Add more examples.
@@ -232,6 +239,39 @@ Not yet implemented as named passes (planned):
 Every implemented pass is unit-testable in isolation and consumes only
 inferred schema data — never raw schema source.
 
+### The inference model
+
+The compiler treats every example as a production:
+
+```txt
+example input + spans + structure  ->  NodeType production
+```
+
+The example input demonstrates one concrete spelling. The span list explains
+how to generalize that spelling:
+
+- literal spans become exact token/literal matches;
+- classed spans (`ident`, `string`, `comment`, etc.) become tokenizer class
+  matches;
+- `.until(...)` spans become opaque source captures with declared stop tokens;
+- recursive spans become calls into other node-type productions;
+- `.repeats(...)` recursive spans become child lists.
+
+The structure literal explains what to construct after the production matches.
+The compiler never assumes the structure is an AST; it only preserves the
+shape the schema asks for.
+
+Recursive role lists define *where* a node type may appear. A standalone
+`Comment` example only defines how to parse a comment node. A parent span such
+as `['Comment', 'Rule', 'Declaration']` is what allows comments to appear in
+that parent's child list.
+
+Token declarations define *what the tokenizer must recognize even when no
+span at the current position explicitly consumes that class*. This matters for
+`.until(...)` captures: if `comment` or `string` may appear inside an opaque
+capture, the schema should declare that token class so the generated scanner
+does not split it into unrelated punctuators.
+
 ## Generated parser shape & performance
 
 The compiler's first-class output is **performance**. Each schema compiles to
@@ -251,6 +291,7 @@ a hand-written-quality recursive-descent parser specialized to its grammar.
 | **Recursion** | Statically resolved across `uses:` + in-schema node-type graph. Each node type becomes one or more functions; multi-production nodes get a dispatch wrapper. | Inlining cold rules at call sites where shape allows. |
 | **Lookahead** | Bounded and explicit per case via `peekLiteral`. Where speculation is needed (multi-role spans, multi-production nodes), uses `trySpeculate` / `tryRoles` / `tryRolesOrNull` — these reset `state.pos` on failure. | Convert disjoint speculations into single-token switches. |
 | **`.until()` capture** | Walks tokens tracking `() [] {}` depth; stops at depth-zero match against the stop set, OR at a closing bracket while at depth zero (the boundary of an enclosing block — stops without consuming). | — |
+| **Direct fast paths** | Some schema shapes compile to direct character scanners for `mode: 'fast'`, bypassing token allocation while returning the same plain structure. These paths are inferred from generic nested-block / pair / prefixed-production patterns. | More shape families, e.g. line records and key/value lists. |
 
 ### Non-goals (runtime)
 
@@ -321,11 +362,14 @@ the conformance metrics independently.
    `src/schema.ts`, and a `test/` directory.
 2. Decide on the schema's *structure shape commitment* — AST, extractor,
    metrics, etc. All examples must produce structures in this family.
-3. Start with 3–5 representative examples covering the root node type.
+3. Start with 3–5 representative examples covering the root node type. Each
+   example should explain one grammar production and its returned structure.
 4. Add additional node types as separate `.as(NodeType)` examples, or split
    into composed sub-schemas if the language benefits from modularity (the
    normal case for non-trivial languages).
-5. Declare `operators`, `punctuators`, and `whitespace` as needed.
+5. Declare `operators`, `punctuators`, `tokens`, and `whitespace` as needed.
+   Add token classes for things that may appear inside `.until(...)` captures,
+   not only for spans consumed directly.
 6. Run `npm run generate -w @parser2/<schema>` to emit
    `src/_generated/parser.ts`.
 7. Write unit tests asserting `parse` / `tokenize` / `stringify`.

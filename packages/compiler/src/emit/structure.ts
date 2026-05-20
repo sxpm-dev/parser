@@ -92,6 +92,41 @@ export function emitStructureExpr(
   return `{ ${entries.join(', ')} }`;
 }
 
+export function collectOffsetRefs(
+  value: StructureValue,
+  options: StructureEmitOptions = {},
+  refs = new Set<string>(),
+): ReadonlySet<string> {
+  if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return refs;
+  }
+  if (isStructureRef(value)) {
+    if (value.__ref === 'span-gap') {
+      refs.add(value.from);
+      refs.add(value.to);
+    } else if (value.__ref === 'span-tail') {
+      refs.add(value.from);
+    } else if (
+      value.__ref === 'span-raw'
+      || value.__ref === 'span-ends-with'
+      || value.__ref === 'span-comment-left'
+      || value.__ref === 'span-comment-right'
+    ) {
+      refs.add(value.name);
+    }
+    return refs;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectOffsetRefs(item, options, refs);
+    return refs;
+  }
+  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+    if (options.omitRaws && key === 'raws') continue;
+    collectOffsetRefs(child, options, refs);
+  }
+  return refs;
+}
+
 function jsObjectKey(key: string): string {
   if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) return key;
   return jsString(key);

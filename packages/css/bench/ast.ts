@@ -7,9 +7,14 @@ import { type BenchResult, type Contestant, runBenchTable } from './common.ts';
 
 const contestants: Contestant[] = [
   {
-    label: 'parser2 css parse',
+    label: 'parser2 css fast',
     unit: 'nodes',
-    fn: (input: string): BenchResult => ({ units: countAst(parse(input)) }),
+    fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'fast' })) }),
+  },
+  {
+    label: 'parser2 css raws',
+    unit: 'nodes',
+    fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'raws' })) }),
   },
   {
     label: 'postcss parse',

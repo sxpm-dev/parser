@@ -14,8 +14,12 @@ export function emitTokenizer(schema: InferredSchema): string {
   const multiChar = schema.literals.filter((l) => l.literal.length > 1);
   const singleChar = schema.literals.filter((l) => l.literal.length === 1);
   const multiCharBranches = multiChar.map(emitLiteralBranch).join('\n');
-  const singleCharBranches = singleChar.map(emitLiteralBranch).join('\n');
-  const classBranches = schema.classes.map((c) => emitClassBranch(c)).join('\n');
+  const earlySingleChar = singleChar.filter((l) => !literalNeedsClassPriority(l.literal, schema.classes));
+  const lateSingleChar = singleChar.filter((l) => literalNeedsClassPriority(l.literal, schema.classes));
+  const earlySingleCharBranches = emitSingleCharSwitch(earlySingleChar);
+  const lateSingleCharBranches = emitSingleCharSwitch(lateSingleChar);
+  const commentBranches = schema.classes.filter((c) => c.class === 'comment').map((c) => emitClassBranch(c)).join('\n');
+  const classBranches = schema.classes.filter((c) => c.class !== 'comment').map((c) => emitClassBranch(c)).join('\n');
   const helpers = collectHelpers(schema.classes);
 
   return `${helpers}
@@ -23,7 +27,7 @@ export function emitTokenizer(schema: InferredSchema): string {
 export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
 
 export function tokenize(input: string): Token[] {
-  const tokens: Token[] = [];
+  const tokens: (Token[] & { hasComments?: boolean }) = [];
   const len = input.length;
   let i = 0;
   while (i < len) {
@@ -31,12 +35,31 @@ export function tokenize(input: string): Token[] {
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
 ${indentLines(multiCharBranches, 4)}
+${indentLines(commentBranches, 4)}
+${indentLines(earlySingleCharBranches, 4)}
 ${indentLines(classBranches, 4)}
-${indentLines(singleCharBranches, 4)}
+${indentLines(lateSingleCharBranches, 4)}
     throw new SyntaxError(\`Unexpected character '\${input[i]}' at position \${i}\`);
   }
   return tokens;
 }`;
+}
+
+function literalNeedsClassPriority(literal: string, classes: ReadonlyArray<TokenClassUsage>): boolean {
+  if (literal.length !== 1) return false;
+  const code = literal.charCodeAt(0);
+  for (const usage of classes) {
+    if (usage.class === 'comment' && code === 0x2f /* / */) return true;
+    if (usage.class === 'string' && (code === 0x22 /* " */ || code === 0x27 /* ' */)) return true;
+    if (usage.class === 'number' && code >= 0x30 && code <= 0x39) return true;
+    if (usage.class === 'ident') {
+      const refinements = new Set(usage.refinements.map((r) => r.name));
+      const cssIdent = refinements.has('css') || refinements.size === 0;
+      if (cssIdent && code === 0x5c /* \\ */) return true;
+      if (!cssIdent && (code === 0x24 /* $ */ || code === 0x5f /* _ */)) return true;
+    }
+  }
+  return false;
 }
 
 function emitLiteralBranch(decl: LiteralDecl): string {
@@ -48,6 +71,19 @@ function emitLiteralBranch(decl: LiteralDecl): string {
     return `if (c === ${code}) { tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + 1 }); i++; continue; }`;
   }
   return `if (input.startsWith(${valueExpr}, i)) { tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + ${literal.length} }); i += ${literal.length}; continue; }`;
+}
+
+function emitSingleCharSwitch(decls: ReadonlyArray<LiteralDecl>): string {
+  if (decls.length === 0) return '';
+  const cases = decls.map((decl) => {
+    const code = decl.literal.charCodeAt(0);
+    const typeExpr = jsString(decl.type);
+    const valueExpr = jsString(decl.literal);
+    return `case ${code}: tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + 1 }); i++; continue;`;
+  }).join('\n');
+  return `switch (c) {
+${indentLines(cases, 2)}
+}`;
 }
 
 function emitClassBranch(usage: TokenClassUsage): string {
@@ -90,7 +126,14 @@ function emitCssIdentBranch(): string {
   // no balanced brackets) until the matching ')'. Strings are tracked so
   // that a ')' inside a quoted url like url("./image (1).jpg") doesn't
   // close the url early.
-  if (input.slice(start, i).toLowerCase() === 'url' && i < len && input.charCodeAt(i) === 0x28 /* ( */) {
+  if (
+    i - start === 3
+    && i < len
+    && input.charCodeAt(i) === 0x28 /* ( */
+    && (input.charCodeAt(start) | 32) === 0x75 /* u */
+    && (input.charCodeAt(start + 1) | 32) === 0x72 /* r */
+    && (input.charCodeAt(start + 2) | 32) === 0x6c /* l */
+  ) {
     i++; // consume (
     while (i < len) {
       const cu = input.charCodeAt(i);
@@ -171,6 +214,7 @@ function emitCommentBranch(): string {
   i += 2;
   while (i < len && !(input.charCodeAt(i) === 0x2a && i + 1 < len && input.charCodeAt(i + 1) === 0x2f)) i++;
   if (i < len) i += 2;
+  tokens.hasComments = true;
   tokens.push({ type: 'comment', value: input.slice(start, i), start, end: i });
   continue;
 }`;

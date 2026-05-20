@@ -11,6 +11,7 @@ export const PARSE_RUNTIME = `type State = {
   readonly input: string;
   readonly lineStarts: number[];
   readonly mode: ParseMode;
+  readonly hasComments: boolean;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -143,6 +144,13 @@ function peekLiteral(state: State, type: string, value: string): boolean {
   return tok !== undefined && tok.type === type && tok.value === value;
 }
 
+function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
+  let pos = state.pos;
+  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  const tok = state.tokens[pos];
+  return tok !== undefined && tok.type === type && tok.value === value;
+}
+
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
   const start = state.pos;
   try {
@@ -252,6 +260,15 @@ function captureUntil(
   // the source. We omit the comment's source range; surrounding whitespace
   // stays untouched. Token-based — won't accidentally strip /* */ found
   // inside string tokens (where it isn't a real comment).
+  if (!state.hasComments) {
+    if (!trim) return state.input.slice(startOff, endOff);
+    let valueStart = startOff;
+    let valueEnd = endOff;
+    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return state.input.slice(valueStart, valueEnd);
+  }
+
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < state.pos; i++) {
     const t = state.tokens[i];
@@ -260,21 +277,109 @@ function captureUntil(
     const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
     if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
   }
-
-  let out: string;
   if (omit.length === 0) {
-    out = state.input.slice(startOff, endOff);
-  } else {
-    let buf = '';
-    let cursor = startOff;
-    for (const [s, e] of omit) {
-      buf += state.input.slice(cursor, s);
-      cursor = e;
-    }
-    buf += state.input.slice(cursor, endOff);
-    out = buf;
+    if (!trim) return state.input.slice(startOff, endOff);
+    let valueStart = startOff;
+    let valueEnd = endOff;
+    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return state.input.slice(valueStart, valueEnd);
   }
-  return trim ? out.trim() : out;
+  let buf = '';
+  let cursor = startOff;
+  for (const [s, e] of omit) {
+    buf += state.input.slice(cursor, s);
+    cursor = e;
+  }
+  buf += state.input.slice(cursor, endOff);
+  return trim ? buf.trim() : buf;
+}
+
+function scanTopLevelBoundary(
+  state: State,
+  stop0: string,
+  stop1: string | null,
+  stop2: string | null,
+  watch0: string | null,
+  watch1: string | null = null,
+): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
+  let depth = 0;
+  let pos = state.pos;
+  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  const firstIdx = pos;
+  let watchIdx = -1;
+  let watch1Idx = -1;
+  while (pos < state.tokens.length) {
+    const t = state.tokens[pos];
+    if (depth === 0) {
+      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
+      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
+      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
+    }
+    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
+    else if (t.value === ')' || t.value === ']' || t.value === '}') {
+      if (depth === 0) break;
+      depth--;
+    }
+    pos++;
+  }
+  let captureEndIdx = pos;
+  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
+  return {
+    firstIdx,
+    stopIdx: pos,
+    captureEndIdx,
+    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
+    watchIdx,
+    watch1Idx,
+  };
+}
+
+function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
+  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
+    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
+    state.__lastCaptureStart = here;
+    state.__lastCaptureEnd = here;
+    return '';
+  }
+  const startOff = state.tokens[firstIdx].start;
+  const endOff = state.tokens[endIdx - 1].end;
+  state.__lastCaptureStart = startOff;
+  state.__lastCaptureEnd = endOff;
+
+  if (!state.hasComments) {
+    if (!trim) return state.input.slice(startOff, endOff);
+    let valueStart = startOff;
+    let valueEnd = endOff;
+    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return state.input.slice(valueStart, valueEnd);
+  }
+
+  const omit: Array<[number, number]> = [];
+  for (let i = firstIdx; i < endIdx; i++) {
+    const t = state.tokens[i];
+    if (t.type !== 'comment') continue;
+    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
+    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+  }
+  if (omit.length === 0) {
+    if (!trim) return state.input.slice(startOff, endOff);
+    let valueStart = startOff;
+    let valueEnd = endOff;
+    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return state.input.slice(valueStart, valueEnd);
+  }
+  let buf = '';
+  let cursor = startOff;
+  for (const [s, e] of omit) {
+    buf += state.input.slice(cursor, s);
+    cursor = e;
+  }
+  buf += state.input.slice(cursor, endOff);
+  return trim ? buf.trim() : buf;
 }
 
 function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {

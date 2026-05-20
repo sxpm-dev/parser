@@ -1337,7 +1337,7 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
     }
     if (depth === 0) {
       if (colonIdx < 0 && c === 58) colonIdx = pos;
-      if (bangIdx < 0 && c === 33) bangIdx = pos;
+      if (colonIdx >= 0 && bangIdx < 0 && c === 33) bangIdx = pos;
       if (c === stop0 || c === stop1 || c === stop2) break;
     }
     if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === 123) depth++;

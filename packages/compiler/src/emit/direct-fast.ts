@@ -222,6 +222,8 @@ function emitNestedBlockFastPath(shape: FastShape): string {
   const separatorCode = shape.literals.separator.charCodeAt(0);
   const flagCode = shape.literals.flag ? shape.literals.flag.charCodeAt(0) : -1;
   const flagStopCheck = shape.literals.flag ? `state.scanStop === ${flagCode}` : 'false';
+  const flagCapture = shape.literals.flag ? `      if (colonIdx >= 0 && bangIdx < 0 && c === ${flagCode}) bangIdx = pos;
+` : '';
   const commentRootBranch = shape.comment ? `    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
       nodes[nodes.length] = parseDirectComment(state);
       continue;
@@ -451,8 +453,7 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
     }
     if (depth === 0) {
       if (colonIdx < 0 && c === ${pairCode}) colonIdx = pos;
-      if (bangIdx < 0 && c === ${flagCode}) bangIdx = pos;
-      if (c === stop0 || c === stop1 || c === stop2) break;
+${flagCapture}      if (c === stop0 || c === stop1 || c === stop2) break;
     }
     if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === ${openCode}) depth++;
     else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === ${closeCode}) {

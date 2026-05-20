@@ -214,31 +214,44 @@ function emitNestedBlockFastPath(shape: FastShape): string {
   const pairType = typeProp(shape.pair);
   const prefixedType = typeProp(shape.prefixed);
   const pairFlag = shape.pair.flagKey ? `${prop(shape.pair.flagKey)}: true` : '';
-  const pair = jsString(shape.literals.pair);
   const prefixCode = shape.literals.prefix.charCodeAt(0);
   const openCode = shape.literals.open.charCodeAt(0);
   const closeCode = shape.literals.close.charCodeAt(0);
   const pairCode = shape.literals.pair.charCodeAt(0);
   const separatorCode = shape.literals.separator.charCodeAt(0);
   const flagCode = shape.literals.flag ? shape.literals.flag.charCodeAt(0) : -1;
-  const flagStopCheck = shape.literals.flag ? `valueScan.stop === ${flagCode}` : 'false';
+  const flagStopCheck = shape.literals.flag ? `state.scanStop === ${flagCode}` : 'false';
 
-  return `type DirectScan = {
-  readonly stop: number;
-  readonly stopIdx: number;
-  readonly captureEnd: number;
-  readonly colonIdx: number;
-  readonly bangIdx: number;
-};
-
-type DirectState = {
+  return `type DirectState = {
   readonly input: string;
   readonly len: number;
   pos: number;
+  scanStop: number;
+  scanStopIdx: number;
+  scanCaptureStart: number;
+  scanCaptureEnd: number;
+  scanColonIdx: number;
+  scanBangIdx: number;
+  scanPairLeftEnd: number;
+  scanPairRightStart: number;
+  scanPairRightEnd: number;
 };
 
 function parseDirectFast(input: string): unknown {
-  const state: DirectState = { input, len: input.length, pos: 0 };
+  const state: DirectState = {
+    input,
+    len: input.length,
+    pos: 0,
+    scanStop: -1,
+    scanStopIdx: 0,
+    scanCaptureStart: 0,
+    scanCaptureEnd: 0,
+    scanColonIdx: -1,
+    scanBangIdx: -1,
+    scanPairLeftEnd: -1,
+    scanPairRightStart: -1,
+    scanPairRightEnd: -1,
+  };
   const nodes = parseDirectChildren(state, -1);
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
@@ -256,17 +269,20 @@ function parseDirectChildren(state: DirectState, close: number): unknown[] {
       return nodes;
     }
     const c = input.charCodeAt(state.pos);
-    if (close >= 0 && c === close) return nodes;
+    if (close >= 0 && c === close) {
+      state.pos++;
+      return nodes;
+    }
     if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[state.pos]}' at position \${state.pos}\`);
     if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
-      nodes.push(parseDirectComment(state));
+      nodes[nodes.length] = parseDirectComment(state);
       continue;
     }
     if (c === ${prefixCode}) {
-      nodes.push(parseDirectPrefixed(state));
+      nodes[nodes.length] = parseDirectPrefixed(state);
       continue;
     }
-    nodes.push(parseDirectBlockOrPair(state));
+    nodes[nodes.length] = parseDirectBlockOrPair(state);
   }
 }
 
@@ -287,54 +303,50 @@ function parseDirectPrefixed(state: DirectState): unknown {
   const nameStart = state.pos;
   readDirectIdent(state);
   const name = input.slice(nameStart, state.pos);
-  const paramsScan = scanDirectBoundary(state, ${separatorCode}, ${openCode}, ${closeCode}, false);
-  const params = trimDirectSlice(input, state.pos, paramsScan.captureEnd);
-  state.pos = paramsScan.stopIdx;
-  if (paramsScan.stop === ${openCode}) {
+  scanDirectBoundary(state, ${separatorCode}, ${openCode}, ${closeCode});
+  const params = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+  state.pos = state.scanStopIdx;
+  if (state.scanStop === ${openCode}) {
     state.pos++;
     const nodes = parseDirectChildren(state, ${closeCode});
-    expectDirectChar(state, ${closeCode});
     return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `${prop(shape.prefixed.childrenKey)}: nodes`)} };
   }
-  if (paramsScan.stop === ${separatorCode}) state.pos++;
+  if (state.scanStop === ${separatorCode}) state.pos++;
   return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`)} };
 }
 
 function parseDirectBlockOrPair(state: DirectState): unknown {
   const input = state.input;
-  const start = state.pos;
-  const scan = scanDirectBoundary(state, ${openCode}, ${separatorCode}, ${closeCode}, true);
-  const leading = trimDirectSlice(input, start, scan.captureEnd);
-  if (scan.stop === ${openCode} && !leading.endsWith(${pair})) {
-    const selector = leading;
-    state.pos = scan.stopIdx + 1;
+  scanDirectPairBoundary(state, ${openCode}, ${separatorCode}, ${closeCode});
+  const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === ${pairCode};
+  if (state.scanStop === ${openCode} && !rejectsBlock) {
+    const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+    state.pos = state.scanStopIdx + 1;
     const nodes = parseDirectChildren(state, ${closeCode});
-    expectDirectChar(state, ${closeCode});
     return { ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: nodes`)} };
   }
-  if (scan.colonIdx < 0) throw new SyntaxError(\`expected ${shape.literals.pair} at position \${state.pos}\`);
-  const prop = trimDirectSlice(input, start, scan.colonIdx);
-  if (scan.stop === ${openCode}) {
-    state.pos = scan.colonIdx + 1;
+  if (state.scanColonIdx < 0) throw new SyntaxError(\`expected ${shape.literals.pair} at position \${state.pos}\`);
+  const prop = input.slice(state.scanCaptureStart, state.scanPairLeftEnd);
+  if (state.scanStop === ${openCode}) {
+    state.pos = state.scanColonIdx + 1;
     return parseDirectDeclarationRest(state, prop);
   }
-  const valueEnd = scan.bangIdx >= 0 ? scan.bangIdx : scan.captureEnd;
-  const value = trimDirectSlice(input, scan.colonIdx + 1, valueEnd);
-  state.pos = scan.bangIdx >= 0 ? scan.bangIdx : scan.stopIdx;
-  if (scan.bangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
-  if (scan.stop === ${separatorCode}) state.pos++;
+  const value = input.slice(state.scanPairRightStart, state.scanPairRightEnd);
+  state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
+  if (state.scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
+  if (state.scanStop === ${separatorCode}) state.pos++;
   return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`)} };
 }
 
 function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
   const input = state.input;
-  const valueScan = scanDirectBoundary(state, ${separatorCode}, ${closeCode}, ${flagCode}, true);
-  const value = trimDirectSlice(input, state.pos, valueScan.captureEnd);
-  state.pos = valueScan.stopIdx;
+  scanDirectPairBoundary(state, ${separatorCode}, ${closeCode}, ${flagCode});
+  const value = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+  state.pos = state.scanStopIdx;
   if (${flagStopCheck}) {
     return parseDirectImportantDeclarationRest(state, prop, value);
   }
-  if (valueScan.stop === ${separatorCode}) state.pos++;
+  if (state.scanStop === ${separatorCode}) state.pos++;
   return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`)} };
 }
 
@@ -344,14 +356,54 @@ function parseDirectImportantDeclarationRest(state: DirectState, prop: string, v
   skipDirectWs(state);
   const importantStart = state.pos;
   readDirectIdent(state);
-  const important = input.slice(importantStart, state.pos);
-  if (important.length === 0) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
+  if (state.pos === importantStart) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
   skipDirectWs(state);
   if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
   return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`, pairFlag)} };
 }
 
-function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, stop2: number, watchColonBang: boolean): DirectScan {
+function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
+  const input = state.input;
+  const len = state.len;
+  let pos = state.pos;
+  let depth = 0;
+  while (pos < len) {
+    const c = input.charCodeAt(pos);
+    if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[pos]}' at position \${pos}\`);
+    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
+      pos = skipDirectString(input, pos, len);
+      continue;
+    }
+    if (c === 0x5c /* \\\\ */) {
+      pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth === 0) {
+      if (c === stop0 || c === stop1 || c === stop2) break;
+    }
+    if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === ${openCode}) depth++;
+    else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === ${closeCode}) {
+      if (depth === 0) break;
+      depth--;
+    }
+    pos++;
+  }
+  let captureStart = state.pos;
+  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  let captureEnd = pos;
+  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
+  state.scanStopIdx = pos;
+  state.scanCaptureStart = captureStart;
+  state.scanCaptureEnd = captureEnd;
+  state.scanColonIdx = -1;
+  state.scanBangIdx = -1;
+  state.scanPairLeftEnd = -1;
+  state.scanPairRightStart = -1;
+  state.scanPairRightEnd = -1;
+}
+
+function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
   const input = state.input;
   const len = state.len;
   let pos = state.pos;
@@ -370,8 +422,8 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
       continue;
     }
     if (depth === 0) {
-      if (watchColonBang && colonIdx < 0 && c === ${pairCode}) colonIdx = pos;
-      if (watchColonBang && bangIdx < 0 && c === ${flagCode}) bangIdx = pos;
+      if (colonIdx < 0 && c === ${pairCode}) colonIdx = pos;
+      if (bangIdx < 0 && c === ${flagCode}) bangIdx = pos;
       if (c === stop0 || c === stop1 || c === stop2) break;
     }
     if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === ${openCode}) depth++;
@@ -381,15 +433,31 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
     }
     pos++;
   }
+  let captureStart = state.pos;
+  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
   let captureEnd = pos;
   while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
-  return {
-    stop: pos < len ? input.charCodeAt(pos) : -1,
-    stopIdx: pos,
-    captureEnd,
-    colonIdx,
-    bangIdx,
-  };
+  let pairLeftEnd = -1;
+  let pairRightStart = -1;
+  let pairRightEnd = -1;
+  if (colonIdx >= 0) {
+    pairLeftEnd = colonIdx;
+    while (pairLeftEnd > captureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
+    pairRightStart = colonIdx + 1;
+    const rawRightEnd = bangIdx >= 0 ? bangIdx : captureEnd;
+    while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
+    pairRightEnd = rawRightEnd;
+    while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
+  }
+  state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
+  state.scanStopIdx = pos;
+  state.scanCaptureStart = captureStart;
+  state.scanCaptureEnd = captureEnd;
+  state.scanColonIdx = colonIdx;
+  state.scanBangIdx = bangIdx;
+  state.scanPairLeftEnd = pairLeftEnd;
+  state.scanPairRightStart = pairRightStart;
+  state.scanPairRightEnd = pairRightEnd;
 }
 
 function skipDirectString(input: string, pos: number, len: number): number {
@@ -418,12 +486,6 @@ function readDirectIdent(state: DirectState): void {
   }
 }
 
-function expectDirectChar(state: DirectState, ch: number): void {
-  skipDirectWsAndSeparators(state);
-  if (state.input.charCodeAt(state.pos) !== ch) throw new SyntaxError(\`expected '\${String.fromCharCode(ch)}' at position \${state.pos}\`);
-  state.pos++;
-}
-
 function skipDirectWsAndSeparators(state: DirectState): void {
   const input = state.input;
   const len = state.len;
@@ -441,12 +503,6 @@ function skipDirectWs(state: DirectState): void {
   const input = state.input;
   const len = state.len;
   while (state.pos < len && isDirectWs(input.charCodeAt(state.pos))) state.pos++;
-}
-
-function trimDirectSlice(input: string, start: number, end: number): string {
-  while (start < end && isDirectWs(input.charCodeAt(start))) start++;
-  while (end > start && isDirectWs(input.charCodeAt(end - 1))) end--;
-  return input.slice(start, end);
 }
 
 function isDirectWs(c: number): boolean {

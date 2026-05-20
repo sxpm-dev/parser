@@ -1142,8 +1142,8 @@ function parseDirectRootChildren(state: DirectState): unknown[] {
   while (true) {
     while (state.pos < len) {
       const ws = input.charCodeAt(state.pos);
-      if (isDirectWs(ws) || ws === 59) state.pos++;
-      else break;
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
     }
     if (state.pos >= len) return nodes;
     const c = input.charCodeAt(state.pos);
@@ -1167,8 +1167,8 @@ function parseDirectChildren(state: DirectState): unknown[] {
   while (true) {
     while (state.pos < len) {
       const ws = input.charCodeAt(state.pos);
-      if (isDirectWs(ws) || ws === 59) state.pos++;
-      else break;
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
     }
     if (state.pos >= len) {
       throw new SyntaxError(`expected '}' at position ${state.pos}`);
@@ -1200,8 +1200,16 @@ function parseDirectComment(state: DirectState): unknown {
   if (state.pos < len) state.pos += 2;
   let textStart = start + 2;
   let textEnd = state.pos - 2;
-  while (textStart < textEnd && isDirectWs(input.charCodeAt(textStart))) textStart++;
-  while (textEnd > textStart && isDirectWs(input.charCodeAt(textEnd - 1))) textEnd--;
+  while (textStart < textEnd) {
+    const lc = input.charCodeAt(textStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    textStart++;
+  }
+  while (textEnd > textStart) {
+    const tc = input.charCodeAt(textEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    textEnd--;
+  }
   return { type: "comment", text: input.slice(textStart, textEnd) };
 }
 
@@ -1214,13 +1222,14 @@ function parseDirectPrefixed(state: DirectState): unknown {
   const name = input.slice(nameStart, state.pos);
   scanDirectBoundary(state, 59, 123, 125);
   const params = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+  const scanStop = state.scanStop;
   state.pos = state.scanStopIdx;
-  if (state.scanStop === 123) {
+  if (scanStop === 123) {
     state.pos++;
     const nodes = parseDirectChildren(state);
     return { type: "atrule", name: name, params: params, nodes: nodes };
   }
-  if (state.scanStop === 59) state.pos++;
+  if (scanStop === 59) state.pos++;
   return { type: "atrule", name: name, params: params };
 }
 
@@ -1235,22 +1244,38 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
     const nodes = parseDirectChildren(state);
     return { type: "rule", selector: selector, nodes: nodes };
   }
-  if (state.scanColonIdx < 0) throw new SyntaxError(`expected : at position ${state.pos}`);
-  let pairLeftEnd = state.scanColonIdx;
-  while (pairLeftEnd > state.scanCaptureStart && isDirectWs(input.charCodeAt(pairLeftEnd - 1))) pairLeftEnd--;
-  const prop = input.slice(state.scanCaptureStart, pairLeftEnd);
+  const scanColonIdx = state.scanColonIdx;
+  if (scanColonIdx < 0) throw new SyntaxError(`expected : at position ${state.pos}`);
+  const scanCaptureStart = state.scanCaptureStart;
+  const scanCaptureEnd = state.scanCaptureEnd;
+  const scanBangIdx = state.scanBangIdx;
+  let pairLeftEnd = scanColonIdx;
+  while (pairLeftEnd > scanCaptureStart) {
+    const lc = input.charCodeAt(pairLeftEnd - 1);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    pairLeftEnd--;
+  }
+  const prop = input.slice(scanCaptureStart, pairLeftEnd);
   if (state.scanStop === 123) {
-    state.pos = state.scanColonIdx + 1;
+    state.pos = scanColonIdx + 1;
     return parseDirectDeclarationRest(state, prop);
   }
-  let pairRightStart = state.scanColonIdx + 1;
-  const rawRightEnd = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanCaptureEnd;
-  while (pairRightStart < rawRightEnd && isDirectWs(input.charCodeAt(pairRightStart))) pairRightStart++;
+  let pairRightStart = scanColonIdx + 1;
+  const rawRightEnd = scanBangIdx >= 0 ? scanBangIdx : scanCaptureEnd;
+  while (pairRightStart < rawRightEnd) {
+    const lc = input.charCodeAt(pairRightStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    pairRightStart++;
+  }
   let pairRightEnd = rawRightEnd;
-  while (pairRightEnd > pairRightStart && isDirectWs(input.charCodeAt(pairRightEnd - 1))) pairRightEnd--;
+  while (pairRightEnd > pairRightStart) {
+    const tc = input.charCodeAt(pairRightEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    pairRightEnd--;
+  }
   const value = input.slice(pairRightStart, pairRightEnd);
-  state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
-  if (state.scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
+  state.pos = scanBangIdx >= 0 ? scanBangIdx : state.scanStopIdx;
+  if (scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
   if (state.scanStop === 59) state.pos++;
   return { type: "decl", prop: prop, value: value };
 }
@@ -1282,7 +1307,8 @@ function parseDirectImportantDeclarationRest(state: DirectState, prop: string, v
 function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
   const input = state.input;
   const len = state.len;
-  let pos = state.pos;
+  const startPos = state.pos;
+  let pos = startPos;
   let depth = 0;
   while (pos < len) {
     const c = input.charCodeAt(pos);
@@ -1305,10 +1331,18 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
     }
     pos++;
   }
-  let captureStart = state.pos;
-  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  let captureStart = startPos;
+  while (captureStart < pos) {
+    const lc = input.charCodeAt(captureStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    captureStart++;
+  }
   let captureEnd = pos;
-  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  while (captureEnd > captureStart) {
+    const tc = input.charCodeAt(captureEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    captureEnd--;
+  }
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = captureStart;
@@ -1320,7 +1354,8 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
 function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
   const input = state.input;
   const len = state.len;
-  let pos = state.pos;
+  const startPos = state.pos;
+  let pos = startPos;
   let depth = 0;
   let colonIdx = -1;
   let bangIdx = -1;
@@ -1347,13 +1382,18 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
     }
     pos++;
   }
-  let captureStart = state.pos;
-  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  // Callers (parseDirectChildren / parseDirectRootChildren) always advance past
+  // whitespace and separators before dispatching here, so the leading-trim
+  // loop is dead. captureStart is always the entry pos.
   let captureEnd = pos;
-  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  while (captureEnd > startPos) {
+    const tc = input.charCodeAt(captureEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    captureEnd--;
+  }
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
-  state.scanCaptureStart = captureStart;
+  state.scanCaptureStart = startPos;
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = colonIdx;
   state.scanBangIdx = bangIdx;
@@ -1362,7 +1402,8 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
 function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
   const input = state.input;
   const len = state.len;
-  let pos = state.pos;
+  const startPos = state.pos;
+  let pos = startPos;
   let depth = 0;
   while (pos < len) {
     const c = input.charCodeAt(pos);
@@ -1383,10 +1424,18 @@ function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: numbe
     }
     pos++;
   }
-  let captureStart = state.pos;
-  while (captureStart < pos && isDirectWs(input.charCodeAt(captureStart))) captureStart++;
+  let captureStart = startPos;
+  while (captureStart < pos) {
+    const lc = input.charCodeAt(captureStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    captureStart++;
+  }
   let captureEnd = pos;
-  while (captureEnd > state.pos && isDirectWs(input.charCodeAt(captureEnd - 1))) captureEnd--;
+  while (captureEnd > captureStart) {
+    const tc = input.charCodeAt(captureEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    captureEnd--;
+  }
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = captureStart;

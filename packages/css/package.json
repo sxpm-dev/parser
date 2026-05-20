@@ -3,12 +3,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "fetch": "node conformance/fetch.mjs",
     "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
     "build": "tsc -b",
     "test": "tsx --test test/*.test.ts",
     "test:unit": "tsx --test test/css.test.ts",
-    "test:conformance": "PARSER2_CONFORMANCE=1 tsx --test test/conformance.test.ts",
     "bench:ast": "tsx bench/ast.ts",
     "bench:tokenize": "tsx bench/tokenize.ts",
     "browser:build": "tsx ../../scripts/browser-build.ts css",

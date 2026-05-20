@@ -1,86 +1,72 @@
-# @parser2/compiler Deep Dive
+# @parser2/compiler
 
-`@parser2/compiler` turns parser-package schemas into generated parser modules.
-The project rule is:
-
-```txt
-examples + target structure -> compiler inference -> optimized generated parser
-```
-
-## Important Architecture Invariant
-
-Parser and compiler are domainless.
-
-The parser schema is the single source of truth, and examples are the primary
-truth inside the schema. Code generation must contain zero domain knowledge:
-no ECMAScript/CSS/JSON-specific emitters, branches, fallbacks, parser-library
-runtime shortcuts, or package-specific templates.
-
-All emitted parser behavior must be inferred from schema data and generic,
-reusable compiler/runtime mechanisms. If a language feature cannot be expressed
-from examples yet, add more examples first. If examples alone are not enough,
-extend the example DSL, inference hints, or a domainless runtime family; do not
-add a language-specific emitter such as `ecmascript-emitter`.
-
-Parser packages describe their language. They do not own parser templates, fallback
-libraries, or package-specific code generation. The compiler is domainless: it may
-know about generic runtime families, grammar patterns, recovery policy, tokenizer
-rules, and structure inference, but it must not contain CSS/JS/JSON-specific
-knowledge.
-
-## Main Architecture Requirement
-
-This is an example-first string parser engine.
-
-The goal is not "generate an AST parser." AST is only one possible output
-structure. The real contract is:
+The compiler turns parser-package schemas into generated, per-schema parser
+modules. The project rule is one line:
 
 ```txt
-input string -> tokens/spans -> structure
+examples + target structure  ->  compiler inference  ->  optimized generated parser
 ```
 
-`Structure` can be a full AST, a partial extractor, normalized object, list of
-matches, metrics, spans only, transformed string, or any custom domain object.
-For example, two schemas may parse the same input language while producing
-different structures:
+This document is the reference for compiler architecture, the codegen contract,
+generic primitive vocabulary, and performance guarantees. For the schema author
+DSL — how to write examples, declare operators, compose schemas — see
+[`../../docs/example-first-structure-dsl.md`](../../docs/example-first-structure-dsl.md).
 
-- JSON root props: `{ rootProps: ['a', 'b'] }`
-- JSON nested number paths: `{ numbers: [{ path: ['b', 'c'], value: 2 }] }`
-- CSS hover extractor: `{ hovers: ['.a:hover'] }`
-- CSS full stylesheet structure: `{ rules: [...] }`
+## Architecture invariants
 
-Examples are always the main source of truth. They define:
+These are non-negotiable. Any change that violates one is rejected at code
+review.
 
-- concrete syntax and token shapes
-- spans and captures that matter
-- the target structure
-- ignored syntax
-- normalization behavior
-- invalid inputs and recovery expectations
+### 1. The compiler is domainless
 
-Optional grammar/rule/config fields are support material only. They exist to
-help the compiler infer general behavior from examples when examples alone are
-ambiguous or too sparse. They must not become the primary description of a
-language, and they must not encode package-specific parser logic.
+The compiler contains zero knowledge of CSS, JavaScript, JSON, or any other
+specific language. There are no branches on package names, no JS-specific
+emitters, no CSS-specific fallbacks, no per-language templates.
 
-When extending a parser schema, prefer this order:
+Everything the compiler emits is inferred from schema data — examples,
+operators, punctuators, whitespace policy, recovery declarations — through a
+small set of generic, reusable primitives.
 
-1. Add or improve examples with expected `.structure(...)`.
-2. Add optional grammar/rule/capture hints that explain how examples generalize.
-3. Add policy examples for invalid/recovery/stringify behavior.
-4. Only then add a small domainless runtime capability if no example/hint shape
-   can express the needed behavior.
+If a language feature cannot be expressed today:
 
-Large config blocks in a language schema are a smell. If the schema needs many
-manual knobs, improve the examples and inference DSL instead of moving language
-knowledge into runtime config.
+1. Add more examples.
+2. If examples still can't express it, see if a generic primitive could be
+   added under the admission policy below.
+3. Never add a language-specific emitter (`ecmascript-emitter`,
+   `css-block-emitter`, etc.).
 
-## Generated Contract
+### 2. Parser packages describe; they do not implement
+
+A parser package owns its `src/schema.ts` and tests. It never ships:
+
+- A parser template
+- A handwritten parser implementation
+- A fallback to an external parser library at runtime
+- Package-local codegen
+
+The generated parser at `src/_generated/parser.ts` is the only runtime parser
+code in the package.
+
+### 3. The runtime ships no parser library
+
+Generated parsers have no shared runtime dependency that interprets schema
+data at parse time. Each generated parser is a self-contained TypeScript file
+with inlined character predicates, baked tables, and straight-line control
+flow. The compiler produces specialized code; the runtime executes it.
+
+### 4. Structure ≠ AST
+
+`parse()` returns a *Structure*, whose shape is defined by the examples'
+`.structure({...})` literals. A schema can produce a full AST, a partial
+extractor, a metrics object, a list of spans, a normalized object, or any
+custom shape. The compiler imposes no AST convention.
+
+## Generated contract
 
 Each generated parser is written to:
 
 ```txt
-packages/<name>/src/_generated/parser.ts
+packages/<schema>/src/_generated/parser.ts
 ```
 
 It exports:
@@ -91,217 +77,92 @@ tokenize(input: string): Token[]
 stringify(structure: Structure): string
 ```
 
-`Structure` is intentionally broader than AST. A schema can produce a full AST,
-a partial extractor, a parse tree, metrics, spans, transformed text, or any
-custom data shape.
+The `Structure` type is inferred from the schema's examples; see the DSL doc
+for the inference rules. `Token[]` is derived from the schema's spans and
+declarations; it is intentionally minimal (`type`, `value`, optional position).
 
-## Package Responsibilities
+Generated parsers never re-export schema data, runtime helpers, or compiler
+internals.
 
-Parser package:
+## Generic primitive vocabulary
 
-- Owns `src/schema.ts`.
-- Defines examples first, with optional rules/hints/policies only where needed.
-- Runs conformance, unit, benchmark, and size gates.
-- Never imports fallback parser libraries for runtime parsing.
-- Never ships package-local parser codegen.
+The compiler ships a closed set of generic primitives. These are the only
+shortcuts available to schemas. They are *generic*: each primitive maps to a
+pattern that recurs across many languages, not to a single language's
+construct.
 
-Compiler package:
+### Closed lists currently supported
 
-- Loads schema files.
-- Infers tokens, spans, captures, fields, structure types, recoveries, and
-  pattern grammar from examples and optional hints.
-- Selects a generic runtime emitter from schema data only after inference.
-- Emits optimized TypeScript parser code.
-- Does not branch on package names or domain concepts.
+- **Span classes**: `literal`, `ident`, `number`, `string`, `hex`, `regex`,
+  `template`, `comment`, `whitespace`, `keyword`, `operator`.
+- **Refinements**: scoped per class (e.g. `int`, `float`, `bigint`, `binary`,
+  `octal`, `hex`, `scientific`, `separator` under `number`; `singleQuoted`,
+  `doubleQuoted`, `backtick`, `hexString`, `urlString` under `string`; `css`,
+  `js` under `ident`; `line`, `block` under `comment`).
+- **Modifiers**: `optional`, `repeats`, `until`, `noLineTerminatorAfter`,
+  `noWhitespaceAfter`, `requireSpaceAfter`.
+- **Schema declarations**: `operators` (layered), `punctuators` (array form
+  or named-object map), `tokens` (extra classes the tokenizer must scan
+  beyond what spans use directly), `whitespace` (policy enum),
+  `uses` (explicit acyclic composition).
+- **Span recursion**: single role (`'Expression'`) or multi-role
+  (`['Rule', 'AtRule']` — tried in order at parse time).
+- **Status markers**: valid (default), `recovers`, `rejects`.
+- **Auto-attached on every node**: `source: { start, end }` with `{ line,
+  column, offset }` sub-positions, computed from tokens' offsets and a
+  per-parse line-start index.
 
-Core parser package:
+Currently implemented vs in-progress:
 
-- Provides the schema DSL: `defineSchema`, `ex`, examples, target structures,
-  pattern rules, recovery builders, and runtime schema types.
+| Capability | Status |
+|---|---|
+| Span classes / refinements / modifiers above | implemented |
+| `.until()` with balanced bracket tracking | implemented |
+| Named punctuators, multi-char longest-match | implemented |
+| `tokens` declarations | implemented |
+| Multi-role spans | implemented |
+| Multi-production node types (speculative dispatch) | implemented (slow; no lookahead optimization yet) |
+| Source positions auto-attach | implemented |
+| `whitespace: 'preserve'` policy | declared but not yet wired through codegen |
+| `raws` capture (PostCSS-style formatting) | not yet implemented |
+| `.recovers()` policy emission | not yet implemented |
+| `stringify` | placeholder that throws |
 
-## Schema Anatomy
+These are detailed in the [DSL spec](../../docs/example-first-structure-dsl.md).
 
-A schema normally has four layers:
+### Admission policy for new primitives
 
-```ts
-export default defineSchema({
-  name: 'json',
-  runtime: { ... },
-  examples: [ ... ],
-});
-```
+A new generic primitive (class, refinement, or modifier) may be added when
+**both** of these hold:
 
-### 1. Examples
+1. **Genericity** — the primitive describes a pattern that recurs across
+   languages, not a language-specific construct.
+2. **One of**:
+   - **Workload reduction** — without it, schemas would need to enumerate
+     many duplicate examples to express a single shape, OR
+   - **Performance win** — it unlocks measurably faster generated code (e.g. a
+     baked character-class table vs. an open generalization).
 
-Examples are the source of truth for visible behavior and target output
-structure.
+What does **not** qualify:
 
-```ts
-ex('{"name":"Ada","count":2}')
-  .token('lbrace', '{')
-  .token('string', '"name"')
-  .token('colon', ':')
-  .token('string', '"Ada"')
-  .node('JsonDocument', (doc) => doc.node('object'))
-  .structure({
-    type: 'JsonDocument',
-    rootProps: ['name', 'count'],
-  })
-  .build()
-```
+- `jsxElement`, `cssAtRule`, `tsTypeAnnotation` — language-specific shapes.
+  These belong in examples in the relevant schema, never in the primitive
+  vocabulary.
+- `mySchemaIdent` — author-specific shortcuts. Express through examples.
+- "More flexibility" — flexibility is not a goal; reductive vocabulary that
+  compiles to fast straight-line code is the goal.
 
-The compiler uses examples to infer:
+What is likely to be added later:
 
-- token names
-- node names
-- fields and TypeScript field types
-- root structure type
-- recovery examples
-- expected structure shapes
-- captures, spans, ignored syntax, and normalization behavior
+- Additional `number` refinements as edge cases surface
+  (e.g. an explicit `unsigned` or a `radix(n)` form)
+- A small set of common comment shapes if more languages get added
+- A `unicodeIdent` refinement variant
 
-Use examples for concrete syntax and output contracts. Add examples before
-adding runtime knobs. If a parser has only a few examples and a large runtime
-config, the schema is probably moving in the wrong direction.
+The principle: the vocabulary grows, but **only with generic primitives that
+the compiler can compile to fast straight-line code.**
 
-### 2. Example-Owned Captures, Syntax, And Recovery
-
-Examples may carry captures, reusable syntax, output structure, and recovery
-policy in one fluent chain. This is the primary DX surface: start with a small
-example, then add only the hints needed for the compiler to generalize it.
-
-```ts
-ex('.foo {}')
-  .capture('selector', '.foo')
-  .syntax('Rule', (s) => s.seq(
-    s.capture('selector', s.selector()),
-    s.token('{'),
-    s.repeat('Declaration'),
-    s.token('}'),
-  ))
-  .recover((r) => r
-    .syncAfter(['}', ';'])
-    .missing('}', 'close rule block'))
-  .structure({
-    type: 'Rule',
-    selector: cap('selector'),
-    declarations: [node('Declaration')],
-  })
-  .build()
-```
-
-Small extraction schemas can stay minimal:
-
-```ts
-ex('.foo:hover { color: red }')
-  .capture('hoverSelector', '.foo:hover')
-  .structure({ hovers: [cap('hoverSelector')] })
-  .build()
-```
-
-Mature language schemas can still use `.generalizes(...)` for multiple
-alternatives, but new schema work should prefer `.syntax(...)` when one example
-teaches one reusable production.
-
-Pattern syntax for `.generalizes(...)`:
-
-- `%name%` references another rule.
-- `%name*%` means zero or more.
-- `%name+%` means one or more.
-- `%name?%` means optional.
-- Literal text outside `%...%` is matched as literal grammar text.
-
-The compiler may also read legacy top-level `rules` for packages that have not
-yet migrated, but mature schemas should prefer `.generalizes(...)` on examples.
-
-Invalid examples are assertions only. They must not generate denylist validators
-or hidden syntax patches. A parser passes an invalid example only when the
-closed valid grammar naturally rejects that input.
-
-The schema should describe valid syntax families, not enumerate every invalid
-string. For example, one `if ( %Expression% ) %Statement%` pattern plus a
-recursive expression grammar covers `if (a)`, `if (((a)))`, and
-`if ((() => 1)())`; malformed inputs fail because they do not match the closed
-root grammar.
-
-### 3. Runtime Config
-
-`runtime` chooses a generic emitter family and supplies generic parameters.
-It is a low-level support layer, not the center of the schema.
-
-Current families:
-
-- `standard` tokenizer + `value-document` parser for JSON-like values.
-- `block-style` tokenizer/parser/stringifier for CSS-like block syntax.
-- `statement-list` tokenizer/parser/stringifier for JS-like statement streams.
-
-The names are implementation families, not language domains. For example,
-`statement-list` knows how to scan strings, comments, brackets, semicolons,
-statement starts, restricted line terminators, numeric literal policies, and
-hashbang policy because those are expressed as generic data.
-
-Example JS runtime slice:
-
-```ts
-runtime: {
-  tokenize: {
-    kind: 'statement-list',
-  },
-  parse: {
-    kind: 'statement-list',
-    programAlias: 'JsNode',
-    statementAlias: 'JsStatement',
-    noLineTerminatorAfter: ['throw'],
-    numberLiteral: {
-      separator: '_',
-      bigintSuffix: 'n',
-      rejectIdentifierAfter: true,
-      prefixes: [
-        { prefixes: ['0b', '0B'], digits: '01' },
-        { prefixes: ['0o', '0O'], digits: '01234567' },
-        { prefixes: ['0x', '0X'], digits: '0123456789abcdefABCDEF' },
-      ],
-    },
-    hashbang: {
-      marker: '#!',
-      onlyAtStart: true,
-      rejectEscapedStart: ['#\\', '\\043', '\\u0023', '\\u{23}', '\\x23'],
-    },
-    requireBalancedEnd: true,
-  },
-  stringify: {
-    kind: 'statement-list',
-    bodyField: 'body',
-  },
-}
-```
-
-Notice the boundary: JS-specific syntax lives in examples and their
-generalizations in `packages/js/src/schema.ts`; the compiler only emits generic
-behavior inferred from schema data. Runtime config may name generic scanner
-policies, aliases, or low-level delimiters, but it must not become a JS grammar
-table. Keyword lists, statement tables, block-start tables, call-shape
-validators, declaration validators, strict-mode validators, and header
-validators are legacy scaffolding to remove as grammar coverage replaces them.
-
-### 4. Recovery And Invalid Examples
-
-Recovery policy is schema-owned and should be example-backed.
-
-```ts
-ex('.a { color red; background: blue; }')
-  .invalid('missing-colon')
-  .recover((recovery) => recovery
-    .at('Declaration')
-    .onFail()
-    .skipUntil(';', '}')
-    .drop())
-  .build()
-```
-
-This says what the parser should do. The compiler decides how to emit it.
-
-## Compiler Flow
+## Compiler flow
 
 Run generation from the repository root:
 
@@ -315,138 +176,172 @@ Or per package:
 npm run generate -w @parser2/js
 ```
 
-The CLI path is:
+The CLI path (current implementation, `packages/compiler/src/`):
 
 ```txt
-packages/compiler/src/cli.ts
-  -> import schema.ts
-  -> generateParser(schema, schemaPath)
-  -> inferSchema(schema)
-  -> emitGenericParser(inferred)
-  -> write src/_generated/parser.ts
+cli.ts
+  load schema file
+    -> infer/composition.ts    resolveCompositionGraph(schema)
+    -> infer/productions.ts    buildProductions(schemas)
+    -> infer/roles.ts          resolveRecursiveRoles(nodeTypes, rootType)
+    -> infer/validate.ts       validate(nodeTypes)
+    -> infer/tokenizer.ts      buildTokenizerProgram(schemas, nodeTypes)
+    -> emit/index.ts           emitParser(inferredSchema)
+                               (composes tokenize.ts, parse.ts, structure.ts,
+                                runtime.ts)
+  write src/_generated/parser.ts
 ```
 
-Important compiler steps:
+Each pass is generic and operates on inferred schema data only.
 
-1. `inferSchema()` walks examples and example-owned generalizations.
-2. `inferStructure()` infers exported structure types from `.node()` and
-   `.field()` examples.
-3. `inferRecoveries()` converts `.invalid()` and `.recover()` examples into
-   recovery metadata.
-4. `inferGrammarFromPatterns()` turns `.generalizes(...).from(...)` patterns
-   into a small grammar tree.
-5. `emitGenericParser()` routes to a generic emitter based on `runtime.kind`.
+1. **`resolveCompositionGraph`** — walks `uses:` declarations transitively to
+   produce the full set of schemas in dependency order. The `uses:` graph must
+   be acyclic; mutual recursion between node types is expressed within a
+   single schema (multiple `.as()` examples in the same `defineSchema(...)`).
+   Cycles in `uses:` and duplicate schema names are errors.
+2. **`buildProductions`** — for each `.as(NodeType)`, collects the example
+   spans into a per-node-type production. A node type can have multiple
+   productions (used by e.g. CSS `AtRule` for statement vs. block form). Spans
+   carry the recursive-role list (single or multi).
+3. **`resolveRecursiveRoles`** — every recursive span's role list is checked
+   against the node-type set. Unresolved references are errors.
+4. **`validate`** — checks span text uniqueness within each example
+   (the "use distinct identifiers" rule), no missing recursive role refs,
+   no obvious authoring mistakes.
+5. **`buildTokenizerProgram`** — collects the literal-to-type mapping from
+   schemas' `punctuators` decls + literal spans + `repeats({sep})` separators
+   + operators, sorted longest-first. Collects class usages from `tokens`
+   decls + classed spans, with refinements unioned per class.
+6. **`emitParser`** — produces the per-schema TypeScript parser file. Composed
+   of: an inline tokenizer (`emit/tokenize.ts`), tiny inlined runtime helpers
+   (`emit/runtime.ts`), per-node parser functions (`emit/parse.ts`), and the
+   `parse`/`tokenize`/`stringify` exports.
 
-Runtime routing currently lives in `packages/compiler/src/emitter.ts`:
+Not yet implemented as named passes (planned):
 
-- `block-style` -> `emitBlockStyleParser`
-- `statement-list` -> `emitStatementListParser`
-- `standard` + `value-document` + `native-json` -> value-document emitter
+- **`inferStructureTypes`** — discriminated-union TypeScript types per node
+  type. Currently every parsed structure is `unknown` in TS terms.
+- **`buildOperatorTable`** — Pratt precedence layers. Not exercised yet
+  because the CSS schema doesn't use `operators`.
 
-Adding a new language should usually mean adding schema data, not a new emitter.
-Add a new emitter only when the runtime family is genuinely new and reusable.
+Every implemented pass is unit-testable in isolation and consumes only
+inferred schema data — never raw schema source.
 
-## Building A New Parser
+## Generated parser shape & performance
 
-1. Create a package under `packages/<name>`.
-2. Add `src/schema.ts`.
-3. Start with 3-5 representative examples.
-4. Add example-owned `.generalizes(...)` patterns when examples need recursive
-   placeholders like `%value%`.
-5. Choose or extend a generic `runtime` family.
-6. Run generation.
-7. Add package unit tests against `parse`, `tokenize`, and `stringify`.
-8. Add conformance and benchmark scripts.
-9. Add size/performance baselines when there is a browser build.
+The compiler's first-class output is **performance**. Each schema compiles to
+a hand-written-quality recursive-descent parser specialized to its grammar.
 
-Minimal skeleton:
+### What the generated code looks like
 
-```ts
-import { defineSchema, ex } from '@parser2/parser';
+| Concern | Current implementation | Future |
+|---|---|---|
+| **Control flow** | Straight-line code; each grammar production is its own function. Multi-production nodes dispatch via speculative try-each-in-order (`trySpeculate` / `tryRoles`). | First-token-lookahead dispatch when productions are disjoint. |
+| **Character predicates** | Inlined integer-range checks (e.g. `(c >= 0x61 && c <= 0x7a) \|\| ...`). No regex. | — |
+| **Keyword recognition** | Per-keyword `if (input.startsWith('keyword', i))` branches sorted longest-first. No `Map.get(name)`. | Switch on first char + length, for hotter dispatch. |
+| **Punctuator recognition** | Single-char punctuators use direct char-code compare; multi-char use `startsWith`. Multi-char branches emitted BEFORE class scanners; class scanners emitted before single-char punctuators (so `/*` comment wins over `/` delim). | — |
+| **Span captures** | Literal/classed spans capture the token's `value`. `.until()` captures a source slice via `input.slice(startOff, endOff)`. | Lazy capture for unused refs (skip the slice if structure doesn't use `$.name`). |
+| **Source positions** | Each token carries `{ start, end }`. Each parsed node carries `source: { start: { line, column, offset }, end: { ... } }`, computed from first/last consumed tokens via a `lineStarts` index. | — |
+| **Structure construction** | Object literals with field order from the structure literal. `source` field appended last. | Stable shape, monomorphic — discriminant `type` first for inline-cache friendliness. |
+| **Recursion** | Statically resolved across `uses:` + in-schema node-type graph. Each node type becomes one or more functions; multi-production nodes get a dispatch wrapper. | Inlining cold rules at call sites where shape allows. |
+| **Lookahead** | Bounded and explicit per case via `peekLiteral`. Where speculation is needed (multi-role spans, multi-production nodes), uses `trySpeculate` / `tryRoles` / `tryRolesOrNull` — these reset `state.pos` on failure. | Convert disjoint speculations into single-token switches. |
+| **`.until()` capture** | Walks tokens tracking `() [] {}` depth; stops at depth-zero match against the stop set, OR at a closing bracket while at depth zero (the boundary of an enclosing block — stops without consuming). | — |
 
-export default defineSchema({
-  name: 'mini',
-  runtime: {
-    tokenize: { kind: 'standard', ... },
-    parse: { kind: 'value-document', ... },
-    stringify: { kind: 'native-json', valueField: 'value' },
-  },
-  examples: [
-    ex('1')
-      .token('number', '1')
-      .node('MiniDocument', (doc) => doc.node('number'))
-      .structure({ type: 'MiniDocument', value: 1 })
-      .generalizes('MiniDocument', (rule) => rule
-        .from('%value%').node('MiniDocument'))
-      .build(),
-  ],
-});
-```
+### Non-goals (runtime)
 
-## Validation Strategy
+- No regex anywhere in the hot path.
+- No runtime parser library imported by the generated parser.
+- No runtime schema interpretation.
+- No AST visitor framework.
+- No backtracking parser combinator engine.
+- No dynamic dispatch tables, no `Map`/`Set` lookups in the hot path.
+- No package-specific runtime code; the generated file is the only runtime.
 
-For mature parsers, use three layers:
+### Performance gates
 
-- Unit tests for small, intentional behavior.
-- Conformance suites for real spec coverage.
-- Bench and size gates for performance regressions.
-
-Useful commands:
+Performance is enforced at CI level:
 
 ```sh
-npm test
-npm run test -w @parser2/js
-PARSER2_CONFORMANCE=1 npm run test:conformance -w @parser2/js
-npm run bench -w @parser2/js
-npm run size:gate -w @parser2/js
+npm run perf:gate    -w @parser2/<schema>
+npm run size:gate    -w @parser2/<schema>
 ```
 
-When conformance is diagnostic, do not count a green command as full spec
-completion. Track:
+- **`scripts/perf-gate.ts`** — measures ops/s for `tokenize`, `parse` (and
+  optionally domain-specific runs) at fixed input sizes. Fails the build when
+  the current ops/s drops below `baseline * (1 - tolerance)`. Baselines live
+  at `packages/<schema>/bench/perf-baseline.json`.
+- **`scripts/size-gate.ts`** — builds the browser bundle via esbuild and
+  fails when bundle size or gzipped size exceeds
+  `baseline * (1 + tolerance)`. Baselines live at
+  `packages/<schema>/bench/size-baseline.json`.
 
-- total files
-- accepted valid files
-- rejected invalid files
-- false accepts
-- false rejects
+A change that violates a gate either improves the implementation until the
+gate passes, or — if the change is intentional and justified — re-runs
+`baseline` to relock. Baseline changes are visible in PR diffs and are
+reviewed.
 
-Only keep parser changes that preserve normal tests and do not introduce false
-rejects unless the schema intentionally changes accepted syntax.
+## Recovery and tolerance
 
-## Performance Rules
+The compiler distinguishes three concerns:
 
-Performance is a first-class output of the compiler.
+| Concern | Where it lives | Compiler treatment |
+|---|---|---|
+| **Tolerance** | Span modifiers (`optional`, `repeats({ trailing: 'allowed' })`) | Compiled into the grammar; no diagnostic emitted. |
+| **Recovery** | `.recovers({ syncAt, drop })` examples | Compiled into per-production sync-and-skip code paths. Produces a partial structure plus a diagnostic. |
+| **Correction** | Not a parser concern | The parser engine does not perform input correction. A separate tool may consume `parse()`'s structure + diagnostics to emit corrected source text. |
 
-Prefer:
+The grammar generated for tolerance is indistinguishable from a hand-written
+permissive parser. The recovery paths add no overhead to the valid-input fast
+path; they are only entered when a syntax error is detected.
 
-- single-pass scanning
-- generated straight-line checks
-- schema tables baked into generated code
-- simple loops over regex-heavy parsing in hot paths
-- rejecting net-negative validators
+## Validation strategy
 
-Avoid:
+Each parser schema validates at three layers:
 
-- broad pre-passes when the existing scan can do the work
-- parser-library fallbacks
-- package-local handwritten parser logic
-- feature checks that improve a few invalid cases but reject many valid files
-- domain branches in compiler code
+- **Unit tests** — small intentional cases, written against the generated
+  `parse` / `tokenize` / `stringify`. Live in `packages/<schema>/test/`.
+- **Conformance suites** — when a schema targets a real spec language (CSS,
+  JS), large external fixture sets exercise breadth. The diagnostic output
+  tracks total / accepted-valid / rejected-invalid / false-accepts /
+  false-rejects. Conformance is opt-in via `PARSER2_CONFORMANCE=1`.
+- **Bench and size gates** — guard against performance and bundle
+  regressions on every change to the generated parser.
 
-When a syntax slice increases generated browser size, update the size baseline
-only after measuring conformance and benchmark impact.
+A green `npm test` is necessary but not sufficient for "spec complete". Track
+the conformance metrics independently.
 
-## Design Checklist
+## Building a new parser
+
+1. Create a package at `packages/<schema>` with `package.json`, `tsconfig.json`,
+   `src/schema.ts`, and a `test/` directory.
+2. Decide on the schema's *structure shape commitment* — AST, extractor,
+   metrics, etc. All examples must produce structures in this family.
+3. Start with 3–5 representative examples covering the root node type.
+4. Add additional node types as separate `.as(NodeType)` examples, or split
+   into composed sub-schemas if the language benefits from modularity (the
+   normal case for non-trivial languages).
+5. Declare `operators`, `punctuators`, and `whitespace` as needed.
+6. Run `npm run generate -w @parser2/<schema>` to emit
+   `src/_generated/parser.ts`.
+7. Write unit tests asserting `parse` / `tokenize` / `stringify`.
+8. If the schema has a browser build, lock perf and size baselines:
+   `npm run baseline -w @parser2/<schema>`.
+
+## Design checklist
 
 Before merging a parser change:
 
-- Is the behavior described in `src/schema.ts`?
-- Is compiler logic generic and reusable?
-- Does the generated parser export `parse`, `tokenize`, and `stringify`?
-- Did generation update `src/_generated/parser.ts`?
-- Are unit tests green?
-- Did conformance improve or at least avoid false-reject regressions?
-- Did size/perf gates run when the generated parser changed?
+- Is the new behavior described in `src/schema.ts` (examples first)?
+- Did any new compiler logic stay generic (no package-specific branches)?
+- Did `npm run generate` actually update the affected
+  `src/_generated/parser.ts`?
+- Do unit tests pass?
+- If the schema targets a spec language, did conformance metrics improve, or
+  at least not introduce false rejects?
+- Did perf and size gates pass — or, if intentionally adjusted, was the
+  baseline change reviewed?
+- If a new primitive was added to the compiler, does it meet the admission
+  policy (genericity + workload-reduction OR perf-win)?
 
-If the answer to the first two questions is no, the change is probably in the
-wrong layer.
+If a change cannot answer "yes" to the first two, it is probably in the wrong
+layer.

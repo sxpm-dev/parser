@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run generate && tsc -b",
     "build:tools": "tsc -b packages/parser packages/compiler",
-    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts packages/js/src/schema.ts && tsx packages/compiler/src/cli.ts packages/json/src/schema.ts",
+    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts",
     "test": "npm run generate && npm run test --workspaces --if-present",
     "conformance:fetch": "npm run fetch -w @parser2/css && npm run fetch -w @parser2/js",
     "test:conformance": "PARSER2_CONFORMANCE=1 npm test",

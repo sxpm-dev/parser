@@ -1,42 +1,51 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { access } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { generateParser } from './index.js';
-import type { ParserSchema } from '@parser2/parser';
-import type { ParserEmitter } from './index.js';
+import type { SchemaDef } from '@parser2/parser';
+import { generateParser } from './index.ts';
 
-const schemaPath = process.argv[2];
-if (!schemaPath) {
-  throw new Error('Usage: compiler <schema.ts>');
+// Usage:
+//   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts
+//
+// Imports the schema module (default export must be a SchemaDef), runs the
+// compiler, and writes packages/<schema>/src/_generated/parser.ts.
+
+const argv = process.argv.slice(2);
+const schemaArg = argv[0];
+if (!schemaArg) {
+  console.error('usage: tsx packages/compiler/src/cli.ts <schema.ts>');
+  process.exit(1);
 }
 
-const mod = await import(pathToFileURL(schemaPath).href);
-const schema = (mod.default ?? mod.schema) as ParserSchema | undefined;
-if (!schema) {
-  throw new Error(`No default schema export found in ${schemaPath}`);
+const schemaPath = isAbsolute(schemaArg) ? schemaArg : resolve(process.cwd(), schemaArg);
+
+await main(schemaPath);
+
+async function main(path: string): Promise<void> {
+  const module = (await import(pathToFileURL(path).href)) as { default?: unknown };
+  const schema = module.default;
+  if (!isSchema(schema)) {
+    throw new Error(`Schema at ${path} does not default-export a SchemaDef`);
+  }
+  const code = generateParser(schema);
+  const outDir = resolve(dirname(path), '_generated');
+  const outFile = resolve(outDir, 'parser.ts');
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(outFile, code);
+  console.log(`generated ${relative(outFile)}`);
 }
 
-const emitParser = ((mod.emitParser ?? mod.codegen ?? mod.generate) as ParserEmitter | undefined) ??
-  (schema.runtime ? undefined : await loadAdjacentEmitter(schemaPath));
-const outFile = await generateParser(schema, schemaPath, emitParser);
-console.log(`generated ${outFile}`);
+function isSchema(value: unknown): value is SchemaDef {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { name?: unknown }).name === 'string' &&
+    typeof (value as { rootType?: unknown }).rootType === 'string' &&
+    Array.isArray((value as { examples?: unknown }).examples)
+  );
+}
 
-async function loadAdjacentEmitter(schemaPath: string): Promise<ParserEmitter> {
-  const codegenPath = join(dirname(schemaPath), 'codegen.ts');
-  try {
-    await access(codegenPath);
-  } catch {
-    throw new Error(`No parser emitter found. Export emitParser from ${schemaPath} or add ${codegenPath}`);
-  }
-  const codegen = await import(pathToFileURL(codegenPath).href) as {
-    readonly default?: unknown;
-    readonly emitParser?: unknown;
-    readonly codegen?: unknown;
-    readonly generate?: unknown;
-  };
-  const emitParser = codegen.emitParser ?? codegen.default ?? codegen.codegen ?? codegen.generate;
-  if (typeof emitParser !== 'function') {
-    throw new Error(`No emitter function exported by ${codegenPath}`);
-  }
-  return emitParser as ParserEmitter;
+function relative(p: string): string {
+  const cwd = process.cwd();
+  return p.startsWith(`${cwd}/`) ? p.slice(cwd.length + 1) : p;
 }

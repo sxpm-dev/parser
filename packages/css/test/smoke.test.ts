@@ -209,3 +209,13 @@ test('rejects unrecognized characters in tokenizer', () => {
   // Backtick is not whitespace, not a declared punctuator/delim, not a class start.
   assert.throws(() => parseStripped('foo { color: `red` }'), SyntaxError);
 });
+
+test('reports source frame for unexpected block close after selector fragment', () => {
+  assert.throws(
+    () => parseStripped('.bar }'),
+    (error) => error instanceof SyntaxError
+      && error.message.includes("Unexpected '}' at position 5")
+      && error.message.includes('1 | .bar }')
+      && error.message.includes('  |      ^'),
+  );
+});

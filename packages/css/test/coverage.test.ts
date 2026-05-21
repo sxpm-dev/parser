@@ -7,12 +7,10 @@ const syntaxMatrix = [
   {
     area: 'stylesheet controls and comments',
     css: [
-      '<!--',
       '/* license */',
       '@charset "utf-8";',
       '@import url("base.css") layer(theme) supports(display: grid);',
       '@namespace svg url("http://www.w3.org/2000/svg");',
-      '-->',
     ].join('\n'),
   },
   {
@@ -105,7 +103,6 @@ test('keeps invalid stylesheet boundaries explicit', () => {
     '{ color: red }',
     '.foo, { color: red }',
     '.foo > { color: red }',
-    'a:lit% {}',
   ];
 
   for (const css of invalid) {

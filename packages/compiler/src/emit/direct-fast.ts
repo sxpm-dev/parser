@@ -353,15 +353,25 @@ ${commentFn}${prefixedFn}
 function parseDirectBlockOrPair(state: DirectState): unknown {
   const input = state.input;
   scanDirectPairBoundary(state, ${openCode}, ${separatorCode}, ${closeCode});
-  const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === ${pairCode};
-  if (state.scanStop === ${openCode} && !rejectsBlock) {
-    const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
-    state.pos = state.scanStopIdx + 1;
-    const nodes = parseDirectChildren(state);
-    return { ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: nodes`)} };
+  if (state.scanStop === ${openCode}) {
+    const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === ${pairCode};
+    if (!rejectsBlock) {
+      const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+      if (selector.length === 0) throw new SyntaxError(\`expected selector at position \${state.pos}\`);
+      const selectorEnd = input.charCodeAt(state.scanCaptureEnd - 1);
+      if (selectorEnd === 0x2c /* , */ || selectorEnd === 0x3e /* > */ || selectorEnd === 0x2b /* + */ || selectorEnd === 0x7e /* ~ */) {
+        throw new SyntaxError(\`expected selector after combinator at position \${state.scanCaptureEnd}\`);
+      }
+      state.pos = state.scanStopIdx + 1;
+      const nodes = parseDirectChildren(state);
+      return { ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: nodes`)} };
+    }
   }
   const scanColonIdx = state.scanColonIdx;
-  if (scanColonIdx < 0) throw new SyntaxError(\`expected ${shape.literals.pair} at position \${state.pos}\`);
+  if (scanColonIdx < 0) {
+    const found = state.scanStopIdx < state.len ? \`'\${input[state.scanStopIdx]}'\` : 'end of input';
+    directSyntaxError(state, \`Unexpected \${found}\`, state.scanStopIdx);
+  }
   const scanCaptureStart = state.scanCaptureStart;
   const scanCaptureEnd = state.scanCaptureEnd;
   const scanBangIdx = state.scanBangIdx;
@@ -606,6 +616,30 @@ function skipDirectWs(state: DirectState): void {
 
 function isDirectWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
+}
+
+function directSyntaxError(state: DirectState, message: string, offset: number): never {
+  const input = state.input;
+  let lineStart = offset;
+  while (lineStart > 0) {
+    const c = input.charCodeAt(lineStart - 1);
+    if (c === 0x0a || c === 0x0d) break;
+    lineStart--;
+  }
+  let lineEnd = offset;
+  while (lineEnd < input.length) {
+    const c = input.charCodeAt(lineEnd);
+    if (c === 0x0a || c === 0x0d) break;
+    lineEnd++;
+  }
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  throw new SyntaxError(\`\${message} at position \${offset}
+\${gutter} | \${source}
+\${' '.repeat(gutter.length)} | \${' '.repeat(column)}^\`);
 }`;
 }
 

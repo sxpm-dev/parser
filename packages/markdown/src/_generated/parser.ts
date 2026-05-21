@@ -301,6 +301,17 @@ function nextNonCommentToken(state: State, pos: number): Token | undefined {
   return state.tokens[pos];
 }
 
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
+}
+
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
   const start = state.pos;
   try {
@@ -1457,16 +1468,38 @@ function parseMarkdownLeaf(state: State): unknown {
     return parseMarkdownLeaf__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt8); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt12); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt13(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        return parseMarkdownLeaf__alt13(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeaf__alt12(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseMarkdownLeaf__alt8(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
     return parseMarkdownLeaf__alt9(state);
   }
   else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt10); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt19(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+        return parseMarkdownLeaf__alt19(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeaf__alt10(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
     return parseMarkdownLeaf__alt14(state);
@@ -1490,37 +1523,117 @@ function parseMarkdownLeaf(state: State): unknown {
     return parseMarkdownLeaf__alt21(state);
   }
   else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt22); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt23); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt33); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt34); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt35(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "number") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+            return parseMarkdownLeaf__alt34(state);
+          }
+          return parseMarkdownLeaf__alt35(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+          return parseMarkdownLeaf__alt22(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+          return parseMarkdownLeaf__alt23(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+          return parseMarkdownLeaf__alt33(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt24); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt25(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "ident") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+            return parseMarkdownLeaf__alt24(state);
+          }
+          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+            return parseMarkdownLeaf__alt25(state);
+          }
+          throw new SyntaxError('no production matched');
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt26); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt36(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+        return parseMarkdownLeaf__alt26(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+        return parseMarkdownLeaf__alt36(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
     return parseMarkdownLeaf__alt27(state);
   }
   else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt28); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt29(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+        return parseMarkdownLeaf__alt29(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeaf__alt28(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident") return parseMarkdownLeaf__alt30(state);
-    else if (__nextTok !== undefined && __nextTok.type === "thematic" && __nextTok.value === "---") return parseMarkdownLeaf__alt31(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseMarkdownLeaf__alt32(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+      return parseMarkdownLeaf__alt31(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseMarkdownLeaf__alt32(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseMarkdownLeaf__alt30(state);
+    }
     throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt6); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt7(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+        return parseMarkdownLeaf__alt6(state);
+      }
+      return parseMarkdownLeaf__alt7(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "number") {
     return parseMarkdownLeaf__alt11(state);
@@ -1952,16 +2065,38 @@ function parseMarkdownLeafFast(state: State): unknown {
     return parseMarkdownLeafFast__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt8); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt12); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt13(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        return parseMarkdownLeafFast__alt13(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeafFast__alt12(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseMarkdownLeafFast__alt8(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
     return parseMarkdownLeafFast__alt9(state);
   }
   else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt10); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt19(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+        return parseMarkdownLeafFast__alt19(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeafFast__alt10(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
     return parseMarkdownLeafFast__alt14(state);
@@ -1985,37 +2120,117 @@ function parseMarkdownLeafFast(state: State): unknown {
     return parseMarkdownLeafFast__alt21(state);
   }
   else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt22); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt23); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt33); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt34); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt35(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "number") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+            return parseMarkdownLeafFast__alt34(state);
+          }
+          return parseMarkdownLeafFast__alt35(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+          return parseMarkdownLeafFast__alt22(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+          return parseMarkdownLeafFast__alt23(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+          return parseMarkdownLeafFast__alt33(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt24); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt25(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "ident") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+            return parseMarkdownLeafFast__alt24(state);
+          }
+          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+            return parseMarkdownLeafFast__alt25(state);
+          }
+          throw new SyntaxError('no production matched');
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt26); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt36(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+        return parseMarkdownLeafFast__alt26(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+        return parseMarkdownLeafFast__alt36(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
     return parseMarkdownLeafFast__alt27(state);
   }
   else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt28); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt29(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+        return parseMarkdownLeafFast__alt29(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseMarkdownLeafFast__alt28(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident") return parseMarkdownLeafFast__alt30(state);
-    else if (__nextTok !== undefined && __nextTok.type === "thematic" && __nextTok.value === "---") return parseMarkdownLeafFast__alt31(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseMarkdownLeafFast__alt32(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+      return parseMarkdownLeafFast__alt31(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseMarkdownLeafFast__alt32(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseMarkdownLeafFast__alt30(state);
+    }
     throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt6); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt7(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+        return parseMarkdownLeafFast__alt6(state);
+      }
+      return parseMarkdownLeafFast__alt7(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "number") {
     return parseMarkdownLeafFast__alt11(state);
@@ -2446,16 +2661,38 @@ function validateMarkdownLeaf(state: State): unknown {
     return validateMarkdownLeaf__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt8); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt12); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt13(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        return validateMarkdownLeaf__alt13(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return validateMarkdownLeaf__alt12(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return validateMarkdownLeaf__alt8(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
     return validateMarkdownLeaf__alt9(state);
   }
   else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt10); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt19(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+        return validateMarkdownLeaf__alt19(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return validateMarkdownLeaf__alt10(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
     return validateMarkdownLeaf__alt14(state);
@@ -2479,37 +2716,117 @@ function validateMarkdownLeaf(state: State): unknown {
     return validateMarkdownLeaf__alt21(state);
   }
   else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt22); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt23); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt33); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt34); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt35(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "number") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+            return validateMarkdownLeaf__alt34(state);
+          }
+          return validateMarkdownLeaf__alt35(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+          return validateMarkdownLeaf__alt22(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+          return validateMarkdownLeaf__alt23(state);
+        }
+        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+          return validateMarkdownLeaf__alt33(state);
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt24); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt25(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "ident") {
+        const __tok3 = nthNonCommentToken(state, state.pos, 3);
+        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
+          const __tok4 = nthNonCommentToken(state, state.pos, 4);
+          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+            return validateMarkdownLeaf__alt24(state);
+          }
+          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+            return validateMarkdownLeaf__alt25(state);
+          }
+          throw new SyntaxError('no production matched');
+        }
+        throw new SyntaxError('no production matched');
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt26); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt36(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+        return validateMarkdownLeaf__alt26(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+        return validateMarkdownLeaf__alt36(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
     return validateMarkdownLeaf__alt27(state);
   }
   else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt28); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt29(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+        return validateMarkdownLeaf__alt29(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return validateMarkdownLeaf__alt28(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident") return validateMarkdownLeaf__alt30(state);
-    else if (__nextTok !== undefined && __nextTok.type === "thematic" && __nextTok.value === "---") return validateMarkdownLeaf__alt31(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return validateMarkdownLeaf__alt32(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+      return validateMarkdownLeaf__alt31(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return validateMarkdownLeaf__alt32(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return validateMarkdownLeaf__alt30(state);
+    }
     throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt6); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt7(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+        return validateMarkdownLeaf__alt6(state);
+      }
+      return validateMarkdownLeaf__alt7(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "number") {
     return validateMarkdownLeaf__alt11(state);

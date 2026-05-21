@@ -5,7 +5,7 @@
     "bytes": 5588
   },
   "parse:5KB": {
-    "hz": 376,
+    "hz": 2039,
     "inputHash": "02cadb1e",
     "bytes": 5588
   },
@@ -15,7 +15,7 @@
     "bytes": 20828
   },
   "parse:20KB": {
-    "hz": 83,
+    "hz": 423,
     "inputHash": "373d9e02",
     "bytes": 20828
   },
@@ -25,7 +25,7 @@
     "bytes": 102616
   },
   "parse:100KB": {
-    "hz": 18,
+    "hz": 124,
     "inputHash": "85879de9",
     "bytes": 102616
   }

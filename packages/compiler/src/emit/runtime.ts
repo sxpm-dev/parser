@@ -157,6 +157,17 @@ function nextNonCommentToken(state: State, pos: number): Token | undefined {
   return state.tokens[pos];
 }
 
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
+}
+
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
   const start = state.pos;
   try {

@@ -416,8 +416,12 @@ function emitProductionGroupDispatch(
   ctx: Ctx,
 ): string {
   if (indexes.length === 1) return `return ${fnName}__alt${indexes[0]}(state);`;
-  const secondTokenDispatch = emitSecondTokenProductionGroupDispatch(info, fnName, indexes, ctx);
-  if (secondTokenDispatch) return secondTokenDispatch;
+  const sequenceDispatch = emitTokenSequenceProductionGroupDispatch(info, fnName, indexes, ctx, 1);
+  if (sequenceDispatch) return sequenceDispatch;
+  return emitSpeculativeProductionGroupDispatch(fnName, indexes);
+}
+
+function emitSpeculativeProductionGroupDispatch(fnName: string, indexes: readonly number[]): string {
   const lines: string[] = [];
   for (const index of indexes.slice(0, -1)) {
     lines.push(`{ const r = trySpeculate(state, ${fnName}__alt${index}); if (r !== null) return r; }`);
@@ -426,34 +430,45 @@ function emitProductionGroupDispatch(
   return lines.join('\n');
 }
 
-function emitSecondTokenProductionGroupDispatch(
+function emitTokenSequenceProductionGroupDispatch(
   info: NodeTypeInfo,
   fnName: string,
   indexes: readonly number[],
   ctx: Ctx,
+  spanIndex: number,
 ): string | null {
-  const keyed: Array<{ index: number; second: FirstToken }> = [];
+  if (spanIndex > 8) return null;
+  const groups: Array<{ readonly token: FirstToken; readonly indexes: number[] }> = [];
   const fallback: number[] = [];
-  const seen = new Set<string>();
   for (const index of indexes) {
-    const span = info.productions[index]?.spans[1];
-    const second = span ? firstTokenForSpan(span, ctx) : null;
-    if (!second) {
+    const span = info.productions[index]?.spans[spanIndex];
+    const token = span ? firstTokenForSpan(span, ctx) : null;
+    if (!token) {
       fallback.push(index);
       continue;
     }
-    const key = firstTokenKey(second);
-    if (seen.has(key)) return null;
-    seen.add(key);
-    keyed.push({ index, second });
+    const key = firstTokenKey(token);
+    let group = groups.find((candidate) => firstTokenKey(candidate.token) === key);
+    if (!group) {
+      group = { token, indexes: [] };
+      groups.push(group);
+    }
+    group.indexes.push(index);
   }
-  if (keyed.length === 0) return null;
+  if (groups.length === 0) return null;
   if (fallback.length > 1) return null;
+  groups.sort((a, b) => firstTokenSpecificity(b.token) - firstTokenSpecificity(a.token));
 
   const lines: string[] = [];
-  lines.push(`const __nextTok = nextNonCommentToken(state, state.pos + 1);`);
-  keyed.forEach((entry, i) => {
-    lines.push(`${i === 0 ? 'if' : 'else if'} (${emitFirstTokenCheck('__nextTok', entry.second)}) return ${fnName}__alt${entry.index}(state);`);
+  lines.push(`const __tok${spanIndex} = nthNonCommentToken(state, state.pos, ${spanIndex});`);
+  groups.forEach((group, i) => {
+    lines.push(`${i === 0 ? 'if' : 'else if'} (${emitFirstTokenCheck(`__tok${spanIndex}`, group.token)}) {`);
+    const branch = group.indexes.length === 1
+      ? `return ${fnName}__alt${group.indexes[0]}(state);`
+      : emitTokenSequenceProductionGroupDispatch(info, fnName, group.indexes, ctx, spanIndex + 1)
+        ?? emitSpeculativeProductionGroupDispatch(fnName, group.indexes);
+    lines.push(indent(branch, 1));
+    lines.push(`}`);
   });
   if (fallback.length === 1) {
     lines.push(`return ${fnName}__alt${fallback[0]}(state);`);

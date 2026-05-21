@@ -3,6 +3,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+import { validate as __propertyValidator0 } from "@parser2/css-color";
+import { validate as __propertyValidator1 } from "@parser2/css-length-percentage";
+
+
+
 function isCssIdentStart(c: number): boolean {
   // a-z A-Z _ -
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
@@ -179,6 +184,7 @@ type State = {
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
   readonly mode?: ParseMode;
+  readonly validate?: boolean;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -309,6 +315,11 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   const tok = state.tokens[pos];
   return tok !== undefined && tok.type === type && tok.value === value;
+}
+
+function nextNonCommentToken(state: State, pos: number): Token | undefined {
+  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  return state.tokens[pos];
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -563,6 +574,14 @@ function isAsciiWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
 
+function isHexString(value: string): boolean {
+  if (value.length === 0) return false;
+  for (let i = 0; i < value.length; i++) {
+    if (!isHexDigit(value.charCodeAt(i))) return false;
+  }
+  return true;
+}
+
 // Attach raws.before to a parsed child. The body loop knows the offset
 // where the previous sibling ended (or where the body's opening token ended
 // for the first child); raws.before is the source slice from that point up
@@ -587,11 +606,89 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
+function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+  if (!(error instanceof SyntaxError)) throw error;
+  if (hasSourceFrame(error.message)) throw error;
+  const messageOffset = offsetFromMessage(error.message, -1);
+  const offset = messageOffset >= 0
+    ? messageOffset
+    : tokenPos !== undefined
+    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : offsetFromMessage(error.message, input.length);
+  throw syntaxErrorWithFrame(input, error.message, offset);
+}
+
+function syntaxErrorWithFrame(input: string, message: string, offset: number): SyntaxError {
+  const cleanMessage = stripPositionSuffix(message);
+  let lineStart = offset;
+  while (lineStart > 0) {
+    const c = input.charCodeAt(lineStart - 1);
+    if (c === 0x0a || c === 0x0d) break;
+    lineStart--;
+  }
+  let lineEnd = offset;
+  while (lineEnd < input.length) {
+    const c = input.charCodeAt(lineEnd);
+    if (c === 0x0a || c === 0x0d) break;
+    lineEnd++;
+  }
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  return new SyntaxError(`${cleanMessage} at position ${offset}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
+}
+
+function stripPositionSuffix(message: string): string {
+  const marker = ' at position ';
+  const index = message.lastIndexOf(marker);
+  if (index < 0) return message;
+  let pos = index + marker.length;
+  if (pos >= message.length) return message;
+  while (pos < message.length) {
+    const c = message.charCodeAt(pos);
+    if (c < 48 || c > 57) return message;
+    pos++;
+  }
+  return message.slice(0, index);
+}
+
+function hasSourceFrame(message: string): boolean {
+  return message.includes('\n') && message.includes(' | ');
+}
+
+function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
+  const tok = tokens[pos] ?? tokens[tokens.length - 1];
+  if (!tok) return fallback;
+  return tokens[pos] ? tok.start : tok.end;
+}
+
+function offsetFromMessage(message: string, fallback: number): number {
+  const marker = 'position ';
+  const index = message.indexOf(marker);
+  if (index < 0) return fallback;
+  let pos = index + marker.length;
+  let value = 0;
+  let found = false;
+  while (pos < message.length) {
+    const c = message.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    found = true;
+    value = value * 10 + c - 48;
+    pos++;
+  }
+  return found ? value : fallback;
+}
+
 function parseComment(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const __raw_text = expectClass(state, "comment");
   const text = commentInterior(__raw_text);
+
   const __text_start = state.tokens[state.pos - 1].start;
   const __text_end = state.tokens[state.pos - 1].end;
   const __lastTok = state.tokens[state.pos - 1];
@@ -605,15 +702,18 @@ function parseDeclaration(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const prop = captureUntil(state, ":", ";", "}", true, true);
+
   const __prop_start = state.__lastCaptureStart;
   const __prop_end = state.__lastCaptureEnd;
   expectLiteral(state, "colon", ":");
   const value = captureUntil(state, ";", "}", "!", true, true);
+
   const __value_start = state.__lastCaptureStart;
   const __value_end = state.__lastCaptureEnd;
   if (peekLiteralAfterComments(state, "delim", "!")) {
     expectLiteral(state, "delim", "!");
     const important = expectClass(state, "ident");
+
     const __important_start = state.tokens[state.pos - 1].start;
     const __important_end = state.tokens[state.pos - 1].end;
     consumeOptionalLiteral(state, "semicolon", ";");
@@ -637,6 +737,7 @@ function parseRule(state: State): unknown {
   const __captured = captureUntil(state, "{", ";", null, true, true);
   if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
   const selector = __captured;
+
   const __selector_start = state.__lastCaptureStart;
   const __selector_end = state.__lastCaptureEnd;
   const lbrace = expectLiteral(state, "lbrace", "{");
@@ -657,8 +758,8 @@ function parseRule(state: State): unknown {
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+  else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
   else {
     if (nextTopLevelStop(state, "{", ";", null) === "{") {
       const __first = trySpeculate(state, parseRule);
@@ -690,9 +791,11 @@ function parseAtRule(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "delim", "@");
   const name = expectClass(state, "ident");
+
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   const params = captureUntil(state, ";", "{", "}", true, true);
+
   const __params_start = state.__lastCaptureStart;
   const __params_end = state.__lastCaptureEnd;
   if (peekLiteralAfterComments(state, "lbrace", "{")) {
@@ -714,8 +817,8 @@ function parseAtRule(state: State): unknown {
       const __before = state.pos;
       let __child: unknown;
     const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-    else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+    else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
     else {
       if (nextTopLevelStop(state, "{", ";", null) === "{") {
         const __first = trySpeculate(state, parseRule);
@@ -769,8 +872,8 @@ function parseStylesheet(state: State): unknown {
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
+  else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
   else {
     if (nextTopLevelStop(state, "{", ";", null) === "{") {
       const __first = trySpeculate(state, parseRule);
@@ -797,16 +900,20 @@ function parseStylesheet(state: State): unknown {
 function parseCommentFast(state: State): unknown {
   const __raw_text = expectClass(state, "comment");
   const text = commentInterior(__raw_text);
+
   return { type: "comment", text: text };
 }
 
 function parseDeclarationFast(state: State): unknown {
   const prop = captureUntil(state, ":", ";", "}", true, true);
+
   expectLiteral(state, "colon", ":");
   const value = captureUntil(state, ";", "}", "!", true, true);
+
   if (peekLiteralAfterComments(state, "delim", "!")) {
     expectLiteral(state, "delim", "!");
     const important = expectClass(state, "ident");
+
     consumeOptionalLiteral(state, "semicolon", ";");
     return { type: "decl", prop: prop, value: value, important: true };
   }
@@ -817,9 +924,11 @@ function parseDeclarationFast(state: State): unknown {
 function parseDeclarationFast__fromLeadingCapture(state: State, prop: string): unknown {
   expectLiteral(state, "colon", ":");
   const value = captureUntil(state, ";", "}", "!", true, true);
+
   if (peekLiteralAfterComments(state, "delim", "!")) {
     expectLiteral(state, "delim", "!");
     const important = expectClass(state, "ident");
+
     consumeOptionalLiteral(state, "semicolon", ";");
     return { type: "decl", prop: prop, value: value, important: true };
   }
@@ -831,6 +940,7 @@ function parseRuleFast(state: State): unknown {
   const __captured = captureUntil(state, "{", ";", null, true, true);
   if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
   const selector = __captured;
+
 
   const lbrace = expectLiteral(state, "lbrace", "{");
 
@@ -847,8 +957,8 @@ function parseRuleFast(state: State): unknown {
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
   else {
     const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
     if (__scan.stop === "{") {
@@ -874,6 +984,7 @@ function parseRuleFast(state: State): unknown {
           __child = (() => {
             expectLiteral(state, "delim", "!");
             const important = expectClass(state, "ident");
+
             consumeOptionalLiteral(state, "semicolon", ";");
             return { type: "decl", prop: prop, value: value, important: true };
           })();
@@ -914,8 +1025,8 @@ function parseRuleFast__fromLeadingCapture(state: State, selector: string): unkn
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
   else {
     const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
     if (__scan.stop === "{") {
@@ -941,6 +1052,7 @@ function parseRuleFast__fromLeadingCapture(state: State, selector: string): unkn
           __child = (() => {
             expectLiteral(state, "delim", "!");
             const important = expectClass(state, "ident");
+
             consumeOptionalLiteral(state, "semicolon", ";");
             return { type: "decl", prop: prop, value: value, important: true };
           })();
@@ -968,7 +1080,9 @@ function parseRuleFast__fromLeadingCapture(state: State, selector: string): unkn
 function parseAtRuleFast(state: State): unknown {
   expectLiteral(state, "delim", "@");
   const name = expectClass(state, "ident");
+
   const params = captureUntil(state, ";", "{", "}", true, true);
+
   if (peekLiteralAfterComments(state, "lbrace", "{")) {
     const lbrace = expectLiteral(state, "lbrace", "{");
 
@@ -985,8 +1099,8 @@ function parseAtRuleFast(state: State): unknown {
       const __before = state.pos;
       let __child: unknown;
     const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-    else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+    else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
     else {
       const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
       if (__scan.stop === "{") {
@@ -1012,6 +1126,7 @@ function parseAtRuleFast(state: State): unknown {
             __child = (() => {
               expectLiteral(state, "delim", "!");
               const important = expectClass(state, "ident");
+
               consumeOptionalLiteral(state, "semicolon", ";");
               return { type: "decl", prop: prop, value: value, important: true };
             })();
@@ -1055,8 +1170,8 @@ function parseStylesheetFast(state: State): unknown {
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
+  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
   else {
     const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
     if (__scan.stop === "{") {
@@ -1082,6 +1197,7 @@ function parseStylesheetFast(state: State): unknown {
           __child = (() => {
             expectLiteral(state, "delim", "!");
             const important = expectClass(state, "ident");
+
             consumeOptionalLiteral(state, "semicolon", ";");
             return { type: "decl", prop: prop, value: value, important: true };
           })();
@@ -1103,6 +1219,130 @@ function parseStylesheetFast(state: State): unknown {
     }
   }
   return { type: "root", nodes: nodes };
+}
+
+function validateComment(state: State): unknown {
+  const __raw_text = expectClass(state, "comment");
+  const text = commentInterior(__raw_text);
+
+  return;
+}
+
+function validateDeclaration(state: State): unknown {
+  const prop = captureUntil(state, ":", ";", "}", true, true);
+
+  expectLiteral(state, "colon", ":");
+  const value = captureUntil(state, ";", "}", "!", true, true);
+
+  if (peekLiteralAfterComments(state, "delim", "!")) {
+    expectLiteral(state, "delim", "!");
+    const important = expectClass(state, "ident");
+
+    consumeOptionalLiteral(state, "semicolon", ";");
+    return;
+  }
+  consumeOptionalLiteral(state, "semicolon", ";");
+  return;
+}
+
+function validateRule(state: State): unknown {
+  const __captured = captureUntil(state, "{", ";", null, true, true);
+  if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
+  const selector = __captured;
+
+
+  const lbrace = expectLiteral(state, "lbrace", "{");
+  let __count_nodes = 0;
+  while (!(peekLiteral(state, "rbrace", "}"))) {
+    while (peekLiteral(state, "semicolon", ";")) {
+      expectLiteral(state, "semicolon", ";");
+    }
+    if (peekLiteral(state, "rbrace", "}")) break;
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
+    if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
+    if (nextTopLevelStop(state, "{", ";", null) === "{") {
+      const __first = trySpeculate(state, validateRule);
+      if (__first !== null) return __first;
+    }
+    return validateDeclaration(state);
+  })();
+    __count_nodes++;
+    if (state.pos === __before) break;
+    while (peekLiteral(state, "semicolon", ";")) {
+      expectLiteral(state, "semicolon", ";");
+    }
+  }
+  const rbrace = expectLiteral(state, "rbrace", "}");
+  return;
+}
+
+function validateAtRule(state: State): unknown {
+  expectLiteral(state, "delim", "@");
+  const name = expectClass(state, "ident");
+
+  const params = captureUntil(state, ";", "{", "}", true, true);
+
+  if (peekLiteralAfterComments(state, "lbrace", "{")) {
+    const lbrace = expectLiteral(state, "lbrace", "{");
+    let __count_nodes = 0;
+    while (!(peekLiteral(state, "rbrace", "}"))) {
+      while (peekLiteral(state, "semicolon", ";")) {
+        expectLiteral(state, "semicolon", ";");
+      }
+      if (peekLiteral(state, "rbrace", "}")) break;
+      const __before = state.pos;
+      (() => {
+      const __tok = state.tokens[state.pos];
+      if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
+      if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
+      if (nextTopLevelStop(state, "{", ";", null) === "{") {
+        const __first = trySpeculate(state, validateRule);
+        if (__first !== null) return __first;
+      }
+      return validateDeclaration(state);
+    })();
+      __count_nodes++;
+      if (state.pos === __before) break;
+      while (peekLiteral(state, "semicolon", ";")) {
+        expectLiteral(state, "semicolon", ";");
+      }
+    }
+    const rbrace = expectLiteral(state, "rbrace", "}");
+    return;
+  }
+  const semi = consumeOptionalLiteral(state, "semicolon", ";");
+
+  return;
+}
+
+function validateStylesheet(state: State): unknown {
+  let __count_nodes = 0;
+  while (!(state.pos >= state.tokens.length)) {
+    while (peekLiteral(state, "semicolon", ";")) {
+      expectLiteral(state, "semicolon", ";");
+    }
+    if (state.pos >= state.tokens.length) break;
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
+    if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
+    if (nextTopLevelStop(state, "{", ";", null) === "{") {
+      const __first = trySpeculate(state, validateRule);
+      if (__first !== null) return __first;
+    }
+    return validateDeclaration(state);
+  })();
+    __count_nodes++;
+    if (state.pos === __before) break;
+    while (peekLiteral(state, "semicolon", ";")) {
+      expectLiteral(state, "semicolon", ";");
+    }
+  }
+  return;
 }
 
 type DirectState = {
@@ -1133,6 +1373,159 @@ function parseDirectFast(input: string): unknown {
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
   return { type: "root", nodes: nodes };
+}
+
+function validateDirectFast(input: string): void {
+  const state: DirectState = {
+    input,
+    len: input.length,
+    pos: 0,
+    scanStop: -1,
+    scanStopIdx: 0,
+    scanCaptureStart: 0,
+    scanCaptureEnd: 0,
+    scanColonIdx: -1,
+    scanBangIdx: -1,
+  };
+  validateDirectRootChildren(state);
+  skipDirectWsAndSeparators(state);
+  if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
+}
+
+function validateDirectRootChildren(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
+    }
+    if (state.pos >= len) return;
+    const c = input.charCodeAt(state.pos);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
+      validateDirectComment(state);
+      continue;
+    }
+    if (c === 64) {
+      validateDirectPrefixed(state);
+      continue;
+    }
+    validateDirectBlockOrPair(state);
+  }
+}
+
+function validateDirectChildren(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
+    }
+    if (state.pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${state.pos}`);
+    }
+    const c = input.charCodeAt(state.pos);
+    if (c === 125) {
+      state.pos++;
+      return;
+    }
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
+      validateDirectComment(state);
+      continue;
+    }
+    if (c === 64) {
+      validateDirectPrefixed(state);
+      continue;
+    }
+    validateDirectBlockOrPair(state);
+  }
+}
+
+function validateDirectComment(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  state.pos += 2;
+  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+  if (state.pos < len) state.pos += 2;
+}
+
+function validateDirectPrefixed(state: DirectState): void {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const nameStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === nameStart) throw new SyntaxError(`expected token of class 'ident' at position ${nameStart}`);
+  scanDirectBoundary(state, 59, 123, 125);
+  const scanStop = state.scanStop;
+  state.pos = state.scanStopIdx;
+  if (scanStop === 123) {
+    state.pos++;
+    validateDirectChildren(state);
+    return;
+  }
+  if (scanStop === 59) state.pos++;
+}
+
+
+function validateDirectBlockOrPair(state: DirectState): void {
+  const input = state.input;
+  scanDirectPairBoundary(state, 123, 59, 125);
+  if (state.scanStop === 123) {
+    const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58;
+    if (!rejectsBlock) {
+      if (state.scanCaptureEnd <= state.scanCaptureStart) throw new SyntaxError(`expected selector at position ${state.pos}`);
+      const selectorEnd = input.charCodeAt(state.scanCaptureEnd - 1);
+      if (selectorEnd === 0x2c /* , */ || selectorEnd === 0x3e /* > */ || selectorEnd === 0x2b /* + */ || selectorEnd === 0x7e /* ~ */) {
+        throw new SyntaxError(`expected selector after combinator at position ${state.scanCaptureEnd}`);
+      }
+      state.pos = state.scanStopIdx + 1;
+      validateDirectChildren(state);
+      return;
+    }
+  }
+  const scanColonIdx = state.scanColonIdx;
+  if (scanColonIdx < 0) {
+    const found = state.scanStopIdx < state.len ? `'${input[state.scanStopIdx]}'` : 'end of input';
+    directSyntaxError(state, `Unexpected ${found}`, state.scanStopIdx);
+  }
+  if (state.scanStop === 123) {
+    state.pos = scanColonIdx + 1;
+    validateDirectDeclarationRest(state);
+    return;
+  }
+  state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
+  if (state.scanBangIdx >= 0) {
+    validateDirectImportantDeclarationRest(state);
+    return;
+  }
+  if (state.scanStop === 59) state.pos++;
+}
+
+function validateDirectDeclarationRest(state: DirectState): void {
+  scanDirectValueBoundary(state, 59, 125, 33);
+  state.pos = state.scanStopIdx;
+  if (state.scanStop === 33) {
+    validateDirectImportantDeclarationRest(state);
+    return;
+  }
+  if (state.scanStop === 59) state.pos++;
+}
+
+function validateDirectImportantDeclarationRest(state: DirectState): void {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const importantStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === importantStart) throw new SyntaxError(`expected token of class 'ident' at position ${importantStart}`);
+  skipDirectWs(state);
+  if (input.charCodeAt(state.pos) === 59) state.pos++;
 }
 
 function parseDirectRootChildren(state: DirectState): unknown[] {
@@ -1529,8 +1922,17 @@ ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 
 export function parse(input: string, options: ParseOptions = {}): unknown {
   const mode = options.mode ?? 'fast';
-  if (mode === 'fast') return parseDirectFast(input);
-  const tokens = tokenize(input);
+  if (mode === 'fast') {
+    const result = parseDirectFast(input);
+    if (options.validate === true) validateParsedProperties(input, result);
+    return result;
+  }
+  let tokens: Token[];
+  try {
+    tokens = tokenize(input);
+  } catch (error) {
+    throw decorateSyntaxError(input, error);
+  }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const hasComments = tokens.hasComments === true;
   const state: State = {
@@ -1543,11 +1945,143 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
-  const result = mode === 'raws' ? parseStylesheet(state) : parseStylesheetFast(state);
-  if (state.pos !== state.tokens.length) {
-    throw new SyntaxError(`unexpected trailing token at position ${state.pos}`);
+  try {
+    const result = mode === 'raws' ? parseStylesheet(state) : parseStylesheetFast(state);
+    if (state.pos !== state.tokens.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    }
+  if (options.validate === true) validateParsedProperties(input, result);
+    return result;
+  } catch (error) {
+    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
+      throw decorateSyntaxError(input, error, tokens, state.pos);
+    }
+    throw error;
   }
-  return result;
+}
+
+export function validate(input: string, options: ParseOptions = {}): void {
+  if (options.validate === true) {
+    parse(input, options);
+    return;
+  }
+  validateDirectFast(input);
+  return;
+  let tokens: Token[];
+  try {
+    tokens = tokenize(input);
+  } catch (error) {
+    throw decorateSyntaxError(input, error);
+  }
+  const state: State = {
+    tokens,
+    pos: 0,
+    input,
+    lineStarts: [],
+    mode: 'fast',
+    hasComments: tokens.hasComments === true,
+    __lastCaptureStart: 0,
+    __lastCaptureEnd: 0,
+  };
+  try {
+    validateStylesheet(state);
+    if (state.pos !== state.tokens.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    }
+  } catch (error) {
+    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
+      throw decorateSyntaxError(input, error, tokens, state.pos);
+    }
+    throw error;
+  }
+}
+
+// Attach package identity so another package's validation metadata can refer
+// to this generated validator while codegen still emits static imports.
+(validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
+  module: "@parser2/css",
+  exportName: 'validate',
+};
+
+export function countTokens(input: string): number {
+  return tokenize(input).length;
+}
+
+
+const __validationSet0 = new Set<string>(["accent-color", "border-block-color", "border-block-end-color", "border-block-start-color", "border-bottom-color", "border-color", "border-inline-color", "border-inline-end-color", "border-inline-start-color", "border-left-color", "border-right-color", "border-top-color", "caret-color", "color", "column-rule-color", "fill", "flood-color", "lighting-color", "outline-color", "stop-color", "stroke", "text-decoration-color"]);
+const __validationSet1 = new Set<string>(["block-size", "border-block-end-width", "border-block-start-width", "border-block-width", "border-bottom-width", "border-inline-end-width", "border-inline-start-width", "border-inline-width", "border-left-width", "border-right-width", "border-spacing", "border-top-width", "border-width", "bottom", "column-gap", "column-width", "flex-basis", "font-size", "gap", "height", "inline-size", "inset", "inset-block", "inset-block-end", "inset-block-start", "inset-inline", "inset-inline-end", "inset-inline-start", "left", "letter-spacing", "margin", "margin-block", "margin-block-end", "margin-block-start", "margin-bottom", "margin-inline", "margin-inline-end", "margin-inline-start", "margin-left", "margin-right", "margin-top", "max-block-size", "max-height", "max-inline-size", "max-width", "min-block-size", "min-height", "min-inline-size", "min-width", "outline-offset", "outline-width", "padding", "padding-block", "padding-block-end", "padding-block-start", "padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left", "padding-right", "padding-top", "right", "row-gap", "scroll-margin", "scroll-padding", "top", "width", "word-spacing"]);
+function validateCachedProperty(
+  cache: Map<string, true>,
+  input: string,
+  validatorId: number,
+  value: string,
+  validator: (input: string) => void,
+  prop: string,
+): void {
+  const cacheKey = validatorId + '\0' + value;
+  if (cache.has(cacheKey)) return;
+  try {
+    validator(value);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      const valueOffset = findPropertyValueOffset(input, prop, value);
+      const nestedOffset = offsetFromMessage(error.message, 0);
+      const nestedMessage = stripPositionSuffix(error.message.split('\n')[0] ?? error.message);
+      throw syntaxErrorWithFrame(input, nestedMessage, valueOffset + nestedOffset);
+    }
+    throw error;
+  }
+  cache.set(cacheKey, true);
+}
+
+function validateParsedProperties(input: string, node: unknown): void {
+  const cache = new Map<string, true>();
+  visitValidationNode(input, node, cache);
+}
+
+function visitValidationNode(input: string, node: unknown, cache: Map<string, true>): void {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    for (const child of node) visitValidationNode(input, child, cache);
+    return;
+  }
+  const record = node as Record<string, unknown>;
+  if (record.type === "decl") {
+      const matchValue = record["prop"];
+      const value = record["value"];
+      if (typeof matchValue === 'string' && typeof value === 'string') {
+        const normalized = matchValue.toLowerCase();
+        if (!normalized.startsWith('--') && __validationSet0.has(normalized)) {
+          validateCachedProperty(cache, input, 0, value, __propertyValidator0, matchValue);
+        }
+      }
+    }
+  if (record.type === "decl") {
+      const matchValue = record["prop"];
+      const value = record["value"];
+      if (typeof matchValue === 'string' && typeof value === 'string') {
+        const normalized = matchValue.toLowerCase();
+        if (!normalized.startsWith('--') && __validationSet1.has(normalized)) {
+          validateCachedProperty(cache, input, 1, value, __propertyValidator1, matchValue);
+        }
+      }
+    }
+  const children = record.nodes;
+  if (Array.isArray(children)) {
+    for (const child of children) visitValidationNode(input, child, cache);
+  }
+}
+
+function findPropertyValueOffset(input: string, prop: string, value: string): number {
+  const valueIndex = input.indexOf(value);
+  if (valueIndex >= 0) return valueIndex;
+  const propIndex = input.indexOf(prop);
+  if (propIndex < 0) return 0;
+  const colonIndex = input.indexOf(':', propIndex + prop.length);
+  if (colonIndex < 0) return propIndex;
+  let pos = colonIndex + 1;
+  while (pos < input.length && isAsciiWs(input.charCodeAt(pos))) pos++;
+  return pos;
 }
 
 export function stringify(_value: unknown): string {

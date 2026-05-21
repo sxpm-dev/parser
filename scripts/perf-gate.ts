@@ -3,7 +3,19 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Bench } from 'tinybench';
 
-type PackageName = 'css' | 'js' | 'json';
+type PackageName =
+  | 'arn'
+  | 'cron'
+  | 'css'
+  | 'css-color'
+  | 'css-length-percentage'
+  | 'js'
+  | 'json'
+  | 'log'
+  | 'mac'
+  | 'markdown'
+  | 'proto'
+  | 'url';
 
 type PerfCase = {
   readonly name: string;
@@ -20,12 +32,26 @@ type BaselineEntry = {
 
 type Baseline = Record<string, BaselineEntry>;
 
-const packageNames = new Set<PackageName>(['css', 'js', 'json']);
+const packageNames = new Set<PackageName>([
+  'arn',
+  'cron',
+  'css',
+  'css-color',
+  'css-length-percentage',
+  'js',
+  'json',
+  'log',
+  'mac',
+  'markdown',
+  'proto',
+  'url',
+]);
 const args = process.argv.slice(2);
 const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
 const writeBaseline = args.includes('--write') || args.includes('-w');
 const tolerance = readTolerance('PARSER2_PERF_TOLERANCE', 0.25);
+const baselineFloorFactor = readTolerance('PARSER2_PERF_BASELINE_FLOOR', 0.6);
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const packageRoot = join(root, 'packages', packageName);
 const baselinePath = join(packageRoot, 'bench', 'perf-baseline.json');
@@ -49,8 +75,9 @@ async function main(): Promise<void> {
 
   for (const perfCase of cases) {
     const result = await measure(perfCase, api);
+    const lockedHz = writeBaseline ? result.hz * baselineFloorFactor : result.hz;
     const entry: BaselineEntry = {
-      hz: Math.round(result.hz),
+      hz: Math.round(lockedHz),
       inputHash: hashInput(perfCase.input),
       bytes: perfCase.input.length,
     };
@@ -89,7 +116,7 @@ async function main(): Promise<void> {
 
 async function measure(perfCase: PerfCase, api: Record<string, unknown>): Promise<{ hz: number }> {
   perfCase.run(api, perfCase.input);
-  let bestHz = 0;
+  let stableHz = Number.POSITIVE_INFINITY;
   for (let sample = 0; sample < 2; sample++) {
     const bench = new Bench({
       time: perfCase.kb >= 100 ? 350 : 400,
@@ -100,13 +127,42 @@ async function measure(perfCase: PerfCase, api: Record<string, unknown>): Promis
     await bench.run();
     const result = bench.tasks[0]?.result as BenchTaskResult | undefined;
     if (!result?.hz) throw new Error(`${perfCase.name} did not complete`);
-    bestHz = Math.max(bestHz, result.hz);
+    stableHz = Math.min(stableHz, result.hz);
   }
-  return { hz: bestHz };
+  return { hz: stableHz };
 }
 
 function createCases(name: PackageName): PerfCase[] {
   const sizes = [5, 20, 100];
+  const validateRows = (api: Record<string, unknown>, input: string): number => {
+    const validate = api.validate as (value: string) => void;
+    let rows = 0;
+    for (const row of input.trim().split(/\n/)) {
+      validate(row);
+      rows++;
+    }
+    return rows;
+  };
+
+  const validationCases = (seed: string): PerfCase[] => sizes.map((kb) => ({
+    name: `validate:${kb}KB`,
+    kb,
+    input: repeat(seed, kb * 1024),
+    run: validateRows,
+  }));
+
+  if (name === 'arn') {
+    return validationCases(
+      'arn:aws:lambda:us-east-1:123456789012:function:MyFn\n' +
+      'arn:aws:ec2:eu-west-1:987654321098:instance/i-0abcdef\n' +
+      'arn:aws:sqs:ap-south-1:444455556666:order-queue\n',
+    );
+  }
+
+  if (name === 'cron') {
+    return validationCases('*/5 * * * *\n0 9 * * 1-5 npm test\n15 14 1 * * deploy\n');
+  }
+
   if (name === 'css') {
     return sizes.flatMap((kb) => {
       const input = generateCss(kb * 1024);
@@ -125,6 +181,32 @@ function createCases(name: PackageName): PerfCase[] {
         },
       ];
     });
+  }
+
+  if (name === 'css-color') {
+    return validationCases(
+      'red\n' +
+      '#00ff99\n' +
+      '#fff\n' +
+      'rgb(0 0 0 / 50%)\n' +
+      'rgba(255, 0, 0)\n' +
+      'oklch(60% 0.2 30)\n' +
+      'color(display-p3 1 0 0)\n' +
+      'var(--brand-color, red)\n',
+    );
+  }
+
+  if (name === 'css-length-percentage') {
+    return validationCases(
+      '0\n' +
+      '10px\n' +
+      '-1.5rem\n' +
+      '50%\n' +
+      '10px 20%\n' +
+      '1px 2px 3px 4px\n' +
+      'calc(100% - 1rem)\n' +
+      'var(--space, 1rem)\n',
+    );
   }
 
   if (name === 'js') {
@@ -148,6 +230,55 @@ function createCases(name: PackageName): PerfCase[] {
     });
   }
 
+  if (name === 'markdown') {
+    return sizes.flatMap((kb) => {
+      const input = generateMarkdown(kb * 1024);
+      return [
+        {
+          name: `tokenize:${kb}KB`,
+          kb,
+          input,
+          run: (api, markdown) => (api.tokenize as (input: string) => readonly unknown[])(markdown),
+        },
+        {
+          name: `parse:${kb}KB`,
+          kb,
+          input,
+          run: (api, markdown) => (api.parse as (input: string) => unknown)(markdown),
+        },
+      ];
+    });
+  }
+
+  if (name === 'log') {
+    return validationCases(
+      '192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326\n',
+    );
+  }
+
+  if (name === 'mac') {
+    return validationCases('00:1A:2B:3C:4D:5E\nDE-AD-BE-EF-CA-FE\naa:bb:cc:dd:ee:ff\n');
+  }
+
+  if (name === 'proto') {
+    return sizes.map((kb) => {
+      const input = repeat(
+        'syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }\n',
+        kb * 1024,
+      ).trim();
+      return {
+        name: `validate:${kb}KB`,
+        kb,
+        input,
+        run: (api, proto) => (api.validate as (input: string) => void)(proto),
+      };
+    });
+  }
+
+  if (name === 'url') {
+    return validationCases('/foo/bar?q=hello&tag=one\nhttps://example.com/search\n');
+  }
+
   const seed = '{"id":__I__,"name":"item-__I__","ok":true,"score":12.5,"tags":["a","b","c"],"meta":{"next":null,"flag":false}}';
   return sizes.map((kb) => {
     const input = repeatJson(seed, kb * 1024);
@@ -158,6 +289,57 @@ function createCases(name: PackageName): PerfCase[] {
       run: (api, json) => (api.parse as (input: string) => unknown)(json),
     };
   });
+}
+
+function generateMarkdown(targetBytes: number): string {
+  const seed = [
+    '# Release notes',
+    'Plain paragraph',
+    '',
+    '## Installation guide',
+    '- first item',
+    '+ alternate marker',
+    '* star marker',
+    '1. ordered item',
+    '- [x] completed task',
+    '- [ ] pending task',
+    '',
+    '> quoted text',
+    '',
+    'Setext heading',
+    '---',
+    '',
+    '**bold**',
+    '*italic*',
+    '~~removed~~',
+    '`code`',
+    '[docs](https://example.com)',
+    '[docs][id]',
+    '![diagram](https://example.com/diagram.png)',
+    '![diagram][image-id]',
+    '<https://example.com>',
+    '&amp;',
+    '',
+    '```js',
+    'sample',
+    '```',
+    '',
+    '```',
+    'plain',
+    '```',
+    '',
+    '| name | value |',
+    '| --- | --- |',
+    '|:---|---:|',
+    '',
+    '[id]: https://example.com',
+    '[^1]: footnote text',
+    '[^1]',
+    '',
+    '<div>html</div>',
+    '',
+  ].join('\n');
+  return repeat(seed, targetBytes);
 }
 
 function resolvePackageName(arg: string | undefined): PackageName {

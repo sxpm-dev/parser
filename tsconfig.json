@@ -3,8 +3,17 @@
   "references": [
     { "path": "./packages/parser" },
     { "path": "./packages/compiler" },
+    { "path": "./packages/css-color" },
+    { "path": "./packages/css-length-percentage" },
     { "path": "./packages/css" },
     { "path": "./packages/js" },
-    { "path": "./packages/json" }
+    { "path": "./packages/json" },
+    { "path": "./packages/markdown" },
+    { "path": "./packages/proto" },
+    { "path": "./packages/arn" },
+    { "path": "./packages/url" },
+    { "path": "./packages/cron" },
+    { "path": "./packages/log" },
+    { "path": "./packages/mac" }
   ]
 }

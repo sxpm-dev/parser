@@ -231,3 +231,30 @@ export type SchemaInput = {
   readonly whitespace?: WhitespacePolicy;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
+
+// --- Package-level validation composition ---------------------------------
+//
+// This is deliberately not part of SchemaDef. It describes package-level
+// composition between one generated parser and other generated parser modules.
+
+export type GeneratedValidator = ((input: string) => void) & {
+  readonly __parser2Validator?: ValidatorImport;
+};
+
+export type ValidatorImport = {
+  readonly module: string;
+  readonly exportName: string;
+};
+
+export type ValidationRuleDef = {
+  readonly nodeType: string;
+  readonly field: string;
+  readonly matchField: string;
+  readonly matchValues: ReadonlyArray<string>;
+  readonly validator: ValidatorImport;
+};
+
+export type ValidationDef = {
+  readonly schema: SchemaDef;
+  readonly rules: ReadonlyArray<ValidationRuleDef>;
+};

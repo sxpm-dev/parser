@@ -1,4 +1,4 @@
-import type { SchemaDef } from '@parser2/parser';
+import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { resolveCompositionGraph } from './infer/composition.ts';
 import { buildProductions } from './infer/productions.ts';
 import { resolveRecursiveRoles } from './infer/roles.ts';
@@ -9,7 +9,7 @@ import type { InferredSchema } from './model.ts';
 
 export type { InferredSchema } from './model.ts';
 
-export function inferSchema(root: SchemaDef): InferredSchema {
+export function inferSchema(root: SchemaDef, validation?: ValidationDef): InferredSchema {
   const schemas = resolveCompositionGraph(root);
   const nodeTypes = buildProductions(schemas);
   resolveRecursiveRoles(nodeTypes, root.rootType);
@@ -23,9 +23,10 @@ export function inferSchema(root: SchemaDef): InferredSchema {
     literalTypeByText,
     classes,
     whitespace: root.whitespace,
+    validation,
   };
 }
 
-export function generateParser(root: SchemaDef): string {
-  return emitParser(inferSchema(root));
+export function generateParser(root: SchemaDef, validation?: ValidationDef): string {
+  return emitParser(inferSchema(root, validation));
 }

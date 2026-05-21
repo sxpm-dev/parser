@@ -1,0 +1,24 @@
+{
+  "name": "@parser2/mac",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run generate && tsx bench/mac.bench.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts mac",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts mac --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts mac",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts mac --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts mac",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0"
+  }
+}

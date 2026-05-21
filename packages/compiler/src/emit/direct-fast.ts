@@ -278,6 +278,44 @@ function parseDirectPrefixed(state: DirectState): unknown {
   return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`)} };
 }
 ` : '';
+  const validateCommentBranch = shape.comment ? `    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
+      validateDirectComment(state);
+      continue;
+    }
+` : '';
+  const validateCommentFn = shape.comment ? `
+function validateDirectComment(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  state.pos += 2;
+  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+  if (state.pos < len) state.pos += 2;
+}
+` : '';
+  const validatePrefixedBranch = shape.prefixed ? `    if (c === ${prefixCode}) {
+      validateDirectPrefixed(state);
+      continue;
+    }
+` : '';
+  const validatePrefixedFn = shape.prefixed ? `
+function validateDirectPrefixed(state: DirectState): void {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const nameStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === nameStart) throw new SyntaxError(\`expected token of class 'ident' at position \${nameStart}\`);
+  scanDirectBoundary(state, ${separatorCode}, ${openCode}, ${closeCode});
+  const scanStop = state.scanStop;
+  state.pos = state.scanStopIdx;
+  if (scanStop === ${openCode}) {
+    state.pos++;
+    validateDirectChildren(state);
+    return;
+  }
+  if (scanStop === ${separatorCode}) state.pos++;
+}
+` : '';
 
   return `type DirectState = {
   readonly input: string;
@@ -307,6 +345,117 @@ function parseDirectFast(input: string): unknown {
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
   return { ${joinProps(rootType, `${prop(shape.root.childrenKey)}: nodes`)} };
+}
+
+function validateDirectFast(input: string): void {
+  const state: DirectState = {
+    input,
+    len: input.length,
+    pos: 0,
+    scanStop: -1,
+    scanStopIdx: 0,
+    scanCaptureStart: 0,
+    scanCaptureEnd: 0,
+    scanColonIdx: -1,
+    scanBangIdx: -1,
+  };
+  validateDirectRootChildren(state);
+  skipDirectWsAndSeparators(state);
+  if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
+}
+
+function validateDirectRootChildren(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== ${separatorCode}) break;
+      state.pos++;
+    }
+    if (state.pos >= len) return;
+    const c = input.charCodeAt(state.pos);
+    if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[state.pos]}' at position \${state.pos}\`);
+${validateCommentBranch}${validatePrefixedBranch}    validateDirectBlockOrPair(state);
+  }
+}
+
+function validateDirectChildren(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== ${separatorCode}) break;
+      state.pos++;
+    }
+    if (state.pos >= len) {
+      throw new SyntaxError(\`expected '${shape.literals.close}' at position \${state.pos}\`);
+    }
+    const c = input.charCodeAt(state.pos);
+    if (c === ${closeCode}) {
+      state.pos++;
+      return;
+    }
+    if (c === 0x60 /* \` */) throw new SyntaxError(\`Unexpected character '\${input[state.pos]}' at position \${state.pos}\`);
+${validateCommentBranch}${validatePrefixedBranch}    validateDirectBlockOrPair(state);
+  }
+}
+${validateCommentFn}${validatePrefixedFn}
+
+function validateDirectBlockOrPair(state: DirectState): void {
+  const input = state.input;
+  scanDirectPairBoundary(state, ${openCode}, ${separatorCode}, ${closeCode});
+  if (state.scanStop === ${openCode}) {
+    const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === ${pairCode};
+    if (!rejectsBlock) {
+      if (state.scanCaptureEnd <= state.scanCaptureStart) throw new SyntaxError(\`expected selector at position \${state.pos}\`);
+      const selectorEnd = input.charCodeAt(state.scanCaptureEnd - 1);
+      if (selectorEnd === 0x2c /* , */ || selectorEnd === 0x3e /* > */ || selectorEnd === 0x2b /* + */ || selectorEnd === 0x7e /* ~ */) {
+        throw new SyntaxError(\`expected selector after combinator at position \${state.scanCaptureEnd}\`);
+      }
+      state.pos = state.scanStopIdx + 1;
+      validateDirectChildren(state);
+      return;
+    }
+  }
+  const scanColonIdx = state.scanColonIdx;
+  if (scanColonIdx < 0) {
+    const found = state.scanStopIdx < state.len ? \`'\${input[state.scanStopIdx]}'\` : 'end of input';
+    directSyntaxError(state, \`Unexpected \${found}\`, state.scanStopIdx);
+  }
+  if (state.scanStop === ${openCode}) {
+    state.pos = scanColonIdx + 1;
+    validateDirectDeclarationRest(state);
+    return;
+  }
+  state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
+  if (state.scanBangIdx >= 0) {
+    validateDirectImportantDeclarationRest(state);
+    return;
+  }
+  if (state.scanStop === ${separatorCode}) state.pos++;
+}
+
+function validateDirectDeclarationRest(state: DirectState): void {
+  scanDirectValueBoundary(state, ${separatorCode}, ${closeCode}, ${flagCode});
+  state.pos = state.scanStopIdx;
+  if (${flagStopCheck}) {
+    validateDirectImportantDeclarationRest(state);
+    return;
+  }
+  if (state.scanStop === ${separatorCode}) state.pos++;
+}
+
+function validateDirectImportantDeclarationRest(state: DirectState): void {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const importantStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === importantStart) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
+  skipDirectWs(state);
+  if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
 }
 
 function parseDirectRootChildren(state: DirectState): unknown[] {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import CssSchema from '../../css/src/schema.ts';
-import { inferSchema } from '../src/index.ts';
+import { generateParser, inferSchema } from '../src/index.ts';
 
 test('inference walks the css smoke-test schema end to end', () => {
   const inferred = inferSchema(CssSchema);
@@ -70,4 +70,41 @@ test('inference rejects ambiguous recursive span text', async () => {
     ],
   });
   assert.throws(() => inferSchema(ambiguous), /appears multiple times/);
+});
+
+test('validation metadata is separate from SchemaDef and emits string-set lookup logic', async () => {
+  const { defineSchema, defineValidation, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    name: 'sheet',
+    rootType: 'Declaration',
+    examples: [
+      ex('color: red;')
+        .as('Declaration')
+        .span('prop', 'color').until(':')
+        .span(':')
+        .span('value', 'red').until(';')
+        .span(';')
+        .structure({ type: 'decl', prop: $.prop, value: $.value })
+        .build(),
+    ],
+  });
+  const valueValidator = Object.assign(
+    (_input: string): void => {},
+    { __parser2Validator: { module: '@parser2/css-color', exportName: 'validate' } },
+  );
+
+  assert.equal('validation' in schema, false);
+
+  const validation = defineValidation(schema)
+    .node('Declaration')
+    .field('value')
+    .match('prop', ['color'])
+    .validate(valueValidator);
+  const inferred = inferSchema(schema, validation);
+  assert.equal(inferred.validation?.rules.length, 1);
+
+  const emitted = generateParser(schema, validation);
+  assert.match(emitted, /import \{ validate as __propertyValidator0 \} from "@parser2\/css-color"/);
+  assert.match(emitted, /new Set<string>\(\["color"\]\)/);
+  assert.match(emitted, /function validate\(input: string, options: ParseOptions = \{\}\): void/);
 });

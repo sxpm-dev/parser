@@ -9,6 +9,7 @@ import type {
   SpanDef,
   SpanModifier,
   StructureValue,
+  ValidationDef,
   WhitespacePolicy,
 } from '@parser2/parser';
 
@@ -60,6 +61,7 @@ export type InferredSchema = {
   readonly literalTypeByText: ReadonlyMap<string, string>;
   readonly classes: ReadonlyArray<TokenClassUsage>;
   readonly whitespace: WhitespacePolicy;
+  readonly validation?: ValidationDef;
 };
 
 // --- Validation result -----------------------------------------------------

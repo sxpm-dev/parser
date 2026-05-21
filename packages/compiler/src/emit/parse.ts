@@ -14,11 +14,11 @@ type Ctx = {
   readonly capturedDispatch?: boolean;
 };
 
-type ParseVariant = 'fast' | 'raws';
+type ParseVariant = 'fast' | 'raws' | 'validate';
 
 export function emitNodeFunctions(schema: InferredSchema): string {
   const parts: string[] = [];
-  for (const variant of ['raws', 'fast'] as const) {
+  for (const variant of ['raws', 'fast', 'validate'] as const) {
     const ctx: Ctx = { literalTypeByText: schema.literalTypeByText, nodeTypes: schema.nodeTypes, variant };
     for (const info of schema.nodeTypes.values()) {
       parts.push(emitNodeFunction(info, ctx));
@@ -116,7 +116,7 @@ function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx): string
     modifiers: firstPivot.modifiers.map((m) => (m.kind === 'until' ? mergedUntil : m)),
   };
 
-  const structureOptions = ctx.variant === 'fast' ? { omitRaws: true } : {};
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const firstOffsetRefs = collectOffsetRefs(first.structure, structureOptions);
   const secondOffsetRefs = collectOffsetRefs(second.structure, structureOptions);
   const commonOffsetRefs = new Set([...firstOffsetRefs, ...secondOffsetRefs]);
@@ -197,6 +197,10 @@ function emitFactoredBranch(
     lines.push(`const __lastTok = state.tokens[state.pos - 1];`);
     lines.push(`const __endOff = __lastTok ? __lastTok.end : __startOff;`);
   }
+  if (ctx.variant === 'validate') {
+    lines.push(`return;`);
+    return lines.join('\n');
+  }
   const structure = emitStructureExpr(production.structure, {
     valueExpr,
     presenceExpr,
@@ -252,7 +256,7 @@ function emitFactoredContinuationBody(
     modifiers: firstPivot.modifiers.map((m) => (m.kind === 'until' ? mergedUntil : m)),
   };
 
-  const structureOptions = ctx.variant === 'fast' ? { omitRaws: true } : {};
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const firstOffsetRefs = collectOffsetRefs(first.structure, structureOptions);
   const secondOffsetRefs = collectOffsetRefs(second.structure, structureOptions);
   const commonOffsetRefs = new Set([...firstOffsetRefs, ...secondOffsetRefs]);
@@ -321,6 +325,9 @@ function sameModifiers(a: ReadonlyArray<SpanModifier>, b: ReadonlyArray<SpanModi
 }
 
 function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx): string | null {
+  const grouped = emitFirstTokenProductionDispatch(info, ctx);
+  if (grouped) return grouped;
+
   if (info.productions.length !== 2) return null;
   const [first, second] = info.productions;
   if (!first || !second) return null;
@@ -350,6 +357,112 @@ function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx): string |
   return null;
 }
 
+function emitFirstTokenProductionDispatch(info: NodeTypeInfo, ctx: Ctx): string | null {
+  if (info.productions.length < 2) return null;
+
+  const groups: Array<{ readonly first: FirstToken; readonly indexes: number[] }> = [];
+  const fallback: number[] = [];
+  const keyFor = (first: FirstToken): string => first.kind === 'literal'
+    ? `${first.kind}:${first.type}:${first.value}`
+    : `${first.kind}:${first.type}`;
+
+  for (let i = 0; i < info.productions.length; i++) {
+    const span = info.productions[i]?.spans[0];
+    const first = span ? firstTokenForSpan(span, ctx) : null;
+    if (!first) {
+      fallback.push(i);
+      continue;
+    }
+    const key = keyFor(first);
+    let group = groups.find((candidate) => keyFor(candidate.first) === key);
+    if (!group) {
+      group = { first, indexes: [] };
+      groups.push(group);
+    }
+    group.indexes.push(i);
+  }
+
+  if (groups.length === 0) return null;
+  if (fallback.length > 0 && groups.length === 1) return null;
+  groups.sort((a, b) => firstTokenSpecificity(b.first) - firstTokenSpecificity(a.first));
+
+  const fnName = parseFnName(info.name, ctx.variant);
+  const lines: string[] = [];
+  lines.push(`function ${fnName}(state: State): unknown {`);
+  lines.push(`  const __tok = state.tokens[state.pos];`);
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i]!;
+    const first = group.first.kind === 'class' ? { kind: 'class' as const, type: group.first.type } : group.first;
+    const check = emitFirstTokenCheck('__tok', first);
+    lines.push(`  ${i === 0 ? 'if' : 'else if'} (${check}) {`);
+    lines.push(indent(emitProductionGroupDispatch(info, fnName, group.indexes, ctx), 2));
+    lines.push(`  }`);
+  }
+  if (fallback.length > 0) {
+    lines.push(`  else {`);
+    lines.push(indent(emitProductionGroupDispatch(info, fnName, fallback, ctx), 2));
+    lines.push(`  }`);
+  } else {
+    lines.push(`  throw new SyntaxError('no production matched');`);
+  }
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+function emitProductionGroupDispatch(
+  info: NodeTypeInfo,
+  fnName: string,
+  indexes: readonly number[],
+  ctx: Ctx,
+): string {
+  if (indexes.length === 1) return `return ${fnName}__alt${indexes[0]}(state);`;
+  const secondTokenDispatch = emitSecondTokenProductionGroupDispatch(info, fnName, indexes, ctx);
+  if (secondTokenDispatch) return secondTokenDispatch;
+  const lines: string[] = [];
+  for (const index of indexes.slice(0, -1)) {
+    lines.push(`{ const r = trySpeculate(state, ${fnName}__alt${index}); if (r !== null) return r; }`);
+  }
+  lines.push(`return ${fnName}__alt${indexes[indexes.length - 1]}(state);`);
+  return lines.join('\n');
+}
+
+function emitSecondTokenProductionGroupDispatch(
+  info: NodeTypeInfo,
+  fnName: string,
+  indexes: readonly number[],
+  ctx: Ctx,
+): string | null {
+  const keyed: Array<{ index: number; second: FirstToken }> = [];
+  const fallback: number[] = [];
+  const seen = new Set<string>();
+  for (const index of indexes) {
+    const span = info.productions[index]?.spans[1];
+    const second = span ? firstTokenForSpan(span, ctx) : null;
+    if (!second) {
+      fallback.push(index);
+      continue;
+    }
+    const key = firstTokenKey(second);
+    if (seen.has(key)) return null;
+    seen.add(key);
+    keyed.push({ index, second });
+  }
+  if (keyed.length === 0) return null;
+  if (fallback.length > 1) return null;
+
+  const lines: string[] = [];
+  lines.push(`const __nextTok = nextNonCommentToken(state, state.pos + 1);`);
+  keyed.forEach((entry, i) => {
+    lines.push(`${i === 0 ? 'if' : 'else if'} (${emitFirstTokenCheck('__nextTok', entry.second)}) return ${fnName}__alt${entry.index}(state);`);
+  });
+  if (fallback.length === 1) {
+    lines.push(`return ${fnName}__alt${fallback[0]}(state);`);
+  } else {
+    lines.push(`throw new SyntaxError('no production matched');`);
+  }
+  return lines.join('\n');
+}
+
 function emitProductionBody(production: Production, ctx: Ctx): string {
   const lines: string[] = [];
   const valueExpr = new Map<string, string>();
@@ -357,7 +470,7 @@ function emitProductionBody(production: Production, ctx: Ctx): string {
   const startOffExpr = new Map<string, string>();
   const endOffExpr = new Map<string, string>();
   const spans = production.spans;
-  const structureOptions = ctx.variant === 'fast' ? { omitRaws: true } : {};
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const offsetRefs = collectOffsetRefs(production.structure, structureOptions);
   const needsNodeRange = ctx.variant === 'raws';
 
@@ -377,6 +490,11 @@ function emitProductionBody(production: Production, ctx: Ctx): string {
   if (needsNodeRange) {
     lines.push(`const __lastTok = state.tokens[state.pos - 1];`);
     lines.push(`const __endOff = __lastTok ? __lastTok.end : __startOff;`);
+  }
+
+  if (ctx.variant === 'validate') {
+    lines.push(`return;`);
+    return lines.join('\n');
   }
 
   const bindings = {
@@ -476,9 +594,11 @@ function emitUntilSpan(
     if (rejectCheck) {
       return `const __captured = ${captureCall};
 ${rejectCheck}const ${v} = __captured;
+${emitSpanRefinementCheck(span, v, false, 'state.__lastCaptureStart')}
 ${offsets.trimStart()}`;
     }
-    return `const ${v} = ${captureCall};${offsets}`;
+    return `const ${v} = ${captureCall};
+${emitSpanRefinementCheck(span, v, false, 'state.__lastCaptureStart')}${offsets}`;
   }
   if (rejectCheck) {
     return `{ const __captured = ${captureCall}; ${rejectCheck.trim()} }`;
@@ -546,26 +666,65 @@ function emitClassedSpan(
     if (optional) {
       presenceExpr.set(span.name, `(${v} !== null)`);
       const call = `consumeOptionalClass(state, ${jsString(typeName)})`;
+      const refinementCheck = emitSpanRefinementCheck(span, v, true, 'state.tokens[state.pos - 1].start');
       if (isComment) {
         return `const __raw_${v} = ${call};
-const ${v} = __raw_${v} === null ? null : commentInterior(__raw_${v});${needsOffsets ? `
+const ${v} = __raw_${v} === null ? null : commentInterior(__raw_${v});
+${refinementCheck}${needsOffsets ? `
 const __${v}_start = __raw_${v} !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
 const __${v}_end = __raw_${v} !== null ? state.tokens[state.pos - 1].end : __${v}_start;` : ''}`;
       }
       return `const ${v} = ${call};
+${refinementCheck}
 ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     }
     const call = `expectClass(state, ${jsString(typeName)})`;
+    const refinementCheck = emitSpanRefinementCheck(span, v, false, 'state.tokens[state.pos - 1].start');
     if (isComment) {
       return `const __raw_${v} = ${call};
-const ${v} = commentInterior(__raw_${v});${needsOffsets ? `
+const ${v} = commentInterior(__raw_${v});
+${refinementCheck}${needsOffsets ? `
 const __${v}_start = state.tokens[state.pos - 1].start;
 const __${v}_end = state.tokens[state.pos - 1].end;` : ''}`;
     }
-    return `const ${v} = ${call};${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
+    return `const ${v} = ${call};
+${refinementCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
   }
   if (optional) return `consumeOptionalClass(state, ${jsString(typeName)});`;
   return `expectClass(state, ${jsString(typeName)});`;
+}
+
+function emitSpanRefinementCheck(span: ResolvedSpan, valueVar: string, optional: boolean, positionExpr: string): string {
+  const checks: string[] = [];
+  for (const refinement of span.refinements) {
+    if (refinement.name === 'oneOf') {
+      const values = refinement.args?.[0];
+      if (!Array.isArray(values) || values.some((value) => typeof value !== 'string')) continue;
+      const condition = oneOfCondition(valueVar, values.map((value) => value.toLowerCase()));
+      const message = `expected one of ${values.join(', ')} at position `;
+      checks.push(optional
+        ? `if (${valueVar} !== null && !(${condition})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`
+        : `if (!(${condition})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`);
+      continue;
+    }
+    if (refinement.name === 'hexString') {
+      const message = 'expected hex string at position ';
+      checks.push(optional
+        ? `if (${valueVar} !== null && !isHexString(${valueVar})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`
+        : `if (!isHexString(${valueVar})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`);
+      continue;
+    }
+    if (refinement.name === 'lengths') {
+      const values = refinement.args?.[0];
+      if (!Array.isArray(values) || values.some((value) => !Number.isInteger(value))) continue;
+      const condition = values.map((value) => `${valueVar}.length === ${value}`).join(' || ') || 'false';
+      const message = `expected length ${values.join(', ')} at position `;
+      checks.push(optional
+        ? `if (${valueVar} !== null && !(${condition})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`
+        : `if (!(${condition})) throw new SyntaxError(${jsString(message)} + ${positionExpr});`);
+    }
+  }
+  return checks.join('\n');
 }
 
 function emitRecursiveSpan(
@@ -578,7 +737,15 @@ function emitRecursiveSpan(
   const roles = span.recursiveRoles;
   const callExpr = roles.length === 1
     ? `${parseFnName(roles[0]!, ctx.variant)}(state)`
-    : `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+    : emitRoleDispatchExpr(roles, ctx);
+  if (ctx.variant === 'validate') {
+    if (optional) {
+      return roles.length === 1
+        ? `trySpeculate(state, ${parseFnName(roles[0]!, ctx.variant)});`
+        : `tryRolesOrNull(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}]);`;
+    }
+    return `${callExpr};`;
+  }
   if (span.name) {
     const v = jsIdent(span.name);
     valueExpr.set(span.name, v);
@@ -610,11 +777,48 @@ function emitRepeatedSpan(
     throw new Error(`emitter v1: .repeats() on non-recursive span is not implemented`);
   }
   const roles = span.recursiveRoles;
+  const listVar = span.name ? jsIdent(span.name) : '_repeated';
+  const needsOffsets = ctx.variant === 'raws' || (span.name ? offsetRefs.has(span.name) : false);
+  const validateChildCall = roles.length === 1
+    ? `${parseFnName(roles[0]!, ctx.variant)}(state);`
+    : `${emitRoleDispatchExpr(roles, ctx)};`;
+  if (ctx.variant === 'validate') {
+    const stopPredicate = stopPredicateFor(next, ctx);
+    const sep = repeats.sep;
+    const min = repeats.min ?? 0;
+    const minCheck = min > 0
+      ? `\nif (__count_${listVar} < ${min}) throw new SyntaxError(${jsString(`expected at least ${min} ${roles.join('|')}`)});`
+      : '';
+    if (!sep) {
+      return `let __count_${listVar} = 0;
+while (!(${stopPredicate})) {
+  const __before = state.pos;
+  ${validateChildCall}
+  __count_${listVar}++;
+  if (state.pos === __before) break;
+}${minCheck}`;
+    }
+    const sepType = ctx.literalTypeByText.get(sep) ?? sep;
+    const sepTypeExpr = jsString(sepType);
+    const sepValueLit = jsString(sep);
+    return `let __count_${listVar} = 0;
+while (!(${stopPredicate})) {
+  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
+    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+  }
+  if (${stopPredicate}) break;
+  const __before = state.pos;
+  ${validateChildCall}
+  __count_${listVar}++;
+  if (state.pos === __before) break;
+  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
+    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+  }
+}${minCheck}`;
+  }
   const childDecl = roles.length === 1
     ? `const __child = ${parseFnName(roles[0]!, ctx.variant)}(state);`
     : emitRoleDispatchAssignment('__child', roles, ctx);
-  const listVar = span.name ? jsIdent(span.name) : '_repeated';
-  const needsOffsets = ctx.variant === 'raws' || (span.name ? offsetRefs.has(span.name) : false);
   if (span.name) {
     valueExpr.set(span.name, listVar);
     presenceExpr.set(span.name, `(${listVar}.length > 0)`);
@@ -700,7 +904,7 @@ ${updateLine}  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
 
 type FirstToken =
   | { readonly kind: 'literal'; readonly type: string; readonly value: string }
-  | { readonly kind: 'class'; readonly type: string };
+  | { readonly kind: 'class'; readonly type: string; readonly values?: readonly string[] };
 
 function emitRoleDispatchExpr(roles: ReadonlyArray<string>, ctx: Ctx): string {
   const keyed: string[] = [];
@@ -713,9 +917,7 @@ function emitRoleDispatchExpr(roles: ReadonlyArray<string>, ctx: Ctx): string {
       fallback.push(role);
       continue;
     }
-    const key = first.kind === 'literal'
-      ? `${first.kind}:${first.type}:${first.value}`
-      : `${first.kind}:${first.type}`;
+    const key = firstTokenKey(first);
     if (seenKeys.has(key)) {
       fallback.push(role);
       continue;
@@ -727,15 +929,14 @@ function emitRoleDispatchExpr(roles: ReadonlyArray<string>, ctx: Ctx): string {
   if (keyed.length === 0) {
     return `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
   }
+  keyed.sort((a, b) => firstTokenSpecificity(firstTokenForRole(b, ctx)!) - firstTokenSpecificity(firstTokenForRole(a, ctx)!));
 
   const lines: string[] = [];
   lines.push(`(() => {`);
   lines.push(`  const __tok = state.tokens[state.pos];`);
   for (const role of keyed) {
     const first = firstTokenForRole(role, ctx)!;
-    const check = first.kind === 'literal'
-      ? `__tok !== undefined && __tok.type === ${jsString(first.type)} && __tok.value === ${jsString(first.value)}`
-      : `__tok !== undefined && __tok.type === ${jsString(first.type)}`;
+    const check = emitFirstTokenCheck('__tok', first);
     lines.push(`  if (${check}) return ${parseFnName(role, ctx.variant)}(state);`);
   }
   const fallbackRoles = [...fallback, ...roles.filter((role) => !keyed.includes(role) && !fallback.includes(role))];
@@ -756,9 +957,7 @@ function emitRoleDispatchAssignment(target: string, roles: ReadonlyArray<string>
       fallback.push(role);
       continue;
     }
-    const key = first.kind === 'literal'
-      ? `${first.kind}:${first.type}:${first.value}`
-      : `${first.kind}:${first.type}`;
+    const key = firstTokenKey(first);
     if (seenKeys.has(key)) {
       fallback.push(role);
       continue;
@@ -770,12 +969,11 @@ function emitRoleDispatchAssignment(target: string, roles: ReadonlyArray<string>
   const lines: string[] = [];
   lines.push(`let ${target}: unknown;`);
   if (keyed.length > 0) {
+    keyed.sort((a, b) => firstTokenSpecificity(firstTokenForRole(b, ctx)!) - firstTokenSpecificity(firstTokenForRole(a, ctx)!));
     lines.push(`const __tok = state.tokens[state.pos];`);
     keyed.forEach((role, i) => {
       const first = firstTokenForRole(role, ctx)!;
-      const check = first.kind === 'literal'
-        ? `__tok !== undefined && __tok.type === ${jsString(first.type)} && __tok.value === ${jsString(first.value)}`
-        : `__tok !== undefined && __tok.type === ${jsString(first.type)}`;
+      const check = emitFirstTokenCheck('__tok', first);
       lines.push(`${i === 0 ? 'if' : 'else if'} (${check}) { ${target} = ${parseFnName(role, ctx.variant)}(state); }`);
     });
     const fallbackRoles = [...fallback, ...roles.filter((role) => !keyed.includes(role) && !fallback.includes(role))];
@@ -826,7 +1024,7 @@ function emitCapturedUntilAssignment(target: string, roles: ReadonlyArray<string
   if (!primary.until.stops.includes(primary.literal) || !secondary.until.stops.includes(secondary.literal)) return null;
   if (primary.literal === secondary.literal) return null;
 
-  const structureOptions = ctx.variant === 'fast' ? { omitRaws: true } : {};
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const primaryOffsetRefs = new Set<string>();
   for (const production of primary.productions) {
     for (const ref of collectOffsetRefs(production.structure, structureOptions)) primaryOffsetRefs.add(ref);
@@ -1179,14 +1377,50 @@ function firstTokenForSpan(span: ResolvedSpan, ctx: Ctx): FirstToken | null {
       value: span.text,
     };
   }
-  return { kind: 'class', type: classToTokenType(span) };
+  const values = oneOfValues(span);
+  return values ? { kind: 'class', type: classToTokenType(span), values } : { kind: 'class', type: classToTokenType(span) };
 }
 
 function sameFirstToken(a: FirstToken, b: FirstToken): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === 'literal' && b.kind === 'literal') return a.type === b.type && a.value === b.value;
-  if (a.kind === 'class' && b.kind === 'class') return a.type === b.type;
+  if (a.kind === 'class' && b.kind === 'class') return a.type === b.type && (a.values ?? []).join('\0') === (b.values ?? []).join('\0');
   return false;
+}
+
+function firstTokenKey(first: FirstToken): string {
+  return first.kind === 'literal'
+    ? `${first.kind}:${first.type}:${first.value}`
+    : `${first.kind}:${first.type}:${(first.values ?? []).join('\0')}`;
+}
+
+function firstTokenSpecificity(first: FirstToken): number {
+  if (first.kind === 'literal') return 3;
+  return first.values && first.values.length > 0 ? 2 : 1;
+}
+
+function emitFirstTokenCheck(tokenExpr: string, first: FirstToken): string {
+  if (first.kind === 'literal') {
+    return `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)} && ${tokenExpr}.value === ${jsString(first.value)}`;
+  }
+  const base = `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)}`;
+  if (!first.values || first.values.length === 0) return base;
+  return `${base} && (${oneOfCondition(`${tokenExpr}.value`, first.values)})`;
+}
+
+function oneOfValues(span: ResolvedSpan): readonly string[] | null {
+  for (const refinement of span.refinements) {
+    if (refinement.name !== 'oneOf') continue;
+    const values = refinement.args?.[0];
+    if (!Array.isArray(values) || values.some((value) => typeof value !== 'string')) continue;
+    return values.map((value) => value.toLowerCase()).sort();
+  }
+  return null;
+}
+
+function oneOfCondition(valueExpr: string, values: readonly string[]): string {
+  const lower = `${valueExpr}.toLowerCase()`;
+  return values.map((value) => `${lower} === ${jsString(value)}`).join(' || ') || 'false';
 }
 
 function stopPredicateFor(next: ResolvedSpan | undefined, ctx: Ctx): string {
@@ -1221,6 +1455,7 @@ function classToTokenType(span: ResolvedSpan): string {
 
 export function parseFnName(nodeType: string, variant: ParseVariant = 'raws'): string {
   const base = `parse${jsIdent(nodeType)}`;
+  if (variant === 'validate') return `validate${jsIdent(nodeType)}`;
   return variant === 'fast' ? `${base}Fast` : base;
 }
 

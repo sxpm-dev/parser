@@ -1,4 +1,7 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import * as cssColor from '@parser2/css-color';
+import * as cssLengthPercentage from '@parser2/css-length-percentage';
+import { $, defineSchema, defineValidation, ex } from '@parser2/parser';
+import type { ValidationDef } from '@parser2/parser';
 
 // CSS schema. All node types live in one schema because Rule, AtRule, and
 // Stylesheet are mutually recursive (a nested rule inside an at-rule inside
@@ -9,7 +12,104 @@ import { $, defineSchema, ex } from '@parser2/parser';
 // AST shape aligns with PostCSS (type: 'root'|'rule'|'atrule'|'decl'),
 // minus `raws` and `source` for now (added in later phases).
 
-export default defineSchema({
+export const COLOR_PROPS = [
+  'accent-color',
+  'border-block-color',
+  'border-block-end-color',
+  'border-block-start-color',
+  'border-bottom-color',
+  'border-color',
+  'border-inline-color',
+  'border-inline-end-color',
+  'border-inline-start-color',
+  'border-left-color',
+  'border-right-color',
+  'border-top-color',
+  'caret-color',
+  'color',
+  'column-rule-color',
+  'fill',
+  'flood-color',
+  'lighting-color',
+  'outline-color',
+  'stop-color',
+  'stroke',
+  'text-decoration-color',
+] as const;
+
+export const LENGTH_PROPS = [
+  'block-size',
+  'border-block-end-width',
+  'border-block-start-width',
+  'border-block-width',
+  'border-bottom-width',
+  'border-inline-end-width',
+  'border-inline-start-width',
+  'border-inline-width',
+  'border-left-width',
+  'border-right-width',
+  'border-spacing',
+  'border-top-width',
+  'border-width',
+  'bottom',
+  'column-gap',
+  'column-width',
+  'flex-basis',
+  'font-size',
+  'gap',
+  'height',
+  'inline-size',
+  'inset',
+  'inset-block',
+  'inset-block-end',
+  'inset-block-start',
+  'inset-inline',
+  'inset-inline-end',
+  'inset-inline-start',
+  'left',
+  'letter-spacing',
+  'margin',
+  'margin-block',
+  'margin-block-end',
+  'margin-block-start',
+  'margin-bottom',
+  'margin-inline',
+  'margin-inline-end',
+  'margin-inline-start',
+  'margin-left',
+  'margin-right',
+  'margin-top',
+  'max-block-size',
+  'max-height',
+  'max-inline-size',
+  'max-width',
+  'min-block-size',
+  'min-height',
+  'min-inline-size',
+  'min-width',
+  'outline-offset',
+  'outline-width',
+  'padding',
+  'padding-block',
+  'padding-block-end',
+  'padding-block-start',
+  'padding-bottom',
+  'padding-inline',
+  'padding-inline-end',
+  'padding-inline-start',
+  'padding-left',
+  'padding-right',
+  'padding-top',
+  'right',
+  'row-gap',
+  'scroll-margin',
+  'scroll-padding',
+  'top',
+  'width',
+  'word-spacing',
+] as const;
+
+const cssSchema = defineSchema({
   name: 'css',
   rootType: 'Stylesheet',
   punctuators: {
@@ -188,3 +288,15 @@ export default defineSchema({
       .build(),
   ],
 });
+
+export const validation: ValidationDef = defineValidation(cssSchema)
+  .node('Declaration')
+  .field('value')
+  .match('prop', COLOR_PROPS)
+  .validate(cssColor.validate)
+  .node('Declaration')
+  .field('value')
+  .match('prop', LENGTH_PROPS)
+  .validate(cssLengthPercentage.validate);
+
+export default cssSchema;

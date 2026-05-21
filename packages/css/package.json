@@ -7,6 +7,7 @@
     "build": "tsc -b",
     "test": "tsx --test test/*.test.ts",
     "test:unit": "tsx --test test/css.test.ts",
+    "bench": "npm run generate && npm run bench:ast && npm run bench:tokenize",
     "bench:ast": "tsx bench/ast.ts",
     "bench:focused": "tsx bench/focused.ts",
     "bench:direct-profile": "tsx bench/direct-profile.ts",
@@ -24,6 +25,8 @@
     ".": "./dist/index.js"
   },
   "dependencies": {
+    "@parser2/css-color": "0.0.0",
+    "@parser2/css-length-percentage": "0.0.0",
     "@parser2/parser": "0.0.0"
   }
 }

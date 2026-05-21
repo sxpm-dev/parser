@@ -44,15 +44,32 @@ If a language feature cannot be expressed today:
 
 ### 2. Parser packages describe; they do not implement
 
-A parser package owns its `src/schema.ts` and tests. It never ships:
+A parser package owns its `src/schema.ts`, `src/index.ts`, and tests. Its
+`src/index.ts` should only re-export the generated parser module:
+
+```ts
+export * from './_generated/parser.ts';
+```
+
+It never ships:
 
 - A parser template
 - A handwritten parser implementation
 - A fallback to an external parser library at runtime
 - Package-local codegen
+- Package-local validation, typed-value parsing, or semantic sidecars
+
+Standalone value packages follow the same rule. If a package is named
+`@parser2/css-color`, its `validate(input)` export must be the generated
+validator for that package's generic schema. It must not be a handwritten
+CSS-color scanner in `src/index.ts`, even as a performance optimization. If
+`validate()` is too slow, fix the compiler's generic `validate()` codegen so
+every schema benefits.
 
 The generated parser at `src/_generated/parser.ts` is the only runtime parser
-code in the package.
+code in the package. Package-level composition may wire generated parsers
+together, but that wiring must not teach the compiler domain concepts such as
+CSS property names or CSS color parser names.
 
 ### 3. The runtime ships no parser library
 
@@ -79,8 +96,14 @@ packages/<schema>/src/_generated/parser.ts
 It exports:
 
 ```ts
-parse(input: string, options?: { mode?: 'fast' | 'raws' }): Structure
+parse(input: string, options?: {
+  mode?: 'fast' | 'raws'
+}): Structure
+validate(input: string, options?: {
+  mode?: 'fast' | 'raws'
+}): void
 tokenize(input: string): Token[]
+countTokens(input: string): number
 stringify(structure: Structure): string
 ```
 
@@ -88,6 +111,13 @@ stringify(structure: Structure): string
 formatting metadata. `mode: 'raws'` keeps source ranges and `raws` fields for
 callers that need formatting fidelity. The mode names are domain-neutral and
 apply to any generated parser.
+
+`validate()` is the non-materializing sibling of `parse()`: it accepts the same
+language, throws on invalid input, and returns nothing on success. It is still
+domainless. A package named `@sx/color` may export a generic `validate()`, but
+the compiler must not emit API names like `validateCssColor` from schema data.
+That `validate()` must be emitted from the schema by codegen; package facades
+must not replace it with handwritten domain-specific validation logic.
 
 The `Structure` type is inferred from the schema's examples; see the DSL doc
 for the inference rules. `Token[]` is derived from the schema's spans and

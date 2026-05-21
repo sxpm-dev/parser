@@ -1,4 +1,5 @@
 export { defineSchema } from './schema.ts';
+export { defineValidation } from './validation.ts';
 export { ex } from './example.ts';
 export { $, isStructureRef } from './ref.ts';
 export type {
@@ -18,5 +19,9 @@ export type {
   StructureValue,
   TokenDecl,
   TrailingPolicy,
+  GeneratedValidator,
+  ValidationDef,
+  ValidationRuleDef,
+  ValidatorImport,
   WhitespacePolicy,
 } from './types.ts';

@@ -93,6 +93,7 @@ function emitClassBranch(usage: TokenClassUsage): string {
   if (cls === 'ident' && refSet.has('js')) return emitJsIdentBranch();
   if (cls === 'ident') return emitCssIdentBranch();
   if (cls === 'number') return emitNumberBranch();
+  if (cls === 'hex') return emitHexBranch();
   if (cls === 'string') return emitStringBranch();
   if (cls === 'comment') return emitCommentBranch();
   throw new Error(`Emitter: class '${cls}' with refinements [${[...refSet].join(',')}] not implemented yet`);
@@ -191,6 +192,15 @@ function emitNumberBranch(): string {
 }`;
 }
 
+function emitHexBranch(): string {
+  return `if (isHexDigit(c)) {
+  const start = i;
+  while (i < len && isHexDigit(input.charCodeAt(i))) i++;
+  tokens.push({ type: 'hex', value: input.slice(start, i), start, end: i });
+  continue;
+}`;
+}
+
 function emitStringBranch(): string {
   return `if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
   const quote = c;
@@ -229,11 +239,12 @@ function collectHelpers(classes: ReadonlyArray<TokenClassUsage>): string {
     (c) => c.class === 'ident' && c.refinements.some((r) => r.name === 'js'),
   );
   const needsDigit = classes.some((c) => c.class === 'number');
+  const needsHex = classes.some((c) => c.class === 'hex');
   if (needsCss) helpers.push(CSS_IDENT_HELPERS);
   if (needsJs) helpers.push(JS_IDENT_HELPERS);
   if (needsDigit) helpers.push(DIGIT_HELPER);
   // isHexDigit is used by the CSS ident scanner for backslash hex escapes.
-  if (needsCss) helpers.push(HEX_HELPER);
+  if (needsCss || needsHex) helpers.push(HEX_HELPER);
   return helpers.join('\n\n');
 }
 

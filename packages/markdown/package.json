@@ -1,0 +1,32 @@
+{
+  "name": "@parser2/markdown",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run generate && npm run bench:ast && npm run bench:tokenize",
+    "bench:ast": "tsx bench/ast.ts",
+    "bench:tokenize": "tsx bench/tokenize.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts markdown",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts markdown --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts markdown",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts markdown --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts markdown",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0",
+    "commonmark": "^0.31.2",
+    "markdown-it": "^14.1.1",
+    "marked": "^18.0.4",
+    "micromark": "^4.0.2",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
+  }
+}

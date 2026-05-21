@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { SchemaDef } from '@parser2/parser';
+import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { generateParser } from './index.ts';
 
 // Usage:
@@ -22,17 +22,27 @@ const schemaPath = isAbsolute(schemaArg) ? schemaArg : resolve(process.cwd(), sc
 await main(schemaPath);
 
 async function main(path: string): Promise<void> {
-  const module = (await import(pathToFileURL(path).href)) as { default?: unknown };
+  const module = (await import(pathToFileURL(path).href)) as { default?: unknown; validation?: unknown };
   const schema = module.default;
   if (!isSchema(schema)) {
     throw new Error(`Schema at ${path} does not default-export a SchemaDef`);
   }
-  const code = generateParser(schema);
+  const validation = isValidation(module.validation) ? module.validation : undefined;
+  const code = generateParser(schema, validation);
   const outDir = resolve(dirname(path), '_generated');
   const outFile = resolve(outDir, 'parser.ts');
   mkdirSync(outDir, { recursive: true });
   writeFileSync(outFile, code);
   console.log(`generated ${relative(outFile)}`);
+}
+
+function isValidation(value: unknown): value is ValidationDef {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    isSchema((value as { schema?: unknown }).schema) &&
+    Array.isArray((value as { rules?: unknown }).rules)
+  );
 }
 
 function isSchema(value: unknown): value is SchemaDef {

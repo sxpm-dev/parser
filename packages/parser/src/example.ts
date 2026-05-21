@@ -90,10 +90,12 @@ class SpanBuilder {
   doubleQuoted(): this { return this.refine('doubleQuoted'); }
   backtick(): this { return this.refine('backtick'); }
   hexString(): this { return this.refine('hexString'); }
+  lengths(values: ReadonlyArray<number>): this { return this.refine('lengths', [values]); }
   urlString(): this { return this.refine('urlString'); }
   // ident refinements
   css(): this { return this.refine('css'); }
   js(): this { return this.refine('js'); }
+  oneOf(values: ReadonlyArray<string>): this { return this.refine('oneOf', [values]); }
   // comment refinements
   line(marker: string): this { return this.refine('line', [marker]); }
   block(open: string, close: string): this { return this.refine('block', [open, close]); }

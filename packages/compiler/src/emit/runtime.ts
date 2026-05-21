@@ -19,6 +19,7 @@ export const PARSE_RUNTIME = `type State = {
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
   readonly mode?: ParseMode;
+  readonly validate?: boolean;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -149,6 +150,11 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   const tok = state.tokens[pos];
   return tok !== undefined && tok.type === type && tok.value === value;
+}
+
+function nextNonCommentToken(state: State, pos: number): Token | undefined {
+  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  return state.tokens[pos];
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -403,6 +409,14 @@ function isAsciiWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
 
+function isHexString(value: string): boolean {
+  if (value.length === 0) return false;
+  for (let i = 0; i < value.length; i++) {
+    if (!isHexDigit(value.charCodeAt(i))) return false;
+  }
+  return true;
+}
+
 // Attach raws.before to a parsed child. The body loop knows the offset
 // where the previous sibling ended (or where the body's opening token ended
 // for the first child); raws.before is the source slice from that point up
@@ -425,4 +439,81 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   } else {
     node.raws.before = slice;
   }
+}
+
+function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+  if (!(error instanceof SyntaxError)) throw error;
+  if (hasSourceFrame(error.message)) throw error;
+  const messageOffset = offsetFromMessage(error.message, -1);
+  const offset = messageOffset >= 0
+    ? messageOffset
+    : tokenPos !== undefined
+    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : offsetFromMessage(error.message, input.length);
+  throw syntaxErrorWithFrame(input, error.message, offset);
+}
+
+function syntaxErrorWithFrame(input: string, message: string, offset: number): SyntaxError {
+  const cleanMessage = stripPositionSuffix(message);
+  let lineStart = offset;
+  while (lineStart > 0) {
+    const c = input.charCodeAt(lineStart - 1);
+    if (c === 0x0a || c === 0x0d) break;
+    lineStart--;
+  }
+  let lineEnd = offset;
+  while (lineEnd < input.length) {
+    const c = input.charCodeAt(lineEnd);
+    if (c === 0x0a || c === 0x0d) break;
+    lineEnd++;
+  }
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  return new SyntaxError(\`\${cleanMessage} at position \${offset}
+\${gutter} | \${source}
+\${' '.repeat(gutter.length)} | \${' '.repeat(column)}^\`);
+}
+
+function stripPositionSuffix(message: string): string {
+  const marker = ' at position ';
+  const index = message.lastIndexOf(marker);
+  if (index < 0) return message;
+  let pos = index + marker.length;
+  if (pos >= message.length) return message;
+  while (pos < message.length) {
+    const c = message.charCodeAt(pos);
+    if (c < 48 || c > 57) return message;
+    pos++;
+  }
+  return message.slice(0, index);
+}
+
+function hasSourceFrame(message: string): boolean {
+  return message.includes('\\n') && message.includes(' | ');
+}
+
+function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
+  const tok = tokens[pos] ?? tokens[tokens.length - 1];
+  if (!tok) return fallback;
+  return tokens[pos] ? tok.start : tok.end;
+}
+
+function offsetFromMessage(message: string, fallback: number): number {
+  const marker = 'position ';
+  const index = message.indexOf(marker);
+  if (index < 0) return fallback;
+  let pos = index + marker.length;
+  let value = 0;
+  let found = false;
+  while (pos < message.length) {
+    const c = message.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    found = true;
+    value = value * 10 + c - 48;
+    pos++;
+  }
+  return found ? value : fallback;
 }`;

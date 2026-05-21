@@ -112,6 +112,34 @@ export default defineSchema({
 
 Every field except `name`, `rootType`, and `examples` is optional.
 
+### Domainless compiler contract
+
+Schemas are generic data consumed by a domainless compiler. The compiler does
+not know about CSS colors, CSS properties, JavaScript modules, selectors, or
+any other product/domain concept. It only knows the closed schema vocabulary:
+examples, spans, recursive roles, operators, punctuators, token classes,
+refinements, modifiers, whitespace policy, and schema composition.
+
+That means schema declarations must not contain domain-specific generated API
+names such as `parseCssColor`, `validateCssColor`, or property-to-parser maps.
+Generated parser APIs stay generic (`parse`, `validate`, `tokenize`,
+`stringify`). Domain meaning comes from the package/module boundary: a color
+grammar package can export `parse` and `validate`, and callers know it is a
+color parser because they imported it from the color package.
+
+The exported `validate` for a value grammar package is also schema-driven. For
+example, `@parser2/css-color` must export the generated `validate` produced
+from its generic color schema. Do not replace that export with handwritten
+CSS-color checks in `src/index.ts`; if the validator needs to be faster, improve
+generic compiler codegen for `validate()` instead.
+
+The only domain-shaped affordances allowed in the schema DSL are generic
+patterns/refinements that the compiler can compile without knowing the domain:
+`.ident()`, `.number()`, `.string()`, `.hex()`, `.css()`, `.js()`,
+`.oneOf(...)`, and similar closed-vocabulary refinements. If a feature needs a
+new schema primitive, it must be justified as a reusable generic pattern, not
+as a CSS-specific or JavaScript-specific shortcut.
+
 **Mutual recursion:** when node types reference each other (e.g. CSS `Rule`
 contains `AtRule` contains `Rule`), define them all in one schema rather than
 splitting into separate schemas that `use` each other. The `uses:` graph must
@@ -555,7 +583,9 @@ from examples and the closed primitive vocabulary.
   unchanged.
 - **Push specifics into examples, not declarations.** Operator and punctuator
   declarations exist only because the tokenizer/parser cannot infer them from
-  examples efficiently. Everything else belongs in examples.
+  examples efficiently. Do not add domain-specific declaration sections for
+  CSS properties, colors, selectors, JavaScript modules, or package-specific
+  generated API names.
 - **One schema = one structure shape commitment.** All examples in one schema
   must produce structures from the same family (all AST, or all extractor, or
   all metrics). You cannot mix AST examples and extractor examples in one

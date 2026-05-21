@@ -3,9 +3,34 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 
-type PackageName = 'css' | 'js' | 'json';
+type PackageName =
+  | 'arn'
+  | 'cron'
+  | 'css'
+  | 'css-color'
+  | 'css-length-percentage'
+  | 'js'
+  | 'json'
+  | 'log'
+  | 'mac'
+  | 'markdown'
+  | 'proto'
+  | 'url';
 
-const packageNames = new Set<PackageName>(['css', 'js', 'json']);
+const packageNames = new Set<PackageName>([
+  'arn',
+  'cron',
+  'css',
+  'css-color',
+  'css-length-percentage',
+  'js',
+  'json',
+  'log',
+  'mac',
+  'markdown',
+  'proto',
+  'url',
+]);
 const explicitPackage = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));

@@ -1,5 +1,5 @@
 import postcss from 'postcss';
-import { parse, type CssNode, type CssRoot } from '../src/index.ts';
+import { parse, validate, type CssNode, type CssRoot } from '../src/index.ts';
 import { fmtNs, generateCss, hashInput } from './common.ts';
 
 type ParserCase = {
@@ -14,12 +14,27 @@ type Sample = {
 
 const CASES: readonly ParserCase[] = [
   {
-    label: 'parser2 fast',
+    label: 'fast',
     fn: (input) => countAst(parse(input, { mode: 'fast' }) as CssRoot),
   },
   {
-    label: 'parser2 raws',
+    label: 'raws',
     fn: (input) => countAst(parse(input, { mode: 'raws' }) as CssRoot),
+  },
+  {
+    label: 'validate',
+    fn: (input) => {
+      validate(input);
+      return 0;
+    },
+  },
+  {
+    label: 'fast + validate',
+    fn: (input) => countAst(parse(input, { mode: 'fast', validateProperties: true }) as CssRoot),
+  },
+  {
+    label: 'raws + validate',
+    fn: (input) => countAst(parse(input, { mode: 'raws', validateProperties: true }) as CssRoot),
   },
   {
     label: 'postcss',

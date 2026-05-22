@@ -966,7 +966,11 @@ function parseHtmlElement__alt3(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off))) break;
+    if (__c2 === 108 && (state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1017,7 +1021,11 @@ function parseHtmlElement__alt4(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off))) break;
+    if (__c2 === 100 && (state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1069,7 +1077,11 @@ function parseHtmlElement__alt5(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("</tr>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1120,7 +1132,11 @@ function parseHtmlElement__alt6(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1172,7 +1188,21 @@ function parseHtmlElement__alt7(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("</p>", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</p>", __off))) break;
+    if (__c2 === 97 && (state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off))) break;
+    if (__c2 === 98 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off))) break;
+    if (__c2 === 100 && (state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off))) break;
+    if (__c2 === 102 && (state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off))) break;
+    if (__c2 === 104 && (state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off))) break;
+    if (__c2 === 110 && (state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off))) break;
+    if (__c2 === 111 && (state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off))) break;
+    if (__c2 === 112 && (state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+    if (__c2 === 115 && (state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off))) break;
+    if (__c2 === 117 && (state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1223,7 +1253,11 @@ function parseHtmlElement__alt8(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off))) break;
+    if (__c2 === 111 && (state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1326,7 +1360,11 @@ function parseHtmlElement__alt10(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</head>", __off))) break;
+    if (__c2 === 98 && (state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1377,7 +1415,11 @@ function parseHtmlElement__alt11(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1428,7 +1470,11 @@ function parseHtmlElement__alt12(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1876,7 +1922,11 @@ function parseHtmlElementFast__alt3(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off))) break;
+    if (__c2 === 108 && (state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1913,7 +1963,11 @@ function parseHtmlElementFast__alt4(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off))) break;
+    if (__c2 === 100 && (state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1951,7 +2005,11 @@ function parseHtmlElementFast__alt5(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("</tr>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -1988,7 +2046,11 @@ function parseHtmlElementFast__alt6(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -2026,7 +2088,21 @@ function parseHtmlElementFast__alt7(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("</p>", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</p>", __off))) break;
+    if (__c2 === 97 && (state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off))) break;
+    if (__c2 === 98 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off))) break;
+    if (__c2 === 100 && (state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off))) break;
+    if (__c2 === 102 && (state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off))) break;
+    if (__c2 === 104 && (state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off))) break;
+    if (__c2 === 110 && (state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off))) break;
+    if (__c2 === 111 && (state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off))) break;
+    if (__c2 === 112 && (state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+    if (__c2 === 115 && (state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off))) break;
+    if (__c2 === 117 && (state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -2063,7 +2139,11 @@ function parseHtmlElementFast__alt8(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off))) break;
+    if (__c2 === 111 && (state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -2138,7 +2218,11 @@ function parseHtmlElementFast__alt10(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</head>", __off))) break;
+    if (__c2 === 98 && (state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -2175,7 +2259,11 @@ function parseHtmlElementFast__alt11(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;
@@ -2212,7 +2300,11 @@ function parseHtmlElementFast__alt12(state: State): unknown {
     {
     const __off = state.tokens[state.pos]?.start ?? state.input.length;
     const __c = state.input.charCodeAt(__off);
-    if (__c === 60 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+    if (__c === 60) {
+    const __c2 = state.input.charCodeAt(__off + 1);
+    if (__c2 === 47 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off))) break;
+    if (__c2 === 116 && (state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
   }
     const __before = state.pos;
     let __child: unknown;

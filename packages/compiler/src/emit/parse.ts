@@ -797,9 +797,10 @@ function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): str
   // model implicit-close idioms (HTML <li>, <tr>, <td>, <p>, etc.).
   //
   // Performance: HTML implicit-close stop sets are large (50+ prefixes for
-  // <p>). Group prefixes by first byte and gate the per-prefix startsWith
-  // calls on a single charCodeAt check, so most loop iterations skip the
-  // chain entirely.
+  // <p>). Two-level dispatch by first then second char so each iteration
+  // does at most a small startsWith chain. For HTML `<p>` stopBefore, the
+  // `<` first char + `<p` second char branch sees only the few prefixes
+  // that start with `<p` (instead of all 50).
   const stops = stopBefore.filter((s) => s.length > 0);
   if (stops.length === 0) return '';
   const byFirstChar = new Map<number, string[]>();
@@ -812,10 +813,41 @@ function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): str
   const branches: string[] = [];
   for (const [code, bucket] of [...byFirstChar.entries()].sort(([a], [b]) => a - b)) {
     bucket.sort((a, b) => b.length - a.length);
-    const conds = bucket
-      .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
-      .join(' || ');
-    branches.push(`if (__c === ${code} && (${conds})) break;`);
+    if (bucket.length <= 3) {
+      const conds = bucket
+        .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
+        .join(' || ');
+      branches.push(`if (__c === ${code} && (${conds})) break;`);
+      continue;
+    }
+    // Two-level: split by second char.
+    const bySecondChar = new Map<number, string[]>();
+    const singleChar: string[] = [];
+    for (const s of bucket) {
+      if (s.length < 2) {
+        singleChar.push(s);
+        continue;
+      }
+      const c2 = s.charCodeAt(1);
+      const sub = bySecondChar.get(c2) ?? [];
+      sub.push(s);
+      bySecondChar.set(c2, sub);
+    }
+    const subBranches: string[] = [];
+    for (const [code2, sub] of [...bySecondChar.entries()].sort(([a], [b]) => a - b)) {
+      sub.sort((a, b) => b.length - a.length);
+      const conds = sub
+        .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
+        .join(' || ');
+      subBranches.push(`if (__c2 === ${code2} && (${conds})) break;`);
+    }
+    for (const lone of singleChar) {
+      subBranches.push(`if (state.input.startsWith(${jsString(lone)}, __off)) break;`);
+    }
+    branches.push(`if (__c === ${code}) {
+  const __c2 = state.input.charCodeAt(__off + 1);
+  ${subBranches.join('\n  ')}
+}`);
   }
   return `{
   const __off = state.tokens[state.pos]?.start ?? state.input.length;

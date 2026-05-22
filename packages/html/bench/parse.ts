@@ -48,6 +48,10 @@ const contestants: Contestant[] = [
     fn: (input: string): BenchResult => ({
       units: countGenericNodes(parseHtml(input)),
     }),
+    // Skip inputs >= 200KB: node-html-parser exhibits quadratic+ behavior
+    // on large or markup-dense HTML (huge-page.html runs >10 minutes per
+    // call). Keep it in the comparison for smaller sizes where it's fine.
+    skipFor: (input: string) => input.length >= 200 * 1024,
   },
   {
     label: "linkedom parseHTML",

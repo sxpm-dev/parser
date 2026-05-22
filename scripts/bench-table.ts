@@ -9,6 +9,12 @@ export interface Contestant {
   readonly label: string;
   readonly unit: string;
   readonly fn: (input: string) => BenchResult;
+  // Optional predicate to skip this contestant for inputs that would be
+  // pathologically slow (e.g. node-html-parser on huge real-world HTML
+  // exhibits quadratic+ behavior and can run for hours). Returning true
+  // marks the row 'skipped' in the bench table; the rest of the row still
+  // runs and prints normally.
+  readonly skipFor?: (input: string) => boolean;
 }
 
 export const DEFAULT_SIZES_KB = [5, 20, 100, 500, 1000] as const;
@@ -97,8 +103,13 @@ export async function runBenchTable(options: {
 
   for (const { label, input } of inputs) {
     const inputLabel = `${Math.round(input.length / 1024)}KB/${hashInput(input)}`;
+    const skipped = new Set<string>();
+    for (const contestant of options.contestants) {
+      if (contestant.skipFor?.(input)) skipped.add(contestant.label);
+    }
     const sanity = new Map<string, BenchResult | Error>();
     for (const contestant of options.contestants) {
+      if (skipped.has(contestant.label)) continue;
       try {
         sanity.set(contestant.label, contestant.fn(input));
       } catch (error) {
@@ -113,7 +124,10 @@ export async function runBenchTable(options: {
       iterations: 1,
     });
 
-    for (const contestant of options.contestants) bench.add(contestant.label, () => contestant.fn(input));
+    for (const contestant of options.contestants) {
+      if (skipped.has(contestant.label)) continue;
+      bench.add(contestant.label, () => contestant.fn(input));
+    }
     await bench.run();
 
     const tasks = new Map(bench.tasks.map((task) => [task.name, task]));
@@ -132,11 +146,16 @@ export async function runBenchTable(options: {
 
     let first = true;
     for (const contestant of options.contestants) {
-      const result = tasks.get(contestant.label)?.result as BenchTaskResult | undefined;
       const size = first ? label : '';
       const inputInfo = first ? inputLabel : '';
       first = false;
 
+      if (skipped.has(contestant.label)) {
+        console.log(size.padEnd(12) + inputInfo.padEnd(18) + contestant.label.padEnd(parserWidth) + 'skipped (too slow for input)');
+        continue;
+      }
+
+      const result = tasks.get(contestant.label)?.result as BenchTaskResult | undefined;
       if (!result?.hz) {
         const reason = sanity.get(contestant.label);
         const detail = reason instanceof Error ? `error: ${reason.message.split('\n')[0]}` : 'error';

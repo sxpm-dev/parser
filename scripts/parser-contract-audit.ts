@@ -1,9 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
 const packagesDir = join(root, 'packages');
 const failures: string[] = [];
+
+auditCompilerDomainlessness();
 
 for (const dirName of readdirSync(packagesDir).sort()) {
   const packageRoot = join(packagesDir, dirName);
@@ -72,6 +74,36 @@ if (failures.length > 0) {
 }
 
 console.log('parser contract audit ok');
+
+function auditCompilerDomainlessness(): void {
+  const compilerSrc = join(root, 'packages', 'compiler', 'src');
+  for (const file of walkTs(compilerSrc)) {
+    const source = readFileSync(file, 'utf8');
+    const relative = file.startsWith(`${root}/`) ? file.slice(root.length + 1) : file;
+    const forbiddenChecks = [
+      /\b(?:schema\.)?rootSchemaName\s*(?:={2,3}|!==?)\s*['"`][^'"`]+['"`]/,
+      /\bschema\.name\s*(?:={2,3}|!==?)\s*['"`][^'"`]+['"`]/,
+      /\broot\.name\s*(?:={2,3}|!==?)\s*['"`][^'"`]+['"`]/,
+    ];
+    for (const pattern of forbiddenChecks) {
+      if (pattern.test(source)) {
+        failures.push(`${relative}: compiler must not branch on schema/package/domain names; infer behavior from schema shape/examples`);
+        break;
+      }
+    }
+  }
+}
+
+function walkTs(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) out.push(...walkTs(path));
+    else if (entry.endsWith('.ts')) out.push(path);
+  }
+  return out;
+}
 
 function requireFile(label: string, path: string, display: string): void {
   if (!existsSync(path)) failures.push(`${label}: missing ${display}`);

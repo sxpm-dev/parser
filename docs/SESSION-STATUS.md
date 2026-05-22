@@ -137,6 +137,13 @@ In priority order for next session:
 
 ## Architecture decisions made
 
+- **Strict domainless compiler invariant.** Parser behavior must be inferred
+  from schema examples and generic schema configuration only. The compiler
+  must never branch on domain/package/schema names such as `css`, `html`,
+  `url`, `markdown`, or `proto` to emit parser behavior. If a language needs
+  behavior that cannot be expressed today, add a reusable DSL/compiler
+  primitive first, then express the behavior in that package's `src/schema.ts`.
+
 - **Single schema per language for mutual recursion.** CSS has Rule → AtRule
   → Rule cycles. We do NOT support cycles in `uses:`; instead, all mutually
   recursive node types live in one `defineSchema(...)`. The `uses:` graph

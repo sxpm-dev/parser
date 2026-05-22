@@ -9,6 +9,7 @@ type PackageName =
   | 'css'
   | 'css-color'
   | 'css-length-percentage'
+  | 'html'
   | 'log'
   | 'mac'
   | 'markdown'
@@ -36,6 +37,7 @@ const packageNames = new Set<PackageName>([
   'css',
   'css-color',
   'css-length-percentage',
+  'html',
   'log',
   'mac',
   'markdown',
@@ -205,6 +207,26 @@ function createCases(name: PackageName): PerfCase[] {
     );
   }
 
+  if (name === 'html') {
+    return sizes.flatMap((kb) => {
+      const input = generateHtml(kb * 1024);
+      return [
+        {
+          name: `tokenize:${kb}KB`,
+          kb,
+          input,
+          run: (api, html) => (api.tokenize as (input: string) => readonly unknown[])(html),
+        },
+        {
+          name: `parse:${kb}KB`,
+          kb,
+          input,
+          run: (api, html) => (api.parse as (input: string) => unknown)(html),
+        },
+      ];
+    });
+  }
+
   if (name === 'js') {
     const seed = 'a + b * c; arr.map(function (x) { return x * 2; }); obj.foo(1, 2); if (x > 0) y = z; for (var i = 0; i < n; i++) sum += i; switch (k) { case 1: break; default: break; }\n';
     return sizes.flatMap((kb) => {
@@ -346,6 +368,11 @@ function generateMarkdown(targetBytes: number): string {
 function generateProto(targetBytes: number): string {
   const seed = 'syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }\n';
   return repeat(seed, targetBytes).trim();
+}
+
+function generateHtml(targetBytes: number): string {
+  const seed = '<!doctype html><h1 class="title">Hello world</h1><p class="copy" disabled>Parser benchmark text</p><br />\n';
+  return repeat(seed, targetBytes);
 }
 
 function resolvePackageName(arg: string | undefined): PackageName {

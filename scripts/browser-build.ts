@@ -9,6 +9,7 @@ type PackageName =
   | 'css'
   | 'css-color'
   | 'css-length-percentage'
+  | 'html'
   | 'js'
   | 'json'
   | 'log'
@@ -23,6 +24,7 @@ const packageNames = new Set<PackageName>([
   'css',
   'css-color',
   'css-length-percentage',
+  'html',
   'js',
   'json',
   'log',

@@ -94,7 +94,7 @@ function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx): string
   while (
     pivot < first.spans.length
     && pivot < second.spans.length
-    && sameSpanSignature(first.spans[pivot]!, second.spans[pivot]!)
+    && sameSharedPrefixSpan(first.spans[pivot]!, second.spans[pivot]!)
   ) {
     pivot++;
   }
@@ -234,7 +234,7 @@ function emitFactoredContinuationBody(
   while (
     pivot < first.spans.length
     && pivot < second.spans.length
-    && sameSpanSignature(first.spans[pivot]!, second.spans[pivot]!)
+    && sameSharedPrefixSpan(first.spans[pivot]!, second.spans[pivot]!)
   ) {
     pivot++;
   }
@@ -416,9 +416,157 @@ function emitProductionGroupDispatch(
   ctx: Ctx,
 ): string {
   if (indexes.length === 1) return `return ${fnName}__alt${indexes[0]}(state);`;
+  const sharedPrefixDispatch = emitSharedPrefixRepeatedLiteralDispatch(info, indexes, ctx);
+  if (sharedPrefixDispatch) return sharedPrefixDispatch;
   const sequenceDispatch = emitTokenSequenceProductionGroupDispatch(info, fnName, indexes, ctx, 1);
   if (sequenceDispatch) return sequenceDispatch;
   return emitSpeculativeProductionGroupDispatch(fnName, indexes);
+}
+
+function emitSharedPrefixRepeatedLiteralDispatch(
+  info: NodeTypeInfo,
+  indexes: readonly number[],
+  ctx: Ctx,
+): string | null {
+  if (indexes.length !== 2) return null;
+  const first = info.productions[indexes[0]!];
+  const second = info.productions[indexes[1]!];
+  if (!first || !second) return null;
+
+  let pivot = 0;
+  while (
+    pivot < first.spans.length
+    && pivot < second.spans.length
+    && sameSharedPrefixSpan(first.spans[pivot]!, second.spans[pivot]!)
+  ) {
+    pivot++;
+  }
+  if (pivot < 1) return null;
+  const sharedRepeat = first.spans[pivot - 1]!;
+  const repeat = findModifier(sharedRepeat.modifiers, 'repeats');
+  const firstLiteral = first.spans[pivot];
+  const secondLiteral = second.spans[pivot];
+  if (!repeat || sharedRepeat.recursiveRoles.length === 0) return null;
+  if (repeat.sep) return null;
+  if (!firstLiteral || !secondLiteral || firstLiteral.class !== 'literal' || secondLiteral.class !== 'literal') return null;
+  if (!firstLiteral.text || !secondLiteral.text || firstLiteral.text === secondLiteral.text) return null;
+
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
+  const firstOffsetRefs = collectOffsetRefs(first.structure, structureOptions);
+  const secondOffsetRefs = collectOffsetRefs(second.structure, structureOptions);
+  const offsetRefs = new Set([...firstOffsetRefs, ...secondOffsetRefs]);
+  const valueExpr = new Map<string, string>();
+  const presenceExpr = new Map<string, string>();
+  const startOffExpr = new Map<string, string>();
+  const endOffExpr = new Map<string, string>();
+  const lines: string[] = [];
+
+  if (ctx.variant === 'raws') {
+    lines.push(`const __startTok = state.tokens[state.pos];`);
+    lines.push(`const __startOff = __startTok ? __startTok.start : state.input.length;`);
+  }
+  for (let i = 0; i < pivot - 1; i++) {
+    lines.push(emitSpan(
+      first.spans[i]!,
+      first.spans[i + 1],
+      valueExpr,
+      presenceExpr,
+      startOffExpr,
+      endOffExpr,
+      offsetRefs,
+      ctx,
+    ));
+  }
+  lines.push(emitSharedRepeatedSpan(
+    sharedRepeat,
+    repeat,
+    [firstLiteral, secondLiteral],
+    valueExpr,
+    presenceExpr,
+    startOffExpr,
+    endOffExpr,
+    offsetRefs,
+    ctx,
+  ));
+
+  const firstType = ctx.literalTypeByText.get(firstLiteral.text) ?? firstLiteral.text;
+  const secondType = ctx.literalTypeByText.get(secondLiteral.text) ?? secondLiteral.text;
+  const firstBranch = emitFactoredBranch(first, pivot, valueExpr, presenceExpr, startOffExpr, endOffExpr, firstOffsetRefs, ctx);
+  const secondBranch = emitFactoredBranch(second, pivot, valueExpr, presenceExpr, startOffExpr, endOffExpr, secondOffsetRefs, ctx);
+  lines.push(`if (peekLiteral(state, ${jsString(firstType)}, ${jsString(firstLiteral.text)})) {
+${indent(firstBranch, 1)}
+}`);
+  lines.push(`if (peekLiteral(state, ${jsString(secondType)}, ${jsString(secondLiteral.text)})) {
+${indent(secondBranch, 1)}
+}`);
+  lines.push(`throw new SyntaxError('no production matched');`);
+  return lines.join('\n');
+}
+
+function sameSharedPrefixSpan(a: ResolvedSpan, b: ResolvedSpan): boolean {
+  if (a.recursiveRoles.length > 0 || b.recursiveRoles.length > 0) {
+    return a.name === b.name
+      && a.recursiveRoles.join('\0') === b.recursiveRoles.join('\0')
+      && sameModifiers(a.modifiers, b.modifiers);
+  }
+  return sameSpanSignature(a, b);
+}
+
+function emitSharedRepeatedSpan(
+  span: ResolvedSpan,
+  repeats: Extract<SpanModifier, { kind: 'repeats' }>,
+  stops: readonly ResolvedSpan[],
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  if (!span.name) return emitRepeatedSpan(span, repeats, undefined, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+  const listVar = jsIdent(span.name);
+  const roles = span.recursiveRoles;
+  const needsOffsets = ctx.variant === 'raws' || offsetRefs.has(span.name);
+  valueExpr.set(span.name, listVar);
+  presenceExpr.set(span.name, `(${listVar}.length > 0)`);
+  if (needsOffsets) {
+    startOffExpr.set(span.name, `__${listVar}_startOff`);
+    endOffExpr.set(span.name, `__prevEnd_${listVar}`);
+  }
+  const stopPredicate = stops.map((stop) => {
+    if (stop.class !== 'literal' || !stop.text) throw new Error('shared repeated stop must be a literal span');
+    const type = ctx.literalTypeByText.get(stop.text) ?? stop.text;
+    return `peekLiteral(state, ${jsString(type)}, ${jsString(stop.text)})`;
+  }).join(' || ');
+  const childDecl = roles.length === 1
+    ? `const __child = ${parseFnName(roles[0]!, ctx.variant)}(state);`
+    : emitRoleDispatchAssignment('__child', roles, ctx);
+  const min = repeats.min ?? 0;
+  const max = repeats.max;
+  const minCheck = enforceMin(listVar, min, roles.join('|'));
+  const maxCheck = enforceMax(listVar, max, roles.join('|'));
+  const attachBefore = ctx.variant === 'raws'
+    ? `attachRawsBefore(state, __child, __prevEnd_${listVar});`
+    : '';
+  const updatePrevEnd = needsOffsets
+    ? ctx.variant === 'raws'
+      ? `__prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};`
+      : `__prevEnd_${listVar} = state.tokens[state.pos - 1]?.end ?? __prevEnd_${listVar};`
+    : '';
+  const offsetDecls = needsOffsets
+    ? `const __${listVar}_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+let __prevEnd_${listVar} = __${listVar}_startOff;`
+    : '';
+  const attachLine = attachBefore ? `  ${attachBefore}\n` : '';
+  const updateLine = updatePrevEnd ? `  ${updatePrevEnd}\n` : '';
+  return `${offsetDecls}
+const ${listVar}: unknown[] = [];
+while (!(${stopPredicate})) {
+  const __before = state.pos;
+  ${childDecl}
+${attachLine}  ${listVar}.push(__child);
+  if (state.pos === __before) break;
+${updateLine}}${minCheck}${maxCheck}`;
 }
 
 function emitSpeculativeProductionGroupDispatch(fnName: string, indexes: readonly number[]): string {

@@ -108,3 +108,51 @@ test('validation metadata is separate from SchemaDef and emits string-set lookup
   assert.match(emitted, /new Set<string>\(\["color"\]\)/);
   assert.match(emitted, /function validate\(input: string, options\?: ParseOptions\): void/);
 });
+
+test('emitter factors shared recursive repeats before literal branch points', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    name: 'generic-records',
+    rootType: 'Node',
+    punctuators: {
+      open: '<',
+      close: '>',
+      selfClose: '/>',
+      equals: '=',
+    },
+    tokens: ['string'],
+    examples: [
+      ex('key="value"')
+        .as('Pair')
+        .span('name', 'key').ident().css()
+        .span('=')
+        .span('value', '"value"').string().doubleQuoted()
+        .structure({ name: $.name, value: $.value })
+        .build(),
+      ex('<box key="value">body</box>')
+        .as('Node')
+        .span('<')
+        .span('tag', 'box').ident().css()
+        .span('pairs', 'key="value"', 'Pair').repeats({ min: 0 })
+        .span('>')
+        .span('body', 'body').until('</')
+        .span('</')
+        .span('closeTag', 'box').ident().css()
+        .span('>')
+        .structure({ tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag })
+        .build(),
+      ex('<box />')
+        .as('Node')
+        .span('<')
+        .span('tag', 'box').ident().css()
+        .span('pairs', '', 'Pair').repeats({ min: 0 })
+        .span('/>')
+        .structure({ tag: $.tag, pairs: $.pairs, selfClosing: true })
+        .build(),
+    ],
+  });
+
+  const emitted = generateParser(schema);
+  assert.doesNotMatch(emitted, /trySpeculate\(state, parseNodeFast__alt1\)/);
+  assert.match(emitted, /while \(!\(peekLiteral\(state, "close", ">"\) \|\| peekLiteral\(state, "selfClose", "\/>"\)\)\)/);
+});

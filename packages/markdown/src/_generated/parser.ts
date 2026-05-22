@@ -202,6 +202,7 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
 // expect a comment (cls === 'comment') opt out via the call sites below,
 // so standalone comment captures still work.
 function skipComments(state: State): void {
+  if (!state.hasComments) return;
   while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
     state.pos++;
   }
@@ -298,6 +299,7 @@ function peekLiteral(state: State, type: string, value: string): boolean {
 }
 
 function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
+  if (!state.hasComments) return peekLiteral(state, type, value);
   let pos = state.pos;
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   const tok = state.tokens[pos];
@@ -305,11 +307,13 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 }
 
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
+  if (!state.hasComments) return state.tokens[pos];
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
 }
 
 function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  if (!state.hasComments) return state.tokens[pos + index];
   let seen = 0;
   while (pos < state.tokens.length) {
     const tok = state.tokens[pos++];

@@ -1,0 +1,30 @@
+{
+  "name": "@parser2/html",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run generate && npm run bench:parse && npm run bench:tokenize",
+    "bench:parse": "tsx bench/parse.ts",
+    "bench:tokenize": "tsx bench/tokenize.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts html",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts html --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts html",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts html --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts html",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0",
+    "htmlparser2": "^10.0.0",
+    "linkedom": "^0.18.12",
+    "node-html-parser": "^7.0.1",
+    "parse5": "^8.0.0"
+  }
+}

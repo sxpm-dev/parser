@@ -9,13 +9,13 @@
   "scripts": {
     "build": "npm run generate && tsc -b",
     "build:tools": "tsc -b packages/parser packages/compiler",
-    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css-color/src/schema.ts && tsx packages/compiler/src/cli.ts packages/css-length-percentage/src/schema.ts && tsc -b packages/css-color packages/css-length-percentage && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts",
+    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css-color/src/schema.ts && tsx packages/compiler/src/cli.ts packages/css-length-percentage/src/schema.ts && tsc -b packages/css-color packages/css-length-percentage && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts packages/html/src/schema.ts",
     "test": "npm run generate && npm run test --workspaces --if-present",
     "conformance:fetch": "npm run fetch -w @parser2/css",
     "test:conformance": "PARSER2_CONFORMANCE=1 npm test",
     "test:css:conformance": "npm run generate && npm run test:conformance -w @parser2/css",
     "audit:parser-contract": "tsx scripts/parser-contract-audit.ts",
-    "bench": "npm run bench -w @parser2/arn && npm run bench -w @parser2/cron && npm run bench -w @parser2/css-color && npm run bench -w @parser2/css-length-percentage && npm run bench -w @parser2/css && npm run bench -w @parser2/log && npm run bench -w @parser2/mac && npm run bench -w @parser2/markdown && npm run bench -w @parser2/proto && npm run bench -w @parser2/url",
+    "bench": "npm run bench -w @parser2/arn && npm run bench -w @parser2/cron && npm run bench -w @parser2/css-color && npm run bench -w @parser2/css-length-percentage && npm run bench -w @parser2/css && npm run bench -w @parser2/html && npm run bench -w @parser2/log && npm run bench -w @parser2/mac && npm run bench -w @parser2/markdown && npm run bench -w @parser2/proto && npm run bench -w @parser2/url",
     "bench:arn:parse": "npm run generate -w @parser2/arn && tsx packages/arn/bench/parse.ts",
     "bench:cron:parse": "npm run generate -w @parser2/cron && tsx packages/cron/bench/parse.ts",
     "bench:css-color:validate": "npm run generate -w @parser2/css-color && tsx packages/css-color/bench/validate.ts",
@@ -28,12 +28,14 @@
     "bench:css:direct-profile": "npm run generate && tsx packages/css/bench/direct-profile.ts",
     "bench:css:lazy-materialization": "npm run generate && tsx packages/css/bench/lazy-materialization.ts",
     "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts",
+    "bench:html:parse": "npm run generate -w @parser2/html && tsx packages/html/bench/parse.ts",
+    "bench:html:tokenize": "npm run generate -w @parser2/html && tsx packages/html/bench/tokenize.ts",
     "bench:markdown:ast": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/ast.ts",
     "bench:markdown:tokenize": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/tokenize.ts",
     "bench:proto:parse": "npm run generate -w @parser2/proto && tsx packages/proto/bench/parse.ts",
     "bench:proto:tokenize": "npm run generate -w @parser2/proto && tsx packages/proto/bench/tokenize.ts",
-    "baseline": "npm run baseline -w @parser2/arn && npm run baseline -w @parser2/cron && npm run baseline -w @parser2/css-color && npm run baseline -w @parser2/css-length-percentage && npm run baseline -w @parser2/css && npm run baseline -w @parser2/log && npm run baseline -w @parser2/mac && npm run baseline -w @parser2/markdown && npm run baseline -w @parser2/proto && npm run baseline -w @parser2/url",
-    "gate": "npm run gate -w @parser2/arn && npm run gate -w @parser2/cron && npm run gate -w @parser2/css-color && npm run gate -w @parser2/css-length-percentage && npm run gate -w @parser2/css && npm run gate -w @parser2/log && npm run gate -w @parser2/mac && npm run gate -w @parser2/markdown && npm run gate -w @parser2/proto && npm run gate -w @parser2/url"
+    "baseline": "npm run baseline -w @parser2/arn && npm run baseline -w @parser2/cron && npm run baseline -w @parser2/css-color && npm run baseline -w @parser2/css-length-percentage && npm run baseline -w @parser2/css && npm run baseline -w @parser2/html && npm run baseline -w @parser2/log && npm run baseline -w @parser2/mac && npm run baseline -w @parser2/markdown && npm run baseline -w @parser2/proto && npm run baseline -w @parser2/url",
+    "gate": "npm run gate -w @parser2/arn && npm run gate -w @parser2/cron && npm run gate -w @parser2/css-color && npm run gate -w @parser2/css-length-percentage && npm run gate -w @parser2/css && npm run gate -w @parser2/html && npm run gate -w @parser2/log && npm run gate -w @parser2/mac && npm run gate -w @parser2/markdown && npm run gate -w @parser2/proto && npm run gate -w @parser2/url"
   },
   "devDependencies": {
     "@aws-sdk/util-arn-parser": "^3.972.7",

@@ -17,15 +17,42 @@ DSL — how to write examples, declare operators, compose schemas — see
 These are non-negotiable. Any change that violates one is rejected at code
 review.
 
-### 1. The compiler is domainless
+### 1. The Compiler Is Domainless
 
-The compiler contains zero knowledge of CSS, JavaScript, JSON, or any other
-specific language. There are no branches on package names, no JS-specific
-emitters, no CSS-specific fallbacks, no per-language templates.
+Strict requirement:
+
+**All parser behavior MUST be inferred from schema examples and generic schema
+configuration. The compiler MUST NOT choose parser behavior from a domain,
+package, or schema name.**
+
+The compiler contains zero knowledge of CSS, HTML, JavaScript, JSON, Markdown,
+URLs, ARNs, cron expressions, protobuf, logs, or any other specific language.
+There are no branches on package names, no JS-specific emitters, no
+HTML-specific emitters, no CSS-specific fallbacks, no per-language templates.
 
 Everything the compiler emits is inferred from schema data — examples,
 operators, punctuators, whitespace policy, recovery declarations — through a
 small set of generic, reusable primitives.
+
+The compiler may use `schema.rootSchemaName` only for generated comments,
+module identity metadata, and output paths. It MUST NOT use schema/package
+names to select parsing logic.
+
+Forbidden:
+
+```ts
+if (schema.rootSchemaName === 'html') return emitHtmlParser(schema)
+if (schema.name === 'css') emitCssSpecificScanner(...)
+switch (packageName) { case 'url': ... }
+```
+
+Allowed:
+
+```ts
+if (isGenericNestedBlockShape(schema)) emitNestedBlockFastPath(schema)
+if (span.modifiers.some((m) => m.kind === 'until')) emitUntilCapture(span)
+if (commentRefinement.block) emitGenericBlockCommentScanner(open, close)
+```
 
 The compiler is allowed to recognize **generic structural patterns** in that
 schema data and emit faster code for them. For example, a repeated nested
@@ -39,8 +66,8 @@ If a language feature cannot be expressed today:
 1. Add more examples.
 2. If examples still can't express it, see if a generic primitive could be
    added under the admission policy below.
-3. Never add a language-specific emitter (`ecmascript-emitter`,
-   `css-block-emitter`, etc.).
+3. Never add a language-specific emitter (`html-emitter`,
+   `ecmascript-emitter`, `css-block-emitter`, etc.).
 
 ### 2. Parser packages describe; they do not implement
 

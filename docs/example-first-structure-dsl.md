@@ -114,11 +114,52 @@ Every field except `name`, `rootType`, and `examples` is optional.
 
 ### Domainless compiler contract
 
+This is a strict requirement:
+
+**The compiler is domainless. Parsing behavior MUST be inferred from schema
+examples and generic schema configuration.**
+
 Schemas are generic data consumed by a domainless compiler. The compiler does
-not know about CSS colors, CSS properties, JavaScript modules, selectors, or
-any other product/domain concept. It only knows the closed schema vocabulary:
+not know about CSS colors, CSS properties, JavaScript modules, HTML tags,
+selectors, URLs, logs, protobuf declarations, ARNs, cron expressions, or any
+other product/domain concept. It only knows the closed schema vocabulary:
 examples, spans, recursive roles, operators, punctuators, token classes,
-refinements, modifiers, whitespace policy, and schema composition.
+refinements, modifiers, whitespace policy, validation composition, recovery
+policies, and schema composition.
+
+The source of truth for parser behavior is only:
+
+```txt
+schema examples + generic schema declarations -> inference -> generated parser
+```
+
+The compiler MUST NOT branch on schema, package, or domain names such as
+`css`, `html`, `url`, `markdown`, `proto`, or any other parser package name.
+A package may be named after a domain; the compiler may use that name only for
+generated comments, module identity metadata, or output paths, never to decide
+grammar behavior.
+
+Forbidden compiler patterns:
+
+```ts
+if (schema.name === 'html') emitHtmlParser(...)
+if (schema.rootSchemaName === 'css') emitCssFastPath(...)
+switch (packageName) { case 'url': ... }
+```
+
+Allowed compiler patterns are shape-based and reusable:
+
+```ts
+if (isGenericNestedBlockShape(schema)) emitNestedBlockFastPath(...)
+if (span.modifiers.some((m) => m.kind === 'until')) emitUntilCapture(span)
+if (commentRefinement.block) emitGenericCommentScanner(open, close)
+```
+
+If a language needs behavior the current schema DSL cannot express, add a
+reusable schema primitive or generic compiler inference rule first, then
+express the language behavior in that package's `src/schema.ts`. Do not add a
+package-specific emitter, handwritten parser, domain lookup table, or
+package-name special case.
 
 That means schema declarations must not contain domain-specific generated API
 names such as `parseCssColor`, `validateCssColor`, or property-to-parser maps.

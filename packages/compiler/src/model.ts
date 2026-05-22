@@ -9,6 +9,7 @@ import type {
   SpanDef,
   SpanModifier,
   StructureValue,
+  UnknownCharPolicy,
   ValidationDef,
   WhitespacePolicy,
 } from '@parser2/parser';
@@ -61,6 +62,7 @@ export type InferredSchema = {
   readonly literalTypeByText: ReadonlyMap<string, string>;
   readonly classes: ReadonlyArray<TokenClassUsage>;
   readonly whitespace: WhitespacePolicy;
+  readonly unknownChars: UnknownCharPolicy;
   readonly validation?: ValidationDef;
 };
 

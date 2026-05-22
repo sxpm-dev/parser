@@ -39,10 +39,21 @@ ${indentLines(commentBranches, 4)}
 ${indentLines(earlySingleCharBranches, 4)}
 ${indentLines(classBranches, 4)}
 ${indentLines(lateSingleCharBranches, 4)}
-    throw new SyntaxError(\`Unexpected character '\${input[i]}' at position \${i}\`);
+${indentLines(emitUnknownCharFallback(schema.unknownChars), 4)}
   }
   return tokens;
 }`;
+}
+
+function emitUnknownCharFallback(policy: InferredSchema['unknownChars']): string {
+  if (policy === 'tolerate') {
+    // Permissive fallback: any unclassified byte becomes a single-char `raw`
+    // token. Captures cover it via source-slice; productions that expect
+    // specific token types simply won't match `raw` and dispatch falls
+    // through.
+    return `{ const ch = input[i]; tokens.push({ type: 'raw', value: ch, start: i, end: i + 1 }); i++; continue; }`;
+  }
+  return `throw new SyntaxError(\`Unexpected character '\${input[i]}' at position \${i}\`);`;
 }
 
 function literalNeedsClassPriority(literal: string, classes: ReadonlyArray<TokenClassUsage>): boolean {

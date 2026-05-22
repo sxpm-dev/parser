@@ -23,6 +23,7 @@ export function inferSchema(root: SchemaDef, validation?: ValidationDef): Inferr
     literalTypeByText,
     classes,
     whitespace: root.whitespace,
+    unknownChars: root.unknownChars,
     validation,
   };
 }

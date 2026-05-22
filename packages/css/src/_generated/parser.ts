@@ -576,6 +576,32 @@ function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim:
   return trim ? buf.trim() : buf;
 }
 
+// captureRawUntil scans raw source from the current token's start offset
+// looking for the earliest occurrence of any literal in stops. Returns
+// the source slice between current position and the matched stop. State
+// advances to the first token whose start offset is at or past the stop.
+// Used by .rawUntil() modifier for raw-text element bodies (script/style)
+// and unquoted attribute values that can contain arbitrary characters.
+function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
+  const startOff = state.pos < state.tokens.length
+    ? state.tokens[state.pos].start
+    : state.input.length;
+  const hay = caseInsensitive ? state.input.toLowerCase() : state.input;
+  const needles = caseInsensitive ? stops.map((s) => s.toLowerCase()) : stops;
+  let earliest = state.input.length;
+  for (const n of needles) {
+    if (n.length === 0) continue;
+    const idx = hay.indexOf(n, startOff);
+    if (idx !== -1 && idx < earliest) earliest = idx;
+  }
+  while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
+    state.pos++;
+  }
+  state.__lastCaptureStart = startOff;
+  state.__lastCaptureEnd = earliest;
+  return state.input.slice(startOff, earliest);
+}
+
 function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
   let depth = 0;
   let pos = state.pos;

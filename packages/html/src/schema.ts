@@ -5,7 +5,16 @@ const VOID_TAGS = [
   'link', 'meta', 'param', 'source', 'track', 'wbr',
 ] as const;
 
+// Raw-text elements per WHATWG: contents run until matching close tag,
+// ignoring any `<` inside (the spec also includes 'noembed','noframes',
+// 'noscript' under conditional contexts; deferred).
+const RAW_TEXT_TAGS = ['script', 'style', 'textarea', 'title'] as const;
+
 const TEXT_STOPS = ['<', '</', '<!--'] as const;
+// Stops for unquoted attribute values: any whitespace ends the value, as
+// does the tag close `>` or self-close `/>`. Raw-source scan handles chars
+// like `/`, `:`, `?`, `&` that aren't in our ident class.
+const UNQUOTED_VALUE_STOPS = [' ', '\t', '\n', '\r', '\f', '>', '/>'] as const;
 const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
 export default defineSchema({
@@ -33,6 +42,10 @@ export default defineSchema({
   },
   // 'number' so digits in URLs/attrs ('utf-8', '1.0', etc.) tokenize.
   tokens: ['number'],
+  // HTML is content-permissive: any character can appear in text or attribute
+  // values. Tolerate unknown bytes by emitting them as `raw` tokens so
+  // `.until()` source-slicing covers em-dashes, unicode letters, emojis, etc.
+  unknownChars: 'tolerate',
   examples: [
     // ===== HtmlDocument ============================================
     ex('<p>hi</p>')
@@ -82,6 +95,30 @@ export default defineSchema({
       .build(),
 
     // ===== HtmlElement (multi-production) ==========================
+    // Production 0: raw-text element. `<script>`, `<style>`, `<textarea>`,
+    // `<title>` — bodies are opaque source until the literal close tag,
+    // ignoring any `<` inside (JS, CSS, etc.). Must come BEFORE the void
+    // and regular productions so dispatch tries it first for these tags.
+    ex('<script>js</script>')
+      .as('HtmlElement')
+      .span('<')
+      .span('tag', 'script').ident().css().oneOf(RAW_TEXT_TAGS)
+      .span('attrs', '', 'Attribute').repeats({ min: 0 })
+      .span('>')
+      .span('body', 'js').rawUntil('</', { caseInsensitive: true })
+      .span('</')
+      .span('closeTag', 'script').ident().css().oneOf(RAW_TEXT_TAGS)
+      .span('>')
+      .structure({
+        nodeName: $.tag,
+        tagName: $.tag,
+        namespaceURI: HTML_NS,
+        attrs: $.attrs,
+        childNodes: [{ nodeName: '#text', value: $.body, parentNode: null }],
+        parentNode: null,
+      })
+      .build(),
+
     // Production 1: void element, no slash. `<br>`, `<meta charset="x">`.
     ex('<br>')
       .as('HtmlElement')
@@ -171,12 +208,13 @@ export default defineSchema({
       .structure({ name: $.name, value: $.value })
       .build(),
 
-    // Production 3: unquoted ident-shaped value. `class=hero`, `lang=en-GB`.
+    // Production 3: unquoted value containing any non-whitespace chars.
+    // `class=hero`, `lang=en-GB`, `href=https://x.test/y?z=1`.
     ex('class=hero')
       .as('Attribute')
       .span('name', 'class').ident().css()
       .span('=')
-      .span('value', 'hero').ident().css()
+      .span('value', 'hero').rawUntil(UNQUOTED_VALUE_STOPS)
       .structure({ name: $.name, value: $.value })
       .build(),
 

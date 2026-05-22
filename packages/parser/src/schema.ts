@@ -16,6 +16,7 @@ export function defineSchema(input: SchemaInput): SchemaDef {
     punctuators: normalizePunctuators(input.punctuators),
     tokens: normalizeTokens(input.tokens),
     whitespace: input.whitespace ?? 'standard',
+    unknownChars: input.unknownChars ?? 'reject',
     examples: input.examples,
   };
 }

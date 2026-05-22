@@ -144,6 +144,18 @@ class SpanBuilder {
     });
   }
 
+  rawUntil(
+    stops: string | ReadonlyArray<string>,
+    opts: { readonly caseInsensitive?: boolean } = {},
+  ): this {
+    const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
+    return this.addModifier({
+      kind: 'rawUntil',
+      stops: stopArr,
+      caseInsensitive: opts.caseInsensitive ?? false,
+    });
+  }
+
   noLineTerminatorAfter(): this {
     return this.addModifier({ kind: 'noLineTerminatorAfter' });
   }

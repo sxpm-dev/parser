@@ -19,6 +19,7 @@ export type {
   StructureValue,
   TokenDecl,
   TrailingPolicy,
+  UnknownCharPolicy,
   GeneratedValidator,
   ValidationDef,
   ValidationRuleDef,

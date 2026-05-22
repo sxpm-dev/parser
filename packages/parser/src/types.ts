@@ -2,6 +2,15 @@
 
 export type WhitespacePolicy = 'standard' | 'significant';
 
+// How the generated tokenizer reacts to a byte it can't classify under any
+// declared literal, class scanner, or punctuator.
+//   'reject'   — throw SyntaxError (default; what every prior schema relied on)
+//   'tolerate' — emit a single-char `raw` token at that offset and continue;
+//                lets `.until()` captures cover arbitrary content without the
+//                schema enumerating every possible character. Generic across
+//                tag-soup HTML, shell heredocs, JSX raw text, INI values.
+export type UnknownCharPolicy = 'reject' | 'tolerate';
+
 export type TrailingPolicy = 'allowed' | 'required' | 'forbidden';
 
 // --- Spans -----------------------------------------------------------------
@@ -32,6 +41,16 @@ export type SpanModifier =
       readonly trailing?: TrailingPolicy;
       readonly min?: number;
       readonly max?: number;
+    }
+  | {
+      readonly kind: 'rawUntil';
+      // Stop when the source contains any of these literal strings at or
+      // after the current position. Capture is the raw source slice. The
+      // capture does NOT advance past the stop — the next span consumes it.
+      // Use for raw-text element bodies (`<script>`, `<style>`) and for
+      // unquoted attribute values that may contain non-token characters.
+      readonly stops: ReadonlyArray<string>;
+      readonly caseInsensitive: boolean;
     }
   | {
       readonly kind: 'until';
@@ -218,6 +237,7 @@ export type SchemaDef = {
   // and declaration values).
   readonly tokens: ReadonlyArray<TokenDecl>;
   readonly whitespace: WhitespacePolicy;
+  readonly unknownChars: UnknownCharPolicy;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
 
@@ -229,6 +249,7 @@ export type SchemaInput = {
   readonly punctuators?: ReadonlyArray<string> | PunctuatorMap;
   readonly tokens?: ReadonlyArray<SpanClass | TokenDecl>;
   readonly whitespace?: WhitespacePolicy;
+  readonly unknownChars?: UnknownCharPolicy;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
 

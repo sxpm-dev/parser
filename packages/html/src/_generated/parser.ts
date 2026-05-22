@@ -32,10 +32,12 @@ export function tokenize(input: string): Token[] {
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
     if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
+    if (input.startsWith("hero", i)) { tokens.push({ type: "hero", value: "hero", start: i, end: i + 4 }); i += 4; continue; }
     if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
     if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("<!", i)) { tokens.push({ type: "doctypeOpen", value: "<!", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("</", i)) { tokens.push({ type: "closeTagOpen", value: "</", start: i, end: i + 2 }); i += 2; continue; }
+    if (input.startsWith("js", i)) { tokens.push({ type: "js", value: "js", start: i, end: i + 2 }); i += 2; continue; }
 
     switch (c) {
       case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;
@@ -146,7 +148,7 @@ export function tokenize(input: string): Token[] {
       continue;
     }
 
-    throw new SyntaxError(`Unexpected character '${input[i]}' at position ${i}`);
+    { const ch = input[i]; tokens.push({ type: 'raw', value: ch, start: i, end: i + 1 }); i++; continue; }
   }
   return tokens;
 }
@@ -557,6 +559,32 @@ function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim:
   return trim ? buf.trim() : buf;
 }
 
+// captureRawUntil scans raw source from the current token's start offset
+// looking for the earliest occurrence of any literal in stops. Returns
+// the source slice between current position and the matched stop. State
+// advances to the first token whose start offset is at or past the stop.
+// Used by .rawUntil() modifier for raw-text element bodies (script/style)
+// and unquoted attribute values that can contain arbitrary characters.
+function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
+  const startOff = state.pos < state.tokens.length
+    ? state.tokens[state.pos].start
+    : state.input.length;
+  const hay = caseInsensitive ? state.input.toLowerCase() : state.input;
+  const needles = caseInsensitive ? stops.map((s) => s.toLowerCase()) : stops;
+  let earliest = state.input.length;
+  for (const n of needles) {
+    if (n.length === 0) continue;
+    const idx = hay.indexOf(n, startOff);
+    if (idx !== -1 && idx < earliest) earliest = idx;
+  }
+  while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
+    state.pos++;
+  }
+  state.__lastCaptureStart = startOff;
+  state.__lastCaptureEnd = earliest;
+  return state.input.slice(startOff, earliest);
+}
+
 function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
   let depth = 0;
   let pos = state.pos;
@@ -756,6 +784,42 @@ function parseHtmlElement__alt0(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const body = captureRawUntil(state, ["</"], true);
+  const __body_start = state.__lastCaptureStart;
+  const __body_end = state.__lastCaptureEnd;
+  expectLiteral(state, "closeTagOpen", "</");
+  const closeTag = expectClass(state, "ident");
+  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+  const __closeTag_start = state.tokens[state.pos - 1].start;
+  const __closeTag_end = state.tokens[state.pos - 1].end;
+  expectLiteral(state, "gt", ">");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [{ nodeName: "#text", value: body, parentNode: null }], parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt1(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
   if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
   const __tag_start = state.tokens[state.pos - 1].start;
   const __tag_end = state.tokens[state.pos - 1].end;
@@ -778,7 +842,7 @@ function parseHtmlElement__alt0(state: State): unknown {
   return __struct;
 }
 
-function parseHtmlElement__alt1(state: State): unknown {
+function parseHtmlElement__alt2(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "lt", "<");
@@ -805,7 +869,7 @@ function parseHtmlElement__alt1(state: State): unknown {
   return __struct;
 }
 
-function parseHtmlElement__alt2(state: State): unknown {
+function parseHtmlElement__alt3(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "lt", "<");
@@ -860,12 +924,15 @@ function parseHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
-      { const r = trySpeculate(state, parseHtmlElement__alt0); if (r !== null) return r; }
-      return parseHtmlElement__alt1(state);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+      return parseHtmlElement__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, parseHtmlElement__alt1); if (r !== null) return r; }
+      return parseHtmlElement__alt2(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {
-      return parseHtmlElement__alt2(state);
+      return parseHtmlElement__alt3(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -936,10 +1003,9 @@ function parseAttribute__alt2(state: State): unknown {
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "ident");
-
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
+  const value = captureRawUntil(state, [" ", "\t", "\n", "\r", "\f", ">", "/>"], false);
+  const __value_start = state.__lastCaptureStart;
+  const __value_end = state.__lastCaptureEnd;
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
   const __struct: Record<string, unknown> = { name: name, value: value };
@@ -973,10 +1039,7 @@ function parseAttribute(state: State): unknown {
       else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
         return parseAttribute__alt1(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
-        return parseAttribute__alt2(state);
-      }
-      throw new SyntaxError('no production matched');
+      return parseAttribute__alt2(state);
     }
     return parseAttribute__alt3(state);
   }
@@ -1023,6 +1086,27 @@ function parseCommentFast(state: State): unknown {
 function parseHtmlElementFast__alt0(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  const body = captureRawUntil(state, ["</"], true);
+  expectLiteral(state, "closeTagOpen", "</");
+  const closeTag = expectClass(state, "ident");
+  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+  expectLiteral(state, "gt", ">");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [{ nodeName: "#text", value: body, parentNode: null }], parentNode: null };
+}
+
+function parseHtmlElementFast__alt1(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
   if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
 
   const attrs: unknown[] = [];
@@ -1036,7 +1120,7 @@ function parseHtmlElementFast__alt0(state: State): unknown {
   return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
 }
 
-function parseHtmlElementFast__alt1(state: State): unknown {
+function parseHtmlElementFast__alt2(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
   if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
@@ -1052,7 +1136,7 @@ function parseHtmlElementFast__alt1(state: State): unknown {
   return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
 }
 
-function parseHtmlElementFast__alt2(state: State): unknown {
+function parseHtmlElementFast__alt3(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
 
@@ -1091,12 +1175,15 @@ function parseHtmlElementFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
-      { const r = trySpeculate(state, parseHtmlElementFast__alt0); if (r !== null) return r; }
-      return parseHtmlElementFast__alt1(state);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+      return parseHtmlElementFast__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, parseHtmlElementFast__alt1); if (r !== null) return r; }
+      return parseHtmlElementFast__alt2(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {
-      return parseHtmlElementFast__alt2(state);
+      return parseHtmlElementFast__alt3(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -1135,8 +1222,7 @@ function parseAttributeFast__alt2(state: State): unknown {
   const name = expectClass(state, "ident");
 
   expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "ident");
-
+  const value = captureRawUntil(state, [" ", "\t", "\n", "\r", "\f", ">", "/>"], false);
   return { name: name, value: value };
 }
 
@@ -1158,10 +1244,7 @@ function parseAttributeFast(state: State): unknown {
       else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
         return parseAttributeFast__alt1(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
-        return parseAttributeFast__alt2(state);
-      }
-      throw new SyntaxError('no production matched');
+      return parseAttributeFast__alt2(state);
     }
     return parseAttributeFast__alt3(state);
   }
@@ -1206,6 +1289,26 @@ function validateComment(state: State): unknown {
 function validateHtmlElement__alt0(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  const body = captureRawUntil(state, ["</"], true);
+  expectLiteral(state, "closeTagOpen", "</");
+  const closeTag = expectClass(state, "ident");
+  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) throw new SyntaxError("expected one of script, style, textarea, title at position " + state.tokens[state.pos - 1].start);
+  expectLiteral(state, "gt", ">");
+  return;
+}
+
+function validateHtmlElement__alt1(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
   if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
   let __count_attrs = 0;
   while (!(peekLiteral(state, "gt", ">"))) {
@@ -1218,7 +1321,7 @@ function validateHtmlElement__alt0(state: State): unknown {
   return;
 }
 
-function validateHtmlElement__alt1(state: State): unknown {
+function validateHtmlElement__alt2(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
   if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
@@ -1233,7 +1336,7 @@ function validateHtmlElement__alt1(state: State): unknown {
   return;
 }
 
-function validateHtmlElement__alt2(state: State): unknown {
+function validateHtmlElement__alt3(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
 
@@ -1269,12 +1372,15 @@ function validateHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
-      { const r = trySpeculate(state, validateHtmlElement__alt0); if (r !== null) return r; }
-      return validateHtmlElement__alt1(state);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+      return validateHtmlElement__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, validateHtmlElement__alt1); if (r !== null) return r; }
+      return validateHtmlElement__alt2(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {
-      return validateHtmlElement__alt2(state);
+      return validateHtmlElement__alt3(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -1313,8 +1419,7 @@ function validateAttribute__alt2(state: State): unknown {
   const name = expectClass(state, "ident");
 
   expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "ident");
-
+  const value = captureRawUntil(state, [" ", "\t", "\n", "\r", "\f", ">", "/>"], false);
   return;
 }
 
@@ -1336,10 +1441,7 @@ function validateAttribute(state: State): unknown {
       else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
         return validateAttribute__alt1(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
-        return validateAttribute__alt2(state);
-      }
-      throw new SyntaxError('no production matched');
+      return validateAttribute__alt2(state);
     }
     return validateAttribute__alt3(state);
   }

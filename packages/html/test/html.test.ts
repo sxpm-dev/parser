@@ -176,6 +176,31 @@ test('html parses attribute values containing URL-shape characters', () => {
   assert.equal(ast.childNodes[0]?.attrs[0]?.value, '/foo/bar?x=1');
 });
 
+test('html parses unquoted attribute values with URL-shape characters', () => {
+  const ast = parse('<a href=https://example.com/path?x=1>link</a>') as {
+    childNodes: readonly { attrs: readonly { name: string; value: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.attrs[0]?.value, 'https://example.com/path?x=1');
+});
+
+test('html parses script and style raw-text content with `<` inside', () => {
+  const ast = parse('<script>if (a < b) {}</script>') as {
+    childNodes: readonly { childNodes: readonly { value: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.childNodes[0]?.value, 'if (a < b) {}');
+  const css = parse('<style>.foo { color: red; }</style>') as {
+    childNodes: readonly { childNodes: readonly { value: string }[] }[];
+  };
+  assert.equal(css.childNodes[0]?.childNodes[0]?.value, '.foo { color: red; }');
+});
+
+test('html tokenizer tolerates non-ASCII bytes (em-dash, accents, emoji)', () => {
+  const ast = parse('<p>Héllo — wörld 🌍</p>') as {
+    childNodes: readonly { childNodes: readonly { value: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.childNodes[0]?.value, 'Héllo — wörld 🌍');
+});
+
 test('html supports source locations in raws mode', () => {
   const ast = parse('<div>Hello</div>', { mode: 'raws' }) as {
     readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } };

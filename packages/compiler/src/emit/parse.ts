@@ -689,8 +689,12 @@ function emitSpan(
   const optional = hasModifier(span.modifiers, 'optional');
   const repeats = findModifier(span.modifiers, 'repeats');
   const until = findModifier(span.modifiers, 'until');
+  const rawUntil = findModifier(span.modifiers, 'rawUntil');
   const noWhitespaceAfter = hasModifier(span.modifiers, 'noWhitespaceAfter');
 
+  if (rawUntil) {
+    return emitRawUntilSpan(span, rawUntil, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+  }
   if (until) {
     return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
   }
@@ -766,6 +770,36 @@ ${emitSpanRefinementCheck(span, v, false, 'state.__lastCaptureStart')}${offsets}
   }
   if (rejectCheck) {
     return `{ const __captured = ${captureCall}; ${rejectCheck.trim()} }`;
+  }
+  return `${captureCall};`;
+}
+
+function emitRawUntilSpan(
+  span: ResolvedSpan,
+  rawUntil: Extract<SpanModifier, { kind: 'rawUntil' }>,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  const stopsLit = `[${rawUntil.stops.map((s) => jsString(s)).join(', ')}]`;
+  const caseLit = rawUntil.caseInsensitive ? 'true' : 'false';
+  const captureCall = `captureRawUntil(state, ${stopsLit}, ${caseLit})`;
+  if (span.name) {
+    const v = jsIdent(span.name);
+    const needsOffsets = ctx.variant === 'raws' || offsetRefs.has(span.name);
+    valueExpr.set(span.name, v);
+    presenceExpr.set(span.name, `(${v}.length > 0)`);
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${v}_start`);
+      endOffExpr.set(span.name, `__${v}_end`);
+    }
+    const offsets = needsOffsets
+      ? `\nconst __${v}_start = state.__lastCaptureStart;\nconst __${v}_end = state.__lastCaptureEnd;`
+      : '';
+    return `const ${v} = ${captureCall};${offsets}`;
   }
   return `${captureCall};`;
 }
@@ -1552,6 +1586,7 @@ function firstTokenForRole(role: string, ctx: Ctx): FirstToken | null {
 function firstTokenForSpan(span: ResolvedSpan, ctx: Ctx): FirstToken | null {
   if (span.recursiveRoles.length > 0) return null;
   if (findModifier(span.modifiers, 'until') || findModifier(span.modifiers, 'repeats')) return null;
+  if (findModifier(span.modifiers, 'rawUntil')) return null;
   if (hasModifier(span.modifiers, 'optional')) return null;
   if (span.class === 'literal') {
     if (!span.text) return null;

@@ -2,71 +2,189 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { countTokens, parse, tokenize, validate } from '../src/index.ts';
 
+const HTML_NS = 'http://www.w3.org/1999/xhtml';
+
 test('html parses repeated top-level element nodes from schema examples', () => {
   assert.deepEqual(parse('<div>Hello</div><p>World</p>'), {
-    type: 'document',
-    children: [
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
       {
-        type: 'element',
+        nodeName: 'div',
         tagName: 'div',
-        attributes: [],
-        children: [{ type: 'text', value: 'Hello' }],
-        closeTag: 'div',
+        namespaceURI: HTML_NS,
+        attrs: [],
+        childNodes: [{ nodeName: '#text', value: 'Hello', parentNode: null }],
+        parentNode: null,
       },
       {
-        type: 'element',
+        nodeName: 'p',
         tagName: 'p',
-        attributes: [],
-        children: [{ type: 'text', value: 'World' }],
-        closeTag: 'p',
+        namespaceURI: HTML_NS,
+        attrs: [],
+        childNodes: [{ nodeName: '#text', value: 'World', parentNode: null }],
+        parentNode: null,
       },
     ],
+    parentNode: null,
   });
 });
 
 test('html parses attributes and boolean attributes through Attribute node repeats', () => {
   assert.deepEqual(parse('<section class="hero" disabled>Hello world</section>'), {
-    type: 'document',
-    children: [
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
       {
-        type: 'element',
+        nodeName: 'section',
         tagName: 'section',
-        attributes: [
-          { type: 'attribute', name: 'class', value: '"hero"' },
-          { type: 'attribute', name: 'disabled' },
+        namespaceURI: HTML_NS,
+        attrs: [
+          { name: 'class', value: 'hero' },
+          { name: 'disabled', value: '' },
         ],
-        children: [{ type: 'text', value: 'Hello world' }],
-        closeTag: 'section',
+        childNodes: [{ nodeName: '#text', value: 'Hello world', parentNode: null }],
+        parentNode: null,
       },
     ],
+    parentNode: null,
   });
 });
 
 test('html parses doctype and self-closing elements from schema productions', () => {
   assert.deepEqual(parse('<!doctype html><br />'), {
-    type: 'document',
-    children: [
-      { type: 'doctype', name: 'html' },
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
       {
-        type: 'element',
+        nodeName: '#documentType',
+        name: 'html',
+        publicId: '',
+        systemId: '',
+        parentNode: null,
+      },
+      {
+        nodeName: 'br',
         tagName: 'br',
-        attributes: [],
-        children: [],
-        selfClosing: true,
+        namespaceURI: HTML_NS,
+        attrs: [],
+        childNodes: [],
+        parentNode: null,
       },
     ],
+    parentNode: null,
   });
+});
+
+test('html parses nested elements and mixed text/element children', () => {
+  assert.deepEqual(parse('<div><span>x</span><em>y</em></div>'), {
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
+      {
+        nodeName: 'div',
+        tagName: 'div',
+        namespaceURI: HTML_NS,
+        attrs: [],
+        childNodes: [
+          {
+            nodeName: 'span',
+            tagName: 'span',
+            namespaceURI: HTML_NS,
+            attrs: [],
+            childNodes: [{ nodeName: '#text', value: 'x', parentNode: null }],
+            parentNode: null,
+          },
+          {
+            nodeName: 'em',
+            tagName: 'em',
+            namespaceURI: HTML_NS,
+            attrs: [],
+            childNodes: [{ nodeName: '#text', value: 'y', parentNode: null }],
+            parentNode: null,
+          },
+        ],
+        parentNode: null,
+      },
+    ],
+    parentNode: null,
+  });
+});
+
+test('html parses void elements without trailing slash', () => {
+  assert.deepEqual(parse('<br><hr><img src="x.png">'), {
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
+      { nodeName: 'br', tagName: 'br', namespaceURI: HTML_NS, attrs: [], childNodes: [], parentNode: null },
+      { nodeName: 'hr', tagName: 'hr', namespaceURI: HTML_NS, attrs: [], childNodes: [], parentNode: null },
+      {
+        nodeName: 'img',
+        tagName: 'img',
+        namespaceURI: HTML_NS,
+        attrs: [{ name: 'src', value: 'x.png' }],
+        childNodes: [],
+        parentNode: null,
+      },
+    ],
+    parentNode: null,
+  });
+});
+
+test('html parses single-quoted and unquoted ident-shape attribute values', () => {
+  assert.deepEqual(parse(`<a class='hero' lang=en-GB>x</a>`), {
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
+      {
+        nodeName: 'a',
+        tagName: 'a',
+        namespaceURI: HTML_NS,
+        attrs: [
+          { name: 'class', value: 'hero' },
+          { name: 'lang', value: 'en-GB' },
+        ],
+        childNodes: [{ nodeName: '#text', value: 'x', parentNode: null }],
+        parentNode: null,
+      },
+    ],
+    parentNode: null,
+  });
+});
+
+test('html parses HTML comments', () => {
+  // NOTE: surrounding whitespace inside the comment body is lost because
+  // tokenization skips whitespace and `.until()` slices by token offsets.
+  // Also, the ident scanner is greedy with `-`, so `<!--hi-->` won't parse
+  // (the `--` gets absorbed into the ident). Whitespace between body and
+  // close (`<!--hi -->`) is required today. Both limitations are tracked in
+  // the design-doc parking lot.
+  assert.deepEqual(parse('<!-- hello -->'), {
+    nodeName: '#document',
+    mode: 'no-quirks',
+    childNodes: [
+      { nodeName: '#comment', data: 'hello', parentNode: null },
+    ],
+    parentNode: null,
+  });
+});
+
+test('html parses attribute values containing URL-shape characters', () => {
+  const ast = parse('<a href="/foo/bar?x=1">link</a>') as {
+    childNodes: readonly { attrs: readonly { name: string; value: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.attrs[0]?.value, '/foo/bar?x=1');
 });
 
 test('html supports source locations in raws mode', () => {
   const ast = parse('<div>Hello</div>', { mode: 'raws' }) as {
     readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } };
-    readonly children: readonly { readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } } }[];
+    readonly childNodes: readonly { readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } } }[];
   };
   assert.deepEqual(ast.source?.start, { line: 1, column: 1, offset: 0 });
   assert.deepEqual(ast.source?.end, { line: 1, column: 16, offset: 16 });
-  assert.equal(ast.children[0]?.source?.start.line, 1);
-  assert.equal(ast.children[0]?.source?.end.line, 1);
+  assert.equal(ast.childNodes[0]?.source?.start.line, 1);
+  assert.equal(ast.childNodes[0]?.source?.end.line, 1);
 });
 
 test('html tokenizes and counts tokens', () => {
@@ -76,7 +194,9 @@ test('html tokenizes and counts tokens', () => {
     'ident',
     'ident',
     'equals',
-    'string',
+    'dq',
+    'ident',
+    'dq',
     'gt',
     'ident',
     'closeTagOpen',
@@ -87,7 +207,16 @@ test('html tokenizes and counts tokens', () => {
 });
 
 test('html validates rejected syntax', () => {
-  assert.throws(() => validate('<div><span></span></div>'), SyntaxError);
-  assert.throws(() => validate('<div class="x></div>'), SyntaxError);
+  // Truncated attribute (unterminated quoted value) fails.
+  assert.throws(() => validate('<div class="x>x</div>'), SyntaxError);
+  // Close tag without matching open at top level fails (unconsumed tokens).
   assert.throws(() => validate('text</span>'), SyntaxError);
+  // Unclosed element at EOF fails (until recovery codegen lands).
+  assert.throws(() => validate('<div>x'), SyntaxError);
+  // Bare `<` with nothing after fails (no production matches).
+  assert.throws(() => validate('<'), SyntaxError);
+  // NOTE: tag-name mismatch like `<div>x</span>` is NOT rejected today —
+  // closeTag is captured as any ident with no enforced equality to the open
+  // tag. Enforcing this requires either a new schema primitive
+  // (`.matches($.tag)`) or recovery semantics. Parked for Phase III.
 });

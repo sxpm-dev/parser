@@ -65,11 +65,11 @@ await runBenchTable(
 
 function countParser2Nodes(value: unknown): number {
   if (!value || typeof value !== "object") return 0;
-  const children = (value as { readonly children?: readonly unknown[] })
-    .children;
+  const node = value as { readonly childNodes?: readonly unknown[]; readonly children?: readonly unknown[] };
+  const kids = node.childNodes ?? node.children;
   let count = 1;
-  if (children) {
-    for (const child of children) count += countParser2Nodes(child);
+  if (kids) {
+    for (const child of kids) count += countParser2Nodes(child);
   }
   return count;
 }

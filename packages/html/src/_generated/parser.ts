@@ -13,6 +13,10 @@ function isCssIdentPart(c: number): boolean {
   return isCssIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+function isDigit(c: number): boolean {
+  return c >= 48 && c <= 57;
+}
+
 function isHexDigit(c: number): boolean {
   return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
 }
@@ -27,27 +31,60 @@ export function tokenize(input: string): Token[] {
     const c = input.charCodeAt(i);
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
+    if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
+    if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
     if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("<!", i)) { tokens.push({ type: "doctypeOpen", value: "<!", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("</", i)) { tokens.push({ type: "closeTagOpen", value: "</", start: i, end: i + 2 }); i += 2; continue; }
 
     switch (c) {
+      case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;
+      case 34: tokens.push({ type: "dq", value: "\"", start: i, end: i + 1 }); i++; continue;
+      case 35: tokens.push({ type: "delim", value: "#", start: i, end: i + 1 }); i++; continue;
+      case 36: tokens.push({ type: "delim", value: "$", start: i, end: i + 1 }); i++; continue;
+      case 37: tokens.push({ type: "delim", value: "%", start: i, end: i + 1 }); i++; continue;
+      case 38: tokens.push({ type: "delim", value: "&", start: i, end: i + 1 }); i++; continue;
+      case 39: tokens.push({ type: "sq", value: "'", start: i, end: i + 1 }); i++; continue;
+      case 40: tokens.push({ type: "delim", value: "(", start: i, end: i + 1 }); i++; continue;
+      case 41: tokens.push({ type: "delim", value: ")", start: i, end: i + 1 }); i++; continue;
+      case 42: tokens.push({ type: "delim", value: "*", start: i, end: i + 1 }); i++; continue;
+      case 43: tokens.push({ type: "delim", value: "+", start: i, end: i + 1 }); i++; continue;
+      case 44: tokens.push({ type: "delim", value: ",", start: i, end: i + 1 }); i++; continue;
+      case 46: tokens.push({ type: "delim", value: ".", start: i, end: i + 1 }); i++; continue;
+      case 47: tokens.push({ type: "delim", value: "/", start: i, end: i + 1 }); i++; continue;
+      case 58: tokens.push({ type: "delim", value: ":", start: i, end: i + 1 }); i++; continue;
+      case 59: tokens.push({ type: "delim", value: ";", start: i, end: i + 1 }); i++; continue;
       case 60: tokens.push({ type: "lt", value: "<", start: i, end: i + 1 }); i++; continue;
       case 61: tokens.push({ type: "equals", value: "=", start: i, end: i + 1 }); i++; continue;
       case 62: tokens.push({ type: "gt", value: ">", start: i, end: i + 1 }); i++; continue;
+      case 63: tokens.push({ type: "delim", value: "?", start: i, end: i + 1 }); i++; continue;
+      case 64: tokens.push({ type: "delim", value: "@", start: i, end: i + 1 }); i++; continue;
+      case 91: tokens.push({ type: "delim", value: "[", start: i, end: i + 1 }); i++; continue;
+      case 93: tokens.push({ type: "delim", value: "]", start: i, end: i + 1 }); i++; continue;
+      case 94: tokens.push({ type: "delim", value: "^", start: i, end: i + 1 }); i++; continue;
+      case 96: tokens.push({ type: "delim", value: "`", start: i, end: i + 1 }); i++; continue;
+      case 123: tokens.push({ type: "delim", value: "{", start: i, end: i + 1 }); i++; continue;
+      case 124: tokens.push({ type: "delim", value: "|", start: i, end: i + 1 }); i++; continue;
+      case 125: tokens.push({ type: "delim", value: "}", start: i, end: i + 1 }); i++; continue;
+      case 126: tokens.push({ type: "delim", value: "~", start: i, end: i + 1 }); i++; continue;
     }
-    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
-      const quote = c;
+    if (isDigit(c)) {
       const start = i;
-      i++;
-      while (i < len) {
-        const ch = input.charCodeAt(i);
-        if (ch === 0x5c /* backslash */) { i += 2; continue; }
-        if (ch === quote) { i++; break; }
-        if (ch === 0x0a || ch === 0x0d) { break; }
+      while (i < len && isDigit(input.charCodeAt(i))) i++;
+      if (i < len && input.charCodeAt(i) === 0x2e /* . */ && i + 1 < len && isDigit(input.charCodeAt(i + 1))) {
         i++;
+        while (i < len && isDigit(input.charCodeAt(i))) i++;
       }
-      tokens.push({ type: 'string', value: input.slice(start, i), start, end: i });
+      const ec = i < len ? input.charCodeAt(i) : 0;
+      if (ec === 0x65 || ec === 0x45 /* e E */) {
+        let j = i + 1;
+        if (j < len && (input.charCodeAt(j) === 0x2b || input.charCodeAt(j) === 0x2d)) j++;
+        if (j < len && isDigit(input.charCodeAt(j))) {
+          i = j;
+          while (i < len && isDigit(input.charCodeAt(i))) i++;
+        }
+      }
+      tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
       continue;
     }
     if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
@@ -658,26 +695,32 @@ function parseHtmlDocument(state: State): unknown {
   const children: unknown[] = [];
   while (!(state.pos >= state.tokens.length)) {
     const __before = state.pos;
-    const __child = parseHtmlNode(state);
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
     attachRawsBefore(state, __child, __prevEnd_children);
     children.push(__child);
     if (state.pos === __before) break;
     __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
   }
-  if (children.length < 1) throw new SyntaxError("expected at least 1 HtmlNode");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "document", children: children };
+  const __struct: Record<string, unknown> = { nodeName: "#document", mode: "no-quirks", childNodes: children, parentNode: null };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseHtmlNode__alt0(state: State): unknown {
+function parseDoctype(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "doctypeOpen", "<!");
   const keyword = expectClass(state, "ident");
-  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of doctype at position " + state.tokens[state.pos - 1].start);
+  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of DOCTYPE at position " + state.tokens[state.pos - 1].start);
   const __keyword_start = state.tokens[state.pos - 1].start;
   const __keyword_end = state.tokens[state.pos - 1].end;
   const name = expectClass(state, "ident");
@@ -687,12 +730,82 @@ function parseHtmlNode__alt0(state: State): unknown {
   expectLiteral(state, "gt", ">");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "doctype", name: name };
+  const __struct: Record<string, unknown> = { nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseHtmlNode__alt1(state: State): unknown {
+function parseComment(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "commentOpen", "<!--");
+  const data = captureUntil(state, "-->", null, null, true, false);
+
+  const __data_start = state.__lastCaptureStart;
+  const __data_end = state.__lastCaptureEnd;
+  expectLiteral(state, "commentClose", "-->");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: "#comment", data: data, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt0(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt1(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "selfClose", "/>"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "selfClose", "/>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt2(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "lt", "<");
@@ -700,22 +813,36 @@ function parseHtmlNode__alt1(state: State): unknown {
 
   const __tag_start = state.tokens[state.pos - 1].start;
   const __tag_end = state.tokens[state.pos - 1].end;
-  const __attributes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
-  let __prevEnd_attributes = __attributes_startOff;
-  const attributes: unknown[] = [];
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
   while (!(peekLiteral(state, "gt", ">"))) {
     const __before = state.pos;
     const __child = parseAttribute(state);
-    attachRawsBefore(state, __child, __prevEnd_attributes);
-    attributes.push(__child);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
     if (state.pos === __before) break;
-    __prevEnd_attributes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attributes;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
   }
   expectLiteral(state, "gt", ">");
-  const text = captureUntil(state, "</", null, null, true, true);
-
-  const __text_start = state.__lastCaptureStart;
-  const __text_end = state.__lastCaptureEnd;
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTagOpen", "</"))) {
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
   expectLiteral(state, "closeTagOpen", "</");
   const closeTag = expectClass(state, "ident");
 
@@ -724,91 +851,39 @@ function parseHtmlNode__alt1(state: State): unknown {
   expectLiteral(state, "gt", ">");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "element", tagName: tag, attributes: attributes, children: [{ type: "text", value: text }], closeTag: closeTag };
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseHtmlNode__alt2(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
-
-  const __tag_start = state.tokens[state.pos - 1].start;
-  const __tag_end = state.tokens[state.pos - 1].end;
-  const __attributes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
-  let __prevEnd_attributes = __attributes_startOff;
-  const attributes: unknown[] = [];
-  while (!(peekLiteral(state, "selfClose", "/>"))) {
-    const __before = state.pos;
-    const __child = parseAttribute(state);
-    attachRawsBefore(state, __child, __prevEnd_attributes);
-    attributes.push(__child);
-    if (state.pos === __before) break;
-    __prevEnd_attributes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attributes;
-  }
-  expectLiteral(state, "selfClose", "/>");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "element", tagName: tag, attributes: attributes, children: [], selfClosing: true };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
-}
-
-function parseHtmlNode(state: State): unknown {
+function parseHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") {
-    return parseHtmlNode__alt0(state);
-  }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    const __startTok = state.tokens[state.pos];
-    const __startOff = __startTok ? __startTok.start : state.input.length;
-    expectLiteral(state, "lt", "<");
-    const tag = expectClass(state, "ident");
-
-    const __tag_start = state.tokens[state.pos - 1].start;
-    const __tag_end = state.tokens[state.pos - 1].end;
-    const __attributes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
-    let __prevEnd_attributes = __attributes_startOff;
-    const attributes: unknown[] = [];
-    while (!(peekLiteral(state, "gt", ">") || peekLiteral(state, "selfClose", "/>"))) {
-      const __before = state.pos;
-      const __child = parseAttribute(state);
-      attachRawsBefore(state, __child, __prevEnd_attributes);
-      attributes.push(__child);
-      if (state.pos === __before) break;
-      __prevEnd_attributes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attributes;
+  if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, parseHtmlElement__alt0); if (r !== null) return r; }
+      return parseHtmlElement__alt1(state);
     }
-    if (peekLiteral(state, "gt", ">")) {
-      expectLiteral(state, "gt", ">");
-      const text = captureUntil(state, "</", null, null, true, true);
-
-      const __text_start = state.__lastCaptureStart;
-      const __text_end = state.__lastCaptureEnd;
-      expectLiteral(state, "closeTagOpen", "</");
-      const closeTag = expectClass(state, "ident");
-
-      const __closeTag_start = state.tokens[state.pos - 1].start;
-      const __closeTag_end = state.tokens[state.pos - 1].end;
-      expectLiteral(state, "gt", ">");
-      const __lastTok = state.tokens[state.pos - 1];
-      const __endOff = __lastTok ? __lastTok.end : __startOff;
-      const __struct: Record<string, unknown> = { type: "element", tagName: tag, attributes: attributes, children: [{ type: "text", value: text }], closeTag: closeTag };
-      __struct.source = makeSource(state, __startOff, __endOff);
-      return __struct;
-    }
-    if (peekLiteral(state, "selfClose", "/>")) {
-      expectLiteral(state, "selfClose", "/>");
-      const __lastTok = state.tokens[state.pos - 1];
-      const __endOff = __lastTok ? __lastTok.end : __startOff;
-      const __struct: Record<string, unknown> = { type: "element", tagName: tag, attributes: attributes, children: [], selfClosing: true };
-      __struct.source = makeSource(state, __startOff, __endOff);
-      return __struct;
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseHtmlElement__alt2(state);
     }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
+}
+
+function parseTextNode(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const value = captureUntil(state, "<", "</", "<!--", true, true);
+
+  const __value_start = state.__lastCaptureStart;
+  const __value_end = state.__lastCaptureEnd;
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: "#text", value: value, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
 }
 
 function parseAttribute__alt0(state: State): unknown {
@@ -819,13 +894,15 @@ function parseAttribute__alt0(state: State): unknown {
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "string");
+  expectLiteral(state, "dq", "\"");
+  const value = captureUntil(state, "\"", null, null, true, true);
 
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
+  const __value_start = state.__lastCaptureStart;
+  const __value_end = state.__lastCaptureEnd;
+  expectLiteral(state, "dq", "\"");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "attribute", name: name, value: value };
+  const __struct: Record<string, unknown> = { name: name, value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
@@ -837,9 +914,49 @@ function parseAttribute__alt1(state: State): unknown {
 
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
+  expectLiteral(state, "equals", "=");
+  expectLiteral(state, "sq", "'");
+  const value = captureUntil(state, "'", null, null, true, true);
+
+  const __value_start = state.__lastCaptureStart;
+  const __value_end = state.__lastCaptureEnd;
+  expectLiteral(state, "sq", "'");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "attribute", name: name };
+  const __struct: Record<string, unknown> = { name: name, value: value };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseAttribute__alt2(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const name = expectClass(state, "ident");
+
+  const __name_start = state.tokens[state.pos - 1].start;
+  const __name_end = state.tokens[state.pos - 1].end;
+  expectLiteral(state, "equals", "=");
+  const value = expectClass(state, "ident");
+
+  const __value_start = state.tokens[state.pos - 1].start;
+  const __value_end = state.tokens[state.pos - 1].end;
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { name: name, value: value };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseAttribute__alt3(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const name = expectClass(state, "ident");
+
+  const __name_start = state.tokens[state.pos - 1].start;
+  const __name_end = state.tokens[state.pos - 1].end;
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { name: name, value: "" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
@@ -849,9 +966,19 @@ function parseAttribute(state: State): unknown {
   if (__tok !== undefined && __tok.type === "ident") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "equals" && __tok1.value === "=") {
-      return parseAttribute__alt0(state);
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "dq" && __tok2.value === "\"") {
+        return parseAttribute__alt0(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
+        return parseAttribute__alt1(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseAttribute__alt2(state);
+      }
+      throw new SyntaxError('no production matched');
     }
-    return parseAttribute__alt1(state);
+    return parseAttribute__alt3(state);
   }
   throw new SyntaxError('no production matched');
 }
@@ -861,111 +988,162 @@ function parseHtmlDocumentFast(state: State): unknown {
   const children: unknown[] = [];
   while (!(state.pos >= state.tokens.length)) {
     const __before = state.pos;
-    const __child = parseHtmlNodeFast(state);
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
     children.push(__child);
     if (state.pos === __before) break;
   }
-  if (children.length < 1) throw new SyntaxError("expected at least 1 HtmlNode");
-  return { type: "document", children: children };
+  return { nodeName: "#document", mode: "no-quirks", childNodes: children, parentNode: null };
 }
 
-function parseHtmlNodeFast__alt0(state: State): unknown {
+function parseDoctypeFast(state: State): unknown {
   expectLiteral(state, "doctypeOpen", "<!");
   const keyword = expectClass(state, "ident");
-  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of doctype at position " + state.tokens[state.pos - 1].start);
+  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of DOCTYPE at position " + state.tokens[state.pos - 1].start);
   const name = expectClass(state, "ident");
 
   expectLiteral(state, "gt", ">");
-  return { type: "doctype", name: name };
+  return { nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
 }
 
-function parseHtmlNodeFast__alt1(state: State): unknown {
+function parseCommentFast(state: State): unknown {
+  expectLiteral(state, "commentOpen", "<!--");
+  const data = captureUntil(state, "-->", null, null, true, false);
+
+  expectLiteral(state, "commentClose", "-->");
+  return { nodeName: "#comment", data: data, parentNode: null };
+}
+
+function parseHtmlElementFast__alt0(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+}
+
+function parseHtmlElementFast__alt1(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "selfClose", "/>"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "selfClose", "/>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+}
+
+function parseHtmlElementFast__alt2(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
 
 
-  const attributes: unknown[] = [];
+  const attrs: unknown[] = [];
   while (!(peekLiteral(state, "gt", ">"))) {
     const __before = state.pos;
     const __child = parseAttributeFast(state);
-    attributes.push(__child);
+    attrs.push(__child);
     if (state.pos === __before) break;
   }
   expectLiteral(state, "gt", ">");
-  const text = captureUntil(state, "</", null, null, true, true);
 
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTagOpen", "</"))) {
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
   expectLiteral(state, "closeTagOpen", "</");
   const closeTag = expectClass(state, "ident");
 
   expectLiteral(state, "gt", ">");
-  return { type: "element", tagName: tag, attributes: attributes, children: [{ type: "text", value: text }], closeTag: closeTag };
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
 }
 
-function parseHtmlNodeFast__alt2(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
-
-
-  const attributes: unknown[] = [];
-  while (!(peekLiteral(state, "selfClose", "/>"))) {
-    const __before = state.pos;
-    const __child = parseAttributeFast(state);
-    attributes.push(__child);
-    if (state.pos === __before) break;
-  }
-  expectLiteral(state, "selfClose", "/>");
-  return { type: "element", tagName: tag, attributes: attributes, children: [], selfClosing: true };
-}
-
-function parseHtmlNodeFast(state: State): unknown {
+function parseHtmlElementFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") {
-    return parseHtmlNodeFast__alt0(state);
-  }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    expectLiteral(state, "lt", "<");
-    const tag = expectClass(state, "ident");
-
-
-    const attributes: unknown[] = [];
-    while (!(peekLiteral(state, "gt", ">") || peekLiteral(state, "selfClose", "/>"))) {
-      const __before = state.pos;
-      const __child = parseAttributeFast(state);
-      attributes.push(__child);
-      if (state.pos === __before) break;
+  if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, parseHtmlElementFast__alt0); if (r !== null) return r; }
+      return parseHtmlElementFast__alt1(state);
     }
-    if (peekLiteral(state, "gt", ">")) {
-      expectLiteral(state, "gt", ">");
-      const text = captureUntil(state, "</", null, null, true, true);
-
-      expectLiteral(state, "closeTagOpen", "</");
-      const closeTag = expectClass(state, "ident");
-
-      expectLiteral(state, "gt", ">");
-      return { type: "element", tagName: tag, attributes: attributes, children: [{ type: "text", value: text }], closeTag: closeTag };
-    }
-    if (peekLiteral(state, "selfClose", "/>")) {
-      expectLiteral(state, "selfClose", "/>");
-      return { type: "element", tagName: tag, attributes: attributes, children: [], selfClosing: true };
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseHtmlElementFast__alt2(state);
     }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
 
+function parseTextNodeFast(state: State): unknown {
+  const value = captureUntil(state, "<", "</", "<!--", true, true);
+
+  return { nodeName: "#text", value: value, parentNode: null };
+}
+
 function parseAttributeFast__alt0(state: State): unknown {
   const name = expectClass(state, "ident");
 
   expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "string");
+  expectLiteral(state, "dq", "\"");
+  const value = captureUntil(state, "\"", null, null, true, true);
 
-  return { type: "attribute", name: name, value: value };
+  expectLiteral(state, "dq", "\"");
+  return { name: name, value: value };
 }
 
 function parseAttributeFast__alt1(state: State): unknown {
   const name = expectClass(state, "ident");
 
-  return { type: "attribute", name: name };
+  expectLiteral(state, "equals", "=");
+  expectLiteral(state, "sq", "'");
+  const value = captureUntil(state, "'", null, null, true, true);
+
+  expectLiteral(state, "sq", "'");
+  return { name: name, value: value };
+}
+
+function parseAttributeFast__alt2(state: State): unknown {
+  const name = expectClass(state, "ident");
+
+  expectLiteral(state, "equals", "=");
+  const value = expectClass(state, "ident");
+
+  return { name: name, value: value };
+}
+
+function parseAttributeFast__alt3(state: State): unknown {
+  const name = expectClass(state, "ident");
+
+  return { name: name, value: "" };
 }
 
 function parseAttributeFast(state: State): unknown {
@@ -973,9 +1151,19 @@ function parseAttributeFast(state: State): unknown {
   if (__tok !== undefined && __tok.type === "ident") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "equals" && __tok1.value === "=") {
-      return parseAttributeFast__alt0(state);
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "dq" && __tok2.value === "\"") {
+        return parseAttributeFast__alt0(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
+        return parseAttributeFast__alt1(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return parseAttributeFast__alt2(state);
+      }
+      throw new SyntaxError('no production matched');
     }
-    return parseAttributeFast__alt1(state);
+    return parseAttributeFast__alt3(state);
   }
   throw new SyntaxError('no production matched');
 }
@@ -984,38 +1172,92 @@ function validateHtmlDocument(state: State): unknown {
   let __count_children = 0;
   while (!(state.pos >= state.tokens.length)) {
     const __before = state.pos;
-    validateHtmlNode(state);
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
     __count_children++;
     if (state.pos === __before) break;
   }
-  if (__count_children < 1) throw new SyntaxError("expected at least 1 HtmlNode");
   return;
 }
 
-function validateHtmlNode__alt0(state: State): unknown {
+function validateDoctype(state: State): unknown {
   expectLiteral(state, "doctypeOpen", "<!");
   const keyword = expectClass(state, "ident");
-  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of doctype at position " + state.tokens[state.pos - 1].start);
+  if (!(keyword.toLowerCase() === "doctype")) throw new SyntaxError("expected one of DOCTYPE at position " + state.tokens[state.pos - 1].start);
   const name = expectClass(state, "ident");
 
   expectLiteral(state, "gt", ">");
   return;
 }
 
-function validateHtmlNode__alt1(state: State): unknown {
+function validateComment(state: State): unknown {
+  expectLiteral(state, "commentOpen", "<!--");
+  const data = captureUntil(state, "-->", null, null, true, false);
+
+  expectLiteral(state, "commentClose", "-->");
+  return;
+}
+
+function validateHtmlElement__alt0(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
-
-  let __count_attributes = 0;
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
   while (!(peekLiteral(state, "gt", ">"))) {
     const __before = state.pos;
     validateAttribute(state);
-    __count_attributes++;
+    __count_attrs++;
     if (state.pos === __before) break;
   }
   expectLiteral(state, "gt", ">");
-  const text = captureUntil(state, "</", null, null, true, true);
+  return;
+}
 
+function validateHtmlElement__alt1(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "selfClose", "/>"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "selfClose", "/>");
+  return;
+}
+
+function validateHtmlElement__alt2(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeTagOpen", "</"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
   expectLiteral(state, "closeTagOpen", "</");
   const closeTag = expectClass(state, "ident");
 
@@ -1023,67 +1265,60 @@ function validateHtmlNode__alt1(state: State): unknown {
   return;
 }
 
-function validateHtmlNode__alt2(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
-
-  let __count_attributes = 0;
-  while (!(peekLiteral(state, "selfClose", "/>"))) {
-    const __before = state.pos;
-    validateAttribute(state);
-    __count_attributes++;
-    if (state.pos === __before) break;
-  }
-  expectLiteral(state, "selfClose", "/>");
-  return;
-}
-
-function validateHtmlNode(state: State): unknown {
+function validateHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") {
-    return validateHtmlNode__alt0(state);
-  }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    expectLiteral(state, "lt", "<");
-    const tag = expectClass(state, "ident");
-
-
-    const attributes: unknown[] = [];
-    while (!(peekLiteral(state, "gt", ">") || peekLiteral(state, "selfClose", "/>"))) {
-      const __before = state.pos;
-      const __child = validateAttribute(state);
-      attributes.push(__child);
-      if (state.pos === __before) break;
+  if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+      { const r = trySpeculate(state, validateHtmlElement__alt0); if (r !== null) return r; }
+      return validateHtmlElement__alt1(state);
     }
-    if (peekLiteral(state, "gt", ">")) {
-      expectLiteral(state, "gt", ">");
-      const text = captureUntil(state, "</", null, null, true, true);
-
-      expectLiteral(state, "closeTagOpen", "</");
-      const closeTag = expectClass(state, "ident");
-
-      expectLiteral(state, "gt", ">");
-      return;
-    }
-    if (peekLiteral(state, "selfClose", "/>")) {
-      expectLiteral(state, "selfClose", "/>");
-      return;
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return validateHtmlElement__alt2(state);
     }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
 
-function validateAttribute__alt0(state: State): unknown {
-  const name = expectClass(state, "ident");
-
-  expectLiteral(state, "equals", "=");
-  const value = expectClass(state, "string");
+function validateTextNode(state: State): unknown {
+  const value = captureUntil(state, "<", "</", "<!--", true, true);
 
   return;
 }
 
+function validateAttribute__alt0(state: State): unknown {
+  const name = expectClass(state, "ident");
+
+  expectLiteral(state, "equals", "=");
+  expectLiteral(state, "dq", "\"");
+  const value = captureUntil(state, "\"", null, null, true, true);
+
+  expectLiteral(state, "dq", "\"");
+  return;
+}
+
 function validateAttribute__alt1(state: State): unknown {
+  const name = expectClass(state, "ident");
+
+  expectLiteral(state, "equals", "=");
+  expectLiteral(state, "sq", "'");
+  const value = captureUntil(state, "'", null, null, true, true);
+
+  expectLiteral(state, "sq", "'");
+  return;
+}
+
+function validateAttribute__alt2(state: State): unknown {
+  const name = expectClass(state, "ident");
+
+  expectLiteral(state, "equals", "=");
+  const value = expectClass(state, "ident");
+
+  return;
+}
+
+function validateAttribute__alt3(state: State): unknown {
   const name = expectClass(state, "ident");
 
   return;
@@ -1094,9 +1329,19 @@ function validateAttribute(state: State): unknown {
   if (__tok !== undefined && __tok.type === "ident") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "equals" && __tok1.value === "=") {
-      return validateAttribute__alt0(state);
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "dq" && __tok2.value === "\"") {
+        return validateAttribute__alt0(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "sq" && __tok2.value === "'") {
+        return validateAttribute__alt1(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident") {
+        return validateAttribute__alt2(state);
+      }
+      throw new SyntaxError('no production matched');
     }
-    return validateAttribute__alt1(state);
+    return validateAttribute__alt3(state);
   }
   throw new SyntaxError('no production matched');
 }

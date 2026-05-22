@@ -279,6 +279,47 @@ from the Phase I corpus run. A documented Phase II regression target.
 5. `huge-page.html` parse failure is reproducible and documented as a
    Phase II regression target.
 
+## 10b. Codegen gaps surfaced during Phase I
+
+These were discovered while implementing Phase I and don't block this work
+stream, but they constrain what the schema can express. Each is real codegen
+work, parked.
+
+1. **Comment-class tokenizer is hardcoded to `/* */`.**
+   `packages/compiler/src/emit/tokenize.ts:221` (`emitCommentBranch`) emits a
+   fixed C-style block-comment scanner regardless of the span's
+   `block(open, close)` refinement. Phase I works around this by encoding
+   `Comment` with `<!--` / `-->` punctuators plus `.until('-->')` instead of
+   `.comment().block('<!--','-->')`.
+
+2. **Greedy ident scanner absorbs hyphens.**
+   With `.ident().css()`, `-` is treated as ident-part. In a comment body,
+   `<!--hi-->` tokenizes as `commentOpen, ident('hi--'), gt` rather than
+   `commentOpen, ident('hi'), commentClose`, because the ident scanner has
+   no lookahead for `-->`. Phase I works around this by requiring
+   whitespace between comment body and `-->` close. A general fix needs
+   either tokenizer-mode awareness or context-sensitive ident terminators.
+
+3. **Non-ASCII characters throw.**
+   The generated tokenizer's fallback (`Unexpected character`) trips on any
+   byte outside the ASCII ident set, common punctuators, and declared
+   classes. This breaks any HTML with non-English text or em-dashes /
+   smart-quotes / emojis. Real-world HTML almost always hits this.
+   Phase I documents the limitation; a generic `.ident().unicode()` or a
+   `tokens: ['rawChar']` fallback would unlock it.
+
+4. **`.recovers({...})` is parsed but not emitted.**
+   The DSL builder accepts recovery declarations but codegen ignores them.
+   Phase I avoids using `.recovers()` and relies on strict productions
+   only. Recovery is needed for implicit-close modeling (Phase III) and
+   error tolerance in real-world input.
+
+5. **`whitespace: 'preserve'` is declared in the DSL but not wired
+   through codegen.** This is the same gap the README lists; surfaces in
+   Phase I as lost edge-whitespace inside comment data and as the
+   inability to capture unquoted attribute values containing non-ident
+   characters (`href=/foo` needs whitespace as a stop token).
+
 ## 10. Parking lot (Phases II–V, out of this stream)
 
 Each item below is a separate work stream. Listed with the generic-primitive

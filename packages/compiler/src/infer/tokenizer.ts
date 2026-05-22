@@ -58,12 +58,16 @@ export function buildTokenizerProgram(
   for (const info of nodeTypes.values()) {
     for (const production of info.productions) {
       for (const span of production.spans) {
-        const isUntil = span.modifiers.some((m) => m.kind === 'until');
-        // .until() spans use text only as an anchor; the captured value is
-        // arbitrary input, not a fixed literal. Don't register the anchor
-        // text as a punctuator. Recursive spans also use text only as an
-        // example anchor.
-        if (span.class === 'literal' && span.text && span.recursiveRoles.length === 0 && !isUntil) {
+        // Skip capture-style modifiers: .until() and .rawUntil() use the
+        // span text as an EXAMPLE of captured content, not as a literal to
+        // match. Registering the example text as a punctuator both wastes
+        // tokenizer dispatch and corrupts real input that happens to
+        // contain the example string. Recursive spans similarly use text
+        // as an example anchor.
+        const isCapture = span.modifiers.some(
+          (m) => m.kind === 'until' || m.kind === 'rawUntil',
+        );
+        if (span.class === 'literal' && span.text && span.recursiveRoles.length === 0 && !isCapture) {
           if (!literalToType.has(span.text)) literalToType.set(span.text, span.text);
         }
         if (span.class !== 'literal') {

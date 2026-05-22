@@ -619,12 +619,29 @@ function indexOfCharCI(input: string, code: number, from: number, limit: number)
   return -1;
 }
 
-// Bounded multi-char indexOf. Uses native indexOf where the result lies
-// within [from, limit); else -1.
+// Bounded multi-char indexOf. Manual scan with first-char filter; stops at
+// limit. Critical that this NOT delegate to input.indexOf — native indexOf
+// scans to end-of-string on misses (catastrophic for the multi-stop path
+// where most needles don't appear at all in the local region).
 function indexOfBounded(input: string, needle: string, from: number, limit: number): number {
-  const idx = input.indexOf(needle, from);
-  if (idx === -1 || idx >= limit) return -1;
-  return idx;
+  const needleLen = needle.length;
+  const end = (limit < input.length ? limit : input.length) - needleLen;
+  const first = needle.charCodeAt(0);
+  if (needleLen === 2) {
+    const second = needle.charCodeAt(1);
+    for (let i = from; i <= end; i++) {
+      if (input.charCodeAt(i) === first && input.charCodeAt(i + 1) === second) return i;
+    }
+    return -1;
+  }
+  outer: for (let i = from; i <= end; i++) {
+    if (input.charCodeAt(i) !== first) continue;
+    for (let j = 1; j < needleLen; j++) {
+      if (input.charCodeAt(i + j) !== needle.charCodeAt(j)) continue outer;
+    }
+    return i;
+  }
+  return -1;
 }
 
 // ASCII case-insensitive indexOf scanning input[from..limit) for needle.

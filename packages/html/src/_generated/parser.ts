@@ -45,15 +45,12 @@ export function tokenize(input: string): Token[] {
     if (input.startsWith("</td>", i)) { tokens.push({ type: "closeTd", value: "</td>", start: i, end: i + 5 }); i += 5; continue; }
     if (input.startsWith("</th>", i)) { tokens.push({ type: "closeTh", value: "</th>", start: i, end: i + 5 }); i += 5; continue; }
     if (input.startsWith("</tr>", i)) { tokens.push({ type: "closeTr", value: "</tr>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("hello", i)) { tokens.push({ type: "hello", value: "hello", start: i, end: i + 5 }); i += 5; continue; }
     if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
     if (input.startsWith("</p>", i)) { tokens.push({ type: "closeP", value: "</p>", start: i, end: i + 4 }); i += 4; continue; }
-    if (input.startsWith("hero", i)) { tokens.push({ type: "hero", value: "hero", start: i, end: i + 4 }); i += 4; continue; }
     if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
     if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("<!", i)) { tokens.push({ type: "doctypeOpen", value: "<!", start: i, end: i + 2 }); i += 2; continue; }
     if (input.startsWith("</", i)) { tokens.push({ type: "closeTagOpen", value: "</", start: i, end: i + 2 }); i += 2; continue; }
-    if (input.startsWith("js", i)) { tokens.push({ type: "js", value: "js", start: i, end: i + 2 }); i += 2; continue; }
 
     switch (c) {
       case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;

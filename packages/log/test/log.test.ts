@@ -17,4 +17,8 @@ test('log parses Apache-style common log fields', () => {
 
 test('log rejects malformed lines', () => {
   assert.throws(() => validate('not a log line'), SyntaxError);
+  assert.throws(() => validate('192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700 "GET / HTTP/1.0" 200 2326'), SyntaxError);
+  assert.throws(() => validate('192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700] GET / HTTP/1.0 200 2326'), SyntaxError);
+  assert.throws(() => validate('192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.0" OK 2326'), SyntaxError);
+  assert.throws(() => validate('192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET / HTTP/1.0" 200 many'), SyntaxError);
 });

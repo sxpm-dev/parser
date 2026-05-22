@@ -106,5 +106,5 @@ test('validation metadata is separate from SchemaDef and emits string-set lookup
   const emitted = generateParser(schema, validation);
   assert.match(emitted, /import \{ validate as __propertyValidator0 \} from "@parser2\/css-color"/);
   assert.match(emitted, /new Set<string>\(\["color"\]\)/);
-  assert.match(emitted, /function validate\(input: string, options: ParseOptions = \{\}\): void/);
+  assert.match(emitted, /function validate\(input: string, options\?: ParseOptions\): void/);
 });

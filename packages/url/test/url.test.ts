@@ -25,6 +25,22 @@ test('url parses absolute URL with host', () => {
   });
 });
 
+test('url parses absolute URL with localhost port', () => {
+  assert.deepEqual(parse('https://localhost:8888/search'), {
+    type: 'url',
+    protocol: 'https',
+    host: { type: 'host', parts: ['localhost'], port: '8888' },
+    path: ['search'],
+  });
+});
+
 test('url rejects unsupported characters', () => {
   assert.throws(() => validate('/foo {bad}'), SyntaxError);
+});
+
+test('url rejects malformed separators and trailing tokens', () => {
+  assert.throws(() => validate('https:/example.com/search'), SyntaxError);
+  assert.throws(() => validate('https://example.com/search?'), SyntaxError);
+  assert.throws(() => validate('/foo/bar?=missing'), SyntaxError);
+  assert.throws(() => validate('/foo/bar#frag'), SyntaxError);
 });

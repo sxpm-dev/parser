@@ -15,7 +15,18 @@ test('mac parses colon and hyphen separated addresses from schema output', () =>
   });
 });
 
+test('mac preserves lowercase hex octets', () => {
+  assert.deepEqual(parse('aa:bb:cc:dd:ee:ff'), {
+    type: 'mac-address',
+    octets: ['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
+    separator: ':',
+  });
+});
+
 test('mac rejects malformed values through generated validation', () => {
   assert.throws(() => validate('00:1A:2B'), SyntaxError);
   assert.throws(() => validate('00:ZZ:2B:3C:4D:5E'), SyntaxError);
+  assert.throws(() => validate('00:1A-2B:3C:4D:5E'), SyntaxError);
+  assert.throws(() => validate('001:1A:2B:3C:4D:5E'), SyntaxError);
+  assert.throws(() => validate('00:1A:2B:3C:4D:5E:6F'), SyntaxError);
 });

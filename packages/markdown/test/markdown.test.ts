@@ -431,6 +431,40 @@ test('markdown parses inline syntax matrix', () => {
   }
 });
 
+test('markdown generalizes supported leaf text and link values', () => {
+  const cases: Case[] = [
+    {
+      name: 'alternate heading words',
+      input: '# Different title',
+      expected: { type: 'heading', depth: 1, text: ['Different', 'title'] },
+    },
+    {
+      name: 'alternate paragraph words',
+      input: 'Plain words',
+      expected: { type: 'paragraph', text: ['Plain', 'words'] },
+    },
+    {
+      name: 'alternate ordered index',
+      input: '42. release item',
+      expected: { type: 'list-item', ordered: true, index: '42', text: ['release', 'item'] },
+    },
+    {
+      name: 'alternate inline link host',
+      input: '[guide](https://docs.dev)',
+      expected: { type: 'link', label: 'guide', scheme: 'https', host: ['docs', 'dev'] },
+    },
+    {
+      name: 'alternate reference image id',
+      input: '![chart][figure-1]',
+      expected: { type: 'reference-image', alt: 'chart', id: 'figure-1' },
+    },
+  ];
+
+  for (const { name, input, expected } of cases) {
+    assert.deepEqual(parse(input), documentOf(expected), `${name}: ${input}`);
+  }
+});
+
 test('markdown validate accepts every supported syntax case', () => {
   for (const { name, input } of [...blockCases, ...inlineCases]) {
     assert.doesNotThrow(() => validate(input), name);

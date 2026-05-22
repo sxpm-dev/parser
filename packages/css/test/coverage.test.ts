@@ -82,6 +82,73 @@ test('accepts the CSS syntax coverage matrix', () => {
   }
 });
 
+test('returns expected ASTs for representative broad CSS syntax', () => {
+  assert.deepEqual(parse('@media screen and (width >= 40rem) { .card { display: grid; } }'), {
+    type: 'root',
+    nodes: [
+      {
+        type: 'atrule',
+        name: 'media',
+        params: 'screen and (width >= 40rem)',
+        nodes: [
+          {
+            type: 'rule',
+            selector: '.card',
+            nodes: [{ type: 'decl', prop: 'display', value: 'grid' }],
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.deepEqual(parse('.card { &:hover { color: red; } }'), {
+    type: 'root',
+    nodes: [
+      {
+        type: 'rule',
+        selector: '.card',
+        nodes: [
+          {
+            type: 'rule',
+            selector: '&:hover',
+            nodes: [{ type: 'decl', prop: 'color', value: 'red' }],
+          },
+        ],
+      },
+    ],
+  });
+
+  assert.deepEqual(parse('@keyframes fade { from { opacity: 0; } 50%, 75% { opacity: .5; } to { opacity: 1; } }'), {
+    type: 'root',
+    nodes: [
+      {
+        type: 'atrule',
+        name: 'keyframes',
+        params: 'fade',
+        nodes: [
+          { type: 'rule', selector: 'from', nodes: [{ type: 'decl', prop: 'opacity', value: '0' }] },
+          { type: 'rule', selector: '50%, 75%', nodes: [{ type: 'decl', prop: 'opacity', value: '.5' }] },
+          { type: 'rule', selector: 'to', nodes: [{ type: 'decl', prop: 'opacity', value: '1' }] },
+        ],
+      },
+    ],
+  });
+
+  assert.deepEqual(parse('.values { --theme: { color: red; tokens: [a b c]; }; content: "{ not a block }"; }'), {
+    type: 'root',
+    nodes: [
+      {
+        type: 'rule',
+        selector: '.values',
+        nodes: [
+          { type: 'decl', prop: '--theme', value: '{ color: red; tokens: [a b c]; }' },
+          { type: 'decl', prop: 'content', value: '"{ not a block }"' },
+        ],
+      },
+    ],
+  });
+});
+
 test('does not false-reject stylesheets accepted by PostCSS', () => {
   for (const entry of syntaxMatrix.filter((item) => item.area !== 'stylesheet controls and comments')) {
     assert.doesNotThrow(() => postcss.parse(entry.css, { from: undefined }), entry.area);

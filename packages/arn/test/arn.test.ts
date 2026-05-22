@@ -24,6 +24,34 @@ test('arn generalizes service and resource names', () => {
   });
 });
 
+test('arn parses slash-separated resources', () => {
+  assert.deepEqual(parse('arn:aws:ec2:us-west-2:123456789012:instance/i-0abcdef'), {
+    type: 'arn',
+    partition: 'aws',
+    service: 'ec2',
+    region: 'us-west-2',
+    account: '123456789012',
+    resource: { type: 'resource', kind: 'instance', name: 'i-0abcdef', separator: '/' },
+  });
+});
+
+test('arn accepts hyphenated partition and region fields', () => {
+  assert.deepEqual(parse('arn:aws-cn:s3:cn-north-1:123456789012:bucket-name'), {
+    type: 'arn',
+    partition: 'aws-cn',
+    service: 's3',
+    region: 'cn-north-1',
+    account: '123456789012',
+    resource: { type: 'resource', name: 'bucket-name' },
+  });
+});
+
 test('arn rejects non-ARN input', () => {
   assert.throws(() => validate('not-an-arn'), SyntaxError);
+});
+
+test('arn rejects malformed field boundaries', () => {
+  assert.throws(() => validate('arn:aws:lambda:us-east-1:123456789012'), SyntaxError);
+  assert.throws(() => validate('arn:aws:lambda:us-east-1:not-an-account:function:MyFn'), SyntaxError);
+  assert.throws(() => validate('arn:aws:lambda:us-east-1:123456789012:function:'), SyntaxError);
 });

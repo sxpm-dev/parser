@@ -1,6 +1,46 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validate } from '../src/index.ts';
+import { parse, validate } from '../src/index.ts';
+
+test('css color parser returns ASTs for every supported value family', () => {
+  const cases = [
+    {
+      input: 'red',
+      expected: { type: 'css-color', value: { type: 'color-keyword', value: 'red' } },
+    },
+    {
+      input: '#00ff99',
+      expected: { type: 'css-color', value: { type: 'hash-color', value: '00ff99' } },
+    },
+    {
+      input: 'rgb(255 0 0 / 1)',
+      expected: { type: 'css-color', value: { type: 'color-function', name: 'rgb' } },
+    },
+    {
+      input: 'rgba(255, 0, 0)',
+      expected: { type: 'css-color', value: { type: 'color-function', name: 'rgba' } },
+    },
+    {
+      input: 'oklch(60% 0.2 30)',
+      expected: { type: 'css-color', value: { type: 'color-function', name: 'oklch' } },
+    },
+    {
+      input: 'color(display-p3 1 0 0)',
+      expected: { type: 'css-color', value: { type: 'color-function', name: 'color' } },
+    },
+    {
+      input: 'var(--brand-color, red)',
+      expected: {
+        type: 'css-color',
+        value: { type: 'var-function', name: 'var', args: '--brand-color, red' },
+      },
+    },
+  ];
+
+  for (const { input, expected } of cases) {
+    assert.deepEqual(parse(input), expected, input);
+  }
+});
 
 test('css color validator accepts keywords, hex, functions, and vars', () => {
   for (const value of [

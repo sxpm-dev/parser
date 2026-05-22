@@ -201,6 +201,54 @@ test('html tokenizer tolerates non-ASCII bytes (em-dash, accents, emoji)', () =>
   assert.equal(ast.childNodes[0]?.childNodes[0]?.value, 'Héllo — wörld 🌍');
 });
 
+test('html parses implicit-close lists (<li>/<dt>/<dd> without close)', () => {
+  const ol = parse('<ol><li>a<li>b<li>c</ol>') as {
+    childNodes: readonly { childNodes: readonly { tagName?: string }[] }[];
+  };
+  assert.equal(ol.childNodes[0]?.childNodes.length, 3);
+  assert.equal(ol.childNodes[0]?.childNodes[0]?.tagName, 'li');
+  const dl = parse('<dl><dt>term<dd>def<dt>other<dd>def2</dl>') as {
+    childNodes: readonly { childNodes: readonly { tagName?: string }[] }[];
+  };
+  assert.equal(dl.childNodes[0]?.childNodes.length, 4);
+});
+
+test('html parses implicit-close tables with section transitions', () => {
+  const ast = parse('<table><thead><tr><th>X<th>Y<tbody><tr><td>1<td>2<tr><td>3<td>4</table>') as {
+    childNodes: readonly { childNodes: readonly { tagName?: string; childNodes?: readonly { tagName?: string }[] }[] }[];
+  };
+  const table = ast.childNodes[0];
+  assert.equal(table?.tagName, 'table');
+  assert.equal(table?.childNodes.length, 2); // thead + tbody
+  assert.equal(table?.childNodes[0]?.tagName, 'thead');
+  assert.equal(table?.childNodes[1]?.tagName, 'tbody');
+});
+
+test('html parses implicit-close <p> on next block element', () => {
+  const ast = parse('<div><p>one<p>two<p>three</div>') as {
+    childNodes: readonly { childNodes: readonly { tagName?: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.childNodes.length, 3);
+  for (const p of ast.childNodes[0]?.childNodes ?? []) assert.equal(p.tagName, 'p');
+});
+
+test('html allows <html>/<head>/<body> close tags to be omitted', () => {
+  const ast = parse('<html><body><p>hi') as {
+    childNodes: readonly { tagName?: string; childNodes?: readonly { tagName?: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.tagName, 'html');
+  // body is a child of html
+  const bodyNode = ast.childNodes[0]?.childNodes?.find((n) => n.tagName === 'body');
+  assert.ok(bodyNode, 'body present');
+});
+
+test('html parses raw backslash characters in text without escape interpretation', () => {
+  const ast = parse('<span>\\</span>') as {
+    childNodes: readonly { childNodes: readonly { value?: string }[] }[];
+  };
+  assert.equal(ast.childNodes[0]?.childNodes[0]?.value, '\\');
+});
+
 test('html supports source locations in raws mode', () => {
   const ast = parse('<div>Hello</div>', { mode: 'raws' }) as {
     readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } };

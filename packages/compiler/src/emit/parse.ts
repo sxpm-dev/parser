@@ -774,6 +774,19 @@ ${emitSpanRefinementCheck(span, v, false, 'state.__lastCaptureStart')}${offsets}
   return `${captureCall};`;
 }
 
+function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
+  if (!stopBefore || stopBefore.length === 0) return '';
+  // Check upcoming source against each prefix literal at the current token's
+  // start offset. If any matches, break out of the repeats loop. Used to
+  // model implicit-close idioms (HTML <li>, <tr>, <td>, <p>, etc.).
+  const conds = stopBefore
+    .filter((s) => s.length > 0)
+    .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
+    .join(' || ');
+  if (!conds) return '';
+  return `{ const __off = state.tokens[state.pos]?.start ?? state.input.length; if (${conds}) break; }`;
+}
+
 function emitRawUntilSpan(
   span: ResolvedSpan,
   rawUntil: Extract<SpanModifier, { kind: 'rawUntil' }>,
@@ -1079,12 +1092,14 @@ let __prevEnd_${listVar} = __${listVar}_startOff;`
     : '';
   const attachLine = attachBefore ? `  ${attachBefore}\n` : '';
   const updateLine = updatePrevEnd ? `  ${updatePrevEnd}\n` : '';
+  const stopBeforeCheck = emitStopBeforeCheck(repeats.stopBefore);
+  const stopBeforeLine = stopBeforeCheck ? `  ${stopBeforeCheck}\n` : '';
 
   if (!sep) {
     return `${offsetDecls}
 const ${listVar}: unknown[] = [];
 while (!(${stopPredicate})) {
-  const __before = state.pos;
+${stopBeforeLine}  const __before = state.pos;
   ${childDecl}
 ${attachLine}  ${listVar}.push(__child);
   if (state.pos === __before) break;
@@ -1102,7 +1117,7 @@ ${updateLine}}${minCheck}${maxCheck}`;
   return `${offsetDecls}
 const ${listVar}: unknown[] = [];
 while (!(${stopPredicate})) {
-  // Tolerate stray leading separators (e.g. \`a {;; color: red }\`).
+${stopBeforeLine}  // Tolerate stray leading separators (e.g. \`a {;; color: red }\`).
   // The separators are silently consumed; they're recoverable as raws
   // because raws.before for the next child is computed against
   // __prevEnd_${listVar} (which doesn't advance during this skip).

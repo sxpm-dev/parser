@@ -95,6 +95,11 @@ class SpanBuilder {
   // ident refinements
   css(): this { return this.refine('css'); }
   js(): this { return this.refine('js'); }
+  // HTML-style ident: letters, digits, hyphens, underscores. No backslash
+  // escapes (unlike CSS), no $ (unlike JS). Used by tag/attribute names
+  // where a literal `\` in surrounding text shouldn't trigger escape
+  // consumption.
+  html(): this { return this.refine('html'); }
   oneOf(values: ReadonlyArray<string>): this { return this.refine('oneOf', [values]); }
   // comment refinements
   line(marker: string): this { return this.refine('line', [marker]); }
@@ -116,6 +121,7 @@ class SpanBuilder {
     readonly trailing?: TrailingPolicy;
     readonly min?: number;
     readonly max?: number;
+    readonly stopBefore?: ReadonlyArray<string>;
   } = {}): this {
     return this.addModifier({
       kind: 'repeats',
@@ -123,6 +129,7 @@ class SpanBuilder {
       trailing: opts.trailing,
       min: opts.min,
       max: opts.max,
+      stopBefore: opts.stopBefore ? [...opts.stopBefore] : undefined,
     });
   }
 

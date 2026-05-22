@@ -100,6 +100,7 @@ ${indentLines(cases, 2)}
 function emitClassBranch(usage: TokenClassUsage): string {
   const { class: cls, refinements } = usage;
   const refSet = new Set(refinements.map((r) => r.name));
+  if (cls === 'ident' && refSet.has('html')) return emitHtmlIdentBranch();
   if (cls === 'ident' && refSet.has('css')) return emitCssIdentBranch();
   if (cls === 'ident' && refSet.has('js')) return emitJsIdentBranch();
   if (cls === 'ident') return emitCssIdentBranch();
@@ -165,6 +166,22 @@ function emitCssIdentBranch(): string {
       }
       i++;
     }
+  }
+  tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+  continue;
+}`;
+}
+
+function emitHtmlIdentBranch(): string {
+  // HTML ident: start with ASCII letter or `_`; continue with letters,
+  // digits, `-`, `_`. No backslash escapes — a raw `\` belongs to text.
+  return `if (isCssIdentStart(c)) {
+  const start = i;
+  i++;
+  while (i < len) {
+    const c2 = input.charCodeAt(i);
+    if (!isCssIdentPart(c2)) break;
+    i++;
   }
   tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
   continue;
@@ -244,7 +261,10 @@ function emitCommentBranch(): string {
 function collectHelpers(classes: ReadonlyArray<TokenClassUsage>): string {
   const helpers: string[] = [];
   const needsCss = classes.some(
-    (c) => c.class === 'ident' && (c.refinements.some((r) => r.name === 'css') || c.refinements.length === 0),
+    (c) => c.class === 'ident' && (
+      c.refinements.some((r) => r.name === 'css' || r.name === 'html') ||
+      c.refinements.length === 0
+    ),
   );
   const needsJs = classes.some(
     (c) => c.class === 'ident' && c.refinements.some((r) => r.name === 'js'),

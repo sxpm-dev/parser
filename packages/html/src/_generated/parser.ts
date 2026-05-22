@@ -31,7 +31,23 @@ export function tokenize(input: string): Token[] {
     const c = input.charCodeAt(i);
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
+    if (input.startsWith("</optgroup>", i)) { tokens.push({ type: "closeOptgroup", value: "</optgroup>", start: i, end: i + 11 }); i += 11; continue; }
+    if (input.startsWith("</option>", i)) { tokens.push({ type: "closeOption", value: "</option>", start: i, end: i + 9 }); i += 9; continue; }
+    if (input.startsWith("</tbody>", i)) { tokens.push({ type: "closeTbody", value: "</tbody>", start: i, end: i + 8 }); i += 8; continue; }
+    if (input.startsWith("</tfoot>", i)) { tokens.push({ type: "closeTfoot", value: "</tfoot>", start: i, end: i + 8 }); i += 8; continue; }
+    if (input.startsWith("</thead>", i)) { tokens.push({ type: "closeThead", value: "</thead>", start: i, end: i + 8 }); i += 8; continue; }
+    if (input.startsWith("</body>", i)) { tokens.push({ type: "closeBody", value: "</body>", start: i, end: i + 7 }); i += 7; continue; }
+    if (input.startsWith("</head>", i)) { tokens.push({ type: "closeHead", value: "</head>", start: i, end: i + 7 }); i += 7; continue; }
+    if (input.startsWith("</html>", i)) { tokens.push({ type: "closeHtml", value: "</html>", start: i, end: i + 7 }); i += 7; continue; }
+    if (input.startsWith("</dd>", i)) { tokens.push({ type: "closeDd", value: "</dd>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("</dt>", i)) { tokens.push({ type: "closeDt", value: "</dt>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("</li>", i)) { tokens.push({ type: "closeLi", value: "</li>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("</td>", i)) { tokens.push({ type: "closeTd", value: "</td>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("</th>", i)) { tokens.push({ type: "closeTh", value: "</th>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("</tr>", i)) { tokens.push({ type: "closeTr", value: "</tr>", start: i, end: i + 5 }); i += 5; continue; }
+    if (input.startsWith("hello", i)) { tokens.push({ type: "hello", value: "hello", start: i, end: i + 5 }); i += 5; continue; }
     if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
+    if (input.startsWith("</p>", i)) { tokens.push({ type: "closeP", value: "</p>", start: i, end: i + 4 }); i += 4; continue; }
     if (input.startsWith("hero", i)) { tokens.push({ type: "hero", value: "hero", start: i, end: i + 4 }); i += 4; continue; }
     if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
     if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
@@ -43,7 +59,6 @@ export function tokenize(input: string): Token[] {
       case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;
       case 34: tokens.push({ type: "dq", value: "\"", start: i, end: i + 1 }); i++; continue;
       case 35: tokens.push({ type: "delim", value: "#", start: i, end: i + 1 }); i++; continue;
-      case 36: tokens.push({ type: "delim", value: "$", start: i, end: i + 1 }); i++; continue;
       case 37: tokens.push({ type: "delim", value: "%", start: i, end: i + 1 }); i++; continue;
       case 38: tokens.push({ type: "delim", value: "&", start: i, end: i + 1 }); i++; continue;
       case 39: tokens.push({ type: "sq", value: "'", start: i, end: i + 1 }); i++; continue;
@@ -89,65 +104,20 @@ export function tokenize(input: string): Token[] {
       tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
       continue;
     }
-    if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
+    if (isCssIdentStart(c)) {
       const start = i;
+      i++;
       while (i < len) {
         const c2 = input.charCodeAt(i);
-        if (c2 === 0x5c /* \\ */) {
-          i++;
-          if (i < len && isHexDigit(input.charCodeAt(i))) {
-            // Hex escape: up to 6 hex digits + one optional whitespace
-            let n = 0;
-            while (i < len && n < 6 && isHexDigit(input.charCodeAt(i))) { i++; n++; }
-            if (i < len) {
-              const w = input.charCodeAt(i);
-              if (w === 0x20 || w === 0x09 || w === 0x0a || w === 0x0d) i++;
-            }
-          } else if (i < len) {
-            // Single-char escape: any non-newline char
-            i++;
-          }
-          continue;
-        }
         if (!isCssIdentPart(c2)) break;
         i++;
-      }
-      // Raw url(...) tokenization: contents are opaque (no comment recognition,
-      // no balanced brackets) until the matching ')'. Strings are tracked so
-      // that a ')' inside a quoted url like url("./image (1).jpg") doesn't
-      // close the url early.
-      if (
-        i - start === 3
-        && i < len
-        && input.charCodeAt(i) === 0x28 /* ( */
-        && (input.charCodeAt(start) | 32) === 0x75 /* u */
-        && (input.charCodeAt(start + 1) | 32) === 0x72 /* r */
-        && (input.charCodeAt(start + 2) | 32) === 0x6c /* l */
-      ) {
-        i++; // consume (
-        while (i < len) {
-          const cu = input.charCodeAt(i);
-          if (cu === 0x29 /* ) */) { i++; break; }
-          if (cu === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-          if (cu === 0x22 /* " */ || cu === 0x27 /* ' */) {
-            const q = cu;
-            i++;
-            while (i < len) {
-              const ch = input.charCodeAt(i);
-              if (ch === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-              if (ch === q) { i++; break; }
-              if (ch === 0x0a || ch === 0x0d) break;
-              i++;
-            }
-            continue;
-          }
-          i++;
-        }
       }
       tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
       continue;
     }
-
+    switch (c) {
+      case 36: tokens.push({ type: "delim", value: "$", start: i, end: i + 1 }); i++; continue;
+    }
     { const ch = input[i]; tokens.push({ type: 'raw', value: ch, start: i, end: i + 1 }); i++; continue; }
   }
   return tokens;
@@ -874,6 +844,573 @@ function parseHtmlElement__alt3(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "li")) throw new SyntaxError("expected one of li at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeLi", "</li>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</li>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("</menu>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeLi", "</li>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt4(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) throw new SyntaxError("expected one of dt, dd at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeDt", "</dt>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off) || state.input.startsWith("</dl>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeDt", "</dt>");
+  consumeOptionalLiteral(state, "closeDd", "</dd>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt5(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tr")) throw new SyntaxError("expected one of tr at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTr", "</tr>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeTr", "</tr>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt6(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) throw new SyntaxError("expected one of td, th at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTd", "</td>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeTd", "</td>");
+  consumeOptionalLiteral(state, "closeTh", "</th>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt7(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "p")) throw new SyntaxError("expected one of p at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeP", "</p>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</p>", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeP", "</p>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt8(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) throw new SyntaxError("expected one of option, optgroup at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeOption", "</option>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</option>", __off) || state.input.startsWith("</optgroup>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("</datalist>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeOption", "</option>");
+  consumeOptionalLiteral(state, "closeOptgroup", "</optgroup>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt9(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "html")) throw new SyntaxError("expected one of html at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeHtml", "</html>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</html>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeHtml", "</html>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt10(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "head")) throw new SyntaxError("expected one of head at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeHead", "</head>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeHead", "</head>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt11(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tbody")) throw new SyntaxError("expected one of tbody at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTbody", "</tbody>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tbody>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeTbody", "</tbody>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt12(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "thead")) throw new SyntaxError("expected one of thead at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeThead", "</thead>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</thead>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeThead", "</thead>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt13(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tfoot")) throw new SyntaxError("expected one of tfoot at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTfoot", "</tfoot>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeTfoot", "</tfoot>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt14(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "body")) throw new SyntaxError("expected one of body at position " + state.tokens[state.pos - 1].start);
+  const __tag_start = state.tokens[state.pos - 1].start;
+  const __tag_end = state.tokens[state.pos - 1].end;
+  const __attrs_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_attrs = __attrs_startOff;
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttribute(state);
+    attachRawsBefore(state, __child, __prevEnd_attrs);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
+  }
+  expectLiteral(state, "gt", ">");
+  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_children = __children_startOff;
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeBody", "</body>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctype(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseComment(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElement(state); }
+  else {
+    __child = tryRoles(state, [parseTextNode]);
+  }
+    attachRawsBefore(state, __child, __prevEnd_children);
+    children.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
+  }
+  consumeOptionalLiteral(state, "closeBody", "</body>");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseHtmlElement__alt15(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
 
   const __tag_start = state.tokens[state.pos - 1].start;
   const __tag_end = state.tokens[state.pos - 1].end;
@@ -931,8 +1468,44 @@ function parseHtmlElement(state: State): unknown {
       { const r = trySpeculate(state, parseHtmlElement__alt1); if (r !== null) return r; }
       return parseHtmlElement__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
       return parseHtmlElement__alt3(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+      return parseHtmlElement__alt4(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+      return parseHtmlElement__alt5(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+      return parseHtmlElement__alt6(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+      return parseHtmlElement__alt7(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+      return parseHtmlElement__alt8(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+      return parseHtmlElement__alt9(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+      return parseHtmlElement__alt10(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+      return parseHtmlElement__alt11(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+      return parseHtmlElement__alt12(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+      return parseHtmlElement__alt13(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+      return parseHtmlElement__alt14(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseHtmlElement__alt15(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -942,8 +1515,7 @@ function parseHtmlElement(state: State): unknown {
 function parseTextNode(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = captureUntil(state, "<", "</", "<!--", true, true);
-
+  const value = captureRawUntil(state, ["<"], false);
   const __value_start = state.__lastCaptureStart;
   const __value_end = state.__lastCaptureEnd;
   const __lastTok = state.tokens[state.pos - 1];
@@ -1139,6 +1711,405 @@ function parseHtmlElementFast__alt2(state: State): unknown {
 function parseHtmlElementFast__alt3(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "li")) throw new SyntaxError("expected one of li at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeLi", "</li>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</li>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("</menu>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeLi", "</li>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt4(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) throw new SyntaxError("expected one of dt, dd at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeDt", "</dt>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off) || state.input.startsWith("</dl>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeDt", "</dt>");
+  consumeOptionalLiteral(state, "closeDd", "</dd>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt5(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tr")) throw new SyntaxError("expected one of tr at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTr", "</tr>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTr", "</tr>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt6(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) throw new SyntaxError("expected one of td, th at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTd", "</td>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTd", "</td>");
+  consumeOptionalLiteral(state, "closeTh", "</th>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt7(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "p")) throw new SyntaxError("expected one of p at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeP", "</p>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</p>", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeP", "</p>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt8(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) throw new SyntaxError("expected one of option, optgroup at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeOption", "</option>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</option>", __off) || state.input.startsWith("</optgroup>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("</datalist>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeOption", "</option>");
+  consumeOptionalLiteral(state, "closeOptgroup", "</optgroup>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt9(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "html")) throw new SyntaxError("expected one of html at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeHtml", "</html>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</html>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeHtml", "</html>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt10(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "head")) throw new SyntaxError("expected one of head at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeHead", "</head>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeHead", "</head>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt11(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tbody")) throw new SyntaxError("expected one of tbody at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTbody", "</tbody>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tbody>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTbody", "</tbody>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt12(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "thead")) throw new SyntaxError("expected one of thead at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeThead", "</thead>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</thead>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeThead", "</thead>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt13(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tfoot")) throw new SyntaxError("expected one of tfoot at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeTfoot", "</tfoot>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTfoot", "</tfoot>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt14(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "body")) throw new SyntaxError("expected one of body at position " + state.tokens[state.pos - 1].start);
+
+  const attrs: unknown[] = [];
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    const __child = parseAttributeFast(state);
+    attrs.push(__child);
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+
+  const children: unknown[] = [];
+  while (!(peekLiteral(state, "closeBody", "</body>"))) {
+    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off)) break; }
+    const __before = state.pos;
+    let __child: unknown;
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") { __child = parseDoctypeFast(state); }
+  else if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") { __child = parseCommentFast(state); }
+  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") { __child = parseHtmlElementFast(state); }
+  else {
+    __child = tryRoles(state, [parseTextNodeFast]);
+  }
+    children.push(__child);
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeBody", "</body>");
+  return { nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__alt15(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
 
 
   const attrs: unknown[] = [];
@@ -1182,8 +2153,44 @@ function parseHtmlElementFast(state: State): unknown {
       { const r = trySpeculate(state, parseHtmlElementFast__alt1); if (r !== null) return r; }
       return parseHtmlElementFast__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
       return parseHtmlElementFast__alt3(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+      return parseHtmlElementFast__alt4(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+      return parseHtmlElementFast__alt5(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+      return parseHtmlElementFast__alt6(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+      return parseHtmlElementFast__alt7(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+      return parseHtmlElementFast__alt8(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+      return parseHtmlElementFast__alt9(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+      return parseHtmlElementFast__alt10(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+      return parseHtmlElementFast__alt11(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+      return parseHtmlElementFast__alt12(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+      return parseHtmlElementFast__alt13(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+      return parseHtmlElementFast__alt14(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return parseHtmlElementFast__alt15(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -1191,8 +2198,7 @@ function parseHtmlElementFast(state: State): unknown {
 }
 
 function parseTextNodeFast(state: State): unknown {
-  const value = captureUntil(state, "<", "</", "<!--", true, true);
-
+  const value = captureRawUntil(state, ["<"], false);
   return { nodeName: "#text", value: value, parentNode: null };
 }
 
@@ -1339,6 +2345,357 @@ function validateHtmlElement__alt2(state: State): unknown {
 function validateHtmlElement__alt3(state: State): unknown {
   expectLiteral(state, "lt", "<");
   const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "li")) throw new SyntaxError("expected one of li at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeLi", "</li>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeLi", "</li>");
+  return;
+}
+
+function validateHtmlElement__alt4(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) throw new SyntaxError("expected one of dt, dd at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeDt", "</dt>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeDt", "</dt>");
+  consumeOptionalLiteral(state, "closeDd", "</dd>");
+  return;
+}
+
+function validateHtmlElement__alt5(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tr")) throw new SyntaxError("expected one of tr at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeTr", "</tr>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTr", "</tr>");
+  return;
+}
+
+function validateHtmlElement__alt6(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) throw new SyntaxError("expected one of td, th at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeTd", "</td>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTd", "</td>");
+  consumeOptionalLiteral(state, "closeTh", "</th>");
+  return;
+}
+
+function validateHtmlElement__alt7(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "p")) throw new SyntaxError("expected one of p at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeP", "</p>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeP", "</p>");
+  return;
+}
+
+function validateHtmlElement__alt8(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) throw new SyntaxError("expected one of option, optgroup at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeOption", "</option>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeOption", "</option>");
+  consumeOptionalLiteral(state, "closeOptgroup", "</optgroup>");
+  return;
+}
+
+function validateHtmlElement__alt9(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "html")) throw new SyntaxError("expected one of html at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeHtml", "</html>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeHtml", "</html>");
+  return;
+}
+
+function validateHtmlElement__alt10(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "head")) throw new SyntaxError("expected one of head at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeHead", "</head>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeHead", "</head>");
+  return;
+}
+
+function validateHtmlElement__alt11(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tbody")) throw new SyntaxError("expected one of tbody at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeTbody", "</tbody>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTbody", "</tbody>");
+  return;
+}
+
+function validateHtmlElement__alt12(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "thead")) throw new SyntaxError("expected one of thead at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeThead", "</thead>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeThead", "</thead>");
+  return;
+}
+
+function validateHtmlElement__alt13(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "tfoot")) throw new SyntaxError("expected one of tfoot at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeTfoot", "</tfoot>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeTfoot", "</tfoot>");
+  return;
+}
+
+function validateHtmlElement__alt14(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
+  if (!(tag.toLowerCase() === "body")) throw new SyntaxError("expected one of body at position " + state.tokens[state.pos - 1].start);
+  let __count_attrs = 0;
+  while (!(peekLiteral(state, "gt", ">"))) {
+    const __before = state.pos;
+    validateAttribute(state);
+    __count_attrs++;
+    if (state.pos === __before) break;
+  }
+  expectLiteral(state, "gt", ">");
+  let __count_children = 0;
+  while (!(peekLiteral(state, "closeBody", "</body>"))) {
+    const __before = state.pos;
+    (() => {
+    const __tok = state.tokens[state.pos];
+    if (__tok !== undefined && __tok.type === "doctypeOpen" && __tok.value === "<!") return validateDoctype(state);
+    if (__tok !== undefined && __tok.type === "commentOpen" && __tok.value === "<!--") return validateComment(state);
+    if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") return validateHtmlElement(state);
+    return tryRoles(state, [validateTextNode]);
+  })();
+    __count_children++;
+    if (state.pos === __before) break;
+  }
+  consumeOptionalLiteral(state, "closeBody", "</body>");
+  return;
+}
+
+function validateHtmlElement__alt15(state: State): unknown {
+  expectLiteral(state, "lt", "<");
+  const tag = expectClass(state, "ident");
 
   let __count_attrs = 0;
   while (!(peekLiteral(state, "gt", ">"))) {
@@ -1379,8 +2736,44 @@ function validateHtmlElement(state: State): unknown {
       { const r = trySpeculate(state, validateHtmlElement__alt1); if (r !== null) return r; }
       return validateHtmlElement__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
       return validateHtmlElement__alt3(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+      return validateHtmlElement__alt4(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+      return validateHtmlElement__alt5(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+      return validateHtmlElement__alt6(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+      return validateHtmlElement__alt7(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+      return validateHtmlElement__alt8(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+      return validateHtmlElement__alt9(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+      return validateHtmlElement__alt10(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+      return validateHtmlElement__alt11(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+      return validateHtmlElement__alt12(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+      return validateHtmlElement__alt13(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+      return validateHtmlElement__alt14(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident") {
+      return validateHtmlElement__alt15(state);
     }
     throw new SyntaxError('no production matched');
   }
@@ -1388,8 +2781,7 @@ function validateHtmlElement(state: State): unknown {
 }
 
 function validateTextNode(state: State): unknown {
-  const value = captureUntil(state, "<", "</", "<!--", true, true);
-
+  const value = captureRawUntil(state, ["<"], false);
   return;
 }
 

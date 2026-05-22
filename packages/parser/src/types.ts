@@ -41,6 +41,12 @@ export type SpanModifier =
       readonly trailing?: TrailingPolicy;
       readonly min?: number;
       readonly max?: number;
+      // Exit the repetition loop without consuming when upcoming source
+      // (at the current token's start offset) begins with any of these
+      // literal prefixes. Models implicit-close idioms — HTML `<li>`
+      // closing on next `<li>`, Coffeescript newline-significant blocks,
+      // YAML block sequences ending on dedent-like patterns.
+      readonly stopBefore?: ReadonlyArray<string>;
     }
   | {
       readonly kind: 'rawUntil';

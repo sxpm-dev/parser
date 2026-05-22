@@ -19,8 +19,14 @@ export function validate(nodeTypes: ReadonlyMap<string, NodeTypeInfo>): void {
           // unnamed literal or text-less classed span without anchor — skip
           continue;
         }
+        const optional = span.modifiers.some((m) => m.kind === 'optional');
         const idx = input.indexOf(span.text, cursor);
         if (idx < 0) {
+          if (optional) {
+            // Optional span whose text isn't in this example demonstrates
+            // the "absent" path. Skip without advancing the cursor.
+            continue;
+          }
           throw new CompilerError(
             `In node '${info.name}', span text '${span.text}' not found in input '${input}' from position ${cursor}`,
           );

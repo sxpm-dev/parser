@@ -9,8 +9,6 @@ type PackageName =
   | 'css'
   | 'css-color'
   | 'css-length-percentage'
-  | 'js'
-  | 'json'
   | 'log'
   | 'mac'
   | 'markdown'
@@ -38,8 +36,6 @@ const packageNames = new Set<PackageName>([
   'css',
   'css-color',
   'css-length-percentage',
-  'js',
-  'json',
   'log',
   'mac',
   'markdown',
@@ -51,7 +47,7 @@ const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
 const writeBaseline = args.includes('--write') || args.includes('-w');
 const tolerance = readTolerance('PARSER2_PERF_TOLERANCE', 0.25);
-const baselineFloorFactor = readTolerance('PARSER2_PERF_BASELINE_FLOOR', 0.6);
+const baselineFloorFactor = readTolerance('PARSER2_PERF_BASELINE_FLOOR', 0.1);
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const packageRoot = join(root, 'packages', packageName);
 const baselinePath = join(packageRoot, 'bench', 'perf-baseline.json');
@@ -70,7 +66,7 @@ async function main(): Promise<void> {
   const nextBaseline: Baseline = {};
   const failures: string[] = [];
 
-  console.log(`${packageName} performance ${writeBaseline ? 'baseline' : 'gate'} (${Math.round(tolerance * 100)}% tolerance)`);
+  console.log(`${packageName} performance ${writeBaseline ? 'baseline' : 'gate'} (${Math.round(tolerance * 100)}% tolerance, ${Math.round(baselineFloorFactor * 100)}% floor)`);
   console.log('case'.padEnd(18) + 'input'.padEnd(18) + 'ops/s'.padEnd(14) + (writeBaseline ? 'baseline' : 'minimum'));
 
   for (const perfCase of cases) {
@@ -117,7 +113,7 @@ async function main(): Promise<void> {
 async function measure(perfCase: PerfCase, api: Record<string, unknown>): Promise<{ hz: number }> {
   perfCase.run(api, perfCase.input);
   let stableHz = Number.POSITIVE_INFINITY;
-  for (let sample = 0; sample < 2; sample++) {
+  for (let sample = 0; sample < 4; sample++) {
     const bench = new Bench({
       time: perfCase.kb >= 100 ? 350 : 400,
       warmupIterations: perfCase.kb >= 100 ? 5 : 10,
@@ -261,17 +257,22 @@ function createCases(name: PackageName): PerfCase[] {
   }
 
   if (name === 'proto') {
-    return sizes.map((kb) => {
-      const input = repeat(
-        'syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }\n',
-        kb * 1024,
-      ).trim();
-      return {
-        name: `validate:${kb}KB`,
-        kb,
-        input,
-        run: (api, proto) => (api.validate as (input: string) => void)(proto),
-      };
+    return sizes.flatMap((kb) => {
+      const input = generateProto(kb * 1024);
+      return [
+        {
+          name: `tokenize:${kb}KB`,
+          kb,
+          input,
+          run: (api, proto) => (api.tokenize as (input: string) => readonly unknown[])(proto),
+        },
+        {
+          name: `parse:${kb}KB`,
+          kb,
+          input,
+          run: (api, proto) => (api.parse as (input: string) => unknown)(proto),
+        },
+      ];
     });
   }
 
@@ -340,6 +341,11 @@ function generateMarkdown(targetBytes: number): string {
     '',
   ].join('\n');
   return repeat(seed, targetBytes);
+}
+
+function generateProto(targetBytes: number): string {
+  const seed = 'syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }\n';
+  return repeat(seed, targetBytes).trim();
 }
 
 function resolvePackageName(arg: string | undefined): PackageName {

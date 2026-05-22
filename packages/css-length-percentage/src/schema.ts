@@ -53,6 +53,7 @@ export default defineSchema({
       .as("LengthPercentageItem")
       .span("value", "10")
       .number()
+      .noWhitespaceAfter()
       .span("unit", "px")
       .ident()
       .css()
@@ -65,6 +66,7 @@ export default defineSchema({
       .span("-")
       .span("value", "10")
       .number()
+      .noWhitespaceAfter()
       .span("unit", "px")
       .ident()
       .css()
@@ -76,6 +78,7 @@ export default defineSchema({
       .as("LengthPercentageItem")
       .span("value", "50")
       .number()
+      .noWhitespaceAfter()
       .span("%")
       .structure({ type: "percentage", value: $.value })
       .build(),
@@ -85,6 +88,7 @@ export default defineSchema({
       .span("-")
       .span("value", "50")
       .number()
+      .noWhitespaceAfter()
       .span("%")
       .structure({ type: "percentage", value: "-50" })
       .build(),
@@ -104,10 +108,69 @@ export default defineSchema({
       .css()
       .oneOf(LENGTH_FUNCTIONS)
       .span("(")
-      .span("args", "100% - 1rem")
-      .until(")")
+      .span("args", "100%", "LengthFunctionToken")
+      .repeats({ min: 1 })
       .span(")")
       .structure({ type: "length-function", name: $.name, args: $.args })
+      .build(),
+
+    ex("1rem")
+      .as("LengthFunctionToken")
+      .span("value", "1")
+      .number()
+      .noWhitespaceAfter()
+      .span("unit", "rem")
+      .ident()
+      .css()
+      .oneOf(LENGTH_UNITS)
+      .structure({ type: "dimension", value: $.value, unit: $.unit })
+      .build(),
+
+    ex("100%")
+      .as("LengthFunctionToken")
+      .span("value", "100")
+      .number()
+      .noWhitespaceAfter()
+      .span("%")
+      .structure({ type: "percentage", value: $.value })
+      .build(),
+
+    ex("0")
+      .as("LengthFunctionToken")
+      .span("value", "0")
+      .number()
+      .oneOf(["0"])
+      .structure({ type: "zero", value: $.value })
+      .build(),
+
+    ex("-")
+      .as("LengthFunctionToken")
+      .span("-")
+      .structure({ type: "operator", value: "-" })
+      .build(),
+
+    ex("+")
+      .as("LengthFunctionToken")
+      .span("+")
+      .structure({ type: "operator", value: "+" })
+      .build(),
+
+    ex("*")
+      .as("LengthFunctionToken")
+      .span("*")
+      .structure({ type: "operator", value: "*" })
+      .build(),
+
+    ex("/")
+      .as("LengthFunctionToken")
+      .span("/")
+      .structure({ type: "operator", value: "/" })
+      .build(),
+
+    ex(",")
+      .as("LengthFunctionToken")
+      .span(",")
+      .structure({ type: "separator", value: "," })
       .build(),
 
     ex("var(--space, 1rem)")
@@ -118,7 +181,7 @@ export default defineSchema({
       .oneOf(["var"])
       .span("(")
       .span("args", "--space, 1rem")
-      .until(")")
+      .until(")", { rejectSuffix: "," })
       .span(")")
       .structure({ type: "var-function", name: $.name, args: $.args })
       .build(),

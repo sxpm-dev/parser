@@ -7,36 +7,36 @@ test('default parse accepts invalid property values', () => {
   assert.equal(root.nodes.length, 2);
 });
 
-test('validateProperties rejects configured color and length values', () => {
-  assert.throws(() => parse('color: q w e;', { validateProperties: true }), /1 \| color: q w e;/);
-  assert.throws(() => parse('.foo { color: rgba(#fff); }', { validateProperties: true }), /1 \| \.foo \{ color: rgba\(#fff\); \}/);
-  assert.throws(() => parse('width: chunky;', { validateProperties: true }), /1 \| width: chunky;/);
+test('validate rejects configured color and length values', () => {
+  assert.throws(() => parse('color: q w e;', { validate: true }), /1 \| color: q w e;/);
+  assert.throws(() => parse('.foo { color: rgba(#fff); }', { validate: true }), /1 \| \.foo \{ color: rgba\(#fff\); \}/);
+  assert.throws(() => parse('width: chunky;', { validate: true }), /1 \| width: chunky;/);
 });
 
-test('validateProperties reports generated validator failures as regular syntax errors', () => {
+test('validate reports generated validator failures as regular syntax errors', () => {
   assert.throws(
-    () => validate('.ffo { color: #red}', { validateProperties: true }),
+    () => validate('.ffo { color: #red}', { validate: true }),
     (error) => error instanceof SyntaxError
       && !error.message.includes('Invalid CSS value')
       && error.message.includes('1 | .ffo { color: #red}'),
   );
-  assert.throws(() => validate('.ffo { color: rgba(aa,bb,cc) }', { validateProperties: true }), /1 \| \.ffo/);
-  assert.throws(() => validate('.ffo { color: rgba($$) }', { validateProperties: true }), /1 \| \.ffo/);
+  assert.throws(() => validate('.ffo { color: rgba(aa,bb,cc) }', { validate: true }), /1 \| \.ffo/);
+  assert.throws(() => validate('.ffo { color: rgba($$) }', { validate: true }), /1 \| \.ffo/);
 });
 
-test('validateProperties accepts configured valid values and generated validate entrypoint', () => {
+test('validate accepts configured valid values and generated validate entrypoint', () => {
   assert.doesNotThrow(() => parse('color: oklch(60% 0.2 30); width: calc(100% - 1rem);', {
-    validateProperties: true,
+    validate: true,
   }));
-  assert.doesNotThrow(() => validate('margin: 0 10px auto 5%;', { validateProperties: true }));
+  assert.doesNotThrow(() => validate('margin: 0 10px auto 5%;', { validate: true }));
 });
 
-test('validateProperties skips custom and unconfigured properties', () => {
-  assert.doesNotThrow(() => parse('--brand: q w e; display: q w e;', { validateProperties: true }));
+test('validate skips custom and unconfigured properties', () => {
+  assert.doesNotThrow(() => parse('--brand: q w e; display: q w e;', { validate: true }));
 });
 
-test('raws mode preserves source metadata with property validation enabled', () => {
-  const root = parse('a { color: red; }', { mode: 'raws', validateProperties: true }) as CssRoot;
+test('raws mode preserves source metadata with generated validation enabled', () => {
+  const root = parse('a { color: red; }', { mode: 'raws', validate: true }) as CssRoot;
   const rule = root.nodes[0];
   assert.equal(rule.type, 'rule');
   assert.ok(rule.source);

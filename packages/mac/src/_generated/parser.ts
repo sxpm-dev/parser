@@ -168,6 +168,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -187,6 +195,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -631,9 +650,13 @@ function parseMacAddress__alt1(state: State): unknown {
 function parseMacAddress(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "hex") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseMacAddress__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "dash" && __nextTok.value === "-") return parseMacAddress__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseMacAddress__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "dash" && __tok1.value === "-") {
+      return parseMacAddress__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
@@ -684,9 +707,13 @@ function parseMacAddressFast__alt1(state: State): unknown {
 function parseMacAddressFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "hex") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseMacAddressFast__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "dash" && __nextTok.value === "-") return parseMacAddressFast__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseMacAddressFast__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "dash" && __tok1.value === "-") {
+      return parseMacAddressFast__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
@@ -737,16 +764,20 @@ function validateMacAddress__alt1(state: State): unknown {
 function validateMacAddress(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "hex") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return validateMacAddress__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "dash" && __nextTok.value === "-") return validateMacAddress__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return validateMacAddress__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "dash" && __tok1.value === "-") {
+      return validateMacAddress__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -779,8 +810,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }

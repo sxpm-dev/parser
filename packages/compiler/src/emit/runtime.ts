@@ -136,6 +136,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop

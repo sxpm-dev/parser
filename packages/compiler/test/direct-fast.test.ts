@@ -32,6 +32,17 @@ test('direct fast path does not require comment or prefixed productions', () => 
   assert.doesNotMatch(direct, /parseDirectPrefixed/);
 });
 
+test('direct fast path is inferred from generic delimited record structure', () => {
+  const direct = emitDirectFastPath(inferSchema(makeDelimitedRecordSchema()));
+
+  assert.ok(direct);
+  assert.match(direct, /function parseDirectFast\(input: string\)/);
+  assert.match(direct, /input\.charCodeAt\(pos \+ 0\) === 117/);
+  assert.match(direct, /input\.charCodeAt\(pos\) !== 124/);
+  assert.match(direct, /let tail: unknown/);
+  assert.doesNotMatch(direct, /arn:aws/);
+});
+
 function makeGenericBlockSchema(prefix: string) {
   return defineSchema({
     name: 'blocks',
@@ -108,6 +119,45 @@ function makeGenericBlockSchema(prefix: string) {
         .span('items', 'box [ key = value ]', ['Note', 'Directive', 'Block', 'Entry'])
           .repeats({ min: 0, sep: ',', trailing: 'allowed' })
         .structure({ kind: 'document', items: $.items })
+        .build(),
+    ],
+  });
+}
+
+function makeDelimitedRecordSchema() {
+  return defineSchema({
+    name: 'delimited',
+    rootType: 'Record',
+    punctuators: {
+      pipe: '|',
+      tilde: '~',
+    },
+    tokens: ['number'],
+    examples: [
+      ex('kind~item')
+        .as('Tail')
+        .span('kind', 'kind').ident().css()
+        .span('~')
+        .span('name', 'item').ident().css()
+        .structure({ type: 'tail', kind: $.kind, name: $.name, separator: '~' })
+        .build(),
+
+      ex('item')
+        .as('Tail')
+        .span('name', 'item').ident().css()
+        .structure({ type: 'tail', name: $.name })
+        .build(),
+
+      ex('urn|alpha|123|kind~item')
+        .as('Record')
+        .span('urn')
+        .span('|')
+        .span('service', 'alpha').ident().css()
+        .span('|')
+        .span('account', '123').number().int()
+        .span('|')
+        .span('tail', 'kind~item', 'Tail')
+        .structure({ type: 'record', service: $.service, account: $.account, tail: $.tail })
         .build(),
     ],
   });

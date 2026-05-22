@@ -301,6 +301,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -320,6 +328,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -845,6 +864,7 @@ function parseAtRule(state: State): unknown {
     return __struct;
   }
   const semi = consumeOptionalLiteral(state, "semicolon", ";");
+
   const __semi_start = semi !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
   const __semi_end = semi !== null ? state.tokens[state.pos - 1].end : __semi_start;
   const __lastTok = state.tokens[state.pos - 1];
@@ -1152,6 +1172,7 @@ function parseAtRuleFast(state: State): unknown {
   }
   const semi = consumeOptionalLiteral(state, "semicolon", ";");
 
+
   return { type: "atrule", name: name, params: params };
 }
 
@@ -1314,6 +1335,7 @@ function validateAtRule(state: State): unknown {
     return;
   }
   const semi = consumeOptionalLiteral(state, "semicolon", ";");
+
 
   return;
 }
@@ -1920,11 +1942,11 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   if (mode === 'fast') {
     const result = parseDirectFast(input);
-    if (options.validate === true) validateParsedProperties(input, result);
+    if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }
   let tokens: Token[];
@@ -1950,7 +1972,7 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
     if (state.pos !== state.tokens.length) {
       throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
     }
-  if (options.validate === true) validateParsedProperties(input, result);
+  if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
@@ -1960,8 +1982,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true) {
     parse(input, options);
     return;
   }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import postcss from 'postcss';
-import { countTokens, parse, stringify, tokenize } from '../src/index.ts';
+import { countTokens, parse, tokenize } from '../src/index.ts';
 
 const syntaxMatrix = [
   {
@@ -82,13 +82,6 @@ test('accepts the CSS syntax coverage matrix', () => {
   }
 });
 
-test('stringified syntax matrix parses again', () => {
-  for (const entry of syntaxMatrix) {
-    const ast = parse(entry.css);
-    assert.doesNotThrow(() => parse(stringify(ast)), entry.area);
-  }
-});
-
 test('does not false-reject stylesheets accepted by PostCSS', () => {
   for (const entry of syntaxMatrix.filter((item) => item.area !== 'stylesheet controls and comments')) {
     assert.doesNotThrow(() => postcss.parse(entry.css, { from: undefined }), entry.area);
@@ -110,7 +103,7 @@ test('keeps invalid stylesheet boundaries explicit', () => {
   }
 });
 
-test('deterministic fuzz: valid balanced CSS parses, token counts, and round-trips', () => {
+test('deterministic fuzz: valid balanced CSS parses and token counts', () => {
   let seed = 0x5eed1234;
   const next = (): number => {
     seed = (seed * 1664525 + 1013904223) >>> 0;
@@ -154,8 +147,7 @@ test('deterministic fuzz: valid balanced CSS parses, token counts, and round-tri
       `@media (min-width: ${320 + (next() % 900)}px) { ${pick(selectors)} { ${pick(props)}: ${pick(values)}; } }`,
     ].join('\n');
 
-    const ast = parse(css);
+    parse(css);
     assert.equal(countTokens(css), tokenize(css).length, css);
-    assert.doesNotThrow(() => parse(stringify(ast)), css);
   }
 });

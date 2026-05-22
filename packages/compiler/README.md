@@ -215,7 +215,7 @@ npm run generate
 Or per package:
 
 ```sh
-npm run generate -w @parser2/js
+npm run generate -w @parser2/proto
 ```
 
 The CLI path (current implementation, `packages/compiler/src/`):
@@ -338,10 +338,22 @@ a hand-written-quality recursive-descent parser specialized to its grammar.
 Performance is enforced at CI level:
 
 ```sh
+npm run bench        -w @parser2/<schema>
 npm run perf:gate    -w @parser2/<schema>
 npm run size:gate    -w @parser2/<schema>
 ```
 
+- **Parser package benchmark contract** — every generated parser package must
+  expose a package-level `bench` script plus named hot-path scripts such as
+  `bench:parse`, `bench:tokenize`, or `bench:validate` as appropriate for that
+  parser's public contract. Root `package.json` should expose matching
+  `bench:<schema>:<path>` shortcuts for focused runs when a parser has a
+  distinct hot path worth tracking.
+- **`scripts/bench-table.ts`** — all human-readable benchmark entrypoints use
+  the shared table harness for input sizing, input hashes, timing columns,
+  units, and relative comparisons. Package-local `bench/common.ts` files may
+  provide input generators, but must delegate table execution to this shared
+  harness rather than creating their own `tinybench` loops.
 - **`scripts/perf-gate.ts`** — measures ops/s for `tokenize`, `parse` (and
   optionally domain-specific runs) at fixed input sizes. Fails the build when
   the current ops/s drops below `baseline * (1 - tolerance)`. Baselines live
@@ -355,6 +367,19 @@ A change that violates a gate either improves the implementation until the
 gate passes, or — if the change is intentional and justified — re-runs
 `baseline` to relock. Baseline changes are visible in PR diffs and are
 reviewed.
+
+This is a repo design requirement, not optional hygiene. A generated parser
+package contains:
+
+- `src/schema.ts` as the source of parser behavior.
+- `src/_generated/parser.ts` as the generated runtime.
+- `src/index.ts` as generated-symbol re-exports only; no package-local parser
+  code, custom scanner helpers, wrappers, or custom functions.
+- `test/*.test.ts` coverage for the generated public surface.
+- `bench` entrypoints, `perf-baseline.json`, `size-baseline.json`, and a
+  passing `gate` workflow.
+
+Run `npm run audit:parser-contract` before merging parser-package changes.
 
 ## Recovery and tolerance
 
@@ -389,7 +414,7 @@ the conformance metrics independently.
 ## Building a new parser
 
 1. Create a package at `packages/<schema>` with `package.json`, `tsconfig.json`,
-   `src/schema.ts`, and a `test/` directory.
+   `src/schema.ts`, generated-only `src/index.ts`, and a `test/` directory.
 2. Decide on the schema's *structure shape commitment* — AST, extractor,
    metrics, etc. All examples must produce structures in this family.
 3. Start with 3–5 representative examples covering the root node type. Each
@@ -402,8 +427,14 @@ the conformance metrics independently.
    not only for spans consumed directly.
 6. Run `npm run generate -w @parser2/<schema>` to emit
    `src/_generated/parser.ts`.
-7. Write unit tests asserting `parse` / `tokenize` / `stringify`.
-8. If the schema has a browser build, lock perf and size baselines:
+7. Keep `src/index.ts` to re-exports from `./_generated/parser.ts` plus
+   generated types only. Do not add package-local parse wrappers, scanners,
+   validators, or stringifiers.
+8. Write unit tests asserting `parse` / `tokenize` / `stringify`.
+9. Add `bench`, named hot-path benchmark scripts, `perf:gate`, `size:gate`,
+   `baseline`, and `gate` scripts to the package. Add matching focused root
+   benchmark shortcuts when useful.
+10. If the schema has a browser build, lock perf and size baselines:
    `npm run baseline -w @parser2/<schema>`.
 
 ## Design checklist
@@ -414,7 +445,12 @@ Before merging a parser change:
 - Did any new compiler logic stay generic (no package-specific branches)?
 - Did `npm run generate` actually update the affected
   `src/_generated/parser.ts`?
+- Is `src/index.ts` only re-exporting generated parser symbols and generated
+  types?
 - Do unit tests pass?
+- Is the parser aligned to the bench/gate contract (`bench`,
+  named hot-path bench scripts, perf baseline, size baseline, and `gate`)?
+- Does `npm run audit:parser-contract` pass?
 - If the schema targets a spec language, did conformance metrics improve, or
   at least not introduce false rejects?
 - Did perf and size gates pass — or, if intentionally adjusted, was the

@@ -54,7 +54,7 @@ export default defineSchema({
 
     ex('#00ff99')
       .as('HashColor')
-      .span('#')
+      .span('#').noWhitespaceAfter()
       .span('value', '00ff99').until([')', ',', '/']).hexString().lengths([3, 4, 6, 8])
       .structure({ type: 'hash-color', value: $.value })
       .build(),
@@ -79,7 +79,7 @@ export default defineSchema({
 
     ex('60%')
       .as('NumericColorFunctionToken')
-      .span('value', '60').number()
+      .span('value', '60').number().noWhitespaceAfter()
       .span('%')
       .structure({ type: 'percentage', value: $.value })
       .build(),
@@ -113,7 +113,7 @@ export default defineSchema({
 
     ex('60%')
       .as('ColorFunctionToken')
-      .span('value', '60').number()
+      .span('value', '60').number().noWhitespaceAfter()
       .span('%')
       .structure({ type: 'percentage', value: $.value })
       .build(),
@@ -152,7 +152,7 @@ export default defineSchema({
       .as('VarFunction')
       .span('name', 'var').ident().css().oneOf(['var'])
       .span('(')
-      .span('args', '--brand-color, red').until(')')
+      .span('args', '--brand-color, red').until(')', { rejectSuffix: ',' })
       .span(')')
       .structure({ type: 'var-function', name: $.name, args: $.args })
       .build(),

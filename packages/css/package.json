@@ -6,7 +6,7 @@
     "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
     "build": "tsc -b",
     "test": "tsx --test test/*.test.ts",
-    "test:unit": "tsx --test test/css.test.ts",
+    "test:unit": "tsx --test test/smoke.test.ts",
     "bench": "npm run generate && npm run bench:ast && npm run bench:tokenize",
     "bench:ast": "tsx bench/ast.ts",
     "bench:focused": "tsx bench/focused.ts",

@@ -269,6 +269,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -288,6 +296,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -743,8 +762,8 @@ function validateLogEntry(state: State): unknown {
   return;
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -777,8 +796,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }

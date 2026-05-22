@@ -637,8 +637,21 @@ Properties this gives you:
 - CSS benefits in the same way: `Selector`, `DeclarationValue`, `Declaration`
   can each be a schema, composed into `Stylesheet`. The selector parser
   becomes reusable for tooling.
-- Each schema gets its own `_generated/parser.ts`, its own size baseline, and
-  its own performance gate.
+- Each generated parser package is schema-owned: `src/schema.ts` defines
+  behavior, `src/_generated/parser.ts` contains the runtime, and `src/index.ts`
+  only re-exports generated symbols and generated types. Parser packages do
+  not carry package-local parser code, custom scanner helpers, wrappers, or
+  custom functions.
+- Each schema gets its own tests, `_generated/parser.ts`, size baseline, and
+  performance gate.
+- Each generated parser package must expose a package-level `bench` script,
+  named hot-path bench scripts (`bench:parse`, `bench:tokenize`,
+  `bench:validate`, etc.), `baseline`, and `gate`. Human-readable benchmarks
+  use the shared `scripts/bench-table.ts` harness; gates use the shared
+  `scripts/perf-gate.ts` and `scripts/size-gate.ts` harnesses. Parser changes
+  are not design-complete until the relevant perf and size gates pass or
+  intentionally relocked baselines are reviewed. The structural contract is
+  enforced by `npm run audit:parser-contract`.
 
 ## A full CSS slice
 

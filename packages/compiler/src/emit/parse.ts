@@ -541,6 +541,7 @@ function emitSpan(
   const optional = hasModifier(span.modifiers, 'optional');
   const repeats = findModifier(span.modifiers, 'repeats');
   const until = findModifier(span.modifiers, 'until');
+  const noWhitespaceAfter = hasModifier(span.modifiers, 'noWhitespaceAfter');
 
   if (until) {
     return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
@@ -552,9 +553,9 @@ function emitSpan(
     return emitRecursiveSpan(span, valueExpr, presenceExpr, optional, ctx);
   }
   if (span.class === 'literal') {
-    return emitLiteralSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, offsetRefs, ctx);
+    return emitLiteralSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx);
   }
-  return emitClassedSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, offsetRefs, ctx);
+  return emitClassedSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx);
 }
 
 // Helper: emit start/end offset variables for a consumed-from-tokens span,
@@ -628,6 +629,7 @@ function emitLiteralSpan(
   startOffExpr: Map<string, string>,
   endOffExpr: Map<string, string>,
   optional: boolean,
+  noWhitespaceAfter: boolean,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
 ): string {
@@ -635,6 +637,8 @@ function emitLiteralSpan(
   const type = ctx.literalTypeByText.get(span.text) ?? span.text;
   const typeExpr = jsString(type);
   const valueLit = jsString(span.text);
+  const adjacencyCheck = noWhitespaceAfter ? '\nrequireNoWhitespaceAfterLastToken(state);' : '';
+  const optionalAdjacencyCheck = noWhitespaceAfter ? `\nif (${span.name ? jsIdent(span.name) : '__optional'} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
   if (span.name) {
     const v = jsIdent(span.name);
     const needsOffsets = ctx.variant === 'raws' || offsetRefs.has(span.name);
@@ -646,12 +650,15 @@ function emitLiteralSpan(
     if (optional) {
       presenceExpr.set(span.name, `(${v} !== null)`);
       return `const ${v} = consumeOptionalLiteral(state, ${typeExpr}, ${valueLit});
+${optionalAdjacencyCheck.trimStart()}
 ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     }
-    return `const ${v} = expectLiteral(state, ${typeExpr}, ${valueLit});${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
+    return `const ${v} = expectLiteral(state, ${typeExpr}, ${valueLit});${adjacencyCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
   }
-  if (optional) return `consumeOptionalLiteral(state, ${typeExpr}, ${valueLit});`;
-  return `expectLiteral(state, ${typeExpr}, ${valueLit});`;
+  if (optional) return noWhitespaceAfter
+    ? `{ const __optional = consumeOptionalLiteral(state, ${typeExpr}, ${valueLit}); if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
+    : `consumeOptionalLiteral(state, ${typeExpr}, ${valueLit});`;
+  return `expectLiteral(state, ${typeExpr}, ${valueLit});${adjacencyCheck}`;
 }
 
 function emitClassedSpan(
@@ -661,10 +668,12 @@ function emitClassedSpan(
   startOffExpr: Map<string, string>,
   endOffExpr: Map<string, string>,
   optional: boolean,
+  noWhitespaceAfter: boolean,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
 ): string {
   const typeName = classToTokenType(span);
+  const adjacencyCheck = noWhitespaceAfter ? '\nrequireNoWhitespaceAfterLastToken(state);' : '';
   // Comment captures store the trimmed interior (no /* */), matching the
   // PostCSS `text` convention. Apply this transformation at the call site
   // rather than mutating the token's value so other consumers still see
@@ -683,13 +692,17 @@ function emitClassedSpan(
       const call = `consumeOptionalClass(state, ${jsString(typeName)})`;
       const refinementCheck = emitSpanRefinementCheck(span, v, true, 'state.tokens[state.pos - 1].start');
       if (isComment) {
+        const optionalCommentAdjacencyCheck = noWhitespaceAfter ? `\nif (__raw_${v} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
         return `const __raw_${v} = ${call};
 const ${v} = __raw_${v} === null ? null : commentInterior(__raw_${v});
+${optionalCommentAdjacencyCheck.trimStart()}
 ${refinementCheck}${needsOffsets ? `
 const __${v}_start = __raw_${v} !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
 const __${v}_end = __raw_${v} !== null ? state.tokens[state.pos - 1].end : __${v}_start;` : ''}`;
       }
+      const optionalAdjacencyCheck = noWhitespaceAfter ? `\nif (${v} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
       return `const ${v} = ${call};
+${optionalAdjacencyCheck.trimStart()}
 ${refinementCheck}
 ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     }
@@ -698,15 +711,17 @@ ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     if (isComment) {
       return `const __raw_${v} = ${call};
 const ${v} = commentInterior(__raw_${v});
-${refinementCheck}${needsOffsets ? `
+${adjacencyCheck}${refinementCheck}${needsOffsets ? `
 const __${v}_start = state.tokens[state.pos - 1].start;
 const __${v}_end = state.tokens[state.pos - 1].end;` : ''}`;
     }
     return `const ${v} = ${call};
-${refinementCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
+${adjacencyCheck}${refinementCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
   }
-  if (optional) return `consumeOptionalClass(state, ${jsString(typeName)});`;
-  return `expectClass(state, ${jsString(typeName)});`;
+  if (optional) return noWhitespaceAfter
+    ? `{ const __optional = consumeOptionalClass(state, ${jsString(typeName)}); if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
+    : `consumeOptionalClass(state, ${jsString(typeName)});`;
+  return `expectClass(state, ${jsString(typeName)});${adjacencyCheck}`;
 }
 
 function emitSpanRefinementCheck(span: ResolvedSpan, valueVar: string, optional: boolean, positionExpr: string): string {
@@ -801,9 +816,13 @@ function emitRepeatedSpan(
     const stopPredicate = stopPredicateFor(next, ctx);
     const sep = repeats.sep;
     const min = repeats.min ?? 0;
+    const max = repeats.max;
     const minCheck = min > 0
       ? `\nif (__count_${listVar} < ${min}) throw new SyntaxError(${jsString(`expected at least ${min} ${roles.join('|')}`)});`
       : '';
+    const maxCheck = max === undefined
+      ? ''
+      : `\nif (__count_${listVar} > ${max}) throw new SyntaxError(${jsString(`expected at most ${max} ${roles.join('|')}`)});`;
     if (!sep) {
       return `let __count_${listVar} = 0;
 while (!(${stopPredicate})) {
@@ -811,7 +830,7 @@ while (!(${stopPredicate})) {
   ${validateChildCall}
   __count_${listVar}++;
   if (state.pos === __before) break;
-}${minCheck}`;
+}${minCheck}${maxCheck}`;
     }
     const sepType = ctx.literalTypeByText.get(sep) ?? sep;
     const sepTypeExpr = jsString(sepType);
@@ -829,7 +848,7 @@ while (!(${stopPredicate})) {
   while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
     expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
   }
-}${minCheck}`;
+}${minCheck}${maxCheck}`;
   }
   const childDecl = roles.length === 1
     ? `const __child = ${parseFnName(roles[0]!, ctx.variant)}(state);`
@@ -850,7 +869,9 @@ while (!(${stopPredicate})) {
   const sep = repeats.sep;
   const trailing = repeats.trailing ?? 'forbidden';
   const min = repeats.min ?? 0;
+  const max = repeats.max;
   const minCheck = enforceMin(listVar, min, roles.join('|'));
+  const maxCheck = enforceMax(listVar, max, roles.join('|'));
 
   // raws.before tracking: after each child parse, attach raws.before set
   // to the source slice from the previous sibling's end offset (or the
@@ -885,7 +906,7 @@ while (!(${stopPredicate})) {
   ${childDecl}
 ${attachLine}  ${listVar}.push(__child);
   if (state.pos === __before) break;
-${updateLine}}${minCheck}`;
+${updateLine}}${minCheck}${maxCheck}`;
   }
 
   const sepType = ctx.literalTypeByText.get(sep) ?? sep;
@@ -914,7 +935,7 @@ ${attachLine}  ${listVar}.push(__child);
 ${updateLine}  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
     expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
   }
-}${minCheck}`;
+}${minCheck}${maxCheck}`;
 }
 
 type FirstToken =
@@ -1450,6 +1471,11 @@ function stopPredicateFor(next: ResolvedSpan | undefined, ctx: Ctx): string {
 function enforceMin(listVar: string, min: number, role: string): string {
   if (min <= 0) return '';
   return `\nif (${listVar}.length < ${min}) throw new SyntaxError(${jsString(`expected at least ${min} ${role}`)});`;
+}
+
+function enforceMax(listVar: string, max: number | undefined, role: string): string {
+  if (max === undefined) return '';
+  return `\nif (${listVar}.length > ${max}) throw new SyntaxError(${jsString(`expected at most ${max} ${role}`)});`;
 }
 
 function findModifier<K extends SpanModifier['kind']>(

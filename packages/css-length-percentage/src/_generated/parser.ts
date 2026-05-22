@@ -271,6 +271,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -290,6 +298,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -658,6 +677,7 @@ function parseLengthPercentageItem__alt0(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   const unit = expectClass(state, "ident");
@@ -677,6 +697,7 @@ function parseLengthPercentageItem__alt1(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   const unit = expectClass(state, "ident");
@@ -695,6 +716,7 @@ function parseLengthPercentageItem__alt2(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "percent", "%");
@@ -711,6 +733,7 @@ function parseLengthPercentageItem__alt3(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "percent", "%");
@@ -743,10 +766,18 @@ function parseLengthPercentageItem__alt5(state: State): unknown {
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
-
-  const __args_start = state.__lastCaptureStart;
-  const __args_end = state.__lastCaptureEnd;
+  const __args_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  let __prevEnd_args = __args_startOff;
+  const args: unknown[] = [];
+  while (!(peekLiteral(state, "rparen", ")"))) {
+    const __before = state.pos;
+    const __child = parseLengthFunctionToken(state);
+    attachRawsBefore(state, __child, __prevEnd_args);
+    args.push(__child);
+    if (state.pos === __before) break;
+    __prevEnd_args = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_args;
+  }
+  if (args.length < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
   expectLiteral(state, "rparen", ")");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
@@ -763,7 +794,9 @@ function parseLengthPercentageItem__alt6(state: State): unknown {
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
 
   const __args_start = state.__lastCaptureStart;
   const __args_end = state.__lastCaptureEnd;
@@ -792,19 +825,170 @@ function parseLengthPercentageItem__alt7(state: State): unknown {
 function parseLengthPercentageItem(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    { const r = trySpeculate(state, parseLengthPercentageItem__alt1); if (r !== null) return r; }
-    return parseLengthPercentageItem__alt3(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "number") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+        return parseLengthPercentageItem__alt3(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+        return parseLengthPercentageItem__alt1(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseLengthPercentageItem__alt5); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseLengthPercentageItem__alt6); if (r !== null) return r; }
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, parseLengthPercentageItem__alt5); if (r !== null) return r; }
+      return parseLengthPercentageItem__alt6(state);
+    }
     return parseLengthPercentageItem__alt7(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident" && (__nextTok.value.toLowerCase() === "cap" || __nextTok.value.toLowerCase() === "ch" || __nextTok.value.toLowerCase() === "cm" || __nextTok.value.toLowerCase() === "dvh" || __nextTok.value.toLowerCase() === "dvw" || __nextTok.value.toLowerCase() === "em" || __nextTok.value.toLowerCase() === "ex" || __nextTok.value.toLowerCase() === "ic" || __nextTok.value.toLowerCase() === "in" || __nextTok.value.toLowerCase() === "lh" || __nextTok.value.toLowerCase() === "lvh" || __nextTok.value.toLowerCase() === "lvw" || __nextTok.value.toLowerCase() === "mm" || __nextTok.value.toLowerCase() === "pc" || __nextTok.value.toLowerCase() === "pt" || __nextTok.value.toLowerCase() === "px" || __nextTok.value.toLowerCase() === "q" || __nextTok.value.toLowerCase() === "rem" || __nextTok.value.toLowerCase() === "rlh" || __nextTok.value.toLowerCase() === "svh" || __nextTok.value.toLowerCase() === "svw" || __nextTok.value.toLowerCase() === "vb" || __nextTok.value.toLowerCase() === "vh" || __nextTok.value.toLowerCase() === "vi" || __nextTok.value.toLowerCase() === "vmax" || __nextTok.value.toLowerCase() === "vmin" || __nextTok.value.toLowerCase() === "vw")) return parseLengthPercentageItem__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "percent" && __nextTok.value === "%") return parseLengthPercentageItem__alt2(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return parseLengthPercentageItem__alt2(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return parseLengthPercentageItem__alt0(state);
+    }
     return parseLengthPercentageItem__alt4(state);
+  }
+  throw new SyntaxError('no production matched');
+}
+
+function parseLengthFunctionToken__alt0(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  const __value_start = state.tokens[state.pos - 1].start;
+  const __value_end = state.tokens[state.pos - 1].end;
+  const unit = expectClass(state, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const __unit_start = state.tokens[state.pos - 1].start;
+  const __unit_end = state.tokens[state.pos - 1].end;
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "dimension", value: value, unit: unit };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt1(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  const __value_start = state.tokens[state.pos - 1].start;
+  const __value_end = state.tokens[state.pos - 1].end;
+  expectLiteral(state, "percent", "%");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "percentage", value: value };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt2(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  const value = expectClass(state, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  const __value_start = state.tokens[state.pos - 1].start;
+  const __value_end = state.tokens[state.pos - 1].end;
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "zero", value: value };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt3(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "delim", "-");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "operator", value: "-" };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt4(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "delim", "+");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "operator", value: "+" };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt5(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "delim", "*");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "operator", value: "*" };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt6(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "delim", "/");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "operator", value: "/" };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken__alt7(state: State): unknown {
+  const __startTok = state.tokens[state.pos];
+  const __startOff = __startTok ? __startTok.start : state.input.length;
+  expectLiteral(state, "delim", ",");
+  const __lastTok = state.tokens[state.pos - 1];
+  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __struct: Record<string, unknown> = { type: "separator", value: "," };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseLengthFunctionToken(state: State): unknown {
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+    return parseLengthFunctionToken__alt3(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+    return parseLengthFunctionToken__alt4(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+    return parseLengthFunctionToken__alt5(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+    return parseLengthFunctionToken__alt6(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+    return parseLengthFunctionToken__alt7(state);
+  }
+  else if (__tok !== undefined && __tok.type === "number") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return parseLengthFunctionToken__alt1(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return parseLengthFunctionToken__alt0(state);
+    }
+    return parseLengthFunctionToken__alt2(state);
   }
   throw new SyntaxError('no production matched');
 }
@@ -824,6 +1008,7 @@ function parseCssLengthPercentage(state: State): unknown {
     __prevEnd_items = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_items;
   }
   if (items.length < 1) throw new SyntaxError("expected at least 1 LengthPercentageItem");
+  if (items.length > 4) throw new SyntaxError("expected at most 4 LengthPercentageItem");
   const __lastTok = state.tokens[state.pos - 1];
   const __endOff = __lastTok ? __lastTok.end : __startOff;
   const __struct: Record<string, unknown> = { type: "css-length-percentage", items: items };
@@ -834,6 +1019,7 @@ function parseCssLengthPercentage(state: State): unknown {
 function parseLengthPercentageItemFast__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const unit = expectClass(state, "ident");
   if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
   return { type: "dimension", value: value, unit: unit };
@@ -843,6 +1029,7 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const unit = expectClass(state, "ident");
   if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
   return { type: "dimension", value: "-10", unit: unit };
@@ -851,6 +1038,7 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
 function parseLengthPercentageItemFast__alt2(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "percent", "%");
   return { type: "percentage", value: value };
 }
@@ -859,6 +1047,7 @@ function parseLengthPercentageItemFast__alt3(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "percent", "%");
   return { type: "percentage", value: "-50" };
 }
@@ -873,8 +1062,15 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
 
+  const args: unknown[] = [];
+  while (!(peekLiteral(state, "rparen", ")"))) {
+    const __before = state.pos;
+    const __child = parseLengthFunctionTokenFast(state);
+    args.push(__child);
+    if (state.pos === __before) break;
+  }
+  if (args.length < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
   expectLiteral(state, "rparen", ")");
   return { type: "length-function", name: name, args: args };
 }
@@ -883,7 +1079,10 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
+
 
   expectLiteral(state, "rparen", ")");
   return { type: "var-function", name: name, args: args };
@@ -898,19 +1097,114 @@ function parseLengthPercentageItemFast__alt7(state: State): unknown {
 function parseLengthPercentageItemFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    { const r = trySpeculate(state, parseLengthPercentageItemFast__alt1); if (r !== null) return r; }
-    return parseLengthPercentageItemFast__alt3(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "number") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+        return parseLengthPercentageItemFast__alt3(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+        return parseLengthPercentageItemFast__alt1(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseLengthPercentageItemFast__alt5); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseLengthPercentageItemFast__alt6); if (r !== null) return r; }
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, parseLengthPercentageItemFast__alt5); if (r !== null) return r; }
+      return parseLengthPercentageItemFast__alt6(state);
+    }
     return parseLengthPercentageItemFast__alt7(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident" && (__nextTok.value.toLowerCase() === "cap" || __nextTok.value.toLowerCase() === "ch" || __nextTok.value.toLowerCase() === "cm" || __nextTok.value.toLowerCase() === "dvh" || __nextTok.value.toLowerCase() === "dvw" || __nextTok.value.toLowerCase() === "em" || __nextTok.value.toLowerCase() === "ex" || __nextTok.value.toLowerCase() === "ic" || __nextTok.value.toLowerCase() === "in" || __nextTok.value.toLowerCase() === "lh" || __nextTok.value.toLowerCase() === "lvh" || __nextTok.value.toLowerCase() === "lvw" || __nextTok.value.toLowerCase() === "mm" || __nextTok.value.toLowerCase() === "pc" || __nextTok.value.toLowerCase() === "pt" || __nextTok.value.toLowerCase() === "px" || __nextTok.value.toLowerCase() === "q" || __nextTok.value.toLowerCase() === "rem" || __nextTok.value.toLowerCase() === "rlh" || __nextTok.value.toLowerCase() === "svh" || __nextTok.value.toLowerCase() === "svw" || __nextTok.value.toLowerCase() === "vb" || __nextTok.value.toLowerCase() === "vh" || __nextTok.value.toLowerCase() === "vi" || __nextTok.value.toLowerCase() === "vmax" || __nextTok.value.toLowerCase() === "vmin" || __nextTok.value.toLowerCase() === "vw")) return parseLengthPercentageItemFast__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "percent" && __nextTok.value === "%") return parseLengthPercentageItemFast__alt2(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return parseLengthPercentageItemFast__alt2(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return parseLengthPercentageItemFast__alt0(state);
+    }
     return parseLengthPercentageItemFast__alt4(state);
+  }
+  throw new SyntaxError('no production matched');
+}
+
+function parseLengthFunctionTokenFast__alt0(state: State): unknown {
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  const unit = expectClass(state, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  return { type: "dimension", value: value, unit: unit };
+}
+
+function parseLengthFunctionTokenFast__alt1(state: State): unknown {
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  expectLiteral(state, "percent", "%");
+  return { type: "percentage", value: value };
+}
+
+function parseLengthFunctionTokenFast__alt2(state: State): unknown {
+  const value = expectClass(state, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  return { type: "zero", value: value };
+}
+
+function parseLengthFunctionTokenFast__alt3(state: State): unknown {
+  expectLiteral(state, "delim", "-");
+  return { type: "operator", value: "-" };
+}
+
+function parseLengthFunctionTokenFast__alt4(state: State): unknown {
+  expectLiteral(state, "delim", "+");
+  return { type: "operator", value: "+" };
+}
+
+function parseLengthFunctionTokenFast__alt5(state: State): unknown {
+  expectLiteral(state, "delim", "*");
+  return { type: "operator", value: "*" };
+}
+
+function parseLengthFunctionTokenFast__alt6(state: State): unknown {
+  expectLiteral(state, "delim", "/");
+  return { type: "operator", value: "/" };
+}
+
+function parseLengthFunctionTokenFast__alt7(state: State): unknown {
+  expectLiteral(state, "delim", ",");
+  return { type: "separator", value: "," };
+}
+
+function parseLengthFunctionTokenFast(state: State): unknown {
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+    return parseLengthFunctionTokenFast__alt3(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+    return parseLengthFunctionTokenFast__alt4(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+    return parseLengthFunctionTokenFast__alt5(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+    return parseLengthFunctionTokenFast__alt6(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+    return parseLengthFunctionTokenFast__alt7(state);
+  }
+  else if (__tok !== undefined && __tok.type === "number") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return parseLengthFunctionTokenFast__alt1(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return parseLengthFunctionTokenFast__alt0(state);
+    }
+    return parseLengthFunctionTokenFast__alt2(state);
   }
   throw new SyntaxError('no production matched');
 }
@@ -925,12 +1219,14 @@ function parseCssLengthPercentageFast(state: State): unknown {
     if (state.pos === __before) break;
   }
   if (items.length < 1) throw new SyntaxError("expected at least 1 LengthPercentageItem");
+  if (items.length > 4) throw new SyntaxError("expected at most 4 LengthPercentageItem");
   return { type: "css-length-percentage", items: items };
 }
 
 function validateLengthPercentageItem__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const unit = expectClass(state, "ident");
   if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
   return;
@@ -940,6 +1236,7 @@ function validateLengthPercentageItem__alt1(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const unit = expectClass(state, "ident");
   if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
   return;
@@ -948,6 +1245,7 @@ function validateLengthPercentageItem__alt1(state: State): unknown {
 function validateLengthPercentageItem__alt2(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "percent", "%");
   return;
 }
@@ -956,6 +1254,7 @@ function validateLengthPercentageItem__alt3(state: State): unknown {
   expectLiteral(state, "delim", "-");
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "percent", "%");
   return;
 }
@@ -970,8 +1269,14 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
-
+  let __count_args = 0;
+  while (!(peekLiteral(state, "rparen", ")"))) {
+    const __before = state.pos;
+    validateLengthFunctionToken(state);
+    __count_args++;
+    if (state.pos === __before) break;
+  }
+  if (__count_args < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
   expectLiteral(state, "rparen", ")");
   return;
 }
@@ -980,7 +1285,10 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
+
 
   expectLiteral(state, "rparen", ")");
   return;
@@ -995,19 +1303,114 @@ function validateLengthPercentageItem__alt7(state: State): unknown {
 function validateLengthPercentageItem(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    { const r = trySpeculate(state, validateLengthPercentageItem__alt1); if (r !== null) return r; }
-    return validateLengthPercentageItem__alt3(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "number") {
+      const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+        return validateLengthPercentageItem__alt3(state);
+      }
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+        return validateLengthPercentageItem__alt1(state);
+      }
+      throw new SyntaxError('no production matched');
+    }
+    throw new SyntaxError('no production matched');
   }
   else if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, validateLengthPercentageItem__alt5); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateLengthPercentageItem__alt6); if (r !== null) return r; }
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, validateLengthPercentageItem__alt5); if (r !== null) return r; }
+      return validateLengthPercentageItem__alt6(state);
+    }
     return validateLengthPercentageItem__alt7(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "ident" && (__nextTok.value.toLowerCase() === "cap" || __nextTok.value.toLowerCase() === "ch" || __nextTok.value.toLowerCase() === "cm" || __nextTok.value.toLowerCase() === "dvh" || __nextTok.value.toLowerCase() === "dvw" || __nextTok.value.toLowerCase() === "em" || __nextTok.value.toLowerCase() === "ex" || __nextTok.value.toLowerCase() === "ic" || __nextTok.value.toLowerCase() === "in" || __nextTok.value.toLowerCase() === "lh" || __nextTok.value.toLowerCase() === "lvh" || __nextTok.value.toLowerCase() === "lvw" || __nextTok.value.toLowerCase() === "mm" || __nextTok.value.toLowerCase() === "pc" || __nextTok.value.toLowerCase() === "pt" || __nextTok.value.toLowerCase() === "px" || __nextTok.value.toLowerCase() === "q" || __nextTok.value.toLowerCase() === "rem" || __nextTok.value.toLowerCase() === "rlh" || __nextTok.value.toLowerCase() === "svh" || __nextTok.value.toLowerCase() === "svw" || __nextTok.value.toLowerCase() === "vb" || __nextTok.value.toLowerCase() === "vh" || __nextTok.value.toLowerCase() === "vi" || __nextTok.value.toLowerCase() === "vmax" || __nextTok.value.toLowerCase() === "vmin" || __nextTok.value.toLowerCase() === "vw")) return validateLengthPercentageItem__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "percent" && __nextTok.value === "%") return validateLengthPercentageItem__alt2(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return validateLengthPercentageItem__alt2(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return validateLengthPercentageItem__alt0(state);
+    }
     return validateLengthPercentageItem__alt4(state);
+  }
+  throw new SyntaxError('no production matched');
+}
+
+function validateLengthFunctionToken__alt0(state: State): unknown {
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  const unit = expectClass(state, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  return;
+}
+
+function validateLengthFunctionToken__alt1(state: State): unknown {
+  const value = expectClass(state, "number");
+
+  requireNoWhitespaceAfterLastToken(state);
+  expectLiteral(state, "percent", "%");
+  return;
+}
+
+function validateLengthFunctionToken__alt2(state: State): unknown {
+  const value = expectClass(state, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  return;
+}
+
+function validateLengthFunctionToken__alt3(state: State): unknown {
+  expectLiteral(state, "delim", "-");
+  return;
+}
+
+function validateLengthFunctionToken__alt4(state: State): unknown {
+  expectLiteral(state, "delim", "+");
+  return;
+}
+
+function validateLengthFunctionToken__alt5(state: State): unknown {
+  expectLiteral(state, "delim", "*");
+  return;
+}
+
+function validateLengthFunctionToken__alt6(state: State): unknown {
+  expectLiteral(state, "delim", "/");
+  return;
+}
+
+function validateLengthFunctionToken__alt7(state: State): unknown {
+  expectLiteral(state, "delim", ",");
+  return;
+}
+
+function validateLengthFunctionToken(state: State): unknown {
+  const __tok = state.tokens[state.pos];
+  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+    return validateLengthFunctionToken__alt3(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+    return validateLengthFunctionToken__alt4(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+    return validateLengthFunctionToken__alt5(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+    return validateLengthFunctionToken__alt6(state);
+  }
+  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+    return validateLengthFunctionToken__alt7(state);
+  }
+  else if (__tok !== undefined && __tok.type === "number") {
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+      return validateLengthFunctionToken__alt1(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+      return validateLengthFunctionToken__alt0(state);
+    }
+    return validateLengthFunctionToken__alt2(state);
   }
   throw new SyntaxError('no production matched');
 }
@@ -1021,11 +1424,12 @@ function validateCssLengthPercentage(state: State): unknown {
     if (state.pos === __before) break;
   }
   if (__count_items < 1) throw new SyntaxError("expected at least 1 LengthPercentageItem");
+  if (__count_items > 4) throw new SyntaxError("expected at most 4 LengthPercentageItem");
   return;
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -1058,8 +1462,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }

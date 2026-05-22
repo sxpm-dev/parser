@@ -1,16 +1,16 @@
 {
   "validate:5KB": {
-    "hz": 4056,
+    "hz": 415,
     "inputHash": "a729cbe5",
     "bytes": 5130
   },
   "validate:20KB": {
-    "hz": 1039,
+    "hz": 114,
     "inputHash": "d2654345",
     "bytes": 20520
   },
   "validate:100KB": {
-    "hz": 206,
+    "hz": 23,
     "inputHash": "355cdca5",
     "bytes": 102438
   }

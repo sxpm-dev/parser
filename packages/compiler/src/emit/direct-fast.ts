@@ -1,11 +1,14 @@
 import { isStructureRef, type StructureValue } from '@parser2/parser';
-import type { InferredSchema, NodeTypeInfo, ResolvedSpan } from '../model.ts';
-import { jsString } from './strings.ts';
+import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
+import { emitStructureExpr } from './structure.ts';
+import { jsIdent, jsString } from './strings.ts';
 
 export function emitDirectFastPath(schema: InferredSchema): string | null {
   const shape = inferNestedBlockFastShape(schema);
-  if (!shape) return null;
-  return emitNestedBlockFastPath(shape);
+  if (shape) return emitNestedBlockFastPath(shape);
+  const delimited = inferDelimitedRecordFastShape(schema);
+  if (delimited) return emitDelimitedRecordFastPath(delimited);
+  return null;
 }
 
 type FastShape = {
@@ -42,6 +45,104 @@ type ObjectShape = {
   readonly typeKey: string | null;
   readonly typeValue: string | null;
 };
+
+type DelimitedRecordShape = {
+  readonly rootProduction: Production;
+  readonly rootLiteral: string;
+  readonly delimiter: string;
+  readonly fields: ReadonlyArray<ResolvedSpan & { readonly name: string }>;
+  readonly finalSpan: ResolvedSpan & { readonly name: string; readonly recursiveRoles: readonly [string] };
+  readonly variant: DelimitedVariantShape;
+};
+
+type DelimitedVariantShape = {
+  readonly firstClass: ResolvedSpan['class'];
+  readonly alternatives: ReadonlyArray<{
+    readonly production: Production;
+    readonly first: ResolvedSpan & { readonly name: string };
+    readonly separator: string | null;
+    readonly second: (ResolvedSpan & { readonly name: string }) | null;
+  }>;
+};
+
+function inferDelimitedRecordFastShape(schema: InferredSchema): DelimitedRecordShape | null {
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootProduction = rootInfo?.productions.length === 1 ? rootInfo.productions[0] : undefined;
+  if (!rootProduction) return null;
+
+  const spans = rootProduction.spans;
+  const rootLiteral = spans[0];
+  if (rootLiteral?.class !== 'literal' || !rootLiteral.text) return null;
+
+  let delimiter: string | null = null;
+  const fields: Array<ResolvedSpan & { readonly name: string }> = [];
+  let i = 1;
+  while (i < spans.length) {
+    const sep = spans[i];
+    const field = spans[i + 1];
+    if (sep?.class !== 'literal' || !sep.text || sep.text.length !== 1 || !field?.name) return null;
+    if (delimiter === null) delimiter = sep.text;
+    else if (delimiter !== sep.text) return null;
+
+    if (field.recursiveRoles.length === 1 && i + 2 === spans.length) {
+      const role = field.recursiveRoles[0]!;
+      const variant = inferDelimitedVariantShape(schema.nodeTypes.get(role));
+      if (!variant) return null;
+      return {
+        rootProduction,
+        rootLiteral: rootLiteral.text,
+        delimiter,
+        fields,
+        finalSpan: field as ResolvedSpan & { readonly name: string; readonly recursiveRoles: readonly [string] },
+        variant,
+      };
+    }
+
+    if (!isDirectDelimitedScalar(field)) return null;
+    fields.push(field as ResolvedSpan & { readonly name: string });
+    i += 2;
+  }
+  return null;
+}
+
+function inferDelimitedVariantShape(info: NodeTypeInfo | undefined): DelimitedVariantShape | null {
+  if (!info || info.productions.length < 1) return null;
+  const alternatives: DelimitedVariantShape['alternatives'][number][] = [];
+  let firstClass: ResolvedSpan['class'] | null = null;
+  for (const production of info.productions) {
+    const spans = production.spans;
+    const first = spans[0];
+    if (!first?.name || !isDirectDelimitedScalar(first)) return null;
+    firstClass ??= first.class;
+    if (firstClass !== first.class) return null;
+    if (spans.length === 1) {
+      alternatives.push({ production, first: first as ResolvedSpan & { readonly name: string }, separator: null, second: null });
+      continue;
+    }
+    const separator = spans[1];
+    const second = spans[2];
+    if (spans.length !== 3 || separator?.class !== 'literal' || !separator.text || separator.text.length !== 1) return null;
+    if (!second?.name || !isDirectDelimitedScalar(second)) return null;
+    alternatives.push({
+      production,
+      first: first as ResolvedSpan & { readonly name: string },
+      separator: separator.text,
+      second: second as ResolvedSpan & { readonly name: string },
+    });
+  }
+  return firstClass ? { firstClass, alternatives } : null;
+}
+
+function isDirectDelimitedScalar(span: ResolvedSpan): boolean {
+  if (span.recursiveRoles.length > 0 || span.modifiers.length > 0) return false;
+  if (span.class === 'ident') {
+    return span.refinements.every((refinement) => refinement.name === 'css' || refinement.name === 'js');
+  }
+  if (span.class === 'number') {
+    return span.refinements.every((refinement) => refinement.name === 'int' || refinement.name === 'float' || refinement.name === 'scientific');
+  }
+  return false;
+}
 
 function inferNestedBlockFastShape(schema: InferredSchema): FastShape | null {
   const rootInfo = schema.nodeTypes.get(schema.rootType);
@@ -792,6 +893,232 @@ function directSyntaxError(state: DirectState, message: string, offset: number):
 }`;
 }
 
+function emitDelimitedRecordFastPath(shape: DelimitedRecordShape): string {
+  const delimiterCode = shape.delimiter.charCodeAt(0);
+  const rootValues = new Map<string, string>();
+  for (const field of shape.fields) rootValues.set(field.name, jsIdent(field.name));
+  rootValues.set(shape.finalSpan.name, jsIdent(shape.finalSpan.name));
+  const rootStructure = emitStructureExpr(shape.rootProduction.structure, {
+    valueExpr: rootValues,
+    presenceExpr: new Map([...rootValues].map(([name, value]) => [name, `(${value}.length > 0)`])),
+    startOffExpr: new Map(),
+    endOffExpr: new Map(),
+  }, { omitRaws: true });
+  const parseFields: string[] = [];
+  for (const field of shape.fields) {
+    parseFields.push(emitInlineExpectChar(delimiterCode, shape.delimiter));
+    parseFields.push(emitInlineReadScalar(field, jsIdent(field.name), jsString(field.name)));
+  }
+  const finalVariant = emitInlineDelimitedVariant(shape.variant, jsIdent(shape.finalSpan.name));
+
+  return `function parseDirectFast(input: string): unknown {
+  const len = input.length;
+  let pos = 0;
+  ${skipWsCode()}
+  if (!(${literalAtPosCondition(shape.rootLiteral)})) {
+    throw new SyntaxError(\`expected literal '${shape.rootLiteral}' at position \${pos}\`);
+  }
+  pos += ${shape.rootLiteral.length};
+  ${skipWsCode()}
+  ${parseFields.join('\n  ')}
+  ${emitInlineExpectChar(delimiterCode, shape.delimiter)}
+  ${finalVariant}
+  ${skipWsCode()}
+  if (pos !== len) throw new SyntaxError(\`unexpected trailing character at position \${pos}\`);
+  return ${rootStructure};
+}
+
+function validateDirectFast(input: string): void {
+  parseDirectFast(input);
+}
+
+`;
+}
+
+function emitInlineDelimitedVariant(shape: DelimitedVariantShape, targetName: string): string {
+  const branches: string[] = [];
+  const bare = shape.alternatives.find((alternative) => alternative.separator === null);
+  for (const alternative of shape.alternatives) {
+    if (!alternative.separator || !alternative.second) continue;
+    const valueExpr = new Map<string, string>([
+      [alternative.first.name, '__first'],
+      [alternative.second.name, jsIdent(alternative.second.name)],
+    ]);
+    const structure = emitStructureExpr(alternative.production.structure, {
+      valueExpr,
+      presenceExpr: new Map([...valueExpr].map(([name, value]) => [name, `(${value}.length > 0)`])),
+      startOffExpr: new Map(),
+      endOffExpr: new Map(),
+    }, { omitRaws: true });
+    const code = alternative.separator.charCodeAt(0);
+    const secondName = jsIdent(alternative.second.name);
+    branches.push(`if (input.charCodeAt(pos) === ${code}) {
+    pos++;
+    ${skipWsCode()}
+    ${emitInlineReadScalar(alternative.second, secondName, jsString(alternative.second.name))}
+    ${targetName} = ${structure};
+  }`);
+  }
+
+  const fallback = bare
+    ? `${targetName} = ${emitStructureExpr(bare.production.structure, {
+      valueExpr: new Map([[bare.first.name, '__first']]),
+      presenceExpr: new Map([[bare.first.name, '(__first.length > 0)']]),
+      startOffExpr: new Map(),
+      endOffExpr: new Map(),
+    }, { omitRaws: true })};`
+    : `throw new SyntaxError(\`expected variant separator at position \${pos}\`);`;
+  const first = shape.alternatives[0]!.first;
+  const lines = [
+    emitInlineReadScalar(first, '__first', jsString(first.name)),
+    `let ${targetName}: unknown;`,
+  ];
+  branches.forEach((branch, index) => {
+    lines.push(`${index === 0 ? '' : 'else '}${branch}`);
+  });
+  lines.push(`${branches.length > 0 ? 'else ' : ''}{`);
+  lines.push(indent(fallback, 1));
+  lines.push('}');
+  return lines.join('\n  ');
+}
+
+function emitInlineExpectChar(code: number, label: string): string {
+  return `if (input.charCodeAt(pos) !== ${code}) {
+    throw new SyntaxError(\`expected literal '${label}' at position \${pos}\`);
+  }
+  pos++;
+  ${skipWsCode()}`;
+}
+
+function emitInlineReadScalar(span: ResolvedSpan, targetName: string, label: string): string {
+  const startName = `__${targetName}Start`;
+  if (span.class === 'number') {
+    if (span.refinements.some((refinement) => refinement.name === 'int')) {
+      return `const ${startName} = pos;
+  if (${startName} >= len) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  let __${targetName}C = input.charCodeAt(${startName});
+  if (__${targetName}C < 48 || __${targetName}C > 57) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  pos++;
+  while (pos < len) {
+    __${targetName}C = input.charCodeAt(pos);
+    if (__${targetName}C < 48 || __${targetName}C > 57) break;
+    pos++;
+  }
+  const ${targetName} = input.slice(${startName}, pos);
+  ${skipWsCode()}`;
+    }
+    return `const ${startName} = pos;
+  if (${startName} >= len) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  let __${targetName}C = input.charCodeAt(${startName});
+  if (__${targetName}C < 48 || __${targetName}C > 57) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  pos++;
+  while (pos < len) {
+    __${targetName}C = input.charCodeAt(pos);
+    if (__${targetName}C < 48 || __${targetName}C > 57) break;
+    pos++;
+  }
+  if (pos < len && input.charCodeAt(pos) === 0x2e && pos + 1 < len) {
+    __${targetName}C = input.charCodeAt(pos + 1);
+    if (__${targetName}C >= 48 && __${targetName}C <= 57) {
+    pos++;
+      while (pos < len) {
+        __${targetName}C = input.charCodeAt(pos);
+        if (__${targetName}C < 48 || __${targetName}C > 57) break;
+        pos++;
+      }
+    }
+  }
+  const __${targetName}Ec = pos < len ? input.charCodeAt(pos) : 0;
+  if (__${targetName}Ec === 0x65 || __${targetName}Ec === 0x45) {
+    let __${targetName}J = pos + 1;
+    if (__${targetName}J < len && (input.charCodeAt(__${targetName}J) === 0x2b || input.charCodeAt(__${targetName}J) === 0x2d)) __${targetName}J++;
+    if (__${targetName}J < len) {
+      __${targetName}C = input.charCodeAt(__${targetName}J);
+      if (__${targetName}C >= 48 && __${targetName}C <= 57) {
+      pos = __${targetName}J + 1;
+        while (pos < len) {
+          __${targetName}C = input.charCodeAt(pos);
+          if (__${targetName}C < 48 || __${targetName}C > 57) break;
+          pos++;
+        }
+      }
+    }
+  }
+  const ${targetName} = input.slice(${startName}, pos);
+  ${skipWsCode()}`;
+  }
+  if (span.class === 'ident' && span.refinements.some((refinement) => refinement.name === 'js')) {
+    return `const ${startName} = pos;
+  if (${startName} >= len) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  let __${targetName}C = input.charCodeAt(${startName});
+  if (!(${jsIdentStartCondition(`__${targetName}C`)})) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  pos++;
+  while (pos < len) {
+    __${targetName}C = input.charCodeAt(pos);
+    if (!(${jsIdentPartCondition(`__${targetName}C`)})) break;
+    pos++;
+  }
+  const ${targetName} = input.slice(${startName}, pos);
+  ${skipWsCode()}`;
+  }
+  return `const ${startName} = pos;
+  if (${startName} >= len) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  let __${targetName}C = input.charCodeAt(${startName});
+  if (!(${cssIdentStartCondition(`__${targetName}C`)})) {
+    throw new SyntaxError(\`expected token of class '${label.slice(1, -1)}' at position \${${startName}}\`);
+  }
+  pos++;
+  while (pos < len) {
+    __${targetName}C = input.charCodeAt(pos);
+    if (!(${cssIdentPartCondition(`__${targetName}C`)})) break;
+    pos++;
+  }
+  const ${targetName} = input.slice(${startName}, pos);
+  ${skipWsCode()}`;
+}
+
+function skipWsCode(): string {
+  return `while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }`;
+}
+
+function literalAtPosCondition(literal: string): string {
+  return literal.split('').map((ch, index) => `input.charCodeAt(pos + ${index}) === ${ch.charCodeAt(0)}`).join(' && ');
+}
+
+function cssIdentStartCondition(c: string): string {
+  return `(${c} >= 97 && ${c} <= 122) || (${c} >= 65 && ${c} <= 90) || ${c} === 95 || ${c} === 45`;
+}
+
+function cssIdentPartCondition(c: string): string {
+  return `${cssIdentStartCondition(c)} || (${c} >= 48 && ${c} <= 57)`;
+}
+
+function jsIdentStartCondition(c: string): string {
+  return `(${c} >= 97 && ${c} <= 122) || (${c} >= 65 && ${c} <= 90) || ${c} === 95 || ${c} === 36`;
+}
+
+function jsIdentPartCondition(c: string): string {
+  return `${jsIdentStartCondition(c)} || (${c} >= 48 && ${c} <= 57)`;
+}
+
 function prop(key: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : jsString(key);
 }
@@ -802,4 +1129,9 @@ function typeProp(shape: ObjectShape): string {
 
 function joinProps(...items: string[]): string {
   return items.filter(Boolean).join(', ');
+}
+
+function indent(s: string, level: number): string {
+  const pad = '  '.repeat(level);
+  return s.split('\n').map((line) => (line.length ? pad + line : line)).join('\n');
 }

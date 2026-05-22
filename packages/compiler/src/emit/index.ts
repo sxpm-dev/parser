@@ -37,18 +37,18 @@ function emitPublicApi(schema: InferredSchema, hasDirectFast: boolean): string {
     ? hasValidation
       ? `  if (mode === 'fast') {
     const result = parseDirectFast(input);
-    if (options.validate === true) validateParsedProperties(input, result);
+    if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }
 `
       : `  if (mode === 'fast') return parseDirectFast(input);\n`
     : '';
   const validateAfterParse = hasValidation
-    ? `  if (options.validate === true) validateParsedProperties(input, result);\n`
+    ? `  if (options?.validate === true) validateParsedProperties(input, result);\n`
     : '';
   const validationRuntime = hasValidation ? `\n${emitPropertyValidation(schema)}\n` : '';
-  return `export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+  return `export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
 ${directFastDispatch}  let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -81,8 +81,8 @@ ${validateAfterParse}    return result;
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true${hasValidation ? '' : ' && false'}) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true${hasValidation ? '' : ' && false'}) {
     parse(input, options);
     return;
   }

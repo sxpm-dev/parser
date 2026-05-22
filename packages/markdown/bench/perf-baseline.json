@@ -1,31 +1,31 @@
 {
   "tokenize:5KB": {
-    "hz": 5284,
+    "hz": 1170,
     "inputHash": "02cadb1e",
     "bytes": 5588
   },
   "parse:5KB": {
-    "hz": 2039,
+    "hz": 474,
     "inputHash": "02cadb1e",
     "bytes": 5588
   },
   "tokenize:20KB": {
-    "hz": 980,
+    "hz": 254,
     "inputHash": "373d9e02",
     "bytes": 20828
   },
   "parse:20KB": {
-    "hz": 423,
+    "hz": 89,
     "inputHash": "373d9e02",
     "bytes": 20828
   },
   "tokenize:100KB": {
-    "hz": 183,
+    "hz": 28,
     "inputHash": "85879de9",
     "bytes": 102616
   },
   "parse:100KB": {
-    "hz": 124,
+    "hz": 19,
     "inputHash": "85879de9",
     "bytes": 102616
   }

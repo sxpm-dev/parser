@@ -251,6 +251,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -270,6 +278,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -688,9 +707,13 @@ function parseArnResource__alt2(state: State): unknown {
 function parseArnResource(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseArnResource__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "slash" && __nextTok.value === "/") return parseArnResource__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseArnResource__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
+      return parseArnResource__alt1(state);
+    }
     return parseArnResource__alt2(state);
   }
   throw new SyntaxError('no production matched');
@@ -756,9 +779,13 @@ function parseArnResourceFast__alt2(state: State): unknown {
 function parseArnResourceFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseArnResourceFast__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "slash" && __nextTok.value === "/") return parseArnResourceFast__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseArnResourceFast__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
+      return parseArnResourceFast__alt1(state);
+    }
     return parseArnResourceFast__alt2(state);
   }
   throw new SyntaxError('no production matched');
@@ -810,9 +837,13 @@ function validateArnResource__alt2(state: State): unknown {
 function validateArnResource(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return validateArnResource__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "slash" && __nextTok.value === "/") return validateArnResource__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return validateArnResource__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
+      return validateArnResource__alt1(state);
+    }
     return validateArnResource__alt2(state);
   }
   throw new SyntaxError('no production matched');
@@ -837,8 +868,248 @@ function validateArn(state: State): unknown {
   return;
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+function parseDirectFast(input: string): unknown {
+  const len = input.length;
+  let pos = 0;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (!(input.charCodeAt(pos + 0) === 97 && input.charCodeAt(pos + 1) === 114 && input.charCodeAt(pos + 2) === 110)) {
+    throw new SyntaxError(`expected literal 'arn' at position ${pos}`);
+  }
+  pos += 3;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (input.charCodeAt(pos) !== 58) {
+    throw new SyntaxError(`expected literal ':' at position ${pos}`);
+  }
+  pos++;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  const __partitionStart = pos;
+  if (__partitionStart >= len) {
+    throw new SyntaxError(`expected token of class 'partition' at position ${__partitionStart}`);
+  }
+  let __partitionC = input.charCodeAt(__partitionStart);
+  if (!((__partitionC >= 97 && __partitionC <= 122) || (__partitionC >= 65 && __partitionC <= 90) || __partitionC === 95 || __partitionC === 45)) {
+    throw new SyntaxError(`expected token of class 'partition' at position ${__partitionStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __partitionC = input.charCodeAt(pos);
+    if (!((__partitionC >= 97 && __partitionC <= 122) || (__partitionC >= 65 && __partitionC <= 90) || __partitionC === 95 || __partitionC === 45 || (__partitionC >= 48 && __partitionC <= 57))) break;
+    pos++;
+  }
+  const partition = input.slice(__partitionStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (input.charCodeAt(pos) !== 58) {
+    throw new SyntaxError(`expected literal ':' at position ${pos}`);
+  }
+  pos++;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  const __serviceStart = pos;
+  if (__serviceStart >= len) {
+    throw new SyntaxError(`expected token of class 'service' at position ${__serviceStart}`);
+  }
+  let __serviceC = input.charCodeAt(__serviceStart);
+  if (!((__serviceC >= 97 && __serviceC <= 122) || (__serviceC >= 65 && __serviceC <= 90) || __serviceC === 95 || __serviceC === 45)) {
+    throw new SyntaxError(`expected token of class 'service' at position ${__serviceStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __serviceC = input.charCodeAt(pos);
+    if (!((__serviceC >= 97 && __serviceC <= 122) || (__serviceC >= 65 && __serviceC <= 90) || __serviceC === 95 || __serviceC === 45 || (__serviceC >= 48 && __serviceC <= 57))) break;
+    pos++;
+  }
+  const service = input.slice(__serviceStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (input.charCodeAt(pos) !== 58) {
+    throw new SyntaxError(`expected literal ':' at position ${pos}`);
+  }
+  pos++;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  const __regionStart = pos;
+  if (__regionStart >= len) {
+    throw new SyntaxError(`expected token of class 'region' at position ${__regionStart}`);
+  }
+  let __regionC = input.charCodeAt(__regionStart);
+  if (!((__regionC >= 97 && __regionC <= 122) || (__regionC >= 65 && __regionC <= 90) || __regionC === 95 || __regionC === 45)) {
+    throw new SyntaxError(`expected token of class 'region' at position ${__regionStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __regionC = input.charCodeAt(pos);
+    if (!((__regionC >= 97 && __regionC <= 122) || (__regionC >= 65 && __regionC <= 90) || __regionC === 95 || __regionC === 45 || (__regionC >= 48 && __regionC <= 57))) break;
+    pos++;
+  }
+  const region = input.slice(__regionStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (input.charCodeAt(pos) !== 58) {
+    throw new SyntaxError(`expected literal ':' at position ${pos}`);
+  }
+  pos++;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  const __accountStart = pos;
+  if (__accountStart >= len) {
+    throw new SyntaxError(`expected token of class 'account' at position ${__accountStart}`);
+  }
+  let __accountC = input.charCodeAt(__accountStart);
+  if (__accountC < 48 || __accountC > 57) {
+    throw new SyntaxError(`expected token of class 'account' at position ${__accountStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __accountC = input.charCodeAt(pos);
+    if (__accountC < 48 || __accountC > 57) break;
+    pos++;
+  }
+  const account = input.slice(__accountStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (input.charCodeAt(pos) !== 58) {
+    throw new SyntaxError(`expected literal ':' at position ${pos}`);
+  }
+  pos++;
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  const ____firstStart = pos;
+  if (____firstStart >= len) {
+    throw new SyntaxError(`expected token of class 'kind' at position ${____firstStart}`);
+  }
+  let ____firstC = input.charCodeAt(____firstStart);
+  if (!((____firstC >= 97 && ____firstC <= 122) || (____firstC >= 65 && ____firstC <= 90) || ____firstC === 95 || ____firstC === 45)) {
+    throw new SyntaxError(`expected token of class 'kind' at position ${____firstStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    ____firstC = input.charCodeAt(pos);
+    if (!((____firstC >= 97 && ____firstC <= 122) || (____firstC >= 65 && ____firstC <= 90) || ____firstC === 95 || ____firstC === 45 || (____firstC >= 48 && ____firstC <= 57))) break;
+    pos++;
+  }
+  const __first = input.slice(____firstStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  let resource: unknown;
+  if (input.charCodeAt(pos) === 58) {
+    pos++;
+    while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+    const __nameStart = pos;
+  if (__nameStart >= len) {
+    throw new SyntaxError(`expected token of class 'name' at position ${__nameStart}`);
+  }
+  let __nameC = input.charCodeAt(__nameStart);
+  if (!((__nameC >= 97 && __nameC <= 122) || (__nameC >= 65 && __nameC <= 90) || __nameC === 95 || __nameC === 45)) {
+    throw new SyntaxError(`expected token of class 'name' at position ${__nameStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __nameC = input.charCodeAt(pos);
+    if (!((__nameC >= 97 && __nameC <= 122) || (__nameC >= 65 && __nameC <= 90) || __nameC === 95 || __nameC === 45 || (__nameC >= 48 && __nameC <= 57))) break;
+    pos++;
+  }
+  const name = input.slice(__nameStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+    resource = { type: "resource", kind: __first, name: name, separator: ":" };
+  }
+  else if (input.charCodeAt(pos) === 47) {
+    pos++;
+    while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+    const __nameStart = pos;
+  if (__nameStart >= len) {
+    throw new SyntaxError(`expected token of class 'name' at position ${__nameStart}`);
+  }
+  let __nameC = input.charCodeAt(__nameStart);
+  if (!((__nameC >= 97 && __nameC <= 122) || (__nameC >= 65 && __nameC <= 90) || __nameC === 95 || __nameC === 45)) {
+    throw new SyntaxError(`expected token of class 'name' at position ${__nameStart}`);
+  }
+  pos++;
+  while (pos < len) {
+    __nameC = input.charCodeAt(pos);
+    if (!((__nameC >= 97 && __nameC <= 122) || (__nameC >= 65 && __nameC <= 90) || __nameC === 95 || __nameC === 45 || (__nameC >= 48 && __nameC <= 57))) break;
+    pos++;
+  }
+  const name = input.slice(__nameStart, pos);
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+    resource = { type: "resource", kind: __first, name: name, separator: "/" };
+  }
+  else {
+    resource = { type: "resource", name: __first };
+  }
+  while (pos < len) {
+    const __ws = input.charCodeAt(pos);
+    if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
+    pos++;
+  }
+  if (pos !== len) throw new SyntaxError(`unexpected trailing character at position ${pos}`);
+  return { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
+}
+
+function validateDirectFast(input: string): void {
+  parseDirectFast(input);
+}
+
+
+
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
+  if (mode === 'fast') return parseDirectFast(input);
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -871,11 +1142,13 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }
+  validateDirectFast(input);
+  return;
   let tokens: Token[];
   try {
     tokens = tokenize(input);

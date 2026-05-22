@@ -269,6 +269,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -288,6 +296,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -669,6 +688,7 @@ function parseHashColor(state: State): unknown {
   const __startTok = state.tokens[state.pos];
   const __startOff = __startTok ? __startTok.start : state.input.length;
   expectLiteral(state, "hash", "#");
+  requireNoWhitespaceAfterLastToken(state);
   const value = captureUntil(state, ")", ",", "/", true, true);
   if (!isHexString(value)) throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart);
   if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart);
@@ -768,8 +788,12 @@ function parseColorFunction__alt1(state: State): unknown {
 function parseColorFunction(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseColorFunction__alt0); if (r !== null) return r; }
-    return parseColorFunction__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, parseColorFunction__alt0); if (r !== null) return r; }
+      return parseColorFunction__alt1(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
@@ -779,6 +803,7 @@ function parseNumericColorFunctionToken__alt0(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "delim", "%");
@@ -834,8 +859,10 @@ function parseNumericColorFunctionToken(state: State): unknown {
     return parseNumericColorFunctionToken__alt3(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return parseNumericColorFunctionToken__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return parseNumericColorFunctionToken__alt0(state);
+    }
     return parseNumericColorFunctionToken__alt1(state);
   }
   throw new SyntaxError('no production matched');
@@ -846,6 +873,7 @@ function parseColorFunctionToken__alt0(state: State): unknown {
   const __startOff = __startTok ? __startTok.start : state.input.length;
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   const __value_start = state.tokens[state.pos - 1].start;
   const __value_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "delim", "%");
@@ -929,8 +957,10 @@ function parseColorFunctionToken(state: State): unknown {
     return parseColorFunctionToken__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return parseColorFunctionToken__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return parseColorFunctionToken__alt0(state);
+    }
     return parseColorFunctionToken__alt1(state);
   }
   else if (__tok !== undefined && __tok.type === "ident") {
@@ -950,7 +980,9 @@ function parseVarFunction(state: State): unknown {
   const __name_start = state.tokens[state.pos - 1].start;
   const __name_end = state.tokens[state.pos - 1].end;
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
 
   const __args_start = state.__lastCaptureStart;
   const __args_end = state.__lastCaptureEnd;
@@ -989,6 +1021,7 @@ function parseColorKeywordFast(state: State): unknown {
 
 function parseHashColorFast(state: State): unknown {
   expectLiteral(state, "hash", "#");
+  requireNoWhitespaceAfterLastToken(state);
   const value = captureUntil(state, ")", ",", "/", true, true);
   if (!isHexString(value)) throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart);
   if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart);
@@ -1049,8 +1082,12 @@ function parseColorFunctionFast__alt1(state: State): unknown {
 function parseColorFunctionFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, parseColorFunctionFast__alt0); if (r !== null) return r; }
-    return parseColorFunctionFast__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, parseColorFunctionFast__alt0); if (r !== null) return r; }
+      return parseColorFunctionFast__alt1(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
@@ -1058,6 +1095,7 @@ function parseColorFunctionFast(state: State): unknown {
 function parseNumericColorFunctionTokenFast__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "delim", "%");
   return { type: "percentage", value: value };
 }
@@ -1087,8 +1125,10 @@ function parseNumericColorFunctionTokenFast(state: State): unknown {
     return parseNumericColorFunctionTokenFast__alt3(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return parseNumericColorFunctionTokenFast__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return parseNumericColorFunctionTokenFast__alt0(state);
+    }
     return parseNumericColorFunctionTokenFast__alt1(state);
   }
   throw new SyntaxError('no production matched');
@@ -1097,6 +1137,7 @@ function parseNumericColorFunctionTokenFast(state: State): unknown {
 function parseColorFunctionTokenFast__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "delim", "%");
   return { type: "percentage", value: value };
 }
@@ -1138,8 +1179,10 @@ function parseColorFunctionTokenFast(state: State): unknown {
     return parseColorFunctionTokenFast__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return parseColorFunctionTokenFast__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return parseColorFunctionTokenFast__alt0(state);
+    }
     return parseColorFunctionTokenFast__alt1(state);
   }
   else if (__tok !== undefined && __tok.type === "ident") {
@@ -1155,7 +1198,10 @@ function parseVarFunctionFast(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
+
 
   expectLiteral(state, "rparen", ")");
   return { type: "var-function", name: name, args: args };
@@ -1182,6 +1228,7 @@ function validateColorKeyword(state: State): unknown {
 
 function validateHashColor(state: State): unknown {
   expectLiteral(state, "hash", "#");
+  requireNoWhitespaceAfterLastToken(state);
   const value = captureUntil(state, ")", ",", "/", true, true);
   if (!isHexString(value)) throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart);
   if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart);
@@ -1239,8 +1286,12 @@ function validateColorFunction__alt1(state: State): unknown {
 function validateColorFunction(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    { const r = trySpeculate(state, validateColorFunction__alt0); if (r !== null) return r; }
-    return validateColorFunction__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+      { const r = trySpeculate(state, validateColorFunction__alt0); if (r !== null) return r; }
+      return validateColorFunction__alt1(state);
+    }
+    throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
 }
@@ -1248,6 +1299,7 @@ function validateColorFunction(state: State): unknown {
 function validateNumericColorFunctionToken__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "delim", "%");
   return;
 }
@@ -1277,8 +1329,10 @@ function validateNumericColorFunctionToken(state: State): unknown {
     return validateNumericColorFunctionToken__alt3(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return validateNumericColorFunctionToken__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return validateNumericColorFunctionToken__alt0(state);
+    }
     return validateNumericColorFunctionToken__alt1(state);
   }
   throw new SyntaxError('no production matched');
@@ -1287,6 +1341,7 @@ function validateNumericColorFunctionToken(state: State): unknown {
 function validateColorFunctionToken__alt0(state: State): unknown {
   const value = expectClass(state, "number");
 
+  requireNoWhitespaceAfterLastToken(state);
   expectLiteral(state, "delim", "%");
   return;
 }
@@ -1328,8 +1383,10 @@ function validateColorFunctionToken(state: State): unknown {
     return validateColorFunctionToken__alt5(state);
   }
   else if (__tok !== undefined && __tok.type === "number") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "delim" && __nextTok.value === "%") return validateColorFunctionToken__alt0(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "delim" && __tok1.value === "%") {
+      return validateColorFunctionToken__alt0(state);
+    }
     return validateColorFunctionToken__alt1(state);
   }
   else if (__tok !== undefined && __tok.type === "ident") {
@@ -1345,7 +1402,10 @@ function validateVarFunction(state: State): unknown {
   const name = expectClass(state, "ident");
   if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
   expectLiteral(state, "lparen", "(");
-  const args = captureUntil(state, ")", null, null, true, true);
+  const __captured = captureUntil(state, ")", null, null, true, true);
+  if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
+  const args = __captured;
+
 
   expectLiteral(state, "rparen", ")");
   return;
@@ -1364,8 +1424,8 @@ function validateCssColor(state: State): unknown {
   return;
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -1398,8 +1458,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }

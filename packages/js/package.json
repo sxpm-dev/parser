@@ -2,23 +2,7 @@
   "name": "@parser2/js",
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
-    "build": "tsc -b",
-    "test": "tsx --test test/*.test.ts",
-    "test:unit": "tsx --test test/js.test.ts",
-    "bench": "tsx bench/index.ts",
-    "browser:build": "tsx ../../scripts/browser-build.ts js",
-    "perf:baseline": "tsx ../../scripts/perf-gate.ts js --write",
-    "perf:gate": "tsx ../../scripts/perf-gate.ts js",
-    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts js --write",
-    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts js",
-    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
-    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
-  },
-  "exports": {
-    ".": "./dist/index.js"
-  },
+  "scripts": {},
   "dependencies": {
     "@parser2/parser": "0.0.0"
   }

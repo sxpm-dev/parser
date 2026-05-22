@@ -1,16 +1,31 @@
 {
-  "validate:5KB": {
-    "hz": 5688,
+  "tokenize:5KB": {
+    "hz": 749,
     "inputHash": "100b1453",
     "bytes": 5191
   },
-  "validate:20KB": {
-    "hz": 1856,
+  "parse:5KB": {
+    "hz": 974,
+    "inputHash": "100b1453",
+    "bytes": 5191
+  },
+  "tokenize:20KB": {
+    "hz": 507,
     "inputHash": "889c366f",
     "bytes": 20503
   },
-  "validate:100KB": {
-    "hz": 370,
+  "parse:20KB": {
+    "hz": 297,
+    "inputHash": "889c366f",
+    "bytes": 20503
+  },
+  "tokenize:100KB": {
+    "hz": 75,
+    "inputHash": "64c3ec35",
+    "bytes": 102431
+  },
+  "parse:100KB": {
+    "hz": 54,
     "inputHash": "64c3ec35",
     "bytes": 102431
   }

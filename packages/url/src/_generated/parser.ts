@@ -257,6 +257,14 @@ function consumeOptionalClass(state: State, cls: string): string | null {
   return tokenValue(state, tok);
 }
 
+function requireNoWhitespaceAfterLastToken(state: State): void {
+  const previous = state.tokens[state.pos - 1];
+  const next = state.tokens[state.pos];
+  if (previous === undefined || next === undefined || previous.end !== next.start) {
+    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  }
+}
+
 function peekLiteral(state: State, type: string, value: string): boolean {
   // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
   // comment sits between the last child and the body terminator, the loop
@@ -276,6 +284,17 @@ function peekLiteralAfterComments(state: State, type: string, value: string): bo
 function nextNonCommentToken(state: State, pos: number): Token | undefined {
   while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
   return state.tokens[pos];
+}
+
+function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
+  let seen = 0;
+  while (pos < state.tokens.length) {
+    const tok = state.tokens[pos++];
+    if (tok.type === 'comment') continue;
+    if (seen === index) return tok;
+    seen++;
+  }
+  return undefined;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -694,9 +713,13 @@ function parseHost__alt1(state: State): unknown {
 function parseHost(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "dot" && __nextTok.value === ".") return parseHost__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseHost__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "dot" && __tok1.value === ".") {
+      return parseHost__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseHost__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
@@ -828,9 +851,13 @@ function parseHostFast__alt1(state: State): unknown {
 function parseHostFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "dot" && __nextTok.value === ".") return parseHostFast__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return parseHostFast__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "dot" && __tok1.value === ".") {
+      return parseHostFast__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return parseHostFast__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
@@ -929,9 +956,13 @@ function validateHost__alt1(state: State): unknown {
 function validateHost(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "ident") {
-    const __nextTok = nextNonCommentToken(state, state.pos + 1);
-    if (__nextTok !== undefined && __nextTok.type === "dot" && __nextTok.value === ".") return validateHost__alt0(state);
-    else if (__nextTok !== undefined && __nextTok.type === "colon" && __nextTok.value === ":") return validateHost__alt1(state);
+    const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    if (__tok1 !== undefined && __tok1.type === "dot" && __tok1.value === ".") {
+      return validateHost__alt0(state);
+    }
+    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+      return validateHost__alt1(state);
+    }
     throw new SyntaxError('no production matched');
   }
   throw new SyntaxError('no production matched');
@@ -998,8 +1029,8 @@ function validateUrl(state: State): unknown {
   throw new SyntaxError('no production matched');
 }
 
-export function parse(input: string, options: ParseOptions = {}): unknown {
-  const mode = options.mode ?? 'fast';
+export function parse(input: string, options?: ParseOptions): unknown {
+  const mode = options?.mode ?? 'fast';
   let tokens: Token[];
   try {
     tokens = tokenize(input);
@@ -1032,8 +1063,8 @@ export function parse(input: string, options: ParseOptions = {}): unknown {
   }
 }
 
-export function validate(input: string, options: ParseOptions = {}): void {
-  if (options.validate === true && false) {
+export function validate(input: string, options?: ParseOptions): void {
+  if (options?.validate === true && false) {
     parse(input, options);
     return;
   }

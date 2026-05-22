@@ -166,7 +166,7 @@ export default defineSchema({
       .span('tag', 'script').ident().html().oneOf(RAW_TEXT_TAGS)
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('>')
-      .span('body', 'js').rawUntil('</', { caseInsensitive: true })
+      .span('body', 'js').rawUntil('</')
       .span('</')
       .span('closeTag', 'script').ident().html().oneOf(RAW_TEXT_TAGS)
       .span('>')

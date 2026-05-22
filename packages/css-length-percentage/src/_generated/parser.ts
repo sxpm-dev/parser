@@ -552,24 +552,99 @@ function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim:
 // advances to the first token whose start offset is at or past the stop.
 // Used by .rawUntil() modifier for raw-text element bodies (script/style)
 // and unquoted attribute values that can contain arbitrary characters.
+//
+// Performance notes (driven by the html package's huge-page profile):
+//   - The common case is many small captures; we MUST avoid per-call work
+//     that scales with the input size.
+//   - Single-char stops: tight charcode loop. No allocation, no indexOf
+//     scan-to-end on misses.
+//   - Multi-char stops: native indexOf bounded by the running minimum so
+//     later misses don't scan past an earlier hit.
+//   - Case-insensitive: char-by-char ASCII case fold; do NOT lowercase
+//     the input (that allocates an O(input.length) string per call).
 function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
   const startOff = state.pos < state.tokens.length
     ? state.tokens[state.pos].start
     : state.input.length;
-  const hay = caseInsensitive ? state.input.toLowerCase() : state.input;
-  const needles = caseInsensitive ? stops.map((s) => s.toLowerCase()) : stops;
-  let earliest = state.input.length;
-  for (const n of needles) {
-    if (n.length === 0) continue;
-    const idx = hay.indexOf(n, startOff);
+  const input = state.input;
+  const inputLen = input.length;
+  let earliest = inputLen;
+
+  // Partition stops into single-char and multi-char. Both loops short-
+  // circuit against `earliest` so we never scan past a found candidate.
+  for (let s = 0; s < stops.length; s++) {
+    const stop = stops[s];
+    if (stop.length !== 1) continue;
+    const code = stop.charCodeAt(0);
+    const idx = caseInsensitive
+      ? indexOfCharCI(input, code, startOff, earliest)
+      : indexOfChar(input, code, startOff, earliest);
     if (idx !== -1 && idx < earliest) earliest = idx;
   }
+  for (let s = 0; s < stops.length; s++) {
+    const stop = stops[s];
+    if (stop.length < 2) continue;
+    const idx = caseInsensitive
+      ? indexOfCaseInsensitive(input, stop, startOff, earliest)
+      : indexOfBounded(input, stop, startOff, earliest);
+    if (idx !== -1 && idx < earliest) earliest = idx;
+  }
+
   while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
     state.pos++;
   }
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = earliest;
-  return state.input.slice(startOff, earliest);
+  return input.slice(startOff, earliest);
+}
+
+// Tight scan: find the first occurrence of `code` in input[from..limit).
+// Returns -1 if absent. Avoids native indexOf's "scan to end of string"
+// behavior on misses — important when many parallel stops are checked.
+function indexOfChar(input: string, code: number, from: number, limit: number): number {
+  const end = limit < input.length ? limit : input.length;
+  for (let i = from; i < end; i++) {
+    if (input.charCodeAt(i) === code) return i;
+  }
+  return -1;
+}
+
+// ASCII case-insensitive variant of indexOfChar.
+function indexOfCharCI(input: string, code: number, from: number, limit: number): number {
+  const fold = (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) ? code | 0x20 : code;
+  const end = limit < input.length ? limit : input.length;
+  for (let i = from; i < end; i++) {
+    const c = input.charCodeAt(i);
+    const f = (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) ? c | 0x20 : c;
+    if (f === fold) return i;
+  }
+  return -1;
+}
+
+// Bounded multi-char indexOf. Uses native indexOf where the result lies
+// within [from, limit); else -1.
+function indexOfBounded(input: string, needle: string, from: number, limit: number): number {
+  const idx = input.indexOf(needle, from);
+  if (idx === -1 || idx >= limit) return -1;
+  return idx;
+}
+
+// ASCII case-insensitive indexOf scanning input[from..limit) for needle.
+// Returns the first match offset or -1. No allocation.
+function indexOfCaseInsensitive(input: string, needle: string, from: number, limit: number): number {
+  const needleLen = needle.length;
+  const maxStart = (limit < input.length ? limit : input.length) - needleLen;
+  outer: for (let i = from; i <= maxStart; i++) {
+    for (let j = 0; j < needleLen; j++) {
+      const ic = input.charCodeAt(i + j);
+      const nc = needle.charCodeAt(j);
+      const ifold = (ic >= 0x41 && ic <= 0x5a) || (ic >= 0x61 && ic <= 0x7a) ? ic | 0x20 : ic;
+      const nfold = (nc >= 0x41 && nc <= 0x5a) || (nc >= 0x61 && nc <= 0x7a) ? nc | 0x20 : nc;
+      if (ifold !== nfold) continue outer;
+    }
+    return i;
+  }
+  return -1;
 }
 
 function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {

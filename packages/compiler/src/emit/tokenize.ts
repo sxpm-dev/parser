@@ -13,7 +13,7 @@ export function emitTokenizer(schema: InferredSchema): string {
   // multi-char punctuators like `=>` still win over class scanners.
   const multiChar = schema.literals.filter((l) => l.literal.length > 1);
   const singleChar = schema.literals.filter((l) => l.literal.length === 1);
-  const multiCharBranches = multiChar.map(emitLiteralBranch).join('\n');
+  const multiCharBranches = emitMultiCharDispatch(multiChar);
   const earlySingleChar = singleChar.filter((l) => !literalNeedsClassPriority(l.literal, schema.classes));
   const lateSingleChar = singleChar.filter((l) => literalNeedsClassPriority(l.literal, schema.classes));
   const earlySingleCharBranches = emitSingleCharSwitch(earlySingleChar);
@@ -71,6 +71,33 @@ function literalNeedsClassPriority(literal: string, classes: ReadonlyArray<Token
     }
   }
   return false;
+}
+
+// Group multi-char punctuators by their first character so the tokenizer
+// only does startsWith checks when the leading byte could possibly match.
+// Cuts the inner-loop work from O(multiChar.length) per byte to O(group).
+// Within each group, sort longest-first so longest-match still wins.
+function emitMultiCharDispatch(decls: ReadonlyArray<LiteralDecl>): string {
+  if (decls.length === 0) return '';
+  const groups = new Map<number, LiteralDecl[]>();
+  for (const decl of decls) {
+    const code = decl.literal.charCodeAt(0);
+    const bucket = groups.get(code) ?? [];
+    bucket.push(decl);
+    groups.set(code, bucket);
+  }
+  const cases: string[] = [];
+  for (const [code, bucket] of [...groups.entries()].sort(([a], [b]) => a - b)) {
+    bucket.sort((a, b) => b.literal.length - a.literal.length);
+    const checks = bucket.map((decl) => emitLiteralBranch(decl)).join('\n');
+    cases.push(`case ${code}: {
+${indentLines(checks, 2)}
+  break;
+}`);
+  }
+  return `switch (c) {
+${indentLines(cases.join('\n'), 2)}
+}`;
 }
 
 function emitLiteralBranch(decl: LiteralDecl): string {

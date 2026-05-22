@@ -607,10 +607,26 @@ function emitTokenSequenceProductionGroupDispatch(
   if (fallback.length > 1) return null;
   groups.sort((a, b) => firstTokenSpecificity(b.token) - firstTokenSpecificity(a.token));
 
+  const tokVar = `__tok${spanIndex}`;
   const lines: string[] = [];
-  lines.push(`const __tok${spanIndex} = nthNonCommentToken(state, state.pos, ${spanIndex});`);
+  lines.push(`const ${tokVar} = nthNonCommentToken(state, state.pos, ${spanIndex});`);
+
+  // Hoist `__tokN.value.toLowerCase()` once when at least one branch needs
+  // it. Without this every if/else branch re-runs toLowerCase on the same
+  // value — fine semantically, but hot dispatchers (HTML, CSS) call it
+  // thousands of times per parse. The lower-cased value is also reused by
+  // emitFirstTokenCheck via the lowerVar shortcut below.
+  const needsLower = groups.some(
+    (g) => g.token.kind === 'class' && g.token.values && g.token.values.length > 0,
+  );
+  const lowerVar = needsLower ? `${tokVar}__lower` : undefined;
+  if (lowerVar) {
+    lines.push(`const ${lowerVar} = ${tokVar} !== undefined ? ${tokVar}.value.toLowerCase() : undefined;`);
+  }
+
   groups.forEach((group, i) => {
-    lines.push(`${i === 0 ? 'if' : 'else if'} (${emitFirstTokenCheck(`__tok${spanIndex}`, group.token)}) {`);
+    const check = emitFirstTokenCheck(tokVar, group.token, lowerVar);
+    lines.push(`${i === 0 ? 'if' : 'else if'} (${check}) {`);
     const branch = group.indexes.length === 1
       ? `return ${fnName}__alt${group.indexes[0]}(state);`
       : emitTokenSequenceProductionGroupDispatch(info, fnName, group.indexes, ctx, spanIndex + 1)
@@ -1633,13 +1649,20 @@ function firstTokenSpecificity(first: FirstToken): number {
   return first.values && first.values.length > 0 ? 2 : 1;
 }
 
-function emitFirstTokenCheck(tokenExpr: string, first: FirstToken): string {
+function emitFirstTokenCheck(
+  tokenExpr: string,
+  first: FirstToken,
+  lowerVar?: string,
+): string {
   if (first.kind === 'literal') {
     return `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)} && ${tokenExpr}.value === ${jsString(first.value)}`;
   }
   const base = `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)}`;
   if (!first.values || first.values.length === 0) return base;
-  return `${base} && (${oneOfCondition(`${tokenExpr}.value`, first.values)})`;
+  // If the caller hoisted `tokenExpr.value.toLowerCase()` once, reuse it
+  // instead of recomputing toLowerCase in each branch of a long dispatch.
+  const lowerExpr = lowerVar ?? `${tokenExpr}.value.toLowerCase()`;
+  return `${base} && (${oneOfCondition(lowerExpr, first.values)})`;
 }
 
 function oneOfValues(span: ResolvedSpan): readonly string[] | null {
@@ -1653,7 +1676,13 @@ function oneOfValues(span: ResolvedSpan): readonly string[] | null {
 }
 
 function oneOfCondition(valueExpr: string, values: readonly string[]): string {
-  const lower = `${valueExpr}.toLowerCase()`;
+  // valueExpr is the (already lowercased) lookup expression. Either the
+  // caller passes a hoisted variable, or we fall back to inlining
+  // .toLowerCase() here. The latter is the path emitSpanRefinementCheck
+  // uses (one-shot oneOf refinement on a captured value).
+  const lower = valueExpr.endsWith('.toLowerCase()') || valueExpr.includes('__lower')
+    ? valueExpr
+    : `${valueExpr}.toLowerCase()`;
   return values.map((value) => `${lower} === ${jsString(value)}`).join(' || ') || 'false';
 }
 

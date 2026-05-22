@@ -31,26 +31,37 @@ export function tokenize(input: string): Token[] {
     const c = input.charCodeAt(i);
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
-    if (input.startsWith("</optgroup>", i)) { tokens.push({ type: "closeOptgroup", value: "</optgroup>", start: i, end: i + 11 }); i += 11; continue; }
-    if (input.startsWith("</option>", i)) { tokens.push({ type: "closeOption", value: "</option>", start: i, end: i + 9 }); i += 9; continue; }
-    if (input.startsWith("</tbody>", i)) { tokens.push({ type: "closeTbody", value: "</tbody>", start: i, end: i + 8 }); i += 8; continue; }
-    if (input.startsWith("</tfoot>", i)) { tokens.push({ type: "closeTfoot", value: "</tfoot>", start: i, end: i + 8 }); i += 8; continue; }
-    if (input.startsWith("</thead>", i)) { tokens.push({ type: "closeThead", value: "</thead>", start: i, end: i + 8 }); i += 8; continue; }
-    if (input.startsWith("</body>", i)) { tokens.push({ type: "closeBody", value: "</body>", start: i, end: i + 7 }); i += 7; continue; }
-    if (input.startsWith("</head>", i)) { tokens.push({ type: "closeHead", value: "</head>", start: i, end: i + 7 }); i += 7; continue; }
-    if (input.startsWith("</html>", i)) { tokens.push({ type: "closeHtml", value: "</html>", start: i, end: i + 7 }); i += 7; continue; }
-    if (input.startsWith("</dd>", i)) { tokens.push({ type: "closeDd", value: "</dd>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("</dt>", i)) { tokens.push({ type: "closeDt", value: "</dt>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("</li>", i)) { tokens.push({ type: "closeLi", value: "</li>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("</td>", i)) { tokens.push({ type: "closeTd", value: "</td>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("</th>", i)) { tokens.push({ type: "closeTh", value: "</th>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("</tr>", i)) { tokens.push({ type: "closeTr", value: "</tr>", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
-    if (input.startsWith("</p>", i)) { tokens.push({ type: "closeP", value: "</p>", start: i, end: i + 4 }); i += 4; continue; }
-    if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
-    if (input.startsWith("<!", i)) { tokens.push({ type: "doctypeOpen", value: "<!", start: i, end: i + 2 }); i += 2; continue; }
-    if (input.startsWith("</", i)) { tokens.push({ type: "closeTagOpen", value: "</", start: i, end: i + 2 }); i += 2; continue; }
+    switch (c) {
+      case 45: {
+        if (input.startsWith("-->", i)) { tokens.push({ type: "commentClose", value: "-->", start: i, end: i + 3 }); i += 3; continue; }
+        break;
+      }
+      case 47: {
+        if (input.startsWith("/>", i)) { tokens.push({ type: "selfClose", value: "/>", start: i, end: i + 2 }); i += 2; continue; }
+        break;
+      }
+      case 60: {
+        if (input.startsWith("</optgroup>", i)) { tokens.push({ type: "closeOptgroup", value: "</optgroup>", start: i, end: i + 11 }); i += 11; continue; }
+        if (input.startsWith("</option>", i)) { tokens.push({ type: "closeOption", value: "</option>", start: i, end: i + 9 }); i += 9; continue; }
+        if (input.startsWith("</tbody>", i)) { tokens.push({ type: "closeTbody", value: "</tbody>", start: i, end: i + 8 }); i += 8; continue; }
+        if (input.startsWith("</tfoot>", i)) { tokens.push({ type: "closeTfoot", value: "</tfoot>", start: i, end: i + 8 }); i += 8; continue; }
+        if (input.startsWith("</thead>", i)) { tokens.push({ type: "closeThead", value: "</thead>", start: i, end: i + 8 }); i += 8; continue; }
+        if (input.startsWith("</body>", i)) { tokens.push({ type: "closeBody", value: "</body>", start: i, end: i + 7 }); i += 7; continue; }
+        if (input.startsWith("</head>", i)) { tokens.push({ type: "closeHead", value: "</head>", start: i, end: i + 7 }); i += 7; continue; }
+        if (input.startsWith("</html>", i)) { tokens.push({ type: "closeHtml", value: "</html>", start: i, end: i + 7 }); i += 7; continue; }
+        if (input.startsWith("</dd>", i)) { tokens.push({ type: "closeDd", value: "</dd>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("</dt>", i)) { tokens.push({ type: "closeDt", value: "</dt>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("</li>", i)) { tokens.push({ type: "closeLi", value: "</li>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("</td>", i)) { tokens.push({ type: "closeTd", value: "</td>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("</th>", i)) { tokens.push({ type: "closeTh", value: "</th>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("</tr>", i)) { tokens.push({ type: "closeTr", value: "</tr>", start: i, end: i + 5 }); i += 5; continue; }
+        if (input.startsWith("<!--", i)) { tokens.push({ type: "commentOpen", value: "<!--", start: i, end: i + 4 }); i += 4; continue; }
+        if (input.startsWith("</p>", i)) { tokens.push({ type: "closeP", value: "</p>", start: i, end: i + 4 }); i += 4; continue; }
+        if (input.startsWith("<!", i)) { tokens.push({ type: "doctypeOpen", value: "<!", start: i, end: i + 2 }); i += 2; continue; }
+        if (input.startsWith("</", i)) { tokens.push({ type: "closeTagOpen", value: "</", start: i, end: i + 2 }); i += 2; continue; }
+        break;
+      }
+    }
 
     switch (c) {
       case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;
@@ -1550,47 +1561,48 @@ function parseHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "script" || __tok1__lower === "style" || __tok1__lower === "textarea" || __tok1__lower === "title")) {
       return parseHtmlElement__alt0(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "area" || __tok1__lower === "base" || __tok1__lower === "br" || __tok1__lower === "col" || __tok1__lower === "embed" || __tok1__lower === "hr" || __tok1__lower === "img" || __tok1__lower === "input" || __tok1__lower === "link" || __tok1__lower === "meta" || __tok1__lower === "param" || __tok1__lower === "source" || __tok1__lower === "track" || __tok1__lower === "wbr")) {
       { const r = trySpeculate(state, parseHtmlElement__alt1); if (r !== null) return r; }
       return parseHtmlElement__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "li")) {
       return parseHtmlElement__alt3(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "dd" || __tok1__lower === "dt")) {
       return parseHtmlElement__alt4(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tr")) {
       return parseHtmlElement__alt5(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "td" || __tok1__lower === "th")) {
       return parseHtmlElement__alt6(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "p")) {
       return parseHtmlElement__alt7(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "optgroup" || __tok1__lower === "option")) {
       return parseHtmlElement__alt8(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "html")) {
       return parseHtmlElement__alt9(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "head")) {
       return parseHtmlElement__alt10(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tbody")) {
       return parseHtmlElement__alt11(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "thead")) {
       return parseHtmlElement__alt12(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tfoot")) {
       return parseHtmlElement__alt13(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "body")) {
       return parseHtmlElement__alt14(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {
@@ -2235,47 +2247,48 @@ function parseHtmlElementFast(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "script" || __tok1__lower === "style" || __tok1__lower === "textarea" || __tok1__lower === "title")) {
       return parseHtmlElementFast__alt0(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "area" || __tok1__lower === "base" || __tok1__lower === "br" || __tok1__lower === "col" || __tok1__lower === "embed" || __tok1__lower === "hr" || __tok1__lower === "img" || __tok1__lower === "input" || __tok1__lower === "link" || __tok1__lower === "meta" || __tok1__lower === "param" || __tok1__lower === "source" || __tok1__lower === "track" || __tok1__lower === "wbr")) {
       { const r = trySpeculate(state, parseHtmlElementFast__alt1); if (r !== null) return r; }
       return parseHtmlElementFast__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "li")) {
       return parseHtmlElementFast__alt3(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "dd" || __tok1__lower === "dt")) {
       return parseHtmlElementFast__alt4(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tr")) {
       return parseHtmlElementFast__alt5(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "td" || __tok1__lower === "th")) {
       return parseHtmlElementFast__alt6(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "p")) {
       return parseHtmlElementFast__alt7(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "optgroup" || __tok1__lower === "option")) {
       return parseHtmlElementFast__alt8(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "html")) {
       return parseHtmlElementFast__alt9(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "head")) {
       return parseHtmlElementFast__alt10(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tbody")) {
       return parseHtmlElementFast__alt11(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "thead")) {
       return parseHtmlElementFast__alt12(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tfoot")) {
       return parseHtmlElementFast__alt13(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "body")) {
       return parseHtmlElementFast__alt14(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {
@@ -2818,47 +2831,48 @@ function validateHtmlElement(state: State): unknown {
   const __tok = state.tokens[state.pos];
   if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "script" || __tok1.value.toLowerCase() === "style" || __tok1.value.toLowerCase() === "textarea" || __tok1.value.toLowerCase() === "title")) {
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
+    if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "script" || __tok1__lower === "style" || __tok1__lower === "textarea" || __tok1__lower === "title")) {
       return validateHtmlElement__alt0(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "area" || __tok1.value.toLowerCase() === "base" || __tok1.value.toLowerCase() === "br" || __tok1.value.toLowerCase() === "col" || __tok1.value.toLowerCase() === "embed" || __tok1.value.toLowerCase() === "hr" || __tok1.value.toLowerCase() === "img" || __tok1.value.toLowerCase() === "input" || __tok1.value.toLowerCase() === "link" || __tok1.value.toLowerCase() === "meta" || __tok1.value.toLowerCase() === "param" || __tok1.value.toLowerCase() === "source" || __tok1.value.toLowerCase() === "track" || __tok1.value.toLowerCase() === "wbr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "area" || __tok1__lower === "base" || __tok1__lower === "br" || __tok1__lower === "col" || __tok1__lower === "embed" || __tok1__lower === "hr" || __tok1__lower === "img" || __tok1__lower === "input" || __tok1__lower === "link" || __tok1__lower === "meta" || __tok1__lower === "param" || __tok1__lower === "source" || __tok1__lower === "track" || __tok1__lower === "wbr")) {
       { const r = trySpeculate(state, validateHtmlElement__alt1); if (r !== null) return r; }
       return validateHtmlElement__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "li")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "li")) {
       return validateHtmlElement__alt3(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "dd" || __tok1.value.toLowerCase() === "dt")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "dd" || __tok1__lower === "dt")) {
       return validateHtmlElement__alt4(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tr")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tr")) {
       return validateHtmlElement__alt5(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "td" || __tok1.value.toLowerCase() === "th")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "td" || __tok1__lower === "th")) {
       return validateHtmlElement__alt6(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "p")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "p")) {
       return validateHtmlElement__alt7(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "optgroup" || __tok1.value.toLowerCase() === "option")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "optgroup" || __tok1__lower === "option")) {
       return validateHtmlElement__alt8(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "html")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "html")) {
       return validateHtmlElement__alt9(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "head")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "head")) {
       return validateHtmlElement__alt10(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tbody")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tbody")) {
       return validateHtmlElement__alt11(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "thead")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "thead")) {
       return validateHtmlElement__alt12(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "tfoot")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "tfoot")) {
       return validateHtmlElement__alt13(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "body")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "body")) {
       return validateHtmlElement__alt14(state);
     }
     else if (__tok1 !== undefined && __tok1.type === "ident") {

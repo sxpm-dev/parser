@@ -950,10 +950,11 @@ function parseLengthPercentageItem(state: State): unknown {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "number") {
       const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
       if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
         return parseLengthPercentageItem__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
         return parseLengthPercentageItem__alt1(state);
       }
       throw new SyntaxError('no production matched');
@@ -970,10 +971,11 @@ function parseLengthPercentageItem(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return parseLengthPercentageItem__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return parseLengthPercentageItem__alt0(state);
     }
     return parseLengthPercentageItem__alt4(state);
@@ -1104,10 +1106,11 @@ function parseLengthFunctionToken(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return parseLengthFunctionToken__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return parseLengthFunctionToken__alt0(state);
     }
     return parseLengthFunctionToken__alt2(state);
@@ -1222,10 +1225,11 @@ function parseLengthPercentageItemFast(state: State): unknown {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "number") {
       const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
       if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
         return parseLengthPercentageItemFast__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
         return parseLengthPercentageItemFast__alt1(state);
       }
       throw new SyntaxError('no production matched');
@@ -1242,10 +1246,11 @@ function parseLengthPercentageItemFast(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return parseLengthPercentageItemFast__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return parseLengthPercentageItemFast__alt0(state);
     }
     return parseLengthPercentageItemFast__alt4(state);
@@ -1320,10 +1325,11 @@ function parseLengthFunctionTokenFast(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return parseLengthFunctionTokenFast__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return parseLengthFunctionTokenFast__alt0(state);
     }
     return parseLengthFunctionTokenFast__alt2(state);
@@ -1428,10 +1434,11 @@ function validateLengthPercentageItem(state: State): unknown {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
     if (__tok1 !== undefined && __tok1.type === "number") {
       const __tok2 = nthNonCommentToken(state, state.pos, 2);
+      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
       if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
         return validateLengthPercentageItem__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2.value.toLowerCase() === "cap" || __tok2.value.toLowerCase() === "ch" || __tok2.value.toLowerCase() === "cm" || __tok2.value.toLowerCase() === "dvh" || __tok2.value.toLowerCase() === "dvw" || __tok2.value.toLowerCase() === "em" || __tok2.value.toLowerCase() === "ex" || __tok2.value.toLowerCase() === "ic" || __tok2.value.toLowerCase() === "in" || __tok2.value.toLowerCase() === "lh" || __tok2.value.toLowerCase() === "lvh" || __tok2.value.toLowerCase() === "lvw" || __tok2.value.toLowerCase() === "mm" || __tok2.value.toLowerCase() === "pc" || __tok2.value.toLowerCase() === "pt" || __tok2.value.toLowerCase() === "px" || __tok2.value.toLowerCase() === "q" || __tok2.value.toLowerCase() === "rem" || __tok2.value.toLowerCase() === "rlh" || __tok2.value.toLowerCase() === "svh" || __tok2.value.toLowerCase() === "svw" || __tok2.value.toLowerCase() === "vb" || __tok2.value.toLowerCase() === "vh" || __tok2.value.toLowerCase() === "vi" || __tok2.value.toLowerCase() === "vmax" || __tok2.value.toLowerCase() === "vmin" || __tok2.value.toLowerCase() === "vw")) {
+      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
         return validateLengthPercentageItem__alt1(state);
       }
       throw new SyntaxError('no production matched');
@@ -1448,10 +1455,11 @@ function validateLengthPercentageItem(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return validateLengthPercentageItem__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return validateLengthPercentageItem__alt0(state);
     }
     return validateLengthPercentageItem__alt4(state);
@@ -1526,10 +1534,11 @@ function validateLengthFunctionToken(state: State): unknown {
   }
   else if (__tok !== undefined && __tok.type === "number") {
     const __tok1 = nthNonCommentToken(state, state.pos, 1);
+    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
     if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
       return validateLengthFunctionToken__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1.value.toLowerCase() === "cap" || __tok1.value.toLowerCase() === "ch" || __tok1.value.toLowerCase() === "cm" || __tok1.value.toLowerCase() === "dvh" || __tok1.value.toLowerCase() === "dvw" || __tok1.value.toLowerCase() === "em" || __tok1.value.toLowerCase() === "ex" || __tok1.value.toLowerCase() === "ic" || __tok1.value.toLowerCase() === "in" || __tok1.value.toLowerCase() === "lh" || __tok1.value.toLowerCase() === "lvh" || __tok1.value.toLowerCase() === "lvw" || __tok1.value.toLowerCase() === "mm" || __tok1.value.toLowerCase() === "pc" || __tok1.value.toLowerCase() === "pt" || __tok1.value.toLowerCase() === "px" || __tok1.value.toLowerCase() === "q" || __tok1.value.toLowerCase() === "rem" || __tok1.value.toLowerCase() === "rlh" || __tok1.value.toLowerCase() === "svh" || __tok1.value.toLowerCase() === "svw" || __tok1.value.toLowerCase() === "vb" || __tok1.value.toLowerCase() === "vh" || __tok1.value.toLowerCase() === "vi" || __tok1.value.toLowerCase() === "vmax" || __tok1.value.toLowerCase() === "vmin" || __tok1.value.toLowerCase() === "vw")) {
+    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
       return validateLengthFunctionToken__alt0(state);
     }
     return validateLengthFunctionToken__alt2(state);

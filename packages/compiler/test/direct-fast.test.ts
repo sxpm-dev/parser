@@ -45,7 +45,6 @@ test('direct fast path is inferred from generic delimited record structure', () 
 
 function makeGenericBlockSchema(prefix: string) {
   return defineSchema({
-    name: 'blocks',
     rootType: 'Document',
     punctuators: {
       open: '[',
@@ -126,7 +125,6 @@ function makeGenericBlockSchema(prefix: string) {
 
 function makeDelimitedRecordSchema() {
   return defineSchema({
-    name: 'delimited',
     rootType: 'Record',
     punctuators: {
       pipe: '|',
@@ -165,7 +163,6 @@ function makeDelimitedRecordSchema() {
 
 function makeBareBlockSchema() {
   return defineSchema({
-    name: 'bare-blocks',
     rootType: 'Document',
     punctuators: {
       open: '[',

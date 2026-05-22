@@ -39,7 +39,6 @@ const LENGTH_KEYWORDS = [
 ] as const;
 
 export default defineSchema({
-  name: "css-length-percentage",
   rootType: "CssLengthPercentage",
   punctuators: {
     lparen: "(",

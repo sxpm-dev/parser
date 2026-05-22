@@ -4,16 +4,15 @@ import { $, defineSchema, ex, isStructureRef } from '../src/index.ts';
 
 test('defineSchema fills defaults', () => {
   const schema = defineSchema({
-    name: 'demo',
     rootType: 'Root',
     examples: [],
   });
-  assert.equal(schema.name, 'demo');
   assert.equal(schema.rootType, 'Root');
   assert.deepEqual(schema.uses, []);
   assert.deepEqual(schema.operators, {});
   assert.deepEqual(schema.punctuators, []);
   assert.equal(schema.whitespace, 'standard');
+  assert.equal(schema.unknownChars, 'reject');
   assert.deepEqual(schema.examples, []);
 });
 
@@ -112,19 +111,18 @@ test('rejects marks status and omits structure', () => {
 });
 
 test('schema composition holds onto used schemas', () => {
-  const inner = defineSchema({ name: 'inner', rootType: 'Inner', examples: [] });
+  const inner = defineSchema({ rootType: 'Inner', examples: [] });
   const outer = defineSchema({
-    name: 'outer',
     rootType: 'Outer',
     uses: [inner],
     examples: [],
   });
-  assert.equal(outer.uses[0]?.name, 'inner');
+  // Composition identity is by object reference, not name.
+  assert.equal(outer.uses[0], inner);
 });
 
 test('operators and punctuators carry through', () => {
   const schema = defineSchema({
-    name: 'js-expr',
     rootType: 'Expression',
     operators: {
       additive: ['+', '-'],
@@ -142,7 +140,6 @@ test('operators and punctuators carry through', () => {
 
 test('punctuators accept named object form', () => {
   const schema = defineSchema({
-    name: 'named',
     rootType: 'Root',
     punctuators: {
       lbrace: '{',

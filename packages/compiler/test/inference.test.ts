@@ -7,7 +7,7 @@ test('inference walks the css smoke-test schema end to end', () => {
   const inferred = inferSchema(CssSchema);
 
   // Root info
-  assert.equal(inferred.rootSchemaName, 'css');
+  assert.equal(inferred.packageName, 'parser');
   assert.equal(inferred.rootType, 'Stylesheet');
   assert.equal(inferred.whitespace, 'standard');
 
@@ -45,7 +45,6 @@ test('inference walks the css smoke-test schema end to end', () => {
 test('inference rejects schemas with unresolved recursive roles', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const broken = defineSchema({
-    name: 'broken',
     rootType: 'Outer',
     examples: [
       ex('x').as('Outer').span('inner', 'x', 'NoSuchType').structure({ inner: $.inner }).build(),
@@ -57,7 +56,6 @@ test('inference rejects schemas with unresolved recursive roles', async () => {
 test('inference rejects ambiguous recursive span text', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const ambiguous = defineSchema({
-    name: 'ambig',
     rootType: 'Pair',
     examples: [
       ex('x x')
@@ -75,7 +73,6 @@ test('inference rejects ambiguous recursive span text', async () => {
 test('validation metadata is separate from SchemaDef and emits string-set lookup logic', async () => {
   const { defineSchema, defineValidation, ex, $ } = await import('@parser2/parser');
   const schema = defineSchema({
-    name: 'sheet',
     rootType: 'Declaration',
     examples: [
       ex('color: red;')
@@ -112,7 +109,6 @@ test('validation metadata is separate from SchemaDef and emits string-set lookup
 test('emitter factors shared recursive repeats before literal branch points', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const schema = defineSchema({
-    name: 'generic-records',
     rootType: 'Node',
     punctuators: {
       open: '<',

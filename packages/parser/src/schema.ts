@@ -9,7 +9,6 @@ import type {
 
 export function defineSchema(input: SchemaInput): SchemaDef {
   return {
-    name: input.name,
     rootType: input.rootType,
     uses: input.uses ?? [],
     operators: input.operators ?? {},

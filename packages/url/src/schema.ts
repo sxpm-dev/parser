@@ -1,7 +1,6 @@
 import { $, defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
-  name: 'url',
   rootType: 'Url',
   punctuators: {
     slash: '/',

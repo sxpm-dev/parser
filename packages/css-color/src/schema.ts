@@ -36,7 +36,6 @@ const RGB_FUNCTIONS = ['rgb', 'rgba'] as const;
 const NON_RGB_COLOR_FUNCTIONS = COLOR_FUNCTIONS.filter((name) => name !== 'rgb' && name !== 'rgba');
 
 export default defineSchema({
-  name: 'css-color',
   rootType: 'CssColor',
   punctuators: {
     hash: '#',

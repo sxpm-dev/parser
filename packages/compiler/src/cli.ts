@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { generateParser } from './index.ts';
@@ -9,6 +9,10 @@ import { generateParser } from './index.ts';
 //
 // Imports the schema module (default export must be a SchemaDef), runs the
 // compiler, and writes packages/<schema>/src/_generated/parser.ts.
+// The packageName passed to the compiler is derived from the schema path —
+// it is the only piece of "identity" the compiler ever sees, and it never
+// influences parser behavior (only the generated file header and the
+// validator module metadata).
 
 const argv = process.argv.slice(2);
 const schemaArg = argv[0];
@@ -28,12 +32,23 @@ async function main(path: string): Promise<void> {
     throw new Error(`Schema at ${path} does not default-export a SchemaDef`);
   }
   const validation = isValidation(module.validation) ? module.validation : undefined;
-  const code = generateParser(schema, validation);
+  const packageName = packageNameFromPath(path);
+  const code = generateParser(schema, validation, { packageName });
   const outDir = resolve(dirname(path), '_generated');
   const outFile = resolve(outDir, 'parser.ts');
   mkdirSync(outDir, { recursive: true });
   writeFileSync(outFile, code);
   console.log(`generated ${relative(outFile)}`);
+}
+
+function packageNameFromPath(path: string): string {
+  // Expect .../packages/<name>/src/schema.ts. Extract <name>. Fall back to
+  // 'parser' if the path doesn't match — the compiler still works; only the
+  // header comment and validator metadata become generic.
+  const parts = path.split(sep);
+  const pkgIdx = parts.lastIndexOf('packages');
+  if (pkgIdx >= 0 && pkgIdx + 1 < parts.length) return parts[pkgIdx + 1]!;
+  return 'parser';
 }
 
 function isValidation(value: unknown): value is ValidationDef {
@@ -49,7 +64,6 @@ function isSchema(value: unknown): value is SchemaDef {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof (value as { name?: unknown }).name === 'string' &&
     typeof (value as { rootType?: unknown }).rootType === 'string' &&
     Array.isArray((value as { examples?: unknown }).examples)
   );

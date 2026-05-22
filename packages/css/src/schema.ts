@@ -110,7 +110,6 @@ export const LENGTH_PROPS = [
 ] as const;
 
 const cssSchema = defineSchema({
-  name: 'css',
   rootType: 'Stylesheet',
   punctuators: {
     lbrace: '{',

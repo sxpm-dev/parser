@@ -20,7 +20,7 @@ export function emitParser(schema: InferredSchema): string {
 
 function emitHeader(schema: InferredSchema): string {
   const imports = emitValidationImports(schema);
-  return `// Auto-generated from packages/${schema.rootSchemaName}/src/schema.ts
+  return `// Auto-generated from packages/${schema.packageName}/src/schema.ts
 // Do not edit by hand. Re-run \`npm run generate\` to refresh.
 /* eslint-disable */
 // @ts-nocheck
@@ -120,7 +120,7 @@ ${hasDirectFast ? `  validateDirectFast(input);
 // Attach package identity so another package's validation metadata can refer
 // to this generated validator while codegen still emits static imports.
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
-  module: ${jsString(`@parser2/${schema.rootSchemaName}`)},
+  module: ${jsString(`@parser2/${schema.packageName}`)},
   exportName: 'validate',
 };
 

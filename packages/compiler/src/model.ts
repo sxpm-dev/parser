@@ -49,7 +49,11 @@ export type LiteralDecl = {
 };
 
 export type InferredSchema = {
-  readonly rootSchemaName: string;
+  // The package name supplied externally by the compiler caller (CLI derives
+  // it from the schema file path). Used ONLY for code identity — the
+  // generated file header comment and the generated validator's module
+  // identity metadata. Parser behavior MUST NOT branch on this value.
+  readonly packageName: string;
   readonly rootType: string;
   readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
   // All literal terminal texts that appear in spans, declared punctuators,

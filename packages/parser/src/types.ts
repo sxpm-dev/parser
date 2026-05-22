@@ -232,7 +232,6 @@ export type TokenDecl = {
 };
 
 export type SchemaDef = {
-  readonly name: string;
   readonly rootType: string;
   readonly uses: ReadonlyArray<SchemaDef>;
   readonly operators: OperatorLayers;
@@ -247,8 +246,12 @@ export type SchemaDef = {
   readonly examples: ReadonlyArray<ExampleDef>;
 };
 
+// SchemaInput: what authors write. Intentionally has no `name` field — the
+// compiler MUST NOT branch on schema/package names. Identity in the
+// composition graph (`uses:`) is by object reference. Output-file paths
+// and generated module identity come from the compiler invocation (CLI
+// derives a package name from the schema file path).
 export type SchemaInput = {
-  readonly name: string;
   readonly rootType: string;
   readonly uses?: ReadonlyArray<SchemaDef>;
   readonly operators?: OperatorLayers;

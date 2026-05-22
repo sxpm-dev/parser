@@ -1,7 +1,6 @@
 import { $, defineSchema, ex } from '@parser2/parser';
 
 export default defineSchema({
-  name: 'mac',
   rootType: 'MacAddress',
   punctuators: {
     colon: ':',

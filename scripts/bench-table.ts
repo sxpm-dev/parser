@@ -60,6 +60,10 @@ export async function runBenchTable(options: {
   readonly prepare?: (seed: string, targetBytes: number) => string;
   readonly sizesKb?: readonly number[];
   readonly smallInputs?: readonly string[];
+  // Named fixed-content inputs. Each entry appears in the bench table with
+  // its given label in the size column. Useful for benchmarking against
+  // real-world fixtures (e.g. huge-page.html) alongside synthetic sizes.
+  readonly namedInputs?: readonly { readonly label: string; readonly input: string }[];
   readonly parserColumnWidth?: number;
 }): Promise<void> {
   const generateInput = options.generateInput ?? ((targetBytes: number) => {
@@ -71,7 +75,7 @@ export async function runBenchTable(options: {
   const parserWidth = options.parserColumnWidth ?? 28;
   console.log(options.title);
   console.log(
-    'size'.padEnd(8) +
+    'size'.padEnd(12) +
     'input'.padEnd(18) +
     'parser'.padEnd(parserWidth) +
     'avg time'.padEnd(12) +
@@ -80,10 +84,11 @@ export async function runBenchTable(options: {
     'units'.padEnd(22) +
     'rel',
   );
-  console.log('-'.repeat(91 + parserWidth));
+  console.log('-'.repeat(95 + parserWidth));
 
   const inputs: Array<{ readonly label: string; readonly input: string }> = [
     ...(options.smallInputs ?? []).map((input, index) => ({ label: `small${index + 1}`, input })),
+    ...(options.namedInputs ?? []),
     ...(options.sizesKb ?? DEFAULT_SIZES_KB).map((kb) => ({
       label: `${kb}KB`,
       input: generateInput(kb * 1024),
@@ -135,7 +140,7 @@ export async function runBenchTable(options: {
       if (!result?.hz) {
         const reason = sanity.get(contestant.label);
         const detail = reason instanceof Error ? `error: ${reason.message.split('\n')[0]}` : 'error';
-        console.log(size.padEnd(8) + inputInfo.padEnd(18) + contestant.label.padEnd(parserWidth) + detail);
+        console.log(size.padEnd(12) + inputInfo.padEnd(18) + contestant.label.padEnd(parserWidth) + detail);
         continue;
       }
 
@@ -150,7 +155,7 @@ export async function runBenchTable(options: {
           : `0 ${contestant.unit} (partial)`;
       const rel = !coverage ? 'n/a' : base > 0 ? `${(base / ops).toFixed(2)}x` : '-';
       console.log(
-        size.padEnd(8) +
+        size.padEnd(12) +
         inputInfo.padEnd(18) +
         contestant.label.padEnd(parserWidth) +
         fmtNs(ns).padEnd(12) +

@@ -8,3 +8,7 @@ packages/*/.conformance/
 *.d.ts.map
 dist/
 coverage/
+
+# Profiling artifacts
+*.cpuprofile
+isolate-*-v8.log

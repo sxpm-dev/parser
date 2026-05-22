@@ -795,12 +795,33 @@ function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): str
   // Check upcoming source against each prefix literal at the current token's
   // start offset. If any matches, break out of the repeats loop. Used to
   // model implicit-close idioms (HTML <li>, <tr>, <td>, <p>, etc.).
-  const conds = stopBefore
-    .filter((s) => s.length > 0)
-    .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
-    .join(' || ');
-  if (!conds) return '';
-  return `{ const __off = state.tokens[state.pos]?.start ?? state.input.length; if (${conds}) break; }`;
+  //
+  // Performance: HTML implicit-close stop sets are large (50+ prefixes for
+  // <p>). Group prefixes by first byte and gate the per-prefix startsWith
+  // calls on a single charCodeAt check, so most loop iterations skip the
+  // chain entirely.
+  const stops = stopBefore.filter((s) => s.length > 0);
+  if (stops.length === 0) return '';
+  const byFirstChar = new Map<number, string[]>();
+  for (const s of stops) {
+    const code = s.charCodeAt(0);
+    const bucket = byFirstChar.get(code) ?? [];
+    bucket.push(s);
+    byFirstChar.set(code, bucket);
+  }
+  const branches: string[] = [];
+  for (const [code, bucket] of [...byFirstChar.entries()].sort(([a], [b]) => a - b)) {
+    bucket.sort((a, b) => b.length - a.length);
+    const conds = bucket
+      .map((s) => `state.input.startsWith(${jsString(s)}, __off)`)
+      .join(' || ');
+    branches.push(`if (__c === ${code} && (${conds})) break;`);
+  }
+  return `{
+  const __off = state.tokens[state.pos]?.start ?? state.input.length;
+  const __c = state.input.charCodeAt(__off);
+  ${branches.join('\n  ')}
+}`;
 }
 
 function emitRawUntilSpan(

@@ -963,7 +963,11 @@ function parseHtmlElement__alt3(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeLi", "</li>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</li>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("</menu>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1010,7 +1014,11 @@ function parseHtmlElement__alt4(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeDt", "</dt>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off) || state.input.startsWith("</dl>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1058,7 +1066,11 @@ function parseHtmlElement__alt5(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTr", "</tr>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1105,7 +1117,11 @@ function parseHtmlElement__alt6(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTd", "</td>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1153,7 +1169,11 @@ function parseHtmlElement__alt7(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeP", "</p>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</p>", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("</p>", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1200,7 +1220,11 @@ function parseHtmlElement__alt8(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeOption", "</option>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</option>", __off) || state.input.startsWith("</optgroup>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("</datalist>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1248,7 +1272,11 @@ function parseHtmlElement__alt9(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeHtml", "</html>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</html>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</html>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1295,7 +1323,11 @@ function parseHtmlElement__alt10(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeHead", "</head>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1342,7 +1374,11 @@ function parseHtmlElement__alt11(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTbody", "</tbody>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tbody>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1389,7 +1425,11 @@ function parseHtmlElement__alt12(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeThead", "</thead>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</thead>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1436,7 +1476,11 @@ function parseHtmlElement__alt13(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTfoot", "</tfoot>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1483,7 +1527,11 @@ function parseHtmlElement__alt14(state: State): unknown {
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeBody", "</body>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1825,7 +1873,11 @@ function parseHtmlElementFast__alt3(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeLi", "</li>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</li>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("</menu>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</menu>", __off) || state.input.startsWith("</li>", __off) || state.input.startsWith("</ol>", __off) || state.input.startsWith("</ul>", __off) || state.input.startsWith("<li>", __off) || state.input.startsWith("<li ", __off) || state.input.startsWith("<li/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1858,7 +1910,11 @@ function parseHtmlElementFast__alt4(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeDt", "</dt>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off) || state.input.startsWith("</dl>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</dt>", __off) || state.input.startsWith("</dd>", __off) || state.input.startsWith("</dl>", __off) || state.input.startsWith("<dt>", __off) || state.input.startsWith("<dt ", __off) || state.input.startsWith("<dt/", __off) || state.input.startsWith("<dd>", __off) || state.input.startsWith("<dd ", __off) || state.input.startsWith("<dd/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1892,7 +1948,11 @@ function parseHtmlElementFast__alt5(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTr", "</tr>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("<tr/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1925,7 +1985,11 @@ function parseHtmlElementFast__alt6(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTd", "</td>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</thead>", __off) || state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<thead>", __off) || state.input.startsWith("<thead ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</td>", __off) || state.input.startsWith("</th>", __off) || state.input.startsWith("</tr>", __off) || state.input.startsWith("<td>", __off) || state.input.startsWith("<td ", __off) || state.input.startsWith("<td/", __off) || state.input.startsWith("<th>", __off) || state.input.startsWith("<th ", __off) || state.input.startsWith("<th/", __off) || state.input.startsWith("<tr>", __off) || state.input.startsWith("<tr ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1959,7 +2023,11 @@ function parseHtmlElementFast__alt7(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeP", "</p>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</p>", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("<blockquote>", __off) || state.input.startsWith("<blockquote ", __off) || state.input.startsWith("<section>", __off) || state.input.startsWith("<section ", __off) || state.input.startsWith("<article>", __off) || state.input.startsWith("<article ", __off) || state.input.startsWith("<address>", __off) || state.input.startsWith("<address ", __off) || state.input.startsWith("<header>", __off) || state.input.startsWith("<header ", __off) || state.input.startsWith("<footer>", __off) || state.input.startsWith("<footer ", __off) || state.input.startsWith("<table>", __off) || state.input.startsWith("<table ", __off) || state.input.startsWith("<aside>", __off) || state.input.startsWith("<aside ", __off) || state.input.startsWith("<form>", __off) || state.input.startsWith("<form ", __off) || state.input.startsWith("<div>", __off) || state.input.startsWith("<div ", __off) || state.input.startsWith("<pre>", __off) || state.input.startsWith("<pre ", __off) || state.input.startsWith("<nav>", __off) || state.input.startsWith("<nav ", __off) || state.input.startsWith("</p>", __off) || state.input.startsWith("<ul>", __off) || state.input.startsWith("<ul ", __off) || state.input.startsWith("<ol>", __off) || state.input.startsWith("<ol ", __off) || state.input.startsWith("<dl>", __off) || state.input.startsWith("<dl ", __off) || state.input.startsWith("<h1>", __off) || state.input.startsWith("<h1 ", __off) || state.input.startsWith("<h2>", __off) || state.input.startsWith("<h2 ", __off) || state.input.startsWith("<h3>", __off) || state.input.startsWith("<h3 ", __off) || state.input.startsWith("<h4>", __off) || state.input.startsWith("<h4 ", __off) || state.input.startsWith("<h5>", __off) || state.input.startsWith("<h5 ", __off) || state.input.startsWith("<h6>", __off) || state.input.startsWith("<h6 ", __off) || state.input.startsWith("<hr>", __off) || state.input.startsWith("<hr ", __off) || state.input.startsWith("<hr/", __off) || state.input.startsWith("<p>", __off) || state.input.startsWith("<p ", __off) || state.input.startsWith("<p/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -1992,7 +2060,11 @@ function parseHtmlElementFast__alt8(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeOption", "</option>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</option>", __off) || state.input.startsWith("</optgroup>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("</datalist>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</optgroup>", __off) || state.input.startsWith("</datalist>", __off) || state.input.startsWith("<optgroup>", __off) || state.input.startsWith("<optgroup ", __off) || state.input.startsWith("</option>", __off) || state.input.startsWith("</select>", __off) || state.input.startsWith("<option>", __off) || state.input.startsWith("<option ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2026,7 +2098,11 @@ function parseHtmlElementFast__alt9(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeHtml", "</html>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</html>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</html>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2059,7 +2135,11 @@ function parseHtmlElementFast__alt10(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeHead", "</head>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</head>", __off) || state.input.startsWith("<body>", __off) || state.input.startsWith("<body ", __off) || state.input.startsWith("<body/", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2092,7 +2172,11 @@ function parseHtmlElementFast__alt11(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTbody", "</tbody>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tbody>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tbody>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2125,7 +2209,11 @@ function parseHtmlElementFast__alt12(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeThead", "</thead>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</thead>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</thead>", __off) || state.input.startsWith("</table>", __off) || state.input.startsWith("<tbody>", __off) || state.input.startsWith("<tbody ", __off) || state.input.startsWith("<tfoot>", __off) || state.input.startsWith("<tfoot ", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2158,7 +2246,11 @@ function parseHtmlElementFast__alt13(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeTfoot", "</tfoot>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</tfoot>", __off) || state.input.startsWith("</table>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];
@@ -2191,7 +2283,11 @@ function parseHtmlElementFast__alt14(state: State): unknown {
 
   const children: unknown[] = [];
   while (!(peekLiteral(state, "closeBody", "</body>"))) {
-    { const __off = state.tokens[state.pos]?.start ?? state.input.length; if (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off)) break; }
+    {
+    const __off = state.tokens[state.pos]?.start ?? state.input.length;
+    const __c = state.input.charCodeAt(__off);
+    if (__c === 60 && (state.input.startsWith("</body>", __off) || state.input.startsWith("</html>", __off))) break;
+  }
     const __before = state.pos;
     let __child: unknown;
   const __tok = state.tokens[state.pos];

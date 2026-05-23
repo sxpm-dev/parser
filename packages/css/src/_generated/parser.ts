@@ -5354,6 +5354,28 @@ type DirectState = {
   lastNodeEnd: number;
 };
 
+// Per-scan character-class tables. Each scan only cares about a handful of
+// ASCII bytes (string/escape/comment openers, bracket pairs, and the
+// scan-specific stop/pair markers). Any ASCII byte not flagged here is
+// content — alphanumerics, hyphens, dots, spaces, commas — and the loop
+// can skip it with a single bounds check + table lookup. Non-ASCII bytes
+// (c >= 128) are also content. This collapses ~8 false branches per
+// content char down to 2.
+const __DIRECT_SCAN_BOUNDARY_CLASS = /* @__PURE__ */ buildDirectScanClass([
+  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, 59, 123, 125
+]);
+const __DIRECT_SCAN_PAIR_CLASS = /* @__PURE__ */ buildDirectScanClass([
+  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, 59, 123, 125, 58, 33
+]);
+const __DIRECT_SCAN_VALUE_CLASS = /* @__PURE__ */ buildDirectScanClass([
+  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, 59, 125, 33
+]);
+function buildDirectScanClass(codes: readonly number[]): Uint8Array {
+  const t = new Uint8Array(128);
+  for (const code of codes) t[code] = 1;
+  return t;
+}
+
 function parseDirectFast(input: string): unknown {
   const state: DirectState = {
     input,
@@ -5938,8 +5960,10 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
   let pos = startPos;
   let depth = 0;
   let hadComment = false;
+  const cls = __DIRECT_SCAN_BOUNDARY_CLASS;
   while (pos < len) {
     const c = input.charCodeAt(pos);
+    if (c >= 128 || cls[c] === 0) { pos++; continue; }
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
       pos = skipDirectString(input, pos, len);
@@ -5994,8 +6018,10 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
   let colonIdx = -1;
   let bangIdx = -1;
   let hadComment = false;
+  const cls = __DIRECT_SCAN_PAIR_CLASS;
   while (pos < len) {
     const c = input.charCodeAt(pos);
+    if (c >= 128 || cls[c] === 0) { pos++; continue; }
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
       pos = skipDirectString(input, pos, len);
@@ -6052,8 +6078,10 @@ function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: numbe
   let pos = startPos;
   let depth = 0;
   let hadComment = false;
+  const cls = __DIRECT_SCAN_VALUE_CLASS;
   while (pos < len) {
     const c = input.charCodeAt(pos);
+    if (c >= 128 || cls[c] === 0) { pos++; continue; }
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
       pos = skipDirectString(input, pos, len);

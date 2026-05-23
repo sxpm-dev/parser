@@ -705,8 +705,12 @@ function parseArnResource(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return parseArnResource__alt0(state);
-  if (__input.charCodeAt(__peek) === 47) return parseArnResource__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseArnResource__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 47) {
+    return parseArnResource__alt1(state);
+  }
   return parseArnResource__alt2(state);
 }
 
@@ -1480,8 +1484,12 @@ function parseArnResourceFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return parseArnResourceFast__alt0(state);
-  if (__input.charCodeAt(__peek) === 47) return parseArnResourceFast__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseArnResourceFast__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 47) {
+    return parseArnResourceFast__alt1(state);
+  }
   return parseArnResourceFast__alt2(state);
 }
 
@@ -2251,8 +2259,12 @@ function validateArnResource(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return validateArnResource__alt0(state);
-  if (__input.charCodeAt(__peek) === 47) return validateArnResource__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return validateArnResource__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 47) {
+    return validateArnResource__alt1(state);
+  }
   return validateArnResource__alt2(state);
 }
 

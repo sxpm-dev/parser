@@ -658,8 +658,12 @@ function parseHost(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 46) return parseHost__alt0(state);
-  if (__input.charCodeAt(__peek) === 58) return parseHost__alt1(state);
+  if (__input.charCodeAt(__peek) === 46) {
+    return parseHost__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseHost__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -1513,8 +1517,12 @@ function parseHostFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 46) return parseHostFast__alt0(state);
-  if (__input.charCodeAt(__peek) === 58) return parseHostFast__alt1(state);
+  if (__input.charCodeAt(__peek) === 46) {
+    return parseHostFast__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseHostFast__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -2349,8 +2357,12 @@ function validateHost(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 46) return validateHost__alt0(state);
-  if (__input.charCodeAt(__peek) === 58) return validateHost__alt1(state);
+  if (__input.charCodeAt(__peek) === 46) {
+    return validateHost__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 58) {
+    return validateHost__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 

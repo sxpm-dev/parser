@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { countTokens, parse, tokenize, validate } from '../src/index.ts';
+import { parse, validate } from '../src/index.ts';
 
 const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
@@ -258,25 +258,6 @@ test('html supports source locations in raws mode', () => {
   assert.deepEqual(ast.source?.end, { line: 1, column: 16, offset: 16 });
   assert.equal(ast.childNodes[0]?.source?.start.line, 1);
   assert.equal(ast.childNodes[0]?.source?.end.line, 1);
-});
-
-test('html tokenizes and counts tokens', () => {
-  const tokens = tokenize('<div class="x">Hi</div>');
-  assert.deepEqual(tokens.map((token) => token.type), [
-    'lt',
-    'ident',
-    'ident',
-    'equals',
-    'dq',
-    'ident',
-    'dq',
-    'gt',
-    'ident',
-    'closeTagOpen',
-    'ident',
-    'gt',
-  ]);
-  assert.equal(countTokens('<br><hr>'), 6);
 });
 
 test('html validates rejected syntax', () => {

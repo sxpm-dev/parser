@@ -9,7 +9,7 @@
   "scripts": {
     "build": "npm run generate && tsc -b",
     "build:tools": "tsc -b packages/parser packages/compiler",
-    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css-color/src/schema.ts && tsx packages/compiler/src/cli.ts packages/css-length-percentage/src/schema.ts && tsc -b packages/css-color packages/css-length-percentage && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts packages/html/src/schema.ts",
+    "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css-color/src/schema.ts && tsx packages/compiler/src/cli.ts packages/css-length-percentage/src/schema.ts && tsc -b packages/css-color packages/css-length-percentage && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts --scannerless packages/html/src/schema.ts",
     "test": "npm run generate && npm run test --workspaces --if-present",
     "conformance:fetch": "npm run fetch -w @parser2/css",
     "test:conformance": "PARSER2_CONFORMANCE=1 npm test",
@@ -29,7 +29,6 @@
     "bench:css:lazy-materialization": "npm run generate && tsx packages/css/bench/lazy-materialization.ts",
     "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts",
     "bench:html:parse": "npm run generate -w @parser2/html && tsx packages/html/bench/parse.ts",
-    "bench:html:tokenize": "npm run generate -w @parser2/html && tsx packages/html/bench/tokenize.ts",
     "bench:markdown:ast": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/ast.ts",
     "bench:markdown:tokenize": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/tokenize.ts",
     "bench:proto:parse": "npm run generate -w @parser2/proto && tsx packages/proto/bench/parse.ts",

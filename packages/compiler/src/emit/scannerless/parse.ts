@@ -34,6 +34,12 @@ type Ctx = {
   // tracking) that the until-scan must mirror to keep an unterminated
   // `/*` inside `url(...)` from greedily matching a far-away `*/`.
   readonly cssIdent: boolean;
+  // All declared literal terminals (punctuators + span literals). Used
+  // by the role dispatcher to refine single-byte literal checks with
+  // negative lookahead for longer punctuators that share the same
+  // first byte but aren't handled by any dispatched role (e.g. `<`
+  // for HtmlElement must NOT match `</`).
+  readonly literalTexts: ReadonlySet<string>;
 };
 
 export function emitNodeFunctions(schema: InferredSchema): string {
@@ -45,9 +51,10 @@ export function emitNodeFunctions(schema: InferredSchema): string {
       cssIdent = true;
     }
   }
+  const literalTexts = new Set(schema.literals.map((l) => l.literal));
   const parts: string[] = [];
   for (const variant of ['raws', 'fast', 'validate'] as const) {
-    const ctx: Ctx = { nodeTypes: schema.nodeTypes, variant, tokens, cssIdent };
+    const ctx: Ctx = { nodeTypes: schema.nodeTypes, variant, tokens, cssIdent, literalTexts };
     for (const info of schema.nodeTypes.values()) {
       parts.push(emitNodeFunction(info, ctx));
     }
@@ -177,7 +184,13 @@ function emitSharedPrefixDispatch(
   // all-class-with-oneOf (with at most one fallback). HTML's 15+ HtmlElement
   // productions all start with `<` (shared prefix=1) and discriminate on
   // an .ident().oneOf([...]) at span 1 — the second shape.
-  const seenLit = new Map<string, number>();
+  // literalGroups buckets indexes that share the same discriminator literal —
+  // they'll recurse via emitDispatchBody on the sub-group (which re-derives
+  // prefixLen and discriminates on a deeper position). This is how Attribute
+  // gets routed: all four alts share `name`, three share `name`-`=` and
+  // disambiguate via `"`/`'`/(rawUntil), while the boolean alt has no `=`
+  // at all and becomes the fallback.
+  const literalGroups = new Map<string, number[]>();
   const onByValue = new Map<string, number>();
   type OneOfDisc = { values: readonly string[]; idx: number };
   const oneOfBuckets: OneOfDisc[] = [];
@@ -198,8 +211,9 @@ function emitSharedPrefixDispatch(
     if (d.class === 'literal' && d.text) {
       if (kind === 'oneOf') return null;
       kind = 'literal';
-      if (seenLit.has(d.text)) return null;
-      seenLit.set(d.text, idx);
+      let bucket = literalGroups.get(d.text);
+      if (!bucket) { bucket = []; literalGroups.set(d.text, bucket); }
+      bucket.push(idx);
       continue;
     }
     // Class span with .oneOf — extract values.
@@ -221,9 +235,10 @@ function emitSharedPrefixDispatch(
     oneOfBuckets.push({ values: lowered, idx });
   }
   if (kind === null) return null;
-  if (kind === 'literal' && seenLit.size === 0) return null;
+  if (kind === 'literal' && literalGroups.size === 0) return null;
   if (kind === 'oneOf' && oneOfBuckets.length === 0) return null;
-  if (kind === 'literal' && seenLit.size + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+  const literalCount = [...literalGroups.values()].reduce((s, g) => s + g.length, 0);
+  if (kind === 'literal' && literalCount + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
   if (kind === 'oneOf' && oneOfBuckets.length + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
 
   const peekScan = emitPeekScanForSpans(productions[indexes[0]!]!.spans.slice(0, prefixLen));
@@ -237,10 +252,25 @@ while (__peek < __len) {
 }`;
 
   if (kind === 'literal') {
-    const ordered = [...seenLit.entries()].sort((a, b) => b[0].length - a[0].length);
-    const branches: string[] = ordered.map(([literal, idx]) =>
-      `if (${peekLiteralExpr(literal)}) return ${fnName}__alt${idx}(state);`,
-    );
+    const ordered = [...literalGroups.entries()].sort((a, b) => b[0].length - a[0].length);
+    const branches: string[] = [];
+    for (const [literal, subIndexes] of ordered) {
+      let body: string;
+      if (subIndexes.length === 1) {
+        body = `return ${fnName}__alt${subIndexes[0]}(state);`;
+      } else {
+        const sub = emitDispatchBody(subIndexes, productions, fnName);
+        if (sub === null) return null;
+        // The recursive dispatch re-walks from the start of the production
+        // because emitPeekScanForSpans always anchors at the current
+        // __peek. Reset it to state.off so the inner scan covers the full
+        // sub-prefix (which includes our discriminator literal).
+        body = `__peek = state.off;\n${sub}`;
+      }
+      branches.push(`if (${peekLiteralExpr(literal)}) {
+${indent(body, 1)}
+}`);
+    }
     const tail = fallbackIdx >= 0
       ? `return ${fnName}__alt${fallbackIdx}(state);`
       : `throw new SyntaxError('no production matched at position ' + __peek);`;
@@ -482,6 +512,36 @@ function peekScanForClass(span: ResolvedSpan): string | null {
 
 function peekLiteralExpr(text: string): string {
   return peekLiteralExprAt('__peek', text);
+}
+
+// Punctuators that extend `text` but aren't covered by any of
+// `earlierCovers` (literals tested before this one in the dispatcher).
+// Returns the minimal antichain — for the HTML case with text='<' and
+// earlierCovers=['<!--','<!'], this returns ['</'] which excludes every
+// declared `</xxx>` punctuator with a single startsWith check.
+function uncoveredLiteralExtensions(
+  text: string,
+  allLiterals: ReadonlySet<string>,
+  earlierCovers: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  if (text.length === 0) return [];
+  const extensions: string[] = [];
+  for (const lit of allLiterals) {
+    if (lit.length <= text.length) continue;
+    if (!lit.startsWith(text)) continue;
+    let covered = false;
+    for (const cov of earlierCovers) {
+      if (cov.length > text.length && lit.startsWith(cov)) { covered = true; break; }
+    }
+    if (!covered) extensions.push(lit);
+  }
+  extensions.sort((a, b) => a.length - b.length);
+  const antichain: string[] = [];
+  for (const ext of extensions) {
+    if (antichain.some((r) => ext.startsWith(r))) continue;
+    antichain.push(ext);
+  }
+  return antichain;
 }
 
 function peekLiteralExprAt(offsetExpr: string, text: string): string {
@@ -1045,8 +1105,20 @@ function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | nul
   // Emit body: literals first (sorted by length desc), then class groups.
   const lines: string[] = [];
   literalRoles.sort((a, b) => b.text.length - a.text.length);
-  for (const { role, text } of literalRoles) {
-    const check = peekLiteralExprAt('__off', text);
+  for (let i = 0; i < literalRoles.length; i++) {
+    const { role, text } = literalRoles[i]!;
+    let check = peekLiteralExprAt('__off', text);
+    // Refine the byte check: exclude declared punctuators that start with
+    // `text` but aren't handled by any other dispatched role here. Without
+    // this a single-byte literal like `<` would over-match `</`, routing
+    // close tags to an HtmlElement parse that then throws. Earlier-tested
+    // literals (longer ones — list is sorted by length desc) already cover
+    // some extensions; we exclude only the residual antichain.
+    const earlierCovers = literalRoles.slice(0, i).map((r) => r.text);
+    const uncovered = uncoveredLiteralExtensions(text, ctx.literalTexts, earlierCovers);
+    for (const ext of uncovered) {
+      check += ` && !(${peekLiteralExprAt('__off', ext)})`;
+    }
     lines.push(`if (${check}) return ${parseFnName(role, ctx.variant)}(state);`);
   }
 

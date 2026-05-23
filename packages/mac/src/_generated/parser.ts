@@ -537,8 +537,12 @@ function parseMacAddress(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return parseMacAddress__alt0(state);
-  if (__input.charCodeAt(__peek) === 45) return parseMacAddress__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseMacAddress__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 45) {
+    return parseMacAddress__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -824,8 +828,12 @@ function parseMacAddressFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return parseMacAddressFast__alt0(state);
-  if (__input.charCodeAt(__peek) === 45) return parseMacAddressFast__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return parseMacAddressFast__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 45) {
+    return parseMacAddressFast__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -1111,8 +1119,12 @@ function validateMacAddress(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 58) return validateMacAddress__alt0(state);
-  if (__input.charCodeAt(__peek) === 45) return validateMacAddress__alt1(state);
+  if (__input.charCodeAt(__peek) === 58) {
+    return validateMacAddress__alt0(state);
+  }
+  if (__input.charCodeAt(__peek) === 45) {
+    return validateMacAddress__alt1(state);
+  }
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 

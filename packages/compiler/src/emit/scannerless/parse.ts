@@ -85,24 +85,49 @@ ${indent(body, 1)}
   // dispatcher. Try lookahead-based dispatch first (avoids throw/catch
   // overhead of speculation); fall back to pure speculation when the
   // productions can't be distinguished by peek-scan.
-  const altFns = info.productions.map((production, i) => {
-    const body = emitProductionBody(production, ctx);
+  const lookaheadDispatch = emitLookaheadDispatch(info, fnName, ctx);
+  if (lookaheadDispatch !== null) {
+    // Lookahead dispatch commits via byte-prefix peek — alts only run
+    // once we're sure they match. Standalone (hard-fail) alts are fine
+    // here: any throw from inside is a genuine error on input that
+    // matched the dispatch prefix but failed deeper.
+    const altFns = info.productions.map((production, i) => {
+      const body = emitProductionBody(production, ctx);
+      return `function ${fnName}__alt${i}(state: State): unknown {
+${indent(body, 1)}
+}`;
+    }).join('\n\n');
+    return `${altFns}\n\n${lookaheadDispatch}`;
+  }
+
+  // No lookahead dispatcher — we fall back to speculation. Path-finding
+  // misses on alts 0..N-2 used to throw + catch, which dominated profiles
+  // for any schema hitting this path. Emit those alts in soft-fail mode
+  // (return null on prefix mismatch) so the dispatcher can use plain
+  // null checks instead of try/catch. The fallback alt N-1 stays hard:
+  // by then we've ruled out all other alts, so its throws are real.
+  const lastIdx = info.productions.length - 1;
+  const softAltFns = info.productions.slice(0, -1).map((production, i) => {
+    const body = emitProductionBody(production, ctx, {
+      skipSpans: 0,
+      preboundValues: new Map(),
+      softFail: true,
+    });
     return `function ${fnName}__alt${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
   }).join('\n\n');
+  const lastBody = emitProductionBody(info.productions[lastIdx]!, ctx);
+  const lastFn = `function ${fnName}__alt${lastIdx}(state: State): unknown {
+${indent(lastBody, 1)}
+}`;
+  const altFns = lastIdx > 0 ? `${softAltFns}\n\n${lastFn}` : lastFn;
 
-  const lookaheadDispatch = emitLookaheadDispatch(info, fnName, ctx);
-  if (lookaheadDispatch !== null) {
-    return `${altFns}\n\n${lookaheadDispatch}`;
-  }
-
-  const speculativeAttempts = info.productions.slice(0, -1).map((_, i) =>
-    `  { const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
+  const dispatchChain = info.productions.slice(0, -1).map((_, i) =>
+    `  { const r = ${fnName}__alt${i}(state); if (r !== null) return r; }`,
   ).join('\n');
-  const lastIdx = info.productions.length - 1;
   const dispatch = `function ${fnName}(state: State): unknown {
-${speculativeAttempts}
+${dispatchChain}
   return ${fnName}__alt${lastIdx}(state);
 }`;
   return `${altFns}\n\n${dispatch}`;
@@ -866,6 +891,14 @@ type InlineFromDispatcher = {
   // on the rejected branch. Alternatives are sorted longest first so the
   // multi-byte form wins over its prefix.
   readonly lastSpanLiteralAlternatives?: ReadonlyArray<string>;
+  // Soft-fail mode: every `throw new SyntaxError(...)` in this body is
+  // rewritten into `{ state.off = __softStart; return null; }`. The
+  // function then returns `result | null` and callers use a direct
+  // null-check instead of try/catch. Used for alts in a speculation
+  // chain — path-finding misses become branchless returns, eliminating
+  // the V8 Error-construction + stack-unwind cost that dominated profiles
+  // on input shapes that exercised speculation.
+  readonly softFail?: boolean;
 };
 
 function emitProductionBody(production: Production, ctx: Ctx, inline?: InlineFromDispatcher): string {
@@ -1026,19 +1059,46 @@ let __off = state.off;`);
 
   if (ctx.variant === 'validate') {
     lines.push(`return;`);
-    return lines.join('\n');
+    return applySoftFail(lines.join('\n'), inline?.softFail);
   }
 
   const bindings = { valueExpr, presenceExpr, startOffExpr, endOffExpr };
   const structure = emitStructureExpr(production.structure, bindings, structureOptions);
   if (ctx.variant === 'fast') {
     lines.push(`return ${structure};`);
-    return lines.join('\n');
+    return applySoftFail(lines.join('\n'), inline?.softFail);
   }
   lines.push(`const __struct: Record<string, unknown> = ${structure};`);
   lines.push(`__struct.source = makeSource(state, __startOff, __endOff);`);
   lines.push(`return __struct;`);
-  return lines.join('\n');
+  return applySoftFail(lines.join('\n'), inline?.softFail);
+}
+
+// Convert a hard-fail production body into a soft-fail one: each `throw
+// new SyntaxError(...)` (with or without the leading `state.off = __off;`
+// flush) becomes `state.off = __softStart; return null;`. Recursive parse
+// calls inside the body keep their throw semantics (real errors past the
+// commit point still propagate). The caller checks the null return
+// instead of catching an exception — eliminating the V8 Error-construction
+// and stack-unwind cost on path-finding misses.
+function applySoftFail(body: string, softFail: boolean | undefined): string {
+  if (!softFail) return body;
+  // Match optional `state.off = __off;` flush then a complete
+  // `throw new SyntaxError(<args>);` where args can include one level of
+  // nested parens (e.g. `jsString("foo")`). Multi-line throws are
+  // currently absent from the emitter; if introduced later the regex
+  // would need updating.
+  // Always wrap the replacement in `{ ... }` so `if (!cond) throw ...;`
+  // (without surrounding braces) still binds correctly — without the
+  // wrap, `return null;` would run unconditionally.
+  const throwRe = /(?:state\.off = __off;\s*)?throw new SyntaxError\((?:[^()]|\([^()]*\))*\);/g;
+  const transformed = body.replace(throwRe, '{ state.off = __softStart; return null; }');
+  // Inject __softStart capture right after the standard preamble. __off
+  // exists at this point because the preamble declares it.
+  return transformed.replace(
+    /(let __off = state\.off;)/,
+    '$1\nconst __softStart = state.off;',
+  );
 }
 
 // --- Spans -----------------------------------------------------------------

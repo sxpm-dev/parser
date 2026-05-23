@@ -288,12 +288,7 @@ function parseDeclaration__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
+  const __softStart = state.off;
   let __consumedEnd = __off;
   let prop = '';
   {
@@ -434,7 +429,7 @@ function parseDeclaration__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 58)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   let value = '';
@@ -576,7 +571,7 @@ function parseDeclaration__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 33)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -592,7 +587,7 @@ function parseDeclaration__alt0(state: State): unknown {
   }
   const __important_s = __off;
   let important;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -993,7 +988,7 @@ function parseDeclaration__alt1(state: State): unknown {
 }
 
 function parseDeclaration(state: State): unknown {
-  { const r = trySpeculate(state, parseDeclaration__alt0); if (r !== null) return r; }
+  { const r = parseDeclaration__alt0(state); if (r !== null) return r; }
   return parseDeclaration__alt1(state);
 }
 
@@ -1210,14 +1205,9 @@ function parseAtRule__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
+  const __softStart = state.off;
   let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -1233,7 +1223,7 @@ function parseAtRule__alt0(state: State): unknown {
   }
   const __name_s = __off;
   let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -1441,7 +1431,7 @@ function parseAtRule__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 123)) { { state.off = __softStart; return null; } }
   __off += 1;
   const lbrace = "{";
   const __lbrace_start = __off - 1;
@@ -1481,7 +1471,7 @@ function parseAtRule__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 125)) { { state.off = __softStart; return null; } }
   __off += 1;
   const rbrace = "}";
   const __rbrace_start = __off - 1;
@@ -1758,7 +1748,7 @@ function parseAtRule__alt1(state: State): unknown {
 }
 
 function parseAtRule(state: State): unknown {
-  { const r = trySpeculate(state, parseAtRule__alt0); if (r !== null) return r; }
+  { const r = parseAtRule__alt0(state); if (r !== null) return r; }
   return parseAtRule__alt1(state);
 }
 
@@ -1840,11 +1830,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   let __consumedEnd = __off;
   let prop = '';
   {
@@ -1983,7 +1969,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 58)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   let value = '';
@@ -2123,7 +2109,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 33)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -2139,7 +2125,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
   }
   const __important_s = __off;
   let important;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -2529,7 +2515,7 @@ function parseDeclarationFast__alt1(state: State): unknown {
 }
 
 function parseDeclarationFast(state: State): unknown {
-  { const r = trySpeculate(state, parseDeclarationFast__alt0); if (r !== null) return r; }
+  { const r = parseDeclarationFast__alt0(state); if (r !== null) return r; }
   return parseDeclarationFast__alt1(state);
 }
 
@@ -2733,13 +2719,9 @@ function parseAtRuleFast__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -2755,7 +2737,7 @@ function parseAtRuleFast__alt0(state: State): unknown {
   }
   const __name_s = __off;
   let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -2959,7 +2941,7 @@ function parseAtRuleFast__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 123)) { { state.off = __softStart; return null; } }
   __off += 1;
   const lbrace = "{";
   __consumedEnd = __off;
@@ -2994,7 +2976,7 @@ function parseAtRuleFast__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 125)) { { state.off = __softStart; return null; } }
   __off += 1;
   const rbrace = "}";
   __consumedEnd = __off;
@@ -3256,7 +3238,7 @@ function parseAtRuleFast__alt1(state: State): unknown {
 }
 
 function parseAtRuleFast(state: State): unknown {
-  { const r = trySpeculate(state, parseAtRuleFast__alt0); if (r !== null) return r; }
+  { const r = parseAtRuleFast__alt0(state); if (r !== null) return r; }
   return parseAtRuleFast__alt1(state);
 }
 
@@ -3331,11 +3313,7 @@ function validateDeclaration__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   let __consumedEnd = __off;
   let prop = '';
   {
@@ -3474,7 +3452,7 @@ function validateDeclaration__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 58)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   let value = '';
@@ -3614,7 +3592,7 @@ function validateDeclaration__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 33)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -3630,7 +3608,7 @@ function validateDeclaration__alt0(state: State): unknown {
   }
   const __important_s = __off;
 
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -4020,7 +3998,7 @@ function validateDeclaration__alt1(state: State): unknown {
 }
 
 function validateDeclaration(state: State): unknown {
-  { const r = trySpeculate(state, validateDeclaration__alt0); if (r !== null) return r; }
+  { const r = validateDeclaration__alt0(state); if (r !== null) return r; }
   return validateDeclaration__alt1(state);
 }
 
@@ -4233,13 +4211,9 @@ function validateAtRule__alt0(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
   __consumedEnd = __off;
   while (__off < __len) {
@@ -4255,7 +4229,7 @@ function validateAtRule__alt0(state: State): unknown {
   }
   const __name_s = __off;
 
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) { state.off = __softStart; return null; }
     {
       const __c0 = __input.charCodeAt(__off);
       __off++;
@@ -4459,7 +4433,7 @@ function validateAtRule__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 123)) { { state.off = __softStart; return null; } }
   __off += 1;
   const lbrace = "{";
   __consumedEnd = __off;
@@ -4503,7 +4477,7 @@ function validateAtRule__alt0(state: State): unknown {
     }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 125)) { { state.off = __softStart; return null; } }
   __off += 1;
   const rbrace = "}";
   __consumedEnd = __off;
@@ -4765,7 +4739,7 @@ function validateAtRule__alt1(state: State): unknown {
 }
 
 function validateAtRule(state: State): unknown {
-  { const r = trySpeculate(state, validateAtRule__alt0); if (r !== null) return r; }
+  { const r = validateAtRule__alt0(state); if (r !== null) return r; }
   return validateAtRule__alt1(state);
 }
 

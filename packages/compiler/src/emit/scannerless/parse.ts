@@ -343,6 +343,60 @@ ${indent(altBody, 1)}
     return name;
   };
 
+  // Try to emit a merged body when multi-alt sub-bucket members differ
+  // only in the final literal span. Returns the helper name or null if
+  // the alts aren't mergeable (different shapes, structures, or
+  // non-literal tails).
+  const mergedHelpers = new Map<string, string>();
+  const ensureMergedTailHelper = (
+    subIndexes: ReadonlyArray<number>,
+    productionsArr: ReadonlyArray<Production>,
+    ctxArg: Ctx,
+    prefixLenArg: number,
+    preboundValuesArg: ReadonlyMap<string, string>,
+    fnNameArg: string,
+    helpersArg: Map<number, string>,
+    helperNameFn: (idx: number) => string,
+  ): string | null => {
+    const cacheKey = subIndexes.join(',');
+    const cached = mergedHelpers.get(cacheKey);
+    if (cached) return cached;
+    if (subIndexes.length < 2) return null;
+    const ref = productionsArr[subIndexes[0]!]!;
+    const lastAlts: string[] = [];
+    for (let i = 0; i < subIndexes.length; i++) {
+      const p = productionsArr[subIndexes[i]!]!;
+      if (p.spans.length !== ref.spans.length) return null;
+      for (let s = 0; s < p.spans.length - 1; s++) {
+        if (!sameSpanSignature(p.spans[s]!, ref.spans[s]!)) return null;
+      }
+      const last = p.spans[p.spans.length - 1]!;
+      if (last.class !== 'literal' || !last.text) return null;
+      if (last.name) return null; // last span shouldn't bind a value
+      if (hasModifier(last.modifiers, 'optional')) return null;
+      if (lastAlts.includes(last.text)) return null; // duplicate, weird
+      lastAlts.push(last.text);
+      // Structures must be identical so we emit one tail.
+      if (JSON.stringify(p.structure) !== JSON.stringify(ref.structure)) return null;
+    }
+    const name = `${fnNameArg}__altMerged_${subIndexes.join('_')}__body`;
+    const inlineSpec: InlineFromDispatcher = {
+      skipSpans: prefixLenArg + 1,
+      preboundValues: preboundValuesArg,
+      lastSpanLiteralAlternatives: lastAlts,
+    };
+    const mergedBody = emitProductionBody(ref, ctxArg, inlineSpec);
+    const paramName = '__pre_' + (discName ?? 'disc');
+    const helper = `function ${name}(state: State, ${paramName}: string): unknown {
+${indent(mergedBody, 1)}
+}`;
+    // Reuse bodyHelpers map for emission; index doesn't matter since the
+    // function name is unique per merged set.
+    helpersArg.set(-(subIndexes[0]! + 1) * 1000, helper); // negative-keyed slot
+    mergedHelpers.set(cacheKey, name);
+    return name;
+  };
+
   // Collapse identical sub-bucket targets so void elements (which map every
   // tag in the void list to the same [alt1, alt2] pair) don't each emit a
   // separately-numbered helper. Same key → same emitted body.
@@ -360,6 +414,24 @@ ${indent(altBody, 1)}
           body = `return ${fnName}__alt${subIndexes[0]}(state);`;
         }
       } else {
+        // Check if alts differ ONLY in their final literal span (e.g. HTML
+        // void elements: alt1=`<` tag attrs `>`, alt2=`<` tag attrs `/>`).
+        // These can be merged into one body that peeks the final literal
+        // — no speculation, no throw on the rejected branch. Big win on
+        // input with many `<br />` / `<input />` (synthetic bench was
+        // throwing once per void self-close).
+        if (canExtractBody) {
+          const mergedHelper = ensureMergedTailHelper(subIndexes, productions, ctx, prefixLen, preboundValues, fnName, bodyHelpers, bodyHelperName);
+          if (mergedHelper !== null) {
+            body = `state.off = __peek; return ${mergedHelper}(state, __tagOrig);`;
+            subDispatchBodies.set(key, body);
+            const tagBody = subDispatchBodies.get(key)!;
+            dispatchLines.push(`if (__ident === ${jsString(value)}) {
+${indent(tagBody, 1)}
+}`);
+            continue;
+          }
+        }
         const sub = emitDispatchBody(subIndexes, productions, fnName, ctx);
         if (sub !== null) {
           body = `__peek = state.off;\n${sub}`;
@@ -787,6 +859,13 @@ type InlineFromDispatcher = {
   // `{ tag: '__tagOrig' }` so the body's structure references `tag`
   // resolve to the dispatcher's pre-captured source slice.
   readonly preboundValues: ReadonlyMap<string, string>;
+  // When set, the production's LAST literal span is replaced by a peek
+  // that tries each alternative literal in turn. Used to merge alts that
+  // differ ONLY in the closing literal — e.g. HTML void (`>`) vs void
+  // self-close (`/>`) — into one body that avoids the trySpeculate throw
+  // on the rejected branch. Alternatives are sorted longest first so the
+  // multi-byte form wins over its prefix.
+  readonly lastSpanLiteralAlternatives?: ReadonlyArray<string>;
 };
 
 function emitProductionBody(production: Production, ctx: Ctx, inline?: InlineFromDispatcher): string {
@@ -865,7 +944,27 @@ let __off = state.off;`);
       ? `__beforeSpan${i}`
       : null;
     const isRepeats = findModifier(span.modifiers, 'repeats') !== undefined;
-    lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx));
+    const isLastSpan = i === spans.length - 1;
+    const isSecondToLast = i === spans.length - 2;
+    if (isLastSpan && inline?.lastSpanLiteralAlternatives && span.class === 'literal') {
+      // Merged-tail emit: try each alternative in order. Sorted longest
+      // first so e.g. `/>` wins before `>` would.
+      const alts = [...inline.lastSpanLiteralAlternatives].sort((a, b) => b.length - a.length);
+      const branches = alts.map((alt) => {
+        const peek = peekLiteralExprAt('__off', alt);
+        return `if (${peek}) { __off += ${alt.length}; }`;
+      });
+      const tail = `else { state.off = __off; throw new SyntaxError(${jsString(`expected one of ${alts.join(', ')} at position `)} + __off); }`;
+      lines.push(branches.join(' else ') + ' ' + tail);
+    } else if (isSecondToLast && inline?.lastSpanLiteralAlternatives && findModifier(span.modifiers, 'repeats')) {
+      // The repeats span just before the merged tail needs a stop predicate
+      // that covers ANY of the alternative literals, not just the canonical
+      // `next.text`. Otherwise input like `<br />` runs the attrs loop until
+      // parseAttribute throws on `/`.
+      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, inline.lastSpanLiteralAlternatives));
+    } else {
+      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx));
+    }
     if (isUntil || isRawUntil) {
       lines.push(`__consumedEnd = state.__lastCaptureEnd;`);
     } else if (isRepeats && span.name && needsNodeRange) {
@@ -953,6 +1052,7 @@ function emitSpan(
   endOffExpr: Map<string, string>,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
+  nextStopAlternatives?: ReadonlyArray<string>,
 ): string {
   const optional = hasModifier(span.modifiers, 'optional');
   const repeats = findModifier(span.modifiers, 'repeats');
@@ -967,7 +1067,7 @@ function emitSpan(
     return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
   }
   if (repeats) {
-    return emitRepeatedSpan(span, repeats, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+    return emitRepeatedSpan(span, repeats, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, nextStopAlternatives);
   }
   if (span.recursiveRoles.length > 0) {
     return emitRecursiveSpan(span, valueExpr, presenceExpr, optional, ctx);
@@ -1614,6 +1714,7 @@ function emitRepeatedSpan(
   endOffExpr: Map<string, string>,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
+  nextStopAlternatives?: ReadonlyArray<string>,
 ): string {
   if (span.recursiveRoles.length === 0) {
     throw new Error(`scannerless v1: .repeats() on non-recursive span is not implemented`);
@@ -1636,7 +1737,13 @@ function emitRepeatedSpan(
       ? `${dispatcher}(state)`
       : `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
   }
-  const stopPredicate = stopPredicateFor(next);
+  // When the next span is a merged-tail (multiple literal alternatives),
+  // stop on ANY of them — otherwise the loop misses the tail and keeps
+  // trying to parse children that throw. e.g. void self-close attrs loop
+  // needs to break on `/` (start of `/>`) as well as `>`.
+  const stopPredicate = nextStopAlternatives && nextStopAlternatives.length > 0
+    ? nextStopAlternatives.map((alt) => `(${peekLiteralExprAt('__off', alt)})`).join(' || ')
+    : stopPredicateFor(next);
   const sep = repeats.sep;
   const min = repeats.min ?? 0;
   const max = repeats.max;

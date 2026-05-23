@@ -4626,60 +4626,46 @@ function parseHtmlElementFast__valid(state: State): unknown {
     state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "area") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "base") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "br") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "col") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "embed") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "hr") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "img") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "input") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "link") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "meta") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "param") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "source") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "track") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "wbr") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
+    state.off = __peek; return parseHtmlElementFast__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "li") {
     state.off = __peek; return parseHtmlElementFast__valid__alt3__body(state, __tagOrig);
@@ -7078,60 +7064,46 @@ function validateHtmlElement__valid(state: State): unknown {
     state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "area") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "base") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "br") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "col") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "embed") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "hr") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "img") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "input") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "link") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "meta") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "param") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "source") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "track") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "wbr") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
+    state.off = __peek; return validateHtmlElement__valid__altMerged_1_2__body(state, __tagOrig);
   }
     if (__ident === "li") {
     state.off = __peek; return validateHtmlElement__valid__alt3__body(state, __tagOrig);
@@ -8403,6 +8375,42 @@ function parseHtmlElementFast__valid__alt0__body(state: State, __pre_tag: string
   }
   state.off = __off;
   return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [{ nodeName: "#text", value: body, parentNode: null }], parentNode: null };
+}
+
+function parseHtmlElementFast__valid__altMerged_1_2__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if ((__input.charCodeAt(__off) === 62) || (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) { __off += 2; } else if (__input.charCodeAt(__off) === 62) { __off += 1; } else { state.off = __off; throw new SyntaxError("expected one of />, > at position " + __off); }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
 }
 
 function parseHtmlElementFast__valid__alt3__body(state: State, __pre_tag: string): unknown {
@@ -9861,6 +9869,45 @@ function validateHtmlElement__valid__alt0__body(state: State, __pre_tag: string)
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__altMerged_1_2__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!((__input.charCodeAt(__off) === 62) || (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62))) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) { __off += 2; } else if (__input.charCodeAt(__off) === 62) { __off += 1; } else { state.off = __off; throw new SyntaxError("expected one of />, > at position " + __off); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);

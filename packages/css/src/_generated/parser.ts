@@ -4830,7 +4830,49 @@ function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_0(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
-  return tryRoles(state, [parseRule, parseDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRule);
+    if (__block !== null) return __block;
+  }
+  return parseDeclaration(state);
+}
 }
 
 function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_1(state: State): unknown {
@@ -4846,7 +4888,49 @@ function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_1(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
-  return tryRoles(state, [parseRule, parseDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRule);
+    if (__block !== null) return __block;
+  }
+  return parseDeclaration(state);
+}
 }
 
 function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_2(state: State): unknown {
@@ -4862,7 +4946,49 @@ function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_2(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
-  return tryRoles(state, [parseRule, parseDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRule);
+    if (__block !== null) return __block;
+  }
+  return parseDeclaration(state);
+}
 }
 
 function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_3(state: State): unknown {
@@ -4878,7 +5004,49 @@ function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_3(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
-  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRuleFast);
+    if (__block !== null) return __block;
+  }
+  return parseDeclarationFast(state);
+}
 }
 
 function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_4(state: State): unknown {
@@ -4894,7 +5062,49 @@ function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_4(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
-  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRuleFast);
+    if (__block !== null) return __block;
+  }
+  return parseDeclarationFast(state);
+}
 }
 
 function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_5(state: State): unknown {
@@ -4910,7 +5120,49 @@ function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_5(state: State): un
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
-  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, parseRuleFast);
+    if (__block !== null) return __block;
+  }
+  return parseDeclarationFast(state);
+}
 }
 
 function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_6(state: State): unknown {
@@ -4926,7 +5178,49 @@ function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_6(state: State)
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
   if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
-  return tryRoles(state, [validateRule, validateDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, validateRule);
+    if (__block !== null) return __block;
+  }
+  return validateDeclaration(state);
+}
 }
 
 function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_7(state: State): unknown {
@@ -4942,7 +5236,49 @@ function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_7(state: State)
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
   if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
-  return tryRoles(state, [validateRule, validateDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, validateRule);
+    if (__block !== null) return __block;
+  }
+  return validateDeclaration(state);
+}
 }
 
 function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_8(state: State): unknown {
@@ -4958,7 +5294,49 @@ function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_8(state: State)
   state.off = __off;
   if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
   if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
-  return tryRoles(state, [validateRule, validateDeclaration]);
+  {
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (__bc === 123 || __bc === 125 || __bc === 59)) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === 123 && !(__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === 58)) {
+    const __block = trySpeculate(state, validateRule);
+    if (__block !== null) return __block;
+  }
+  return validateDeclaration(state);
+}
 }
 
 type DirectState = {
@@ -4971,6 +5349,9 @@ type DirectState = {
   scanCaptureEnd: number;
   scanColonIdx: number;
   scanBangIdx: number;
+  scanHadComment: boolean;
+  lastNodeStart: number;
+  lastNodeEnd: number;
 };
 
 function parseDirectFast(input: string): unknown {
@@ -4984,11 +5365,38 @@ function parseDirectFast(input: string): unknown {
     scanCaptureEnd: 0,
     scanColonIdx: -1,
     scanBangIdx: -1,
+    scanHadComment: false,
+    lastNodeStart: 0,
+    lastNodeEnd: 0,
   };
   const nodes = parseDirectRootChildren(state);
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
   return { type: "root", nodes: nodes };
+}
+
+function parseDirectRaws(input: string): unknown {
+  const state: DirectState = {
+    input,
+    len: input.length,
+    pos: 0,
+    scanStop: -1,
+    scanStopIdx: 0,
+    scanCaptureStart: 0,
+    scanCaptureEnd: 0,
+    scanColonIdx: -1,
+    scanBangIdx: -1,
+    scanHadComment: false,
+    lastNodeStart: 0,
+    lastNodeEnd: 0,
+  };
+  const list = parseDirectRootChildrenRaws(state);
+  skipDirectWsAndSeparators(state);
+  if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
+  const end = state.pos;
+  return {
+    type: "root", nodes: list.nodes, raws: { after: input.slice(list.prevEnd, end), semicolon: input.charCodeAt(list.prevEnd - 1) === 59 }
+  };
 }
 
 function validateDirectFast(input: string): void {
@@ -5002,6 +5410,9 @@ function validateDirectFast(input: string): void {
     scanCaptureEnd: 0,
     scanColonIdx: -1,
     scanBangIdx: -1,
+    scanHadComment: false,
+    lastNodeStart: 0,
+    lastNodeEnd: 0,
   };
   validateDirectRootChildren(state);
   skipDirectWsAndSeparators(state);
@@ -5093,7 +5504,8 @@ function validateDirectBlockOrPair(state: DirectState): void {
   const input = state.input;
   scanDirectPairBoundary(state, 123, 59, 125);
   if (state.scanStop === 123) {
-    const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58;
+    const rejectsBlock = (state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58)
+      || (state.scanColonIdx >= 0 && input.charCodeAt(state.scanCaptureStart) === 0x2d && state.scanCaptureStart + 1 < state.scanColonIdx && input.charCodeAt(state.scanCaptureStart + 1) === 0x2d);
     if (!rejectsBlock) {
       if (state.scanCaptureEnd <= state.scanCaptureStart) throw new SyntaxError(`expected selector at position ${state.pos}`);
       const selectorEnd = input.charCodeAt(state.scanCaptureEnd - 1);
@@ -5243,11 +5655,207 @@ function parseDirectPrefixed(state: DirectState): unknown {
 }
 
 
+function parseDirectRootChildrenRaws(state: DirectState): { nodes: unknown[]; prevEnd: number } {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  let prevEnd = 0;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
+    }
+    if (state.pos >= len) return { nodes, prevEnd };
+    const c = input.charCodeAt(state.pos);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    const child = c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */
+      ? parseDirectCommentRaws(state)
+      : c === 64
+      ? parseDirectPrefixedRaws(state)
+      : parseDirectBlockOrPairRaws(state);
+    directAttachRawsBefore(input, child, prevEnd, state.lastNodeStart);
+    nodes[nodes.length] = child;
+    prevEnd = state.lastNodeEnd;
+  }
+}
+
+function parseDirectChildrenRaws(state: DirectState, bodyStart: number): { nodes: unknown[]; closeStart: number; prevEnd: number } {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  let prevEnd = bodyStart;
+  while (true) {
+    while (state.pos < len) {
+      const ws = input.charCodeAt(state.pos);
+      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
+      state.pos++;
+    }
+    if (state.pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${state.pos}`);
+    }
+    const c = input.charCodeAt(state.pos);
+    if (c === 125) {
+      const closeStart = state.pos;
+      state.pos++;
+      return { nodes, closeStart, prevEnd };
+    }
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    const child = c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */
+      ? parseDirectCommentRaws(state)
+      : c === 64
+      ? parseDirectPrefixedRaws(state)
+      : parseDirectBlockOrPairRaws(state);
+    directAttachRawsBefore(input, child, prevEnd, state.lastNodeStart);
+    nodes[nodes.length] = child;
+    prevEnd = state.lastNodeEnd;
+  }
+}
+
+function parseDirectCommentRaws(state: DirectState): unknown {
+  const input = state.input;
+  const len = state.len;
+  const start = state.pos;
+  state.pos += 2;
+  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+  if (state.pos < len) state.pos += 2;
+  const raw = input.slice(start, state.pos);
+  state.lastNodeStart = start;
+  state.lastNodeEnd = state.pos;
+  return { type: "comment", text: commentInterior(raw), raws: { left: commentLeft(raw), right: commentRight(raw) } };
+}
+
+function parseDirectPrefixedRaws(state: DirectState): unknown {
+  const input = state.input;
+  const start = state.pos;
+  state.pos++;
+  skipDirectWs(state);
+  const nameStart = state.pos;
+  readDirectIdent(state);
+  const nameEnd = state.pos;
+  const name = input.slice(nameStart, nameEnd);
+  scanDirectBoundary(state, 59, 123, 125);
+  const paramsStart = state.scanCaptureStart;
+  const paramsEnd = state.scanCaptureEnd;
+  const params = input.slice(paramsStart, paramsEnd);
+  const scanStop = state.scanStop;
+  const stopIdx = state.scanStopIdx;
+  const afterName = paramsStart === paramsEnd ? '' : input.slice(nameEnd, paramsStart);
+  const between = scanStop === 59 || scanStop === 123
+    ? (paramsStart === paramsEnd ? input.slice(nameEnd, stopIdx) : input.slice(paramsEnd, stopIdx))
+    : '';
+  state.pos = stopIdx;
+  if (scanStop === 123) {
+    state.pos++;
+    const body = parseDirectChildrenRaws(state, state.pos);
+    state.lastNodeStart = start;
+    state.lastNodeEnd = state.pos;
+    return {
+      type: "atrule", name: name, params: params, nodes: body.nodes, raws: { afterName, between, after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === 59 }
+    };
+  }
+  if (scanStop === 59) state.pos++;
+  state.lastNodeStart = start;
+  state.lastNodeEnd = scanStop === 59 ? state.pos : paramsEnd;
+  return {
+    type: "atrule", name: name, params: params, raws: { afterName, between }
+  };
+}
+
+
+function parseDirectBlockOrPairRaws(state: DirectState): unknown {
+  const input = state.input;
+  const start = state.pos;
+  scanDirectPairBoundary(state, 123, 59, 125);
+  if (state.scanStop === 123) {
+    const rejectsBlock = (state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58)
+      || (state.scanColonIdx >= 0 && input.charCodeAt(state.scanCaptureStart) === 0x2d && state.scanCaptureStart + 1 < state.scanColonIdx && input.charCodeAt(state.scanCaptureStart + 1) === 0x2d);
+    if (!rejectsBlock) {
+      const rawSelector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
+      const selector = state.scanHadComment ? directNormalizeSelector(rawSelector) : rawSelector;
+      const selectorEnd = input.charCodeAt(state.scanCaptureEnd - 1);
+      if (selectorEnd === 0x2c /* , */ || selectorEnd === 0x3e /* > */ || selectorEnd === 0x2b /* + */ || selectorEnd === 0x7e /* ~ */) {
+        throw new SyntaxError(`expected selector after combinator at position ${state.scanCaptureEnd}`);
+      }
+      const selectorEndOffset = state.scanCaptureEnd;
+      const openIdx = state.scanStopIdx;
+      state.pos = openIdx + 1;
+      const body = parseDirectChildrenRaws(state, state.pos);
+      state.lastNodeStart = start;
+      state.lastNodeEnd = state.pos;
+      return {
+        type: "rule", selector: selector, nodes: body.nodes, raws: { between: input.slice(selectorEndOffset, openIdx), after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === 59 }
+      };
+    }
+  }
+  const scanColonIdx = state.scanColonIdx;
+  if (scanColonIdx < 0) {
+    const found = state.scanStopIdx < state.len ? `'${input[state.scanStopIdx]}'` : 'end of input';
+    directSyntaxError(state, `Unexpected ${found}`, state.scanStopIdx);
+  }
+  const scanCaptureStart = state.scanCaptureStart;
+  const propEnd = directTrimTriviaEnd(input, scanCaptureStart, scanColonIdx);
+  const prop = input.slice(scanCaptureStart, propEnd);
+  if (state.scanStop === 123) {
+    state.pos = scanColonIdx + 1;
+    return parseDirectDeclarationRestRaws(state, start, prop, propEnd);
+  }
+  const isCustomProp = prop.length > 1 && prop.charCodeAt(0) === 0x2d && prop.charCodeAt(1) === 0x2d;
+  const rawRightEnd = isCustomProp
+    ? directTrimWsEnd(input, scanColonIdx + 1, state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx)
+    : state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanCaptureEnd;
+  const valueStart = directTrimValueStart(input, scanColonIdx + 1, rawRightEnd);
+  const valueEnd = directTrimValueEnd(input, valueStart, rawRightEnd);
+  const value = state.scanHadComment ? directStripComments(input.slice(valueStart, valueEnd)) : input.slice(valueStart, valueEnd);
+  const betweenEnd = isCustomProp && value.length === '' ? directTrimWsEnd(input, scanColonIdx + 1, rawRightEnd) : valueStart;
+  state.pos = state.scanBangIdx >= 0 ? state.scanBangIdx : state.scanStopIdx;
+  if (state.scanBangIdx >= 0) return parseDirectImportantDeclarationRestRaws(state, start, prop, value, propEnd, betweenEnd);
+  if (state.scanStop === 59) state.pos++;
+  state.lastNodeStart = start;
+  state.lastNodeEnd = state.scanStop === 59 ? state.pos : valueEnd;
+  return { type: "decl", prop: prop, value: value, raws: { between: input.slice(propEnd, betweenEnd) } };
+}
+
+function parseDirectDeclarationRestRaws(state: DirectState, start: number, prop: string, propEnd: number): unknown {
+  const input = state.input;
+  const valueScanStart = state.pos;
+  scanDirectValueBoundary(state, 59, 125, 33);
+  const rawRightEnd = state.scanStop === 33 ? state.scanStopIdx : state.scanCaptureEnd;
+  const valueStart = directTrimValueStart(input, valueScanStart, rawRightEnd);
+  const valueEnd = directTrimValueEnd(input, valueStart, rawRightEnd);
+  const value = state.scanHadComment ? directStripComments(input.slice(valueStart, valueEnd)) : input.slice(valueStart, valueEnd);
+  const isCustomProp = prop.length > 1 && prop.charCodeAt(0) === 0x2d && prop.charCodeAt(1) === 0x2d;
+  const betweenEnd = isCustomProp && value.length === '' ? directTrimWsEnd(input, valueScanStart, rawRightEnd) : valueStart;
+  state.pos = state.scanStopIdx;
+  if (state.scanStop === 33) {
+    return parseDirectImportantDeclarationRestRaws(state, start, prop, value, propEnd, betweenEnd);
+  }
+  if (state.scanStop === 59) state.pos++;
+  state.lastNodeStart = start;
+  state.lastNodeEnd = state.scanStop === 59 ? state.pos : valueEnd;
+  return { type: "decl", prop: prop, value: value, raws: { between: input.slice(propEnd, betweenEnd) } };
+}
+
+function parseDirectImportantDeclarationRestRaws(state: DirectState, start: number, prop: string, value: string, propEnd: number, valueStart: number): unknown {
+  const input = state.input;
+  state.pos++;
+  skipDirectWsAndComments(state);
+  const importantStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === importantStart) throw new SyntaxError(`expected token of class 'ident' at position ${importantStart}`);
+  skipDirectWsAndComments(state);
+  if (input.charCodeAt(state.pos) === 59) state.pos++;
+  state.lastNodeStart = start;
+  state.lastNodeEnd = state.pos;
+  return { type: "decl", prop: prop, value: value, important: true, raws: { between: input.slice(propEnd, valueStart) } };
+}
+
 function parseDirectBlockOrPair(state: DirectState): unknown {
   const input = state.input;
   scanDirectPairBoundary(state, 123, 59, 125);
   if (state.scanStop === 123) {
-    const rejectsBlock = state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58;
+    const rejectsBlock = (state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58)
+      || (state.scanColonIdx >= 0 && input.charCodeAt(state.scanCaptureStart) === 0x2d && state.scanCaptureStart + 1 < state.scanColonIdx && input.charCodeAt(state.scanCaptureStart + 1) === 0x2d);
     if (!rejectsBlock) {
       const selector = input.slice(state.scanCaptureStart, state.scanCaptureEnd);
       if (selector.length === 0) throw new SyntaxError(`expected selector at position ${state.pos}`);
@@ -5329,6 +5937,7 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
   const startPos = state.pos;
   let pos = startPos;
   let depth = 0;
+  let hadComment = false;
   while (pos < len) {
     const c = input.charCodeAt(pos);
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
@@ -5338,6 +5947,21 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
     }
     if (c === 0x5c /* \\ */) {
       pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth > 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      const commentEnd = input.indexOf('*/', pos + 2);
+      const lineEnd = input.indexOf('\n', pos + 2);
+      if (commentEnd >= 0 && (lineEnd < 0 || commentEnd < lineEnd)) {
+        hadComment = true;
+        pos = commentEnd + 2;
+        continue;
+      }
+    }
+    if (depth === 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      if (depth === 0 && directCommentStartsOwnLine(input, startPos, pos)) break;
+      hadComment = true;
+      pos = skipDirectComment(input, pos, len);
       continue;
     }
     if (depth === 0) {
@@ -5350,24 +5974,15 @@ function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, st
     }
     pos++;
   }
-  let captureStart = startPos;
-  while (captureStart < pos) {
-    const lc = input.charCodeAt(captureStart);
-    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
-    captureStart++;
-  }
-  let captureEnd = pos;
-  while (captureEnd > captureStart) {
-    const tc = input.charCodeAt(captureEnd - 1);
-    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
-    captureEnd--;
-  }
+  const captureStart = directTrimTriviaStart(input, startPos, pos);
+  const captureEnd = directTrimTriviaEnd(input, captureStart, pos);
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = captureStart;
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = -1;
   state.scanBangIdx = -1;
+  state.scanHadComment = hadComment;
 }
 
 function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
@@ -5378,6 +5993,7 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
   let depth = 0;
   let colonIdx = -1;
   let bangIdx = -1;
+  let hadComment = false;
   while (pos < len) {
     const c = input.charCodeAt(pos);
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
@@ -5387,6 +6003,21 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
     }
     if (c === 0x5c /* \\ */) {
       pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth > 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      const commentEnd = input.indexOf('*/', pos + 2);
+      const lineEnd = input.indexOf('\n', pos + 2);
+      if (commentEnd >= 0 && (lineEnd < 0 || commentEnd < lineEnd)) {
+        hadComment = true;
+        pos = commentEnd + 2;
+        continue;
+      }
+    }
+    if (depth === 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      if (depth === 0 && colonIdx >= 0 && directCommentStartsOwnLine(input, startPos, pos)) break;
+      hadComment = true;
+      pos = skipDirectComment(input, pos, len);
       continue;
     }
     if (depth === 0) {
@@ -5404,18 +6035,14 @@ function scanDirectPairBoundary(state: DirectState, stop0: number, stop1: number
   // Callers (parseDirectChildren / parseDirectRootChildren) always advance past
   // whitespace and separators before dispatching here, so the leading-trim
   // loop is dead. captureStart is always the entry pos.
-  let captureEnd = pos;
-  while (captureEnd > startPos) {
-    const tc = input.charCodeAt(captureEnd - 1);
-    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
-    captureEnd--;
-  }
+  const captureEnd = directTrimTriviaEnd(input, startPos, pos);
   state.scanStop = pos < len ? input.charCodeAt(pos) : -1;
   state.scanStopIdx = pos;
   state.scanCaptureStart = startPos;
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = colonIdx;
   state.scanBangIdx = bangIdx;
+  state.scanHadComment = hadComment;
 }
 
 function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
@@ -5424,6 +6051,7 @@ function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: numbe
   const startPos = state.pos;
   let pos = startPos;
   let depth = 0;
+  let hadComment = false;
   while (pos < len) {
     const c = input.charCodeAt(pos);
     if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
@@ -5433,6 +6061,21 @@ function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: numbe
     }
     if (c === 0x5c /* \\ */) {
       pos += pos + 1 < len ? 2 : 1;
+      continue;
+    }
+    if (depth > 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      const commentEnd = input.indexOf('*/', pos + 2);
+      const lineEnd = input.indexOf('\n', pos + 2);
+      if (commentEnd >= 0 && (lineEnd < 0 || commentEnd < lineEnd)) {
+        hadComment = true;
+        pos = commentEnd + 2;
+        continue;
+      }
+    }
+    if (depth === 0 && c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      if (depth === 0 && directCommentStartsOwnLine(input, startPos, pos)) break;
+      hadComment = true;
+      pos = skipDirectComment(input, pos, len);
       continue;
     }
     if (depth === 0 && (c === stop0 || c === stop1 || c === stop2)) break;
@@ -5461,6 +6104,7 @@ function scanDirectValueBoundary(state: DirectState, stop0: number, stop1: numbe
   state.scanCaptureEnd = captureEnd;
   state.scanColonIdx = -1;
   state.scanBangIdx = -1;
+  state.scanHadComment = hadComment;
 }
 
 function skipDirectString(input: string, pos: number, len: number): number {
@@ -5473,6 +6117,12 @@ function skipDirectString(input: string, pos: number, len: number): number {
     if (c === quote) break;
   }
   return pos;
+}
+
+function skipDirectComment(input: string, pos: number, len: number): number {
+  pos += 2;
+  while (pos < len && !(input.charCodeAt(pos) === 0x2a && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2f)) pos++;
+  return pos < len ? pos + 2 : pos;
 }
 
 function readDirectIdent(state: DirectState): void {
@@ -5508,6 +6158,158 @@ function skipDirectWs(state: DirectState): void {
   while (state.pos < len && isDirectWs(input.charCodeAt(state.pos))) state.pos++;
 }
 
+function skipDirectWsAndComments(state: DirectState): void {
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len) {
+    const c = input.charCodeAt(state.pos);
+    if (isDirectWs(c)) {
+      state.pos++;
+      continue;
+    }
+    if (c === 0x2f && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos = skipDirectComment(input, state.pos, len);
+      continue;
+    }
+    break;
+  }
+}
+
+function directAttachRawsBefore(input: string, child: unknown, prevEnd: number, childStart: number): void {
+  if (!child || typeof child !== 'object') return;
+  const node = child as { raws?: Record<string, unknown> };
+  if (!node.raws) node.raws = {};
+  if (prevEnd === childStart) {
+    node.raws.before = '';
+    return;
+  }
+  if (prevEnd === 0) {
+    let pos = 0;
+    while (pos < childStart && isDirectWs(input.charCodeAt(pos))) pos++;
+    if (pos === childStart) {
+      node.raws.before = '';
+      return;
+    }
+  }
+  node.raws.before = input.slice(prevEnd, childStart);
+}
+
+function directTrimValueStart(input: string, start: number, end: number): number {
+  return directTrimTriviaStart(input, start, end);
+}
+
+function directTrimValueEnd(input: string, start: number, end: number): number {
+  return directTrimTriviaEnd(input, start, end);
+}
+
+function directTrimTriviaStart(input: string, start: number, end: number): number {
+  let pos = start;
+  while (pos < end) {
+    const c = input.charCodeAt(pos);
+    if (isDirectWs(c)) { pos++; continue; }
+    if (c === 0x2f && pos + 1 < end && input.charCodeAt(pos + 1) === 0x2a) {
+      pos = skipDirectComment(input, pos, end);
+      continue;
+    }
+    break;
+  }
+  return pos;
+}
+
+function directTrimTriviaEnd(input: string, start: number, end: number): number {
+  let pos = end;
+  while (pos > start) {
+    const c = input.charCodeAt(pos - 1);
+    if (isDirectWs(c)) { pos--; continue; }
+    if (c === 0x2f && pos - 2 >= start && input.charCodeAt(pos - 2) === 0x2a) {
+      const commentStart = input.lastIndexOf('/*', pos - 2);
+      if (commentStart >= start) {
+        pos = commentStart;
+        while (pos > start && isDirectWs(input.charCodeAt(pos - 1))) pos--;
+        continue;
+      }
+    }
+    break;
+  }
+  return pos;
+}
+
+function directTrimWsEnd(input: string, start: number, end: number): number {
+  let pos = end;
+  while (pos > start && isDirectWs(input.charCodeAt(pos - 1))) pos--;
+  return pos;
+}
+
+function directStripComments(value: string): string {
+  let out = '';
+  let pos = 0;
+  let idx = 0;
+  while (idx < value.length) {
+    const c = value.charCodeAt(idx);
+    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
+      const next = skipDirectString(value, idx, value.length);
+      out += value.slice(pos, idx);
+      out += value.slice(idx, next);
+      idx = next;
+      pos = idx;
+      continue;
+    }
+    if (c === 0x5c /* \\ */) {
+      idx += idx + 1 < value.length ? 2 : 1;
+      continue;
+    }
+    if (c === 0x2f && idx + 1 < value.length && value.charCodeAt(idx + 1) === 0x2a) {
+      const commentStart = idx;
+      idx = skipDirectComment(value, idx, value.length);
+      const body = value.slice(commentStart + 2, Math.max(commentStart + 2, idx - 2));
+      if (body.indexOf(';') >= 0 || body.indexOf('!') >= 0) {
+        out += value.slice(pos, commentStart);
+        pos = idx;
+      }
+      continue;
+    }
+    idx++;
+  }
+  return out + value.slice(pos);
+}
+
+function directNormalizeSelector(value: string): string {
+  let idx = value.indexOf('/*');
+  while (idx >= 0) {
+    const end = value.indexOf('*/', idx + 2);
+    if (end < 0) return value;
+    const body = value.slice(idx + 2, end);
+    if (body.indexOf('{') >= 0 || body.indexOf('}') >= 0) return directStripAllComments(value);
+    idx = value.indexOf('/*', end + 2);
+  }
+  return value;
+}
+
+function directStripAllComments(value: string): string {
+  let out = '';
+  let pos = 0;
+  let idx = value.indexOf('/*');
+  while (idx >= 0) {
+    out += value.slice(pos, idx);
+    const end = value.indexOf('*/', idx + 2);
+    if (end < 0) return out;
+    pos = end + 2;
+    idx = value.indexOf('/*', pos);
+  }
+  return out + value.slice(pos);
+}
+
+function directCommentStartsOwnLine(input: string, start: number, commentStart: number): boolean {
+  let pos = commentStart - 1;
+  while (pos >= start) {
+    const c = input.charCodeAt(pos);
+    if (c === 0x0a || c === 0x0d) return true;
+    if (!isDirectWs(c)) return false;
+    pos--;
+  }
+  return false;
+}
+
 function isDirectWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
@@ -5540,6 +6342,11 @@ export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (mode === 'fast') {
     const result = parseDirectFast(input);
+    if (options?.validate === true) validateParsedProperties(input, result);
+    return result;
+  }
+  if (mode === 'raws') {
+    const result = parseDirectRaws(input);
     if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }

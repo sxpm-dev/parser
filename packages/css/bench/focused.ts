@@ -1,4 +1,7 @@
 import postcss from 'postcss';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse, validate, type CssNode, type CssRoot } from '../src/index.ts';
 import { fmtNs, generateCss, hashInput } from './common.ts';
 
@@ -10,6 +13,16 @@ type ParserCase = {
 type Sample = {
   readonly ns: number;
   readonly units: number;
+};
+
+type BenchInput = {
+  readonly label: string;
+  readonly input: string;
+  readonly iterations: number;
+  readonly warmup: number;
+  readonly sampleCount?: number;
+  readonly windowMs?: number;
+  readonly parseOnly?: boolean;
 };
 
 const CASES: readonly ParserCase[] = [
@@ -30,11 +43,11 @@ const CASES: readonly ParserCase[] = [
   },
   {
     label: 'fast + validate',
-    fn: (input) => countAst(parse(input, { mode: 'fast', validateProperties: true }) as CssRoot),
+    fn: (input) => countAst(parse(input, { mode: 'fast', validate: true }) as CssRoot),
   },
   {
     label: 'raws + validate',
-    fn: (input) => countAst(parse(input, { mode: 'raws', validateProperties: true }) as CssRoot),
+    fn: (input) => countAst(parse(input, { mode: 'raws', validate: true }) as CssRoot),
   },
   {
     label: 'postcss',
@@ -56,11 +69,33 @@ const SIZES = [
 ] as const;
 
 const SAMPLE_COUNT = 5;
+const HUGE_PAGE_WINDOW_MS = 30_000;
+
+const here = dirname(fileURLToPath(import.meta.url));
+const hugePageCss = readFileSync(join(here, 'fixture', 'huge-page.css'), 'utf8');
+const INPUTS: readonly BenchInput[] = [
+  {
+    label: 'huge-page',
+    input: hugePageCss,
+    iterations: 1,
+    warmup: 0,
+    sampleCount: 3,
+    windowMs: HUGE_PAGE_WINDOW_MS,
+    parseOnly: true,
+  },
+  ...SIZES.map((size) => ({
+    label: `${size.kb}KB`,
+    input: generateCss(size.kb * 1024),
+    iterations: size.iterations,
+    warmup: size.warmup,
+  })),
+];
 
 console.log('Focused CSS AST parse bench');
 console.log('Deterministic hrtime loop; median/min/max are per parse. Use this for regression checks before tinybench comparisons.');
+console.log(`Real fixtures use a parse-only ${HUGE_PAGE_WINDOW_MS / 1000}s sampling window per parser.`);
 console.log(
-  'size'.padEnd(8) +
+  'size'.padEnd(12) +
   'input'.padEnd(18) +
   'parser'.padEnd(16) +
   'median'.padEnd(12) +
@@ -69,14 +104,19 @@ console.log(
   'units'.padEnd(14) +
   'rel',
 );
-console.log('-'.repeat(94));
+console.log('-'.repeat(98));
 
-for (const size of SIZES) {
-  const input = generateCss(size.kb * 1024);
+for (const benchInput of INPUTS) {
+  const input = benchInput.input;
   const label = `${Math.round(input.length / 1024)}KB/${hashInput(input)}`;
-  const results = CASES.map((parserCase) => ({
+  const parserCases = benchInput.parseOnly
+    ? CASES.filter((parserCase) => !parserCase.label.includes('validate'))
+    : CASES;
+  const results = parserCases.map((parserCase) => ({
     parserCase,
-    samples: measure(input, parserCase.fn, size.iterations, size.warmup),
+    samples: benchInput.windowMs === undefined
+      ? measure(input, parserCase.fn, benchInput.iterations, benchInput.warmup)
+      : measureWindow(input, parserCase.fn, benchInput.windowMs, benchInput.sampleCount ?? SAMPLE_COUNT),
   }));
   const baseMedian = median(results[0]!.samples.map((sample) => sample.ns));
 
@@ -88,7 +128,7 @@ for (const size of SIZES) {
     const max = Math.max(...times);
     const units = result.samples[0]?.units ?? 0;
     console.log(
-      (first ? `${size.kb}KB` : '').padEnd(8) +
+      (first ? benchInput.label : '').padEnd(12) +
       (first ? label : '').padEnd(18) +
       result.parserCase.label.padEnd(16) +
       fmtNs(med).padEnd(12) +
@@ -112,6 +152,20 @@ function measure(input: string, fn: (input: string) => number, iterations: numbe
     for (let i = 0; i < iterations; i++) units = fn(input);
     const elapsed = Number(process.hrtime.bigint() - start);
     samples.push({ ns: elapsed / iterations, units });
+  }
+  return samples;
+}
+
+function measureWindow(input: string, fn: (input: string) => number, windowMs: number, sampleCount: number): Sample[] {
+  const samples: Sample[] = [];
+  const deadline = Number(process.hrtime.bigint()) + windowMs * 1_000_000;
+  while (samples.length < sampleCount) {
+    let units = 0;
+    const start = process.hrtime.bigint();
+    units = fn(input);
+    const end = process.hrtime.bigint();
+    samples.push({ ns: Number(end - start), units });
+    if (Number(end) >= deadline) break;
   }
   return samples;
 }

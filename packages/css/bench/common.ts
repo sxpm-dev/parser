@@ -6,6 +6,9 @@ export {
   hashInput,
   repeatToBytes,
 } from '../../../scripts/bench-table.ts';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runBenchTable as runSharedBenchTable } from '../../../scripts/bench-table.ts';
 import type { Contestant } from '../../../scripts/bench-table.ts';
 
@@ -23,8 +26,17 @@ export function generateCss(targetBytes: number): string {
 }
 
 export async function runBenchTable(title: string, contestants: readonly Contestant[]): Promise<void> {
-  await runSharedBenchTable({ title, contestants, generateInput: generateCss, parserColumnWidth: 22 });
+  await runSharedBenchTable({
+    title,
+    contestants,
+    generateInput: generateCss,
+    namedInputs: [{ label: 'huge-page', input: hugePageCss }],
+    parserColumnWidth: 22,
+  });
 }
+
+const here = dirname(fileURLToPath(import.meta.url));
+const hugePageCss = readFileSync(join(here, 'fixture', 'huge-page.css'), 'utf8');
 
 function realisticRule(i: number): string {
   switch (i % 5) {

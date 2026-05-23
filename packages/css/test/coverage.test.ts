@@ -1,7 +1,73 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
 import { parse } from '../src/index.ts';
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+const cssAstFields: Record<string, readonly string[]> = {
+  root: ['type', 'nodes', 'raws'],
+  rule: ['type', 'selector', 'nodes', 'raws'],
+  atrule: ['type', 'name', 'params', 'nodes', 'raws'],
+  decl: ['type', 'prop', 'value', 'important', 'raws'],
+  comment: ['type', 'text', 'raws'],
+};
+
+function firstCssAstDiff(actual: any, expected: any, path = 'root', includeRaws = false): string | undefined {
+  if (actual?.type !== expected?.type) {
+    return `${path}: type ${String(actual?.type)} !== ${String(expected?.type)}`;
+  }
+
+  const fields = cssAstFields[actual.type];
+  if (!fields) {
+    return `${path}: unexpected CSS node type ${String(actual.type)}`;
+  }
+
+  for (const field of fields) {
+    if (field === 'raws' && !includeRaws) continue;
+    if (field === 'nodes') {
+      const diff = firstChildDiff(actual.nodes ?? [], expected.nodes ?? [], path, includeRaws);
+      if (diff) return diff;
+      continue;
+    }
+    if (field === 'raws') {
+      const actualRaws = actual.raws ?? {};
+      const expectedRaws = expected.raws ?? {};
+      const rawFields = [...new Set([...Object.keys(actualRaws), ...Object.keys(expectedRaws)])].sort();
+      for (const rawField of rawFields) {
+        if (actualRaws[rawField] !== expectedRaws[rawField]) {
+          return `${path}.raws.${rawField}: ${JSON.stringify(actualRaws[rawField])} !== ${JSON.stringify(expectedRaws[rawField])}`;
+        }
+      }
+      continue;
+    }
+    if (actual[field] !== expected[field]) {
+      return `${path}.${field}: ${JSON.stringify(actual[field])} !== ${JSON.stringify(expected[field])}`;
+    }
+  }
+
+  return undefined;
+}
+
+function firstChildDiff(actual: any[], expected: any[], path: string, includeRaws: boolean): string | undefined {
+  if (actual.length !== expected.length) {
+    return `${path}.nodes.length: ${actual.length} !== ${expected.length}`;
+  }
+
+  for (let i = 0; i < actual.length; i++) {
+    const actualChild = actual[i]!;
+    const expectedChild = expected[i]!;
+    const diff = firstCssAstDiff(actualChild, expectedChild, `${path}.nodes[${i}]<${actualChild.type}/${expectedChild.type}>`, includeRaws);
+    if (diff) {
+      return diff;
+    }
+  }
+
+  return undefined;
+}
 
 const syntaxMatrix = [
   {
@@ -153,6 +219,17 @@ test('does not false-reject stylesheets accepted by PostCSS', () => {
     assert.doesNotThrow(() => postcss.parse(entry.css, { from: undefined }), entry.area);
     assert.doesNotThrow(() => parse(entry.css), entry.area);
   }
+});
+
+test('huge-page fixture AST matches PostCSS semantic shape', () => {
+  const css = readFileSync(join(here, '../bench/fixture/huge-page.css'), 'utf8');
+  const expected = postcss.parse(css, { from: undefined });
+
+  const fastDiff = firstCssAstDiff(parse(css, { mode: 'fast' }), expected);
+  assert.equal(fastDiff, undefined, `fast: ${fastDiff}`);
+
+  const rawsDiff = firstCssAstDiff(parse(css, { mode: 'raws' }), expected, 'root', true);
+  assert.equal(rawsDiff, undefined, `raws: ${rawsDiff}`);
 });
 
 test('keeps invalid stylesheet boundaries explicit', () => {

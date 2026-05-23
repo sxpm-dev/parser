@@ -1005,7 +1005,7 @@ function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | nul
   // roles with an until/repeats first span fall through to a tail tryRoles.
   // If no role has a fixed first-token we have no advantage over tryRoles.
   if (firstTokens.every((t) => t === null)) return null;
-  const fallthroughRoles: string[] = [];
+  let fallthroughRoles: string[] = [];
   const dispatchableRoles: string[] = [];
   const dispatchableTokens: FirstToken[] = [];
   for (let i = 0; i < roles.length; i++) {
@@ -1136,9 +1136,19 @@ function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | nul
     }
   }
 
+  let boundaryDispatchReturns = false;
+  const boundaryDispatch = emitBlockPairBoundaryDispatch(fallthroughRoles, ctx);
+  if (boundaryDispatch !== null) {
+    lines.push(boundaryDispatch);
+    fallthroughRoles = [];
+    boundaryDispatchReturns = true;
+  }
+
   // Tail: only the roles whose first-token couldn't be peeked need
   // speculation. If everything dispatched, tail is a fixed error.
-  if (fallthroughRoles.length === 0) {
+  if (boundaryDispatchReturns) {
+    // The boundary dispatch returns either the block or pair role.
+  } else if (fallthroughRoles.length === 0) {
     lines.push(`throw new SyntaxError('no role matched at position ' + __off);`);
   } else if (fallthroughRoles.length === 1) {
     lines.push(`return ${parseFnName(fallthroughRoles[0]!, ctx.variant)}(state);`);
@@ -1161,6 +1171,133 @@ function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | nul
 }`;
   pendingHelpers.push(fn);
   return fnName;
+}
+
+type BlockPairDispatchShape = {
+  readonly blockRole: string;
+  readonly pairRole: string;
+  readonly open: string;
+  readonly close: string | null;
+  readonly separator: string | null;
+  readonly pair: string;
+};
+
+function emitBlockPairBoundaryDispatch(roles: ReadonlyArray<string>, ctx: Ctx): string | null {
+  const shape = inferBlockPairDispatchShape(roles, ctx);
+  if (!shape) return null;
+  const openCode = shape.open.charCodeAt(0);
+  const closeCode = shape.close?.charCodeAt(0) ?? -1;
+  const sepCode = shape.separator?.charCodeAt(0) ?? -1;
+  const pairCode = shape.pair.charCodeAt(0);
+  const stopCheck = [
+    `__bc === ${openCode}`,
+    closeCode >= 0 ? `__bc === ${closeCode}` : '',
+    sepCode >= 0 ? `__bc === ${sepCode}` : '',
+  ].filter(Boolean).join(' || ');
+  const rejectBlockCheck = `__boundaryEnd > __off && __input.charCodeAt(__boundaryEnd - 1) === ${pairCode}`;
+
+  return `{
+  let __boundary = __off;
+  let __depth = 0;
+  while (__boundary < __len) {
+    const __bc = __input.charCodeAt(__boundary);
+    if (__bc === 0x22 || __bc === 0x27) {
+      const __q = __bc;
+      __boundary++;
+      while (__boundary < __len) {
+        const __sc = __input.charCodeAt(__boundary);
+        if (__sc === 0x5c) { __boundary += 2; continue; }
+        __boundary++;
+        if (__sc === __q) break;
+      }
+      continue;
+    }
+    if (__bc === 0x2f && __input.charCodeAt(__boundary + 1) === 0x2a) {
+      __boundary += 2;
+      while (__boundary < __len && !(__input.charCodeAt(__boundary) === 0x2a && __input.charCodeAt(__boundary + 1) === 0x2f)) __boundary++;
+      if (__boundary < __len) __boundary += 2;
+      continue;
+    }
+    if (__bc === 0x5c) { __boundary += __boundary + 1 < __len ? 2 : 1; continue; }
+    if (__depth === 0 && (${stopCheck})) break;
+    if (__bc === 0x28 || __bc === 0x5b) __depth++;
+    else if (__bc === 0x29 || __bc === 0x5d) {
+      if (__depth === 0) break;
+      __depth--;
+    }
+    __boundary++;
+  }
+  let __boundaryEnd = __boundary;
+  while (__boundaryEnd > __off) {
+    const __tc = __input.charCodeAt(__boundaryEnd - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __boundaryEnd--;
+  }
+  if (__input.charCodeAt(__boundary) === ${openCode} && !(${rejectBlockCheck})) {
+    const __block = trySpeculate(state, ${parseFnName(shape.blockRole, ctx.variant)});
+    if (__block !== null) return __block;
+  }
+  return ${parseFnName(shape.pairRole, ctx.variant)}(state);
+}`;
+}
+
+function inferBlockPairDispatchShape(roles: ReadonlyArray<string>, ctx: Ctx): BlockPairDispatchShape | null {
+  if (roles.length !== 2) return null;
+  const a = inferBlockDispatchRole(roles[0]!, ctx);
+  const b = inferBlockDispatchRole(roles[1]!, ctx);
+  const c = inferPairDispatchRole(roles[0]!, ctx);
+  const d = inferPairDispatchRole(roles[1]!, ctx);
+  const block = a ?? b;
+  const pair = c ?? d;
+  if (!block || !pair) return null;
+  if (block.role === pair.role) return null;
+  if (block.open.length !== 1 || pair.pair.length !== 1) return null;
+  if (block.close !== null && block.close.length !== 1) return null;
+  if (block.separator !== null && block.separator.length !== 1) return null;
+  return {
+    blockRole: block.role,
+    pairRole: pair.role,
+    open: block.open,
+    close: block.close,
+    separator: block.separator,
+    pair: pair.pair,
+  };
+}
+
+function inferBlockDispatchRole(role: string, ctx: Ctx): { readonly role: string; readonly open: string; readonly close: string | null; readonly separator: string | null } | null {
+  const info = ctx.nodeTypes.get(role);
+  if (!info || info.productions.length !== 1) return null;
+  const production = info.productions[0]!;
+  const first = production.spans[0];
+  const open = production.spans[1];
+  const close = production.spans[production.spans.length - 1];
+  if (!first || !findModifier(first.modifiers, 'until')) return null;
+  if (open?.class !== 'literal' || !open.text) return null;
+  const repeated = production.spans.find((span) => findModifier(span.modifiers, 'repeats') && span.recursiveRoles.length > 0);
+  const repeats = repeated ? findModifier(repeated.modifiers, 'repeats') : undefined;
+  if (!repeated || !repeats) return null;
+  return {
+    role,
+    open: open.text,
+    close: close?.class === 'literal' && close.text ? close.text : null,
+    separator: repeats.sep ?? null,
+  };
+}
+
+function inferPairDispatchRole(role: string, ctx: Ctx): { readonly role: string; readonly pair: string } | null {
+  const info = ctx.nodeTypes.get(role);
+  if (!info || info.productions.length < 1) return null;
+  let pair: string | null = null;
+  for (const production of info.productions) {
+    if (production.spans.some((span) => findModifier(span.modifiers, 'repeats') && span.recursiveRoles.length > 0)) return null;
+    const first = production.spans[0];
+    const second = production.spans[1];
+    if (!first || !findModifier(first.modifiers, 'until')) return null;
+    if (second?.class !== 'literal' || !second.text) return null;
+    pair ??= second.text;
+    if (pair !== second.text) return null;
+  }
+  return pair ? { role, pair } : null;
 }
 
 let _roleSeq = 0;

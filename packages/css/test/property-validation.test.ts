@@ -35,13 +35,12 @@ test('validate skips custom and unconfigured properties', () => {
   assert.doesNotThrow(() => parse('--brand: q w e; display: q w e;', { validate: true }));
 });
 
-test('raws mode preserves source metadata with generated validation enabled', () => {
+test('raws mode preserves raw spacing with generated validation enabled', () => {
   const root = parse('a { color: red; }', { mode: 'raws', validate: true }) as CssRoot;
   const rule = root.nodes[0];
   assert.equal(rule.type, 'rule');
-  assert.ok(rule.source);
+  assert.equal(rule.raws.between, ' ');
   const decl = rule.nodes?.[0] as CssDecl;
   assert.equal(decl.type, 'decl');
   assert.equal(decl.raws.between, ': ');
-  assert.ok(decl.source);
 });

@@ -4,16 +4,15 @@ import { parse } from '../src/index.ts';
 
 // Phase-A+B smoke test, updated for named punctuators + .until() captures.
 //
-// These smoke tests focus on structural shape only — strip `source` and
-// `raws` before comparing. The fixture-driven cases.test.ts checks source
-// positions and raws end-to-end.
+// These smoke tests focus on structural shape only — strip `raws` before
+// comparing. The fixture-driven cases.test.ts checks raw spacing end-to-end.
 
 function strip(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(strip);
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value)) {
-      if (k === 'source' || k === 'raws') continue;
+      if (k === 'raws') continue;
       out[k] = strip(v);
     }
     return out;
@@ -44,9 +43,9 @@ test('defaults to fast mode without formatting metadata', () => {
   assert.equal('raws' in ast, false);
 });
 
-test('can parse with raws/source metadata when requested', () => {
+test('can parse with raw spacing metadata when requested', () => {
   const ast = parse('foo { color: red }', { mode: 'raws' }) as Record<string, unknown>;
-  assert.equal(typeof ast.source, 'object');
+  assert.equal('source' in ast, false);
   assert.equal(typeof ast.raws, 'object');
 });
 

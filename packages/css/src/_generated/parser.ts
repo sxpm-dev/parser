@@ -5445,14 +5445,16 @@ function validateDirectRootChildren(state: DirectState): void {
   const input = state.input;
   const len = state.len;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) return;
-    const c = input.charCodeAt(state.pos);
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    state.pos = pos;
+    if (pos >= len) return;
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
       validateDirectComment(state);
       continue;
@@ -5469,20 +5471,22 @@ function validateDirectChildren(state: DirectState): void {
   const input = state.input;
   const len = state.len;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) {
-      throw new SyntaxError(`expected '}' at position ${state.pos}`);
+    state.pos = pos;
+    if (pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${pos}`);
     }
-    const c = input.charCodeAt(state.pos);
     if (c === 125) {
-      state.pos++;
+      state.pos = pos + 1;
       return;
     }
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
       validateDirectComment(state);
       continue;
@@ -5583,14 +5587,16 @@ function parseDirectRootChildren(state: DirectState): unknown[] {
   const input = state.input;
   const len = state.len;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) return nodes;
-    const c = input.charCodeAt(state.pos);
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    state.pos = pos;
+    if (pos >= len) return nodes;
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
       nodes[nodes.length] = parseDirectComment(state);
       continue;
@@ -5608,20 +5614,22 @@ function parseDirectChildren(state: DirectState): unknown[] {
   const input = state.input;
   const len = state.len;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) {
-      throw new SyntaxError(`expected '}' at position ${state.pos}`);
+    state.pos = pos;
+    if (pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${pos}`);
     }
-    const c = input.charCodeAt(state.pos);
     if (c === 125) {
-      state.pos++;
+      state.pos = pos + 1;
       return nodes;
     }
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
     if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
       nodes[nodes.length] = parseDirectComment(state);
       continue;
@@ -5683,15 +5691,17 @@ function parseDirectRootChildrenRaws(state: DirectState): { nodes: unknown[]; pr
   const len = state.len;
   let prevEnd = 0;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) return { nodes, prevEnd };
-    const c = input.charCodeAt(state.pos);
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
-    const child = c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */
+    state.pos = pos;
+    if (pos >= len) return { nodes, prevEnd };
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
+    const child = c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */
       ? parseDirectCommentRaws(state)
       : c === 64
       ? parseDirectPrefixedRaws(state)
@@ -5708,22 +5718,24 @@ function parseDirectChildrenRaws(state: DirectState, bodyStart: number): { nodes
   const len = state.len;
   let prevEnd = bodyStart;
   while (true) {
-    while (state.pos < len) {
-      const ws = input.charCodeAt(state.pos);
-      if (ws !== 0x20 && ws !== 0x09 && ws !== 0x0a && ws !== 0x0d && ws !== 59) break;
-      state.pos++;
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
     }
-    if (state.pos >= len) {
-      throw new SyntaxError(`expected '}' at position ${state.pos}`);
+    state.pos = pos;
+    if (pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${pos}`);
     }
-    const c = input.charCodeAt(state.pos);
     if (c === 125) {
-      const closeStart = state.pos;
-      state.pos++;
+      const closeStart = pos;
+      state.pos = pos + 1;
       return { nodes, closeStart, prevEnd };
     }
-    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[state.pos]}' at position ${state.pos}`);
-    const child = c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
+    const child = c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */
       ? parseDirectCommentRaws(state)
       : c === 64
       ? parseDirectPrefixedRaws(state)

@@ -1,0 +1,1783 @@
+// Scannerless production emit. Mirrors the structure of emit/parse.ts (the
+// tokenized backend) but every leaf operation compiles to inline char-based
+// scans on `state.input` instead of token-array dispatch.
+//
+// Each production function hoists state into function-scope locals:
+//   const __input = state.input;
+//   const __len = __input.length;
+//   let __off = state.off;
+// Span emit functions read/write __off / __input / __len. The wrapper
+// writes back `state.off = __off` before returning or before invoking
+// another parse function (recursive span / multi-prod alt) and re-reads
+// `__off = state.off` after the call returns. This keeps state.off out of
+// register pressure within a tight per-row body.
+
+import type { SpanModifier } from '@parser2/parser';
+import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production, type ResolvedSpan } from '../../model.ts';
+import { collectOffsetRefs, emitStructureExpr } from '../structure.ts';
+import { jsIdent, jsString } from '../strings.ts';
+import { emitClassScan, emitClassOffsetVars } from './scan-class.ts';
+
+type ParseVariant = 'fast' | 'raws' | 'validate';
+
+type Ctx = {
+  readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
+  readonly variant: ParseVariant;
+  // Token classes the tokenizer (now inlined) must recognize inside
+  // .until() captures. Each one teaches the depth-tracking loop how to
+  // skip past that class as an opaque unit (e.g. skip past a quoted
+  // string rather than letting a `;` inside it close the capture).
+  readonly tokens: ReadonlySet<string>;
+  // True when the schema declares an ident class with the 'css'
+  // refinement. The CSS ident scanner has a built-in `url(...)` raw
+  // mode (contents opaque, no comment recognition, no bracket
+  // tracking) that the until-scan must mirror to keep an unterminated
+  // `/*` inside `url(...)` from greedily matching a far-away `*/`.
+  readonly cssIdent: boolean;
+};
+
+export function emitNodeFunctions(schema: InferredSchema): string {
+  const tokens = new Set<string>();
+  let cssIdent = false;
+  for (const usage of schema.classes) {
+    tokens.add(usage.class);
+    if (usage.class === 'ident' && usage.refinements.some((r) => r.name === 'css')) {
+      cssIdent = true;
+    }
+  }
+  const parts: string[] = [];
+  for (const variant of ['raws', 'fast', 'validate'] as const) {
+    const ctx: Ctx = { nodeTypes: schema.nodeTypes, variant, tokens, cssIdent };
+    for (const info of schema.nodeTypes.values()) {
+      parts.push(emitNodeFunction(info, ctx));
+    }
+  }
+  return parts.join('\n\n');
+}
+
+function emitNodeFunction(info: NodeTypeInfo, ctx: Ctx): string {
+  const fnName = parseFnName(info.name, ctx.variant);
+
+  const validProductions = info.productions.filter((p) => p.recovery === undefined);
+  const recoveryProductions = info.productions.filter((p) => p.recovery !== undefined);
+  if (recoveryProductions.length > 0) {
+    if (validProductions.length === 0) {
+      throw new CompilerError(`Node type '${info.name}' has only .recovers() productions — at least one valid production is required`);
+    }
+    return emitNodeFunctionWithRecovery(info.name, validProductions, recoveryProductions, ctx);
+  }
+
+  if (info.productions.length === 1) {
+    const body = emitProductionBody(info.productions[0]!, ctx);
+    return `function ${fnName}(state: State): unknown {
+${indent(body, 1)}
+}`;
+  }
+
+  // Multi-production: emit each production as its own __alt function and a
+  // dispatcher. Try lookahead-based dispatch first (avoids throw/catch
+  // overhead of speculation); fall back to pure speculation when the
+  // productions can't be distinguished by peek-scan.
+  const altFns = info.productions.map((production, i) => {
+    const body = emitProductionBody(production, ctx);
+    return `function ${fnName}__alt${i}(state: State): unknown {
+${indent(body, 1)}
+}`;
+  }).join('\n\n');
+
+  const lookaheadDispatch = emitLookaheadDispatch(info, fnName);
+  if (lookaheadDispatch !== null) {
+    return `${altFns}\n\n${lookaheadDispatch}`;
+  }
+
+  const speculativeAttempts = info.productions.slice(0, -1).map((_, i) =>
+    `  { const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
+  ).join('\n');
+  const lastIdx = info.productions.length - 1;
+  const dispatch = `function ${fnName}(state: State): unknown {
+${speculativeAttempts}
+  return ${fnName}__alt${lastIdx}(state);
+}`;
+  return `${altFns}\n\n${dispatch}`;
+}
+
+// Emit a lookahead-based dispatcher when the productions can be
+// distinguished by peeking ahead. Returns null when no such structure is
+// detected (caller falls back to speculation).
+//
+// Two strategies in order:
+//   A. Shared-prefix-then-discriminator: all productions share spans
+//      0..N-1; the N-th span is a distinct literal per production (one
+//      production may have no N-th span — it becomes the fallback).
+//   B. Group-by-first-span: productions group by first-span signature.
+//      Each group is then recursively dispatched (case A or A again).
+function emitLookaheadDispatch(info: NodeTypeInfo, fnName: string): string | null {
+  const productions = info.productions;
+  if (productions.length < 2) return null;
+  const body = emitDispatchBody(productions.map((_, i) => i), productions, fnName);
+  if (body === null) return null;
+  return `function ${fnName}(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+${indent(body, 1)}
+}`;
+}
+
+// Emit dispatch body for a subset of productions. The subset is identified
+// by `indexes` into `productions`. Tries shared-prefix dispatch first, then
+// first-span grouping.
+function emitDispatchBody(
+  indexes: ReadonlyArray<number>,
+  productions: ReadonlyArray<Production>,
+  fnName: string,
+): string | null {
+  if (indexes.length === 0) return null;
+  if (indexes.length === 1) {
+    return `return ${fnName}__alt${indexes[0]}(state);`;
+  }
+  const sharedPrefix = emitSharedPrefixDispatch(indexes, productions, fnName);
+  if (sharedPrefix !== null) return sharedPrefix;
+  const grouped = emitGroupedFirstSpanDispatch(indexes, productions, fnName);
+  if (grouped !== null) return grouped;
+  return null;
+}
+
+// Strategy A: productions in `indexes` share spans 0..N-1, then differ by
+// a discriminator literal at span[N] (or no span N for the fallback).
+function emitSharedPrefixDispatch(
+  indexes: ReadonlyArray<number>,
+  productions: ReadonlyArray<Production>,
+  fnName: string,
+): string | null {
+  const minLen = Math.min(...indexes.map((i) => productions[i]!.spans.length));
+  let prefixLen = 0;
+  while (prefixLen < minLen) {
+    const ref = productions[indexes[0]!]!.spans[prefixLen]!;
+    let allMatch = true;
+    for (let k = 1; k < indexes.length; k++) {
+      if (!sameSpanSignature(ref, productions[indexes[k]!]!.spans[prefixLen]!)) {
+        allMatch = false;
+        break;
+      }
+    }
+    if (!allMatch) break;
+    prefixLen++;
+  }
+  if (prefixLen === 0 && indexes.some((i) => productions[i]!.spans.length > 0)) {
+    // Nothing shared at span 0 — not this strategy.
+    return null;
+  }
+  // Determine discriminator at span[prefixLen] for each production. Two
+  // discriminator shapes are supported:
+  //   1. Bare literal — switch on `__input.startsWith(...)`
+  //   2. Class with .oneOf — scan the class (ident/number) and switch on
+  //      the lowercased captured value
+  // Mixed shapes are rejected; the dispatcher must be all-literal OR
+  // all-class-with-oneOf (with at most one fallback). HTML's 15+ HtmlElement
+  // productions all start with `<` (shared prefix=1) and discriminate on
+  // an .ident().oneOf([...]) at span 1 — the second shape.
+  const seenLit = new Map<string, number>();
+  const onByValue = new Map<string, number>();
+  type OneOfDisc = { values: readonly string[]; idx: number };
+  const oneOfBuckets: OneOfDisc[] = [];
+  let kind: 'literal' | 'oneOf' | null = null;
+  let fallbackIdx = -1;
+  for (const idx of indexes) {
+    const d = productions[idx]!.spans[prefixLen];
+    if (!d) {
+      if (fallbackIdx >= 0) return null;
+      fallbackIdx = idx;
+      continue;
+    }
+    if (d.recursiveRoles.length > 0 || findModifier(d.modifiers, 'until') || findModifier(d.modifiers, 'rawUntil') || findModifier(d.modifiers, 'repeats')) {
+      if (fallbackIdx >= 0) return null;
+      fallbackIdx = idx;
+      continue;
+    }
+    if (d.class === 'literal' && d.text) {
+      if (kind === 'oneOf') return null;
+      kind = 'literal';
+      if (seenLit.has(d.text)) return null;
+      seenLit.set(d.text, idx);
+      continue;
+    }
+    // Class span with .oneOf — extract values.
+    const oneOf = d.refinements.find((r) => r.name === 'oneOf');
+    const values = oneOf?.args?.[0];
+    if (!Array.isArray(values) || values.some((v) => typeof v !== 'string')) {
+      // Class without .oneOf — fallback (only one allowed).
+      if (fallbackIdx >= 0) return null;
+      fallbackIdx = idx;
+      continue;
+    }
+    if (kind === 'literal') return null;
+    kind = 'oneOf';
+    const lowered = (values as readonly string[]).map((v) => v.toLowerCase());
+    for (const v of lowered) {
+      if (onByValue.has(v)) return null; // conflicting routes
+      onByValue.set(v, idx);
+    }
+    oneOfBuckets.push({ values: lowered, idx });
+  }
+  if (kind === null) return null;
+  if (kind === 'literal' && seenLit.size === 0) return null;
+  if (kind === 'oneOf' && oneOfBuckets.length === 0) return null;
+  if (kind === 'literal' && seenLit.size + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+  if (kind === 'oneOf' && oneOfBuckets.length + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+
+  const peekScan = emitPeekScanForSpans(productions[indexes[0]!]!.spans.slice(0, prefixLen));
+  if (peekScan === null) return null;
+
+  const wsSkip = `// Skip ws before the discriminator.
+while (__peek < __len) {
+  const __c = __input.charCodeAt(__peek);
+  if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+  break;
+}`;
+
+  if (kind === 'literal') {
+    const ordered = [...seenLit.entries()].sort((a, b) => b[0].length - a[0].length);
+    const branches: string[] = ordered.map(([literal, idx]) =>
+      `if (${peekLiteralExpr(literal)}) return ${fnName}__alt${idx}(state);`,
+    );
+    const tail = fallbackIdx >= 0
+      ? `return ${fnName}__alt${fallbackIdx}(state);`
+      : `throw new SyntaxError('no production matched at position ' + __peek);`;
+    return `${peekScan}
+${wsSkip}
+${branches.join('\n')}
+${tail}`;
+  }
+
+  // kind === 'oneOf': scan the class at __peek (ident — only ident is
+  // currently supported here; extend for number/hex/string as needed),
+  // lowercase, and dispatch on the value.
+  const discSpan = productions[indexes[0]!]!.spans[prefixLen]!;
+  // For now only ident class is supported as a oneOf discriminator.
+  if (discSpan.class !== 'ident') return null;
+  const refSet = new Set(discSpan.refinements.map((r) => r.name));
+  const identStart = refSet.has('html')
+    ? `isCssIdentStart(__input.charCodeAt(__peek))`
+    : refSet.has('js')
+      ? `isJsIdentStart(__input.charCodeAt(__peek))`
+      : `(isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)`;
+  const dispatchLines: string[] = [];
+  for (const [value, idx] of onByValue) {
+    dispatchLines.push(`if (__ident === ${jsString(value)}) return ${fnName}__alt${idx}(state);`);
+  }
+  const tail = fallbackIdx >= 0
+    ? `return ${fnName}__alt${fallbackIdx}(state);`
+    : `throw new SyntaxError('no production matched at position ' + __peek);`;
+  return `${peekScan}
+${wsSkip}
+if (!(${identStart})) ${fallbackIdx >= 0 ? `return ${fnName}__alt${fallbackIdx}(state);` : `throw new SyntaxError('expected ident at position ' + __peek);`}
+{
+  const __identStart = __peek;
+  __peek++;
+  while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
+  const __ident = __input.slice(__identStart, __peek).toLowerCase();
+  ${dispatchLines.join('\n  ')}
+  ${tail}
+}`;
+}
+
+// Strategy B: group productions by first-byte predicate (the actual
+// runtime check), then within each predicate group recursively dispatch.
+// Returns null when fewer than 2 byte predicates would result.
+function emitGroupedFirstSpanDispatch(
+  indexes: ReadonlyArray<number>,
+  productions: ReadonlyArray<Production>,
+  fnName: string,
+): string | null {
+  // Group by first-byte predicate (NOT first-span signature). Two
+  // productions with the same byte predicate go in the same group even if
+  // their first-span signatures differ (e.g., one has .oneOf and the other
+  // doesn't — both still start with the same class of byte).
+  type Group = {
+    check: string;       // Runtime byte-level check
+    literal?: string;    // Set when the predicate is "literal starts with X"
+    indexes: number[];
+  };
+  const groups: Group[] = [];
+  for (const idx of indexes) {
+    const span0 = productions[idx]!.spans[0];
+    if (!span0) return null;
+    const { check, literal } = firstBytePredicateOf(span0);
+    if (check === null) return null;
+    let group = groups.find((g) => g.check === check);
+    if (!group) {
+      group = { check, literal, indexes: [] };
+      groups.push(group);
+    }
+    group.indexes.push(idx);
+  }
+  if (groups.length < 2) return null;
+  // Sort: literal groups first (by length desc) so multi-char literals
+  // win over their single-char prefixes; class predicates last.
+  groups.sort((a, b) => {
+    const aLit = a.literal !== undefined;
+    const bLit = b.literal !== undefined;
+    if (aLit && !bLit) return -1;
+    if (!aLit && bLit) return 1;
+    if (aLit && bLit) return (b.literal!.length - a.literal!.length);
+    return 0;
+  });
+  // Build each branch — recursive dispatch if multi-prod, direct call if
+  // single, speculation chain if multi-prod with no further structure.
+  const groupBodies: Array<{ check: string; body: string }> = [];
+  for (const group of groups) {
+    let body: string | null = emitDispatchBody(group.indexes, productions, fnName);
+    if (body === null) {
+      // Fall back to speculation among the group's productions.
+      body = emitSpeculationChain(group.indexes, fnName);
+    }
+    groupBodies.push({ check: group.check, body });
+  }
+  const wsSkip = `// Skip leading ws before discriminating on first span.
+while (__peek < __len) {
+  const __c = __input.charCodeAt(__peek);
+  if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+  break;
+}`;
+  const branches = groupBodies.map(({ check, body }, i) => {
+    const open = i === 0 ? 'if' : 'else if';
+    return `${open} (${check}) {
+${indent(body, 1)}
+}`;
+  }).join('\n');
+  return `${wsSkip}
+${branches}
+throw new SyntaxError('no production matched at position ' + __peek);`;
+}
+
+// Return the byte-level predicate for the first span. For literal spans
+// this is a startsWith check; for class spans, the class start predicate.
+function firstBytePredicateOf(span: ResolvedSpan): { check: string | null; literal?: string } {
+  if (span.class === 'literal' && span.text) {
+    return { check: peekLiteralExpr(span.text), literal: span.text };
+  }
+  if (span.class === 'literal') return { check: null };
+  return { check: classStartPredicateForPeek(span), literal: undefined };
+}
+
+function emitSpeculationChain(indexes: ReadonlyArray<number>, fnName: string): string {
+  // Sync state.off before any speculation: __peek is local, but
+  // trySpeculate operates on state.off.
+  const speculative = indexes.slice(0, -1).map((i) =>
+    `{ const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
+  ).join('\n');
+  const last = indexes[indexes.length - 1]!;
+  return `state.off = __peek;
+${speculative}
+return ${fnName}__alt${last}(state);`;
+}
+
+// Like classStartPredicate from scan-class, but uses __peek for offset
+// (rather than state.off). Inlined here to avoid coupling.
+function classStartPredicateForPeek(span: ResolvedSpan): string {
+  const { class: cls, refinements } = span;
+  const refSet = new Set(refinements.map((r) => r.name));
+  const cExpr = `__input.charCodeAt(__peek)`;
+  if (cls === 'ident' && refSet.has('html')) return `isCssIdentStart(${cExpr})`;
+  if (cls === 'ident' && refSet.has('js')) return `isJsIdentStart(${cExpr})`;
+  if (cls === 'ident' && refSet.has('css')) return `(isCssIdentStart(${cExpr}) || ${cExpr} === 0x5c)`;
+  if (cls === 'ident') return `(isCssIdentStart(${cExpr}) || ${cExpr} === 0x5c)`;
+  if (cls === 'number') return `isDigit(${cExpr})`;
+  if (cls === 'hex') return `isHexDigit(${cExpr})`;
+  if (cls === 'string') return `(${cExpr} === 0x22 || ${cExpr} === 0x27)`;
+  if (cls === 'comment') return `(${cExpr} === 0x2f && __input.charCodeAt(__peek + 1) === 0x2a)`;
+  return 'false';
+}
+
+// Emit a peek-scan snippet that walks `__peek` past the given prefix spans,
+// or returns null if any span isn't supported in peek mode. Operates on
+// __input / __len / __peek (caller declared). Includes inter-span ws skip.
+function emitPeekScanForSpans(spans: ReadonlyArray<ResolvedSpan>): string | null {
+  const lines: string[] = [];
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]!;
+    if (i > 0) {
+      lines.push(`  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
+  }`);
+    } else {
+      lines.push(`  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
+  }`);
+    }
+    if (hasModifier(span.modifiers, 'optional') || hasModifier(span.modifiers, 'repeats')) {
+      return null;
+    }
+    if (findModifier(span.modifiers, 'until') || findModifier(span.modifiers, 'rawUntil')) {
+      return null;
+    }
+    if (span.recursiveRoles.length > 0) return null;
+    if (span.class === 'literal') {
+      if (!span.text) return null;
+      lines.push(`  if (!(${peekLiteralExprAt('__peek', span.text)})) return null;`);
+      lines.push(`  __peek += ${span.text.length};`);
+      continue;
+    }
+    // Class span: scan past
+    const scan = peekScanForClass(span);
+    if (scan === null) return null;
+    lines.push(scan);
+  }
+  return lines.join('\n').replace(/return null;/g, "throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);");
+}
+
+function peekScanForClass(span: ResolvedSpan): string | null {
+  const { class: cls, refinements } = span;
+  const refSet = new Set(refinements.map((r) => r.name));
+  if (cls === 'ident' && refSet.has('html')) {
+    return `  if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) return null;
+  __peek++;
+  while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;`;
+  }
+  if (cls === 'ident' && refSet.has('js')) {
+    return `  if (!(__peek < __len && isJsIdentStart(__input.charCodeAt(__peek)))) return null;
+  __peek++;
+  while (__peek < __len && isJsIdentPart(__input.charCodeAt(__peek))) __peek++;`;
+  }
+  if (cls === 'ident') {
+    return `  if (!(__peek < __len && (isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c))) return null;
+  __peek++;
+  while (__peek < __len && (isCssIdentPart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) __peek++;`;
+  }
+  if (cls === 'number') {
+    return `  if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) return null;
+  __peek++;
+  while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
+  if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
+    __peek++;
+    while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
+  }`;
+  }
+  if (cls === 'hex') {
+    return `  if (!(__peek < __len && isHexDigit(__input.charCodeAt(__peek)))) return null;
+  __peek++;
+  while (__peek < __len && isHexDigit(__input.charCodeAt(__peek))) __peek++;`;
+  }
+  if (cls === 'string') {
+    return `  if (!(__peek < __len && (__input.charCodeAt(__peek) === 0x22 || __input.charCodeAt(__peek) === 0x27))) return null;
+  {
+    const __pq = __input.charCodeAt(__peek);
+    __peek++;
+    while (__peek < __len) {
+      const __pc = __input.charCodeAt(__peek);
+      if (__pc === 0x5c) { __peek += 2; continue; }
+      if (__pc === __pq) { __peek++; break; }
+      if (__pc === 0x0a || __pc === 0x0d) break;
+      __peek++;
+    }
+  }`;
+  }
+  return null;
+}
+
+function peekLiteralExpr(text: string): string {
+  return peekLiteralExprAt('__peek', text);
+}
+
+function peekLiteralExprAt(offsetExpr: string, text: string): string {
+  if (text.length === 1) {
+    return `__input.charCodeAt(${offsetExpr}) === ${text.charCodeAt(0)}`;
+  }
+  if (text.length === 2) {
+    return `__input.charCodeAt(${offsetExpr}) === ${text.charCodeAt(0)} && __input.charCodeAt(${offsetExpr} + 1) === ${text.charCodeAt(1)}`;
+  }
+  return `__input.startsWith(${jsString(text)}, ${offsetExpr})`;
+}
+
+function sameSpanSignature(a: ResolvedSpan, b: ResolvedSpan): boolean {
+  if (a.class !== b.class) return false;
+  if (a.class === 'literal' && a.text !== b.text) return false;
+  if (a.recursiveRoles.length !== b.recursiveRoles.length) return false;
+  for (let i = 0; i < a.recursiveRoles.length; i++) if (a.recursiveRoles[i] !== b.recursiveRoles[i]) return false;
+  if (a.refinements.length !== b.refinements.length) return false;
+  for (let i = 0; i < a.refinements.length; i++) {
+    const r1 = a.refinements[i]!;
+    const r2 = b.refinements[i]!;
+    if (r1.name !== r2.name) return false;
+    if (JSON.stringify(r1.args ?? []) !== JSON.stringify(r2.args ?? [])) return false;
+  }
+  // Ignore post-consume modifiers (noWhitespaceAfter, noLineTerminatorAfter,
+  // requireSpaceAfter) for shared-prefix matching — they affect what
+  // happens AFTER the span matches, not whether the span matches.
+  const aMods = a.modifiers.filter((m) => m.kind !== 'noWhitespaceAfter' && m.kind !== 'noLineTerminatorAfter' && m.kind !== 'requireSpaceAfter');
+  const bMods = b.modifiers.filter((m) => m.kind !== 'noWhitespaceAfter' && m.kind !== 'noLineTerminatorAfter' && m.kind !== 'requireSpaceAfter');
+  if (aMods.length !== bMods.length) return false;
+  for (let i = 0; i < aMods.length; i++) {
+    if (JSON.stringify(aMods[i]) !== JSON.stringify(bMods[i])) return false;
+  }
+  return true;
+}
+
+function emitNodeFunctionWithRecovery(
+  nodeName: string,
+  validProductions: ReadonlyArray<Production>,
+  recoveryProductions: ReadonlyArray<Production>,
+  ctx: Ctx,
+): string {
+  const fnName = parseFnName(nodeName, ctx.variant);
+  const validFnName = `${fnName}__valid`;
+  const validInfo: NodeTypeInfo = { name: nodeName, productions: validProductions };
+  const validDispatch = emitNodeFunction(validInfo, { ...ctx }).replace(
+    new RegExp(`function ${escapeRegex(fnName)}\\(`, 'g'),
+    `function ${validFnName}(`,
+  ).replace(
+    new RegExp(`${escapeRegex(fnName)}__alt`, 'g'),
+    `${validFnName}__alt`,
+  );
+
+  const recoveryFns = recoveryProductions.map((production, i) => {
+    const body = emitProductionBody(production, ctx);
+    return `function ${fnName}__recovery${i}(state: State): unknown {
+${indent(body, 1)}
+}`;
+  }).join('\n\n');
+
+  const recoveryAttempts = recoveryProductions.map((_, i) =>
+    `    const __r${i} = trySpeculate(state, ${fnName}__recovery${i});
+    if (__r${i} !== null) return __r${i};`,
+  ).join('\n');
+
+  const wrapper = `function ${fnName}(state: State): unknown {
+  const __recoverStart = state.off;
+  try {
+    return ${validFnName}(state);
+  } catch (__validErr) {
+    state.off = __recoverStart;
+${recoveryAttempts}
+    state.off = __recoverStart;
+    throw __validErr;
+  }
+}`;
+
+  return `${validDispatch}\n\n${recoveryFns}\n\n${wrapper}`;
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Inline whitespace-skip snippet (uses hoisted __input/__len/__off locals).
+// When the schema declares `tokens: ['comment']`, also skip past /* */
+// comments — mirrors the tokenized backend where comments are tokens that
+// `skipComments` / `nextNonCommentPos` automatically step over between
+// adjacent significant tokens.
+function inlineSkipWs(ctx?: Ctx): string {
+  const skipComments = ctx?.tokens.has('comment') ?? false;
+  if (!skipComments) {
+    return `while (__off < __len) {
+  const __ws_c = __input.charCodeAt(__off);
+  if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+  break;
+}`;
+  }
+  return `while (__off < __len) {
+  const __ws_c = __input.charCodeAt(__off);
+  if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+  if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+    __off += 2;
+    while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+    if (__off < __len) __off += 2;
+    continue;
+  }
+  break;
+}`;
+}
+
+// --- Production body -------------------------------------------------------
+
+function emitProductionBody(production: Production, ctx: Ctx): string {
+  const lines: string[] = [];
+  const valueExpr = new Map<string, string>();
+  const presenceExpr = new Map<string, string>();
+  const startOffExpr = new Map<string, string>();
+  const endOffExpr = new Map<string, string>();
+  const spans = production.spans;
+  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
+  const offsetRefs = collectOffsetRefs(production.structure, structureOptions);
+  const needsNodeRange = ctx.variant === 'raws';
+
+  // Hoist state into function-scope locals. Spans operate on these; the
+  // wrapper flushes __off back to state.off before any external parse call
+  // and at function exit.
+  lines.push(`const __input = state.input;
+const __len = __input.length;
+let __off = state.off;`);
+
+  // Initial skipWs is ws-only — the parent's tryRoles dispatcher relies
+  // on parseComment seeing '/*' at __off to match the comment production.
+  // If we skipped comments here, parseComment would skip its own content.
+  lines.push(inlineSkipWs());
+  if (needsNodeRange) {
+    lines.push(`const __startOff = __off;`);
+  }
+  // Track the position right after the last consumed byte. Distinct from
+  // __off, which after the final span may sit at an unconsumed stop char
+  // (e.g. until ended at the stop and the following optional didn't take
+  // it) or past trailing ws (between-span skipWs). Always declared so
+  // optional literal fallback can use it for span_start/end when the
+  // literal didn't match. Mirrors tokenized state.ends[state.pos - 1].
+  lines.push(`let __consumedEnd = __off;`);
+
+  for (let i = 0; i < spans.length; i++) {
+    const span = spans[i]!;
+    const next = spans[i + 1];
+    const isUntil = findModifier(span.modifiers, 'until') !== undefined;
+    const isRawUntil = findModifier(span.modifiers, 'rawUntil') !== undefined;
+    const isOptional = hasModifier(span.modifiers, 'optional');
+    // For an optional non-until span, we need to capture __off BEFORE any
+    // preceding inter-span skip — if the optional doesn't fire, we want
+    // to rewind so a comment that the skip stepped over is left available
+    // for the parent's children loop (matches tokenized's
+    // consumeOptionalLiteralId which rewinds state.pos when the literal
+    // isn't there).
+    const savedVar = isOptional && !isUntil && !isRawUntil
+      ? `__beforeSpan${i}`
+      : null;
+    const isRepeats = findModifier(span.modifiers, 'repeats') !== undefined;
+    lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx));
+    if (isUntil || isRawUntil) {
+      lines.push(`__consumedEnd = state.__lastCaptureEnd;`);
+    } else if (isRepeats && span.name && needsNodeRange) {
+      // For a repeats span, __consumedEnd anchors on __prevEnd_<listVar>
+      // (end of the last consumed child), not __off — which may have
+      // advanced past trailing seps/ws via the body loop's sep-skip.
+      lines.push(`__consumedEnd = __prevEnd_${jsIdent(span.name)};`);
+    } else if (savedVar) {
+      lines.push(`if (__off > ${savedVar}) __consumedEnd = __off;`);
+    } else {
+      lines.push(`__consumedEnd = __off;`);
+    }
+    // Between-span ws skip — but skip this for adjacent-to-repeats so the
+    // repeats span's startOff anchors at the end of the previous literal
+    // (matching the tokenized backend's behavior where __<listVar>_startOff
+    // is state.ends[state.pos - 1] before any further token advances).
+    if (i + 1 < spans.length) {
+      const nextSpan = spans[i + 1]!;
+      const nextRepeats = findModifier(nextSpan.modifiers, 'repeats');
+      const nextUntil = findModifier(nextSpan.modifiers, 'until');
+      const nextOptional = hasModifier(nextSpan.modifiers, 'optional');
+      const nextIsUntil = findModifier(nextSpan.modifiers, 'until') !== undefined;
+      const nextIsRawUntil = findModifier(nextSpan.modifiers, 'rawUntil') !== undefined;
+      const nextSavedVar = nextOptional && !nextIsUntil && !nextIsRawUntil
+        ? `__beforeSpan${i + 1}`
+        : null;
+      // Save __off BEFORE the inter-span skip so an optional next span
+      // that doesn't fire can rewind through skipped comments.
+      if (nextSavedVar) {
+        lines.push(`const ${nextSavedVar} = __off;`);
+      }
+      // Skip the inter-span ws skip when the next span is a repeats or
+      // until — those spans need __off positioned at the end of the
+      // previous span (pre-ws) so that empty captures can record
+      // __lastCaptureStart/End at the prior span's end (matching the
+      // tokenized backend's state.ends[state.pos - 1] behavior).
+      // Otherwise skip ws AND comments so free-floating comments between
+      // significant spans (e.g. 'font-size /* x */ : big') match the
+      // tokenized backend where skipComments runs before each literal.
+      if (!nextRepeats && !nextUntil) {
+        lines.push(inlineSkipWs(ctx));
+      }
+    }
+  }
+
+  // Record __endOff BEFORE the trailing ws skip — node's source.end.offset
+  // matches the last consumed char, not the next non-ws position.
+  if (needsNodeRange) {
+    lines.push(`const __endOff = __consumedEnd;`);
+  }
+
+  // Trailing skipWs is ws-only. Comments at the end of the production
+  // are NOT consumed by this production — the parent (root) handles them
+  // via its own children-loop dispatch.
+  lines.push(inlineSkipWs());
+
+  // Flush __off back to state.off before returning.
+  lines.push(`state.off = __off;`);
+
+  if (ctx.variant === 'validate') {
+    lines.push(`return;`);
+    return lines.join('\n');
+  }
+
+  const bindings = { valueExpr, presenceExpr, startOffExpr, endOffExpr };
+  const structure = emitStructureExpr(production.structure, bindings, structureOptions);
+  if (ctx.variant === 'fast') {
+    lines.push(`return ${structure};`);
+    return lines.join('\n');
+  }
+  lines.push(`const __struct: Record<string, unknown> = ${structure};`);
+  lines.push(`__struct.source = makeSource(state, __startOff, __endOff);`);
+  lines.push(`return __struct;`);
+  return lines.join('\n');
+}
+
+// --- Spans -----------------------------------------------------------------
+
+function emitSpan(
+  span: ResolvedSpan,
+  next: ResolvedSpan | undefined,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  const optional = hasModifier(span.modifiers, 'optional');
+  const repeats = findModifier(span.modifiers, 'repeats');
+  const until = findModifier(span.modifiers, 'until');
+  const rawUntil = findModifier(span.modifiers, 'rawUntil');
+  const noWhitespaceAfter = hasModifier(span.modifiers, 'noWhitespaceAfter');
+
+  if (rawUntil) {
+    return emitRawUntilSpan(span, rawUntil, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+  }
+  if (until) {
+    return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+  }
+  if (repeats) {
+    return emitRepeatedSpan(span, repeats, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+  }
+  if (span.recursiveRoles.length > 0) {
+    return emitRecursiveSpan(span, valueExpr, presenceExpr, optional, ctx);
+  }
+  if (span.class === 'literal') {
+    return emitLiteralSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs);
+  }
+  return emitClassedSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx);
+}
+
+function emitLiteralSpan(
+  span: ResolvedSpan,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  optional: boolean,
+  noWhitespaceAfter: boolean,
+  offsetRefs: ReadonlySet<string>,
+): string {
+  if (!span.text) throw new Error('emitter: literal span has no text');
+  const text = span.text;
+  const matchExpr = emitLiteralMatchExpr(text);
+  const advance = `__off += ${text.length};`;
+  const adjacencyCheck = noWhitespaceAfter
+    ? '\nif (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after literal at position " + __off); }'
+    : '';
+
+  if (span.name) {
+    const v = jsIdent(span.name);
+    const needsOffsets = offsetRefs.has(span.name);
+    valueExpr.set(span.name, v);
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${v}_start`);
+      endOffExpr.set(span.name, `__${v}_end`);
+    }
+    if (optional) {
+      presenceExpr.set(span.name, `(${v} !== null)`);
+      // When the literal doesn't match, fall back to __consumedEnd (the
+      // position right after the last consumed byte) so $.gap to this
+      // span doesn't pick up trailing ws skipped by inter-span skipWs.
+      const offsetDecls = needsOffsets
+        ? `\nconst __${v}_start = ${v} !== null ? __off - ${text.length} : __consumedEnd;
+const __${v}_end = ${v} !== null ? __off : __consumedEnd;`
+        : '';
+      // When the optional literal doesn't match, rewind __off to
+      // __consumedEnd so that comments/ws consumed by the preceding
+      // inter-span skip stay visible to the parent (matches tokenized's
+      // consumeOptionalLiteralId rewinding state.pos on no-match).
+      return `let ${v}: string | null = null;
+if (${matchExpr}) {
+  ${advance}
+  ${v} = ${jsString(text)};${adjacencyCheck}
+} else {
+  __off = __consumedEnd;
+}${offsetDecls}`;
+    }
+    const offsetDecls = needsOffsets
+      ? `\nconst __${v}_start = __off - ${text.length};
+const __${v}_end = __off;`
+      : '';
+    return `if (!(${matchExpr})) { state.off = __off; throw new SyntaxError("expected " + ${jsString(text)} + " at position " + __off); }
+${advance}
+const ${v} = ${jsString(text)};${adjacencyCheck}${offsetDecls}`;
+  }
+
+  if (optional) {
+    return `if (${matchExpr}) { ${advance}${adjacencyCheck} } else { __off = __consumedEnd; }`;
+  }
+  return `if (!(${matchExpr})) { state.off = __off; throw new SyntaxError("expected " + ${jsString(text)} + " at position " + __off); }
+${advance}${adjacencyCheck}`;
+}
+
+// Emit a JS expression that tests whether `__input` starts with `text` at
+// `__off`. Single-char and two-char literals expand to inline char
+// compares; longer literals use String.prototype.startsWith.
+function emitLiteralMatchExpr(text: string): string {
+  if (text.length === 1) {
+    return `__input.charCodeAt(__off) === ${text.charCodeAt(0)}`;
+  }
+  if (text.length === 2) {
+    return `__input.charCodeAt(__off) === ${text.charCodeAt(0)} && __input.charCodeAt(__off + 1) === ${text.charCodeAt(1)}`;
+  }
+  return `__input.startsWith(${jsString(text)}, __off)`;
+}
+
+function emitClassedSpan(
+  span: ResolvedSpan,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  optional: boolean,
+  noWhitespaceAfter: boolean,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  const v = span.name ? jsIdent(span.name) : '__unnamed';
+  const isComment = span.class === 'comment';
+  const needsValueForRefinement = span.refinements.some((r) =>
+    r.name === 'oneOf' || r.name === 'hexString',
+  );
+  const needsValue = ctx.variant === 'validate'
+    ? needsValueForRefinement
+    : (span.name !== undefined ? true : needsValueForRefinement);
+
+  const scan = emitClassScan(span, v, { optional, needsValue });
+
+  const adjacencyCheck = noWhitespaceAfter
+    ? optional
+      ? `\nif (${v} !== null && __off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }`
+      : `\nif (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }`
+    : '';
+
+  const refinementCheck = emitSpanRefinementCheck(span, v, optional, `__${v}_s`, needsValue);
+
+  if (span.name) {
+    const needsOffsets = offsetRefs.has(span.name);
+    valueExpr.set(span.name, isComment ? `${v}__interior` : v);
+    if (optional) {
+      presenceExpr.set(span.name, `(${v} !== null)`);
+    }
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${v}_start`);
+      endOffExpr.set(span.name, `__${v}_end`);
+    }
+    const commentInteriorBind = isComment
+      ? optional
+        ? `\nconst ${v}__interior = ${v} === null ? null : commentInterior(${v});`
+        : `\nconst ${v}__interior = commentInterior(${v});`
+      : '';
+    const offsetDecls = needsOffsets ? `\n${emitClassOffsetVars(v, { optional })}` : '';
+    return `${scan}${adjacencyCheck}${refinementCheck}${commentInteriorBind}${offsetDecls}`;
+  }
+
+  return `${scan}${adjacencyCheck}${refinementCheck}`;
+}
+
+function emitSpanRefinementCheck(
+  span: ResolvedSpan,
+  valueVar: string,
+  optional: boolean,
+  positionExpr: string,
+  haveValue: boolean = true,
+): string {
+  const checks: string[] = [];
+  const lengthExpr = haveValue ? `${valueVar}.length` : `(__off - ${positionExpr})`;
+  for (const refinement of span.refinements) {
+    if (refinement.name === 'oneOf') {
+      const values = refinement.args?.[0];
+      if (!Array.isArray(values) || values.some((value) => typeof value !== 'string')) continue;
+      const lowered = (values as readonly string[]).map((value) => value.toLowerCase());
+      const condition = lowered.map((value) => `${valueVar}.toLowerCase() === ${jsString(value)}`).join(' || ') || 'false';
+      const message = `expected one of ${(values as readonly string[]).join(', ')} at position `;
+      checks.push(optional
+        ? `if (${valueVar} !== null && !(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`
+        : `if (!(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`);
+      continue;
+    }
+    if (refinement.name === 'hexString') {
+      const message = 'expected hex string at position ';
+      checks.push(optional
+        ? `if (${valueVar} !== null && !isHexString(${valueVar})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`
+        : `if (!isHexString(${valueVar})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`);
+      continue;
+    }
+    if (refinement.name === 'lengths') {
+      const values = refinement.args?.[0];
+      if (!Array.isArray(values) || values.some((value) => !Number.isInteger(value))) continue;
+      const condition = (values as readonly number[]).map((value) => `${lengthExpr} === ${value}`).join(' || ') || 'false';
+      const message = `expected length ${(values as readonly number[]).join(', ')} at position `;
+      checks.push(optional && haveValue
+        ? `if (${valueVar} !== null && !(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`
+        : `if (!(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`);
+    }
+  }
+  return checks.length === 0 ? '' : `\n${checks.join('\n')}`;
+}
+
+function emitRecursiveSpan(
+  span: ResolvedSpan,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  optional: boolean,
+  ctx: Ctx,
+): string {
+  const roles = span.recursiveRoles;
+  const sync = (rhs: string): string => `state.off = __off;
+${rhs}
+__off = state.off;`;
+
+  // For multi-role non-optional dispatch, try first-token lookahead. This
+  // avoids the throw/catch overhead of tryRoles when roles have distinct
+  // first-token signatures.
+  const lookahead = roles.length > 1 && !optional
+    ? emitRoleLookahead(roles, ctx)
+    : null;
+
+  const callExpr = roles.length === 1
+    ? `${parseFnName(roles[0]!, ctx.variant)}(state)`
+    : `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+
+  if (ctx.variant === 'validate') {
+    if (optional) {
+      const speculative = roles.length === 1
+        ? `trySpeculate(state, ${parseFnName(roles[0]!, ctx.variant)})`
+        : `tryRolesOrNull(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+      return sync(`${speculative};`);
+    }
+    if (lookahead !== null) {
+      return sync(`${lookahead}(state);`);
+    }
+    return sync(`${callExpr};`);
+  }
+  if (span.name) {
+    const v = jsIdent(span.name);
+    valueExpr.set(span.name, v);
+    if (optional) {
+      const speculative = roles.length === 1
+        ? `trySpeculate(state, ${parseFnName(roles[0]!, ctx.variant)})`
+        : `tryRolesOrNull(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+      presenceExpr.set(span.name, `(${v} !== null)`);
+      return sync(`const ${v} = ${speculative};`);
+    }
+    if (lookahead !== null) {
+      return sync(`const ${v} = ${lookahead}(state);`);
+    }
+    return sync(`const ${v} = ${callExpr};`);
+  }
+  if (optional) return sync(`${callExpr};`);
+  if (lookahead !== null) {
+    return sync(`${lookahead}(state);`);
+  }
+  return sync(`${callExpr};`);
+}
+
+// Build a synthetic lookahead dispatcher that picks the correct role based
+// on the next byte / first ident value. Returns the call expression (a
+// generated function name) or null when no dispatch is possible.
+//
+// This emits a per-call-site inline IIFE-style function in the dispatcher,
+// rather than a shared helper, because the role set varies per call site.
+// But to keep the generated file small, we emit it as a top-level shared
+// helper keyed by the role list.
+const roleDispatchCache = new WeakMap<object, Map<string, string>>();
+
+function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | null {
+  // We need access to NodeTypeInfo for each role to know its first-token
+  // shape. Without it, fall back to tryRoles.
+  // Detect distinct first-token signatures for each role.
+  type FirstToken =
+    | { kind: 'literal'; text: string }
+    | { kind: 'class'; cls: string; refKey: string; oneOfValues?: readonly string[] };
+  const firstTokens: Array<FirstToken | null> = roles.map((r) => firstTokenForRole(r, ctx));
+  // Partition: roles with a fixed first-token can be byte-prefix dispatched;
+  // roles with an until/repeats first span fall through to a tail tryRoles.
+  // If no role has a fixed first-token we have no advantage over tryRoles.
+  if (firstTokens.every((t) => t === null)) return null;
+  const fallthroughRoles: string[] = [];
+  const dispatchableRoles: string[] = [];
+  const dispatchableTokens: FirstToken[] = [];
+  for (let i = 0; i < roles.length; i++) {
+    const t = firstTokens[i];
+    if (t === null) fallthroughRoles.push(roles[i]!);
+    else {
+      dispatchableRoles.push(roles[i]!);
+      dispatchableTokens.push(t);
+    }
+  }
+
+  // Quick check: are there any distinct first-token keys among dispatchables?
+  // If they all share one, the byte-prefix check buys nothing.
+  const keyFor = (t: FirstToken): string => {
+    if (t.kind === 'literal') return `L:${t.text}`;
+    return `C:${t.cls}|${t.refKey}|${(t.oneOfValues ?? []).slice().sort().join(',')}`;
+  };
+  const uniqueKeys = new Set(dispatchableTokens.map(keyFor));
+  if (uniqueKeys.size === 1 && fallthroughRoles.length === 0) return null;
+
+  // Emit a unique helper for this role list. We don't memoize across the
+  // file; the generated emit just re-emits the same function. Caller's
+  // generated file size is unaffected by duplicates because each emit
+  // produces a unique function name per call site.
+  const fnSlug = roles.map((r) => jsIdent(r)).join('_');
+  const fnName = `__roleDispatch_${ctx.variant}_${fnSlug}_${roleSeq()}`;
+
+  // Group dispatchable roles by literal-first vs class-first.
+  const literalRoles: Array<{ role: string; text: string }> = [];
+  const classRoles: Array<{ role: string; tok: Extract<FirstToken, { kind: 'class' }> }> = [];
+  for (let i = 0; i < dispatchableRoles.length; i++) {
+    const t = dispatchableTokens[i]!;
+    if (t.kind === 'literal') literalRoles.push({ role: dispatchableRoles[i]!, text: t.text });
+    else classRoles.push({ role: dispatchableRoles[i]!, tok: t });
+  }
+
+  // Emit body: literals first (sorted by length desc), then class groups.
+  const lines: string[] = [];
+  literalRoles.sort((a, b) => b.text.length - a.text.length);
+  for (const { role, text } of literalRoles) {
+    const check = peekLiteralExprAt('__off', text);
+    lines.push(`if (${check}) return ${parseFnName(role, ctx.variant)}(state);`);
+  }
+
+  // Class roles: group by class+refKey. Within a class, multiple roles
+  // may have distinct .oneOf values — dispatch by scanning the ident and
+  // matching.
+  type ClassGroup = {
+    cls: string;
+    refKey: string;
+    roles: Array<{ role: string; oneOfValues?: readonly string[] }>;
+  };
+  const classGroups: ClassGroup[] = [];
+  for (const { role, tok } of classRoles) {
+    let group = classGroups.find((g) => g.cls === tok.cls && g.refKey === tok.refKey);
+    if (!group) {
+      group = { cls: tok.cls, refKey: tok.refKey, roles: [] };
+      classGroups.push(group);
+    }
+    group.roles.push({ role, oneOfValues: tok.oneOfValues });
+  }
+  for (const group of classGroups) {
+    if (group.cls === 'ident') {
+      // Peek-scan ident, lowercase, dispatch on oneOf value.
+      const dispatchBranches: string[] = [];
+      let fallbackRole: string | null = null;
+      for (const { role, oneOfValues } of group.roles) {
+        if (!oneOfValues || oneOfValues.length === 0) {
+          if (fallbackRole !== null) return null; // ambiguous fallback
+          fallbackRole = role;
+        }
+      }
+      // Sort: roles with oneOf go first; fallback (no oneOf) at end.
+      const withOneOf = group.roles.filter((r) => r.oneOfValues && r.oneOfValues.length > 0);
+      // Build a flat lookup of ident_lower → role.
+      const lookup = new Map<string, string>();
+      for (const { role, oneOfValues } of withOneOf) {
+        for (const v of oneOfValues!) {
+          const lv = v.toLowerCase();
+          if (lookup.has(lv)) return null; // conflicting oneOf across roles
+          lookup.set(lv, role);
+        }
+      }
+      const identCheck = group.refKey.includes('html')
+        ? `isCssIdentStart(__input.charCodeAt(__off))`
+        : group.refKey.includes('js')
+          ? `isJsIdentStart(__input.charCodeAt(__off))`
+          : `(isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c)`;
+      const peekIdentEnd = `__peek = __off + 1; while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;`;
+      const dispatchSwitch: string[] = [];
+      for (const [lv, role] of lookup) {
+        dispatchSwitch.push(`if (__ident === ${jsString(lv)}) return ${parseFnName(role, ctx.variant)}(state);`);
+      }
+      const tail = fallbackRole !== null
+        ? `return ${parseFnName(fallbackRole, ctx.variant)}(state);`
+        : `throw new SyntaxError('no role matched ident at position ' + __off);`;
+      dispatchBranches.push(`if (${identCheck}) {
+  let __peek = __off;
+  ${peekIdentEnd}
+  const __ident = __input.slice(__off, __peek).toLowerCase();
+  ${dispatchSwitch.join('\n  ')}
+  ${tail}
+}`);
+      lines.push(...dispatchBranches);
+    } else if (group.cls === 'hex') {
+      // Hex is only a HashColor's prefix in css-color — but we dispatch
+      // by literal '#' above. Hex-starting roles are unusual; for now
+      // assume single role and dispatch directly.
+      if (group.roles.length === 1) {
+        lines.push(`if (isHexDigit(__input.charCodeAt(__off))) return ${parseFnName(group.roles[0]!.role, ctx.variant)}(state);`);
+      } else {
+        return null;
+      }
+    } else if (group.cls === 'number') {
+      if (group.roles.length === 1) {
+        lines.push(`if (isDigit(__input.charCodeAt(__off))) return ${parseFnName(group.roles[0]!.role, ctx.variant)}(state);`);
+      } else {
+        return null;
+      }
+    } else if (group.cls === 'string') {
+      if (group.roles.length === 1) {
+        lines.push(`if (__input.charCodeAt(__off) === 0x22 || __input.charCodeAt(__off) === 0x27) return ${parseFnName(group.roles[0]!.role, ctx.variant)}(state);`);
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+
+  // Tail: only the roles whose first-token couldn't be peeked need
+  // speculation. If everything dispatched, tail is a fixed error.
+  if (fallthroughRoles.length === 0) {
+    lines.push(`throw new SyntaxError('no role matched at position ' + __off);`);
+  } else if (fallthroughRoles.length === 1) {
+    lines.push(`return ${parseFnName(fallthroughRoles[0]!, ctx.variant)}(state);`);
+  } else {
+    lines.push(`return tryRoles(state, [${fallthroughRoles.map((r) => parseFnName(r, ctx.variant)).join(', ')}]);`);
+  }
+
+  const fn = `function ${fnName}(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  ${lines.join('\n  ')}
+}`;
+  pendingHelpers.push(fn);
+  return fnName;
+}
+
+let _roleSeq = 0;
+function roleSeq(): number { return _roleSeq++; }
+
+// Helpers accumulated while emitting; flushed by the caller.
+let pendingHelpers: string[] = [];
+export function takePendingHelpers(): string[] {
+  const out = pendingHelpers;
+  pendingHelpers = [];
+  _roleSeq = 0;
+  return out;
+}
+
+// First-token analysis for a role: look at the role's productions and find
+// the first span. For multi-production roles, only return when all
+// productions agree on first-token (signature + .oneOf values).
+type FirstTokenInfo =
+  | { kind: 'literal'; text: string }
+  | { kind: 'class'; cls: string; refKey: string; oneOfValues?: readonly string[] };
+
+function firstTokenForRole(role: string, ctx: Ctx): FirstTokenInfo | null {
+  const info = ctx.nodeTypes.get(role);
+  if (!info || info.productions.length === 0) return null;
+  let result: FirstTokenInfo | null = null;
+  // Collect first-token from each production; merge .oneOf values when they
+  // agree on class+refinement.
+  for (const prod of info.productions) {
+    const span0 = prod.spans[0];
+    if (!span0) return null;
+    if (findModifier(span0.modifiers, 'until') || findModifier(span0.modifiers, 'rawUntil') || findModifier(span0.modifiers, 'repeats')) return null;
+    if (hasModifier(span0.modifiers, 'optional')) return null;
+    if (span0.recursiveRoles.length > 0) return null;
+    if (span0.class === 'literal') {
+      if (!span0.text) return null;
+      const tok: FirstTokenInfo = { kind: 'literal', text: span0.text };
+      if (result === null) result = tok;
+      else if (result.kind !== 'literal' || result.text !== tok.text) return null;
+    } else if (span0.class === 'comment') {
+      // A comment span uniquely starts with /* — treat it as a literal
+      // for dispatch purposes so the byte-prefix path can route to it.
+      const tok: FirstTokenInfo = { kind: 'literal', text: '/*' };
+      if (result === null) result = tok;
+      else if (result.kind !== 'literal' || result.text !== tok.text) return null;
+    } else {
+      const refKey = span0.refinements
+        .filter((r) => r.name !== 'oneOf')
+        .map((r) => r.name)
+        .sort()
+        .join('|');
+      const oneOfArr = span0.refinements.find((r) => r.name === 'oneOf')?.args?.[0];
+      const oneOfValues = Array.isArray(oneOfArr) && oneOfArr.every((v) => typeof v === 'string')
+        ? (oneOfArr as readonly string[]).map((v) => v.toLowerCase())
+        : undefined;
+      const tok: FirstTokenInfo = { kind: 'class', cls: span0.class, refKey, oneOfValues };
+      if (result === null) result = tok;
+      else if (result.kind !== 'class' || result.cls !== tok.cls || result.refKey !== tok.refKey) return null;
+      else if ((result.oneOfValues === undefined) !== (tok.oneOfValues === undefined)) return null;
+      else if (result.kind === 'class' && result.oneOfValues && tok.oneOfValues) {
+        // Merge: a role accepts the union of its productions' .oneOf values.
+        const merged: Set<string> = new Set([...result.oneOfValues, ...tok.oneOfValues]);
+        result = { kind: 'class', cls: result.cls, refKey: result.refKey, oneOfValues: [...merged].sort() };
+      }
+    }
+  }
+  return result;
+}
+
+function emitRepeatedSpan(
+  span: ResolvedSpan,
+  repeats: Extract<SpanModifier, { kind: 'repeats' }>,
+  next: ResolvedSpan | undefined,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  if (span.recursiveRoles.length === 0) {
+    throw new Error(`scannerless v1: .repeats() on non-recursive span is not implemented`);
+  }
+  const roles = span.recursiveRoles;
+  const listVar = span.name ? jsIdent(span.name) : '_repeated';
+  const needsOffsets = ctx.variant === 'raws' || (span.name ? offsetRefs.has(span.name) : false);
+
+  // Each child parse call flushes/restores __off via the sync pattern. When
+  // roles have distinguishable first-tokens we emit a byte-prefix dispatch
+  // helper that routes Comment/AtRule-style roles directly and only
+  // speculates among the remaining ambiguous ones — eliminates the bulk
+  // of the throw/catch overhead `tryRoles` would incur per child.
+  let childCall: string;
+  if (roles.length === 1) {
+    childCall = `${parseFnName(roles[0]!, ctx.variant)}(state)`;
+  } else {
+    const dispatcher = emitRoleLookahead(roles, ctx);
+    childCall = dispatcher !== null
+      ? `${dispatcher}(state)`
+      : `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+  }
+  const stopPredicate = stopPredicateFor(next);
+  const sep = repeats.sep;
+  const min = repeats.min ?? 0;
+  const max = repeats.max;
+  const stopBeforeCheck = emitStopBeforeCheck(repeats.stopBefore);
+
+  if (ctx.variant === 'validate') {
+    const minCheck = min > 0
+      ? `\nif (__count_${listVar} < ${min}) { state.off = __off; throw new SyntaxError(${jsString(`expected at least ${min} ${roles.join('|')}`)}); }`
+      : '';
+    const maxCheck = max === undefined
+      ? ''
+      : `\nif (__count_${listVar} > ${max}) { state.off = __off; throw new SyntaxError(${jsString(`expected at most ${max} ${roles.join('|')}`)}); }`;
+    if (!sep) {
+      return `let __count_${listVar} = 0;
+while (!(${stopPredicate})) {
+${stopBeforeCheck}  ${inlineSkipWs()}
+  const __before = __off;
+  state.off = __off; ${childCall}; __off = state.off;
+  __count_${listVar}++;
+  if (__off === __before) break;
+  ${inlineSkipWs()}
+}${minCheck}${maxCheck}`;
+    }
+    const sepMatch = emitLiteralMatchExpr(sep);
+    return `let __count_${listVar} = 0;
+while (!(${stopPredicate})) {
+${stopBeforeCheck}  ${inlineSkipWs()}
+  while (${sepMatch}) { __off += ${sep.length}; ${inlineSkipWs()} }
+  if (${stopPredicate}) break;
+  const __before = __off;
+  state.off = __off; ${childCall}; __off = state.off;
+  __count_${listVar}++;
+  if (__off === __before) break;
+  ${inlineSkipWs()}
+  while (${sepMatch}) { __off += ${sep.length}; ${inlineSkipWs()} }
+}${minCheck}${maxCheck}`;
+  }
+
+  if (span.name) {
+    valueExpr.set(span.name, listVar);
+    presenceExpr.set(span.name, `(${listVar}.length > 0)`);
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${listVar}_startOff`);
+      endOffExpr.set(span.name, `__prevEnd_${listVar}`);
+    }
+  }
+
+  const minCheck = min > 0
+    ? `\nif (${listVar}.length < ${min}) { state.off = __off; throw new SyntaxError(${jsString(`expected at least ${min} ${roles.join('|')}`)}); }`
+    : '';
+  const maxCheck = max === undefined
+    ? ''
+    : `\nif (${listVar}.length > ${max}) { state.off = __off; throw new SyntaxError(${jsString(`expected at most ${max} ${roles.join('|')}`)}); }`;
+
+  const attachBefore = ctx.variant === 'raws'
+    ? `attachRawsBefore(state, __child, __prevEnd_${listVar});`
+    : '';
+  const updatePrevEnd = needsOffsets
+    ? ctx.variant === 'raws'
+      ? `__prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};`
+      : `__prevEnd_${listVar} = __off;`
+    : '';
+  const offsetDecls = needsOffsets
+    ? `const __${listVar}_startOff = __off;
+let __prevEnd_${listVar} = __${listVar}_startOff;`
+    : '';
+  const attachLine = attachBefore ? `  ${attachBefore}\n` : '';
+  const updateLine = updatePrevEnd ? `  ${updatePrevEnd}\n` : '';
+
+  // In raws mode, the production-body wrap-up sets __consumedEnd to
+  // __prevEnd_<listVar> directly (see emitProductionBody) — no need to
+  // rewind __off here. Keeping __off at the post-sep position lets the
+  // outer production's state.off accurately reflect end-of-consumed
+  // content for the trailing-input check.
+  const rewind = '';
+
+  if (!sep) {
+    return `${offsetDecls}
+const ${listVar}: unknown[] = [];
+while (true) {
+  ${inlineSkipWs()}
+  if (${stopPredicate}) { ${rewind} break; }
+${stopBeforeCheck}  const __before = __off;
+  state.off = __off; const __child = ${childCall}; __off = state.off;
+${attachLine}  ${listVar}.push(__child);
+  if (__off === __before) break;
+${updateLine}}${minCheck}${maxCheck}`;
+  }
+
+  const sepMatch = emitLiteralMatchExpr(sep);
+  return `${offsetDecls}
+const ${listVar}: unknown[] = [];
+while (true) {
+  ${inlineSkipWs()}
+  while (${sepMatch}) { __off += ${sep.length}; ${inlineSkipWs()} }
+  if (${stopPredicate}) { ${rewind} break; }
+${stopBeforeCheck}  const __before = __off;
+  state.off = __off; const __child = ${childCall}; __off = state.off;
+${attachLine}  ${listVar}.push(__child);
+  if (__off === __before) break;
+${updateLine}}${minCheck}${maxCheck}`;
+}
+
+function stopPredicateFor(next: ResolvedSpan | undefined): string {
+  if (!next) return '__off >= __len';
+  if (next.class === 'literal' && next.text) {
+    return emitLiteralMatchExpr(next.text);
+  }
+  return '__off >= __len';
+}
+
+function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
+  if (!stopBefore || stopBefore.length === 0) return '';
+  const stops = stopBefore.filter((s) => s.length > 0);
+  if (stops.length === 0) return '';
+  const byFirstChar = new Map<number, string[]>();
+  for (const s of stops) {
+    const code = s.charCodeAt(0);
+    const bucket = byFirstChar.get(code) ?? [];
+    bucket.push(s);
+    byFirstChar.set(code, bucket);
+  }
+  const branches: string[] = [];
+  for (const [code, bucket] of [...byFirstChar.entries()].sort(([a], [b]) => a - b)) {
+    bucket.sort((a, b) => b.length - a.length);
+    if (bucket.length <= 3) {
+      const conds = bucket.map((s) => `__input.startsWith(${jsString(s)}, __off)`).join(' || ');
+      branches.push(`if (__c === ${code} && (${conds})) break;`);
+      continue;
+    }
+    const bySecondChar = new Map<number, string[]>();
+    const singleChar: string[] = [];
+    for (const s of bucket) {
+      if (s.length < 2) {
+        singleChar.push(s);
+        continue;
+      }
+      const c2 = s.charCodeAt(1);
+      const sub = bySecondChar.get(c2) ?? [];
+      sub.push(s);
+      bySecondChar.set(c2, sub);
+    }
+    const subBranches: string[] = [];
+    for (const [code2, sub] of [...bySecondChar.entries()].sort(([a], [b]) => a - b)) {
+      sub.sort((a, b) => b.length - a.length);
+      const conds = sub.map((s) => `__input.startsWith(${jsString(s)}, __off)`).join(' || ');
+      subBranches.push(`if (__c2 === ${code2} && (${conds})) break;`);
+    }
+    for (const lone of singleChar) {
+      subBranches.push(`if (__input.startsWith(${jsString(lone)}, __off)) break;`);
+    }
+    branches.push(`if (__c === ${code}) {
+    const __c2 = __input.charCodeAt(__off + 1);
+    ${subBranches.join('\n    ')}
+  }`);
+  }
+  return `  {
+    const __c = __input.charCodeAt(__off);
+    ${branches.join('\n    ')}
+  }\n`;
+}
+
+// --- .until() and .rawUntil() ---------------------------------------------
+
+function emitUntilSpan(
+  span: ResolvedSpan,
+  until: Extract<SpanModifier, { kind: 'until' }>,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  ctx: Ctx,
+): string {
+  // Char-based scan to the earliest unbalanced stop. Tracks bracket depth
+  // when balanced=true. Skips past string/comment ranges as opaque units
+  // when the schema declares those token classes (matches tokenized
+  // backend's behavior where the tokenizer pre-classifies these and the
+  // until-loop skips them by token).
+  const stops = until.stops;
+  const stopChecks = stops.map((stop) => {
+    if (stop.length === 1) {
+      return `__c === ${stop.charCodeAt(0)}`;
+    }
+    return `__input.startsWith(${jsString(stop)}, __off)`;
+  });
+  const stopExpr = stopChecks.join(' || ');
+  const balancedBlock = until.balanced ? `
+    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+      if (__depth === 0) break;
+      __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+    }` : '';
+  // Token-class skip arms. Strings: scan past matching quote. Comments:
+  // scan past /* ... */. These are NOT counted toward __lastNonWs because
+  // strings have their own content and comments are typically excluded
+  // from the trimmed value boundary.
+  const stringSkip = ctx.tokens.has('string') ? `
+    if (__c === 0x22 || __c === 0x27) {
+      const __q = __c;
+      __off++;
+      while (__off < __len) {
+        const __sc = __input.charCodeAt(__off);
+        if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+        if (__sc === __q) { __off++; break; }
+        if (__sc === 0x0a || __sc === 0x0d) break;
+        __off++;
+      }
+      __lastNonWs = __off;
+      continue;
+    }` : '';
+  const hasComments = ctx.tokens.has('comment');
+  // Leading comment+ws skip: tokenized's captureUntil advances state.pos
+  // past leading comment tokens before computing startOff (line 309 of
+  // emit/runtime.ts). Match that here so comments at the head of a capture
+  // don't end up in the captured slice nor in the trim boundary. Track the
+  // end of the last consumed leading comment — when the capture turns out
+  // to be empty, that's the anchor (matches tokenized's
+  // state.ends[state.pos - 1] for the previous token).
+  const leadingCommentSkip = hasComments ? `
+    if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      __lastLeadingCommentEnd = __off;
+      continue;
+    }` : '';
+  // Interior comment skip: record the comment's source range so that we
+  // can omit it (and any whitespace it's adjacent to) when building the
+  // captured slice. Matches the omit-list logic in tokenized captureUntil
+  // (lines 355-379 of emit/runtime.ts). Don't touch __lastNonWs so a
+  // trailing comment doesn't extend the trim boundary.
+  //
+  // Only process comments at depth=0. Inside balanced (...) / [...] /
+  // {...}, '/*' is treated as content — matches direct-fast.ts, which
+  // doesn't recognize comments in value scans. Critically, this prevents
+  // an unterminated `/*` inside `url(...)` from greedily eating across
+  // statement boundaries to a far-away `*/`.
+  //
+  // Backslash escape: '\X' is treated as an escape sequence (2 bytes
+  // consumed, both counted as significant). Matches CSS escape semantics
+  // (e.g., `\;` is literal ';' inside a value, not a stop).
+  // CSS url(...) raw mode: when scanning a value and we see 'url(' at
+  // depth 0, skip the whole url() opaquely (strings tracked; comments
+  // and brackets not recognized inside). Mirrors the CSS ident
+  // tokenizer's url() branch — keeps unterminated `/*` inside url() from
+  // matching a far-away `*/` across statement boundaries.
+  const urlRawSkip = ctx.cssIdent ? `
+    if (__depth === 0
+      && (__c === 0x75 || __c === 0x55)
+      && __off + 3 < __len
+      && (__input.charCodeAt(__off + 1) | 32) === 0x72
+      && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+      && __input.charCodeAt(__off + 3) === 0x28) {
+      __off += 4;
+      while (__off < __len) {
+        const __uc = __input.charCodeAt(__off);
+        if (__uc === 0x29) { __off++; break; }
+        if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+        if (__uc === 0x22 || __uc === 0x27) {
+          const __uq = __uc;
+          __off++;
+          while (__off < __len) {
+            const __usc = __input.charCodeAt(__off);
+            if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+            if (__usc === __uq) { __off++; break; }
+            if (__usc === 0x0a || __usc === 0x0d) break;
+            __off++;
+          }
+          continue;
+        }
+        __off++;
+      }
+      __lastNonWs = __off;
+      continue;
+    }` : '';
+  // Comment scan inside the until-loop. The url(...) raw-mode skip above
+  // already consumes `url(...)` opaquely, so any `/*` here is at a real
+  // comment start and we scan to the first `*/`. Unterminated comments
+  // (no `*/` until EOF) fall through to the regular byte path.
+  const commentSkip = hasComments ? `${urlRawSkip}
+    if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      let __ce = __off + 2;
+      while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+      if (__ce < __len) {
+        __comments.push([__off, __ce + 2]);
+        __off = __ce + 2;
+        continue;
+      }
+    }
+    if (__c === 0x5c && __off + 1 < __len) {
+      __lastNonWs = __off + 2;
+      __off += 2;
+      continue;
+    }` : `${urlRawSkip}
+    if (__c === 0x5c && __off + 1 < __len) {
+      __lastNonWs = __off + 2;
+      __off += 2;
+      continue;
+    }`;
+  const commentsDecl = hasComments ? '\n  const __comments: [number, number][] = [];' : '';
+  const trimEndExpr = '__lastNonWs';
+  const v = span.name ? jsIdent(span.name) : '__captured';
+  // When the schema declares comments, build the captured slice by
+  // concatenating segments around ws-adjacent comments; otherwise emit the
+  // simple slice. Keep the simple path for non-comment schemas so they
+  // don't grow code.
+  const buildSlice = v === '__captured'
+    ? ''
+    : hasComments
+      ? `
+  if (__comments.length === 0) {
+    ${v} = __input.slice(__startOff, ${trimEndExpr});
+  } else {
+    let __buf = '';
+    let __cursor = __startOff;
+    for (let __i = 0; __i < __comments.length; __i++) {
+      const __cs = __comments[__i][0];
+      const __ce = __comments[__i][1];
+      if (__ce > ${trimEndExpr}) break;
+      const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+      const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+      if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+      __buf += __input.slice(__cursor, __cs);
+      __cursor = __ce;
+    }
+    __buf += __input.slice(__cursor, ${trimEndExpr});
+    ${v} = __buf;
+  }`
+      : `
+  ${v} = __input.slice(__startOff, ${trimEndExpr});`;
+  const scanCode = `{
+  // __preWsOff captures the offset at entry — used (with leading-comment
+  // tracking) to rewind __lastCaptureStart/End when the until captures
+  // nothing. Anchor = end of the last leading comment if any, else
+  // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+  const __preWsOff = __off;
+  let __lastLeadingCommentEnd = -1;
+  // Skip leading whitespace and comments from the capture's view.
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }${leadingCommentSkip}
+    break;
+  }
+  const __startOff = __off;
+  let __lastNonWs = __off;
+  let __depth = 0;${commentsDecl}
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__depth === 0 && (${stopExpr})) break;${balancedBlock}${stringSkip}${commentSkip}
+    if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+    __off++;
+  }
+  if (__lastNonWs === __startOff) {
+    const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+    state.__lastCaptureStart = __emptyAnchor;
+    state.__lastCaptureEnd = __emptyAnchor;
+    __off = __emptyAnchor;
+    ${v === '__captured' ? '' : `${v} = '';`}
+  } else {
+    state.__lastCaptureStart = __startOff;
+    state.__lastCaptureEnd = ${trimEndExpr};
+    // Rewind __off to the trim boundary so trailing whitespace and
+    // trailing comments (which were consumed during the scan) remain
+    // available for the parent's next iteration. Matches tokenized's
+    // captureUntil which rewinds state.pos past trailing comment tokens.
+    __off = ${trimEndExpr};${buildSlice}
+  }
+}`;
+  const rejectCheck = until.rejectSuffix
+    ? `\nif (${v}.endsWith(${jsString(until.rejectSuffix)})) { state.off = __off; throw new SyntaxError(${jsString(`captured value ends with rejected suffix '${until.rejectSuffix}'`)}); }`
+    : '';
+
+  if (span.name) {
+    const needsOffsets = offsetRefs.has(span.name);
+    valueExpr.set(span.name, v);
+    presenceExpr.set(span.name, `(${v}.length > 0)`);
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${v}_start`);
+      endOffExpr.set(span.name, `__${v}_end`);
+    }
+    const refinementCheck = emitSpanRefinementCheck(span, v, false, 'state.__lastCaptureStart', true);
+    const offsetDecls = needsOffsets
+      ? `\nconst __${v}_start = state.__lastCaptureStart;\nconst __${v}_end = state.__lastCaptureEnd;`
+      : '';
+    return `let ${v} = '';
+${scanCode}${rejectCheck}${refinementCheck}${offsetDecls}`;
+  }
+  return `${scanCode}${rejectCheck}`;
+}
+
+function emitRawUntilSpan(
+  span: ResolvedSpan,
+  rawUntil: Extract<SpanModifier, { kind: 'rawUntil' }>,
+  valueExpr: Map<string, string>,
+  presenceExpr: Map<string, string>,
+  startOffExpr: Map<string, string>,
+  endOffExpr: Map<string, string>,
+  offsetRefs: ReadonlySet<string>,
+  _ctx: Ctx,
+): string {
+  const stops = rawUntil.stops;
+  const ci = rawUntil.caseInsensitive;
+  const v = span.name ? jsIdent(span.name) : '__rawCaptured';
+  const scanCode = emitRawUntilScan(v, stops, ci);
+
+  if (span.name) {
+    const needsOffsets = offsetRefs.has(span.name);
+    valueExpr.set(span.name, v);
+    presenceExpr.set(span.name, `(${v}.length > 0)`);
+    if (needsOffsets) {
+      startOffExpr.set(span.name, `__${v}_start`);
+      endOffExpr.set(span.name, `__${v}_end`);
+    }
+    const offsetDecls = needsOffsets
+      ? `\nconst __${v}_start = state.__lastCaptureStart;\nconst __${v}_end = state.__lastCaptureEnd;`
+      : '';
+    return `let ${v} = '';
+${scanCode}${offsetDecls}`;
+  }
+  return scanCode;
+}
+
+function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseInsensitive: boolean): string {
+  const singleCharStops = stops.filter((s) => s.length === 1);
+  const multiCharStops = stops.filter((s) => s.length >= 2);
+
+  const lines: string[] = [];
+  lines.push(`{
+  const __startOff = __off;
+  let __earliest = __len;`);
+
+  for (const stop of singleCharStops) {
+    const code = stop.charCodeAt(0);
+    if (caseInsensitive && ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a))) {
+      const fold = code | 0x20;
+      lines.push(`  for (let __i = __startOff; __i < __earliest; __i++) {
+    const __c = __input.charCodeAt(__i);
+    const __f = (__c >= 0x41 && __c <= 0x5a) || (__c >= 0x61 && __c <= 0x7a) ? __c | 0x20 : __c;
+    if (__f === ${fold}) { __earliest = __i; break; }
+  }`);
+    } else {
+      lines.push(`  for (let __i = __startOff; __i < __earliest; __i++) {
+    if (__input.charCodeAt(__i) === ${code}) { __earliest = __i; break; }
+  }`);
+    }
+  }
+
+  for (const stop of multiCharStops) {
+    if (caseInsensitive) {
+      lines.push(`  {
+    const __needle = ${jsString(stop)};
+    const __nlen = ${stop.length};
+    outer: for (let __i = __startOff; __i + __nlen <= __earliest; __i++) {
+      for (let __j = 0; __j < __nlen; __j++) {
+        const __ic = __input.charCodeAt(__i + __j);
+        const __nc = __needle.charCodeAt(__j);
+        const __ifold = (__ic >= 0x41 && __ic <= 0x5a) || (__ic >= 0x61 && __ic <= 0x7a) ? __ic | 0x20 : __ic;
+        const __nfold = (__nc >= 0x41 && __nc <= 0x5a) || (__nc >= 0x61 && __nc <= 0x7a) ? __nc | 0x20 : __nc;
+        if (__ifold !== __nfold) continue outer;
+      }
+      __earliest = __i; break;
+    }
+  }`);
+    } else if (stop.length === 2) {
+      const c0 = stop.charCodeAt(0);
+      const c1 = stop.charCodeAt(1);
+      lines.push(`  for (let __i = __startOff; __i + 1 < __earliest; __i++) {
+    if (__input.charCodeAt(__i) === ${c0} && __input.charCodeAt(__i + 1) === ${c1}) { __earliest = __i; break; }
+  }`);
+    } else {
+      const c0 = stop.charCodeAt(0);
+      lines.push(`  {
+    const __needle = ${jsString(stop)};
+    const __nlen = ${stop.length};
+    outer: for (let __i = __startOff; __i + __nlen <= __earliest; __i++) {
+      if (__input.charCodeAt(__i) !== ${c0}) continue;
+      for (let __j = 1; __j < __nlen; __j++) {
+        if (__input.charCodeAt(__i + __j) !== __needle.charCodeAt(__j)) continue outer;
+      }
+      __earliest = __i; break;
+    }
+  }`);
+    }
+  }
+
+  lines.push(`  __off = __earliest;
+  state.__lastCaptureStart = __startOff;
+  state.__lastCaptureEnd = __earliest;
+  ${varName === '__rawCaptured' ? '' : `${varName} = __input.slice(__startOff, __earliest);`}
+}`);
+
+  return lines.join('\n');
+}
+
+// --- Utilities -------------------------------------------------------------
+
+function findModifier<K extends SpanModifier['kind']>(
+  modifiers: ReadonlyArray<SpanModifier>,
+  kind: K,
+): Extract<SpanModifier, { kind: K }> | undefined {
+  for (const m of modifiers) if (m.kind === kind) return m as Extract<SpanModifier, { kind: K }>;
+  return undefined;
+}
+
+function hasModifier(modifiers: ReadonlyArray<SpanModifier>, kind: SpanModifier['kind']): boolean {
+  return modifiers.some((m) => m.kind === kind);
+}
+
+export function parseFnName(nodeType: string, variant: ParseVariant = 'raws'): string {
+  const base = `parse${jsIdent(nodeType)}`;
+  if (variant === 'validate') return `validate${jsIdent(nodeType)}`;
+  return variant === 'fast' ? `${base}Fast` : base;
+}
+
+function indent(s: string, level = 1): string {
+  const pad = '  '.repeat(level);
+  return s.split('\n').map((l) => (l ? pad + l : l)).join('\n');
+}

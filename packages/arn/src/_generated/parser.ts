@@ -5,128 +5,11 @@
 
 
 
-function isCssIdentStart(c: number): boolean {
-  // a-z A-Z _ -
-  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
-}
-function isCssIdentPart(c: number): boolean {
-  return isCssIdentStart(c) || (c >= 48 && c <= 57);
-}
-
-function isDigit(c: number): boolean {
-  return c >= 48 && c <= 57;
-}
-
-function isHexDigit(c: number): boolean {
-  return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
-}
-
-export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
-
-export function tokenize(input: string): Token[] {
-  const tokens: (Token[] & { hasComments?: boolean }) = [];
-  const len = input.length;
-  let i = 0;
-  while (i < len) {
-    const c = input.charCodeAt(i);
-    // whitespace (skip)
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
-    if (input.startsWith("arn", i)) { tokens.push({ type: "arn", value: "arn", start: i, end: i + 3 }); i += 3; continue; }
-
-    switch (c) {
-      case 47: tokens.push({ type: "slash", value: "/", start: i, end: i + 1 }); i++; continue;
-      case 58: tokens.push({ type: "colon", value: ":", start: i, end: i + 1 }); i++; continue;
-    }
-    if (isDigit(c)) {
-      const start = i;
-      while (i < len && isDigit(input.charCodeAt(i))) i++;
-      if (i < len && input.charCodeAt(i) === 0x2e /* . */ && i + 1 < len && isDigit(input.charCodeAt(i + 1))) {
-        i++;
-        while (i < len && isDigit(input.charCodeAt(i))) i++;
-      }
-      const ec = i < len ? input.charCodeAt(i) : 0;
-      if (ec === 0x65 || ec === 0x45 /* e E */) {
-        let j = i + 1;
-        if (j < len && (input.charCodeAt(j) === 0x2b || input.charCodeAt(j) === 0x2d)) j++;
-        if (j < len && isDigit(input.charCodeAt(j))) {
-          i = j;
-          while (i < len && isDigit(input.charCodeAt(i))) i++;
-        }
-      }
-      tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-    if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
-      const start = i;
-      while (i < len) {
-        const c2 = input.charCodeAt(i);
-        if (c2 === 0x5c /* \\ */) {
-          i++;
-          if (i < len && isHexDigit(input.charCodeAt(i))) {
-            // Hex escape: up to 6 hex digits + one optional whitespace
-            let n = 0;
-            while (i < len && n < 6 && isHexDigit(input.charCodeAt(i))) { i++; n++; }
-            if (i < len) {
-              const w = input.charCodeAt(i);
-              if (w === 0x20 || w === 0x09 || w === 0x0a || w === 0x0d) i++;
-            }
-          } else if (i < len) {
-            // Single-char escape: any non-newline char
-            i++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(c2)) break;
-        i++;
-      }
-      // Raw url(...) tokenization: contents are opaque (no comment recognition,
-      // no balanced brackets) until the matching ')'. Strings are tracked so
-      // that a ')' inside a quoted url like url("./image (1).jpg") doesn't
-      // close the url early.
-      if (
-        i - start === 3
-        && i < len
-        && input.charCodeAt(i) === 0x28 /* ( */
-        && (input.charCodeAt(start) | 32) === 0x75 /* u */
-        && (input.charCodeAt(start + 1) | 32) === 0x72 /* r */
-        && (input.charCodeAt(start + 2) | 32) === 0x6c /* l */
-      ) {
-        i++; // consume (
-        while (i < len) {
-          const cu = input.charCodeAt(i);
-          if (cu === 0x29 /* ) */) { i++; break; }
-          if (cu === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-          if (cu === 0x22 /* " */ || cu === 0x27 /* ' */) {
-            const q = cu;
-            i++;
-            while (i < len) {
-              const ch = input.charCodeAt(i);
-              if (ch === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-              if (ch === q) { i++; break; }
-              if (ch === 0x0a || ch === 0x0d) break;
-              i++;
-            }
-            continue;
-          }
-          i++;
-        }
-      }
-      tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-
-    throw new SyntaxError(`Unexpected character '${input[i]}' at position ${i}`);
-  }
-  return tokens;
-}
-
 type State = {
-  readonly tokens: Token[];
-  pos: number;
   readonly input: string;
-  readonly lineStarts: number[];
+  off: number;
   readonly mode: ParseMode;
-  readonly hasComments: boolean;
+  readonly lineStarts: number[];
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -159,9 +42,6 @@ function offsetToPos(state: State, offset: number): SourcePos {
 }
 
 function makeSource(state: State, startOff: number, endOff: number): SourceRange {
-  // PostCSS convention: end.offset is exclusive (one past last consumed char)
-  // but end.line/column refer to the LAST consumed char (inclusive). So we
-  // compute end's line/column from (endOff - 1) and keep offset as-is.
   const start = offsetToPos(state, startOff);
   const end = endOff > startOff
     ? { ...offsetToPos(state, endOff - 1), offset: endOff }
@@ -169,382 +49,46 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
   return { start, end };
 }
 
-// Skip comment tokens between sequential spans. Spans that explicitly
-// expect a comment (cls === 'comment') opt out via the call sites below,
-// so standalone comment captures still work.
-function skipComments(state: State): void {
-  if (!state.hasComments) return;
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
-}
-
-// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
-// .text and the leading/trailing whitespace inside the comment in raws.
-function commentInterior(text: string): string {
-  return text.slice(2, -2).trim();
-}
-
-// Leading whitespace inside a comment's interior (between /* and the first
-// non-whitespace char). For all-whitespace interiors, left captures the
-// entire interior and right is empty — matching PostCSS's convention of
-// not double-counting whitespace.
-function commentLeft(raw: string): string {
-  const inner = raw.slice(2, -2);
-  const m = /^\s*/.exec(inner);
-  return m ? m[0] : '';
-}
-
-// Trailing whitespace inside a comment's interior. Returns '' when the
-// interior is entirely whitespace (left already captured all of it).
-function commentRight(raw: string): string {
-  const inner = raw.slice(2, -2);
-  if (inner.trim() === '') return '';
-  const m = /\s*$/.exec(inner);
-  return m ? m[0] : '';
-}
-
-function tokenValue(_state: State, tok: Token): string {
-  return tok.value;
-}
-
-function expectLiteral(state: State, type: string, value: string): string {
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    throw new SyntaxError(`expected '${value}' at token ${state.pos}`);
-  }
-  state.pos++;
-  return tok.value ?? value;
-}
-
-function consumeOptionalLiteral(state: State, type: string, value: string): string | null {
-  const saved = state.pos;
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    state.pos = saved;
-    return null;
-  }
-  state.pos++;
-  return tok.value ?? value;
-}
-
-function expectClass(state: State, cls: string): string {
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    throw new SyntaxError(`expected token of class '${cls}' at token ${state.pos}`);
-  }
-  state.pos++;
-  return tokenValue(state, tok);
-}
-
-function consumeOptionalClass(state: State, cls: string): string | null {
-  const saved = state.pos;
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    state.pos = saved;
-    return null;
-  }
-  state.pos++;
-  return tokenValue(state, tok);
-}
-
-function requireNoWhitespaceAfterLastToken(state: State): void {
-  const previous = state.tokens[state.pos - 1];
-  const next = state.tokens[state.pos];
-  if (previous === undefined || next === undefined || previous.end !== next.start) {
-    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
-  }
-}
-
-function peekLiteral(state: State, type: string, value: string): boolean {
-  // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
-  // comment sits between the last child and the body terminator, the loop
-  // must do another iteration so parseComment can pick up the comment as a
-  // sibling node rather than the loop exiting and leaving it stranded.
-  const tok = state.tokens[state.pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
-}
-
-function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
-  if (!state.hasComments) return peekLiteral(state, type, value);
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const tok = state.tokens[pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
-}
-
-function nextNonCommentToken(state: State, pos: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos];
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  return state.tokens[pos];
-}
-
-function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos + index];
-  let seen = 0;
-  while (pos < state.tokens.length) {
-    const tok = state.tokens[pos++];
-    if (tok.type === 'comment') continue;
-    if (seen === index) return tok;
-    seen++;
-  }
-  return undefined;
-}
-
-function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
-  const start = state.pos;
-  try {
-    return fn(state);
-  } catch {
-    state.pos = start;
-    return null;
-  }
-}
-
-// Try each role function in order. The first one that succeeds wins.
-// Throws if none succeed (preserves the error from the LAST attempt).
-function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  let lastError: unknown;
-  const start = state.pos;
-  for (const fn of fns) {
-    state.pos = start;
-    try {
-      return fn(state);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new SyntaxError('no role matched');
-}
-
-function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  const start = state.pos;
-  for (const fn of fns) {
-    state.pos = start;
-    try {
-      return fn(state);
-    } catch {
-      // try next
-    }
-  }
-  state.pos = start;
-  return null;
-}
-
-// captureUntil consumes tokens from the current position until it sees a
-// token whose value matches any element of `stops`. When `balanced` is
-// true, bracket pairs () [] {} nest. A closing bracket at depth zero means
-// we've reached the boundary of an enclosing block — stop without consuming
-// it. The returned string is the slice of original source covered by the
-// consumed tokens (optionally trimmed).
-function captureUntil(
-  state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  balanced: boolean,
-  trim: boolean,
-): string {
-  let depth = 0;
-  // Leading comments are absorbed (not part of capture). They typically
-  // belong to raws on the previous sibling — when raws lands they should
-  // be diverted, not silently dropped. Today the body loop's parseComment
-  // pass catches free-floating comments before the capture starts, so this
-  // really only fires when a comment immediately precedes a captured
-  // sub-region (e.g. at-rule params with leading comments).
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
-  const firstIdx = state.pos;
-  const startTok = state.tokens[firstIdx];
-  if (!startTok) {
-    state.__lastCaptureStart = state.input.length;
-    state.__lastCaptureEnd = state.input.length;
-    return '';
-  }
-  while (state.pos < state.tokens.length) {
-    const t = state.tokens[state.pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) break;
-    if (balanced) {
-      if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-      else if (t.value === ')' || t.value === ']' || t.value === '}') {
-        if (depth === 0) break;
-        depth--;
-      }
-    }
-    state.pos++;
-  }
-  // Rewind past trailing comments so they remain available for the next
-  // sibling's parseComment to pick up (e.g. `decl /* trailing */` should
-  // emit a separate Comment node).
-  while (state.pos > firstIdx && state.tokens[state.pos - 1].type === 'comment') {
-    state.pos--;
-  }
-  if (state.pos <= firstIdx) {
-    // No tokens consumed — collapse the offset range to the previous
-    // consumed token's end. This matches PostCSS convention: a gap from
-    // (previous span) to (this empty capture) is '', and the whitespace
-    // sits in the NEXT gap (e.g. `@font-face {` puts the space in
-    // raws.between, not raws.afterName).
-    const here = state.tokens[state.pos - 1]?.end ?? 0;
-    state.__lastCaptureStart = here;
-    state.__lastCaptureEnd = here;
-    return '';
-  }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[state.pos - 1].end;
-  state.__lastCaptureStart = startOff;
-  state.__lastCaptureEnd = endOff;
-
-  // Fold interior comment tokens that have whitespace on either side in
-  // the source. We omit the comment's source range; surrounding whitespace
-  // stays untouched. Token-based — won't accidentally strip /* */ found
-  // inside string tokens (where it isn't a real comment).
-  if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-
-  const omit: Array<[number, number]> = [];
-  for (let i = firstIdx; i < state.pos; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
-  }
-  if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-  let buf = '';
-  let cursor = startOff;
-  for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
-    cursor = e;
-  }
-  buf += state.input.slice(cursor, endOff);
-  return trim ? buf.trim() : buf;
-}
-
-function scanTopLevelBoundary(
-  state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  watch0: string | null,
-  watch1: string | null = null,
-): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
-  let depth = 0;
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const firstIdx = pos;
-  let watchIdx = -1;
-  let watch1Idx = -1;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0) {
-      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
-      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
-      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
-    }
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) break;
-      depth--;
-    }
-    pos++;
-  }
-  let captureEndIdx = pos;
-  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
-  return {
-    firstIdx,
-    stopIdx: pos,
-    captureEndIdx,
-    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
-    watchIdx,
-    watch1Idx,
-  };
-}
-
-function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
-  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
-    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
-    state.__lastCaptureStart = here;
-    state.__lastCaptureEnd = here;
-    return '';
-  }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[endIdx - 1].end;
-  state.__lastCaptureStart = startOff;
-  state.__lastCaptureEnd = endOff;
-
-  if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-
-  const omit: Array<[number, number]> = [];
-  for (let i = firstIdx; i < endIdx; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
-  }
-  if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-  let buf = '';
-  let cursor = startOff;
-  for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
-    cursor = e;
-  }
-  buf += state.input.slice(cursor, endOff);
-  return trim ? buf.trim() : buf;
-}
-
-function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
-  let depth = 0;
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) return t.value;
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) return t.value;
-      depth--;
-    }
-    pos++;
-  }
-  return null;
-}
-
 function isAsciiWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
+}
+
+function isDigit(c: number): boolean {
+  return c >= 48 && c <= 57;
+}
+
+function isHexDigit(c: number): boolean {
+  return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
+}
+
+function isCssIdentStart(c: number): boolean {
+  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
+}
+
+function isCssIdentPart(c: number): boolean {
+  return isCssIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function isJsIdentStart(c: number): boolean {
+  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36;
+}
+
+function isJsIdentPart(c: number): boolean {
+  return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+// Skip whitespace. Always emitted; called between every span where
+// whitespace is allowed (default for whitespace: 'standard' schemas).
+function skipWs(state: State): void {
+  const input = state.input;
+  const len = input.length;
+  let off = state.off;
+  while (off < len) {
+    const c = input.charCodeAt(off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+    break;
+  }
+  state.off = off;
 }
 
 function isHexString(value: string): boolean {
@@ -555,16 +99,69 @@ function isHexString(value: string): boolean {
   return true;
 }
 
-// Attach raws.before to a parsed child. The body loop knows the offset
-// where the previous sibling ended (or where the body's opening token ended
-// for the first child); raws.before is the source slice from that point up
-// to this child's source.start.offset. Children that don't expose source
-// are skipped (e.g. lookahead failures returning null).
-//
-// Root-level first-child special case: PostCSS folds leading file
-// whitespace into the first child's source range (source.start = 0,
-// raws.before = ''). We approximate by detecting prevEnd === 0 with a
-// whitespace-only gap and emitting '' instead of the actual whitespace.
+// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
+// .text and the leading/trailing whitespace inside the comment in raws.
+function commentInterior(text: string): string {
+  return text.slice(2, -2).trim();
+}
+
+function commentLeft(raw: string): string {
+  const inner = raw.slice(2, -2);
+  const match = inner.match(/^\s*/);
+  return match ? match[0] : '';
+}
+
+function commentRight(raw: string): string {
+  const inner = raw.slice(2, -2);
+  if (inner.trim() === '') return '';
+  const match = inner.match(/\s*$/);
+  return match ? match[0] : '';
+}
+
+// Speculate: try fn; on throw rewind state.off and return null. Used for
+// .optional() recursive spans and multi-role dispatch.
+function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
+  const start = state.off;
+  try {
+    return fn(state);
+  } catch {
+    state.off = start;
+    return null;
+  }
+}
+
+function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
+  let lastError: unknown;
+  const start = state.off;
+  for (const fn of fns) {
+    state.off = start;
+    try {
+      return fn(state);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError ?? new SyntaxError('no role matched');
+}
+
+function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
+  const start = state.off;
+  for (const fn of fns) {
+    state.off = start;
+    try {
+      return fn(state);
+    } catch {
+      // try next
+    }
+  }
+  state.off = start;
+  return null;
+}
+
+// Attach raws.before to a parsed child. Used in raws mode for repeated
+// children — the body loop knows where the previous sibling ended (or where
+// the body's opening token ended for the first child); raws.before is the
+// source slice from that point up to this child's source.start.offset.
 function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   if (!child || typeof child !== 'object') return;
   const node = child as { raws?: Record<string, unknown>; source?: { start?: { offset?: number } } };
@@ -579,14 +176,14 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
-function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+function decorateSyntaxError(input: string, error: unknown, state?: State): never {
   if (!(error instanceof SyntaxError)) throw error;
   if (hasSourceFrame(error.message)) throw error;
   const messageOffset = offsetFromMessage(error.message, -1);
   const offset = messageOffset >= 0
     ? messageOffset
-    : tokenPos !== undefined
-    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : state !== undefined
+    ? state.off
     : offsetFromMessage(error.message, input.length);
   throw syntaxErrorWithFrame(input, error.message, offset);
 }
@@ -633,12 +230,6 @@ function hasSourceFrame(message: string): boolean {
   return message.includes('\n') && message.includes(' | ');
 }
 
-function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
-  const tok = tokens[pos] ?? tokens[tokens.length - 1];
-  if (!tok) return fallback;
-  return tokens[pos] ? tok.start : tok.end;
-}
-
 function offsetFromMessage(message: string, fallback: number): number {
   const marker = 'position ';
   const index = message.indexOf(marker);
@@ -657,218 +248,2331 @@ function offsetFromMessage(message: string, fallback: number): number {
 }
 
 function parseArnResource__alt0(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const kind = expectClass(state, "ident");
-
-  const __kind_start = state.tokens[state.pos - 1].start;
-  const __kind_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  const name = expectClass(state, "ident");
-
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  const __kind_s = __off;
+  let kind;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  kind = __input.slice(__kind_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "resource", kind: kind, name: name, separator: ":" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseArnResource__alt1(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const kind = expectClass(state, "ident");
-
-  const __kind_start = state.tokens[state.pos - 1].start;
-  const __kind_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "slash", "/");
-  const name = expectClass(state, "ident");
-
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  const __kind_s = __off;
+  let kind;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  kind = __input.slice(__kind_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "resource", kind: kind, name: name, separator: "/" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseArnResource__alt2(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const name = expectClass(state, "ident");
-
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "resource", name: name };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseArnResource(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
-      return parseArnResource__alt0(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
     }
-    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
-      return parseArnResource__alt1(state);
-    }
-    return parseArnResource__alt2(state);
+    if (!(__peek < __len && (isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek++;
+    while (__peek < __len && (isCssIdentPart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) __peek++;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
   }
-  throw new SyntaxError('no production matched');
+  if (__input.charCodeAt(__peek) === 58) return parseArnResource__alt0(state);
+  if (__input.charCodeAt(__peek) === 47) return parseArnResource__alt1(state);
+  return parseArnResource__alt2(state);
 }
 
 function parseArn(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "arn", "arn");
-  expectLiteral(state, "colon", ":");
-  const partition = expectClass(state, "ident");
-
-  const __partition_start = state.tokens[state.pos - 1].start;
-  const __partition_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  const service = expectClass(state, "ident");
-
-  const __service_start = state.tokens[state.pos - 1].start;
-  const __service_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  const region = expectClass(state, "ident");
-
-  const __region_start = state.tokens[state.pos - 1].start;
-  const __region_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  const account = expectClass(state, "number");
-
-  const __account_start = state.tokens[state.pos - 1].start;
-  const __account_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  if (!(__input.startsWith("arn", __off))) { state.off = __off; throw new SyntaxError("expected " + "arn" + " at position " + __off); }
+  __off += 3;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __partition_s = __off;
+  let partition;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __partition_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __partition_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__partition_s) | 32) === 0x75
+        && (__input.charCodeAt(__partition_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__partition_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  partition = __input.slice(__partition_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __service_s = __off;
+  let service;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __service_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __service_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__service_s) | 32) === 0x75
+        && (__input.charCodeAt(__service_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__service_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  service = __input.slice(__service_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __region_s = __off;
+  let region;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __region_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __region_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__region_s) | 32) === 0x75
+        && (__input.charCodeAt(__region_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__region_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  region = __input.slice(__region_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __account_s = __off;
+  let account;
+  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __account_s);
+    __off++;
+    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
+      __off++;
+      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    }
+    {
+      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
+      if (__ec === 0x65 || __ec === 0x45) {
+        let __j = __off + 1;
+        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
+        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
+          __off = __j;
+          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+        }
+      }
+    }
+  account = __input.slice(__account_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const resource = parseArnResource(state);
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  __off = state.off;
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseArnResourceFast__alt0(state: State): unknown {
-  const kind = expectClass(state, "ident");
-
-  expectLiteral(state, "colon", ":");
-  const name = expectClass(state, "ident");
-
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __kind_s = __off;
+  let kind;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  kind = __input.slice(__kind_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "resource", kind: kind, name: name, separator: ":" };
 }
 
 function parseArnResourceFast__alt1(state: State): unknown {
-  const kind = expectClass(state, "ident");
-
-  expectLiteral(state, "slash", "/");
-  const name = expectClass(state, "ident");
-
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __kind_s = __off;
+  let kind;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  kind = __input.slice(__kind_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "resource", kind: kind, name: name, separator: "/" };
 }
 
 function parseArnResourceFast__alt2(state: State): unknown {
-  const name = expectClass(state, "ident");
-
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "resource", name: name };
 }
 
 function parseArnResourceFast(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
-      return parseArnResourceFast__alt0(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
     }
-    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
-      return parseArnResourceFast__alt1(state);
-    }
-    return parseArnResourceFast__alt2(state);
+    if (!(__peek < __len && (isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek++;
+    while (__peek < __len && (isCssIdentPart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) __peek++;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
   }
-  throw new SyntaxError('no production matched');
+  if (__input.charCodeAt(__peek) === 58) return parseArnResourceFast__alt0(state);
+  if (__input.charCodeAt(__peek) === 47) return parseArnResourceFast__alt1(state);
+  return parseArnResourceFast__alt2(state);
 }
 
 function parseArnFast(state: State): unknown {
-  expectLiteral(state, "arn", "arn");
-  expectLiteral(state, "colon", ":");
-  const partition = expectClass(state, "ident");
-
-  expectLiteral(state, "colon", ":");
-  const service = expectClass(state, "ident");
-
-  expectLiteral(state, "colon", ":");
-  const region = expectClass(state, "ident");
-
-  expectLiteral(state, "colon", ":");
-  const account = expectClass(state, "number");
-
-  expectLiteral(state, "colon", ":");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.startsWith("arn", __off))) { state.off = __off; throw new SyntaxError("expected " + "arn" + " at position " + __off); }
+  __off += 3;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __partition_s = __off;
+  let partition;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __partition_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __partition_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__partition_s) | 32) === 0x75
+        && (__input.charCodeAt(__partition_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__partition_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  partition = __input.slice(__partition_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __service_s = __off;
+  let service;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __service_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __service_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__service_s) | 32) === 0x75
+        && (__input.charCodeAt(__service_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__service_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  service = __input.slice(__service_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __region_s = __off;
+  let region;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __region_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __region_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__region_s) | 32) === 0x75
+        && (__input.charCodeAt(__region_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__region_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  region = __input.slice(__region_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __account_s = __off;
+  let account;
+  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __account_s);
+    __off++;
+    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
+      __off++;
+      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    }
+    {
+      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
+      if (__ec === 0x65 || __ec === 0x45) {
+        let __j = __off + 1;
+        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
+        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
+          __off = __j;
+          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+        }
+      }
+    }
+  account = __input.slice(__account_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const resource = parseArnResourceFast(state);
+  __off = state.off;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
 }
 
 function validateArnResource__alt0(state: State): unknown {
-  const kind = expectClass(state, "ident");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __kind_s = __off;
 
-  expectLiteral(state, "colon", ":");
-  const name = expectClass(state, "ident");
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
 
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
 function validateArnResource__alt1(state: State): unknown {
-  const kind = expectClass(state, "ident");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __kind_s = __off;
 
-  expectLiteral(state, "slash", "/");
-  const name = expectClass(state, "ident");
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __kind_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__kind_s) | 32) === 0x75
+        && (__input.charCodeAt(__kind_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__kind_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
 
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __name_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
 function validateArnResource__alt2(state: State): unknown {
-  const name = expectClass(state, "ident");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __name_s = __off;
 
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
 function validateArnResource(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
-      return validateArnResource__alt0(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
     }
-    else if (__tok1 !== undefined && __tok1.type === "slash" && __tok1.value === "/") {
-      return validateArnResource__alt1(state);
-    }
-    return validateArnResource__alt2(state);
+    if (!(__peek < __len && (isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek++;
+    while (__peek < __len && (isCssIdentPart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) __peek++;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
   }
-  throw new SyntaxError('no production matched');
+  if (__input.charCodeAt(__peek) === 58) return validateArnResource__alt0(state);
+  if (__input.charCodeAt(__peek) === 47) return validateArnResource__alt1(state);
+  return validateArnResource__alt2(state);
 }
 
 function validateArn(state: State): unknown {
-  expectLiteral(state, "arn", "arn");
-  expectLiteral(state, "colon", ":");
-  const partition = expectClass(state, "ident");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.startsWith("arn", __off))) { state.off = __off; throw new SyntaxError("expected " + "arn" + " at position " + __off); }
+  __off += 3;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __partition_s = __off;
 
-  expectLiteral(state, "colon", ":");
-  const service = expectClass(state, "ident");
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __partition_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __partition_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__partition_s) | 32) === 0x75
+        && (__input.charCodeAt(__partition_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__partition_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
 
-  expectLiteral(state, "colon", ":");
-  const region = expectClass(state, "ident");
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __service_s = __off;
 
-  expectLiteral(state, "colon", ":");
-  const account = expectClass(state, "number");
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __service_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __service_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__service_s) | 32) === 0x75
+        && (__input.charCodeAt(__service_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__service_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
 
-  expectLiteral(state, "colon", ":");
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __region_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __region_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __region_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__region_s) | 32) === 0x75
+        && (__input.charCodeAt(__region_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__region_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __account_s = __off;
+
+  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __account_s);
+    __off++;
+    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
+      __off++;
+      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+    }
+    {
+      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
+      if (__ec === 0x65 || __ec === 0x45) {
+        let __j = __off + 1;
+        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
+        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
+          __off = __j;
+          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   validateArnResource(state);
+  __off = state.off;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
@@ -1114,33 +2818,24 @@ function validateDirectFast(input: string): void {
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (mode === 'fast') return parseDirectFast(input);
-  let tokens: Token[];
-  try {
-    tokens = tokenize(input);
-  } catch (error) {
-    throw decorateSyntaxError(input, error);
-  }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
-  const hasComments = tokens.hasComments === true;
   const state: State = {
-    tokens,
-    pos: 0,
     input,
-    lineStarts,
+    off: 0,
     mode,
-    hasComments,
+    lineStarts,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     const result = mode === 'raws' ? parseArn(state) : parseArnFast(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.off !== input.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
     }
     return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -1153,30 +2848,22 @@ export function validate(input: string, options?: ParseOptions): void {
   }
   validateDirectFast(input);
   return;
-  let tokens: Token[];
-  try {
-    tokens = tokenize(input);
-  } catch (error) {
-    throw decorateSyntaxError(input, error);
-  }
   const state: State = {
-    tokens,
-    pos: 0,
     input,
-    lineStarts: [],
+    off: 0,
     mode: 'fast',
-    hasComments: tokens.hasComments === true,
+    lineStarts: [],
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     validateArn(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.off !== input.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
     }
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -1188,11 +2875,6 @@ export function validate(input: string, options?: ParseOptions): void {
   module: "@parser2/arn",
   exportName: 'validate',
 };
-
-export function countTokens(input: string): number {
-  return tokenize(input).length;
-}
-
 
 export function stringify(_value: unknown): string {
   throw new Error('stringify: not yet implemented for this schema slice');

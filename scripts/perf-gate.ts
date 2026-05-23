@@ -166,12 +166,6 @@ function createCases(name: PackageName): PerfCase[] {
       const input = generateCss(kb * 1024);
       return [
         {
-          name: `tokenize:${kb}KB`,
-          kb,
-          input,
-          run: (api, css) => (api.countTokens as (input: string) => number)(css),
-        },
-        {
           name: `parse:${kb}KB`,
           kb,
           input,
@@ -212,12 +206,6 @@ function createCases(name: PackageName): PerfCase[] {
       const input = generateHtml(kb * 1024);
       return [
         {
-          name: `tokenize:${kb}KB`,
-          kb,
-          input,
-          run: (api, html) => (api.tokenize as (input: string) => readonly unknown[])(html),
-        },
-        {
           name: `parse:${kb}KB`,
           kb,
           input,
@@ -253,12 +241,6 @@ function createCases(name: PackageName): PerfCase[] {
       const input = generateMarkdown(kb * 1024);
       return [
         {
-          name: `tokenize:${kb}KB`,
-          kb,
-          input,
-          run: (api, markdown) => (api.tokenize as (input: string) => readonly unknown[])(markdown),
-        },
-        {
           name: `parse:${kb}KB`,
           kb,
           input,
@@ -282,12 +264,6 @@ function createCases(name: PackageName): PerfCase[] {
     return sizes.flatMap((kb) => {
       const input = generateProto(kb * 1024);
       return [
-        {
-          name: `tokenize:${kb}KB`,
-          kb,
-          input,
-          run: (api, proto) => (api.tokenize as (input: string) => readonly unknown[])(proto),
-        },
         {
           name: `parse:${kb}KB`,
           kb,

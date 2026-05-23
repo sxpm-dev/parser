@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, tokenize } from '../src/index.ts';
+import { parse } from '../src/index.ts';
 
 // Phase-A+B smoke test, updated for named punctuators + .until() captures.
 //
@@ -24,20 +24,6 @@ function strip(value: unknown): unknown {
 function parseStripped(input: string): unknown {
   return strip(parse(input));
 }
-
-test('tokenizes the smoke-test slice with named punctuators', () => {
-  assert.deepEqual(
-    tokenize('foo { color: red }').map((t) => [t.type, t.value]),
-    [
-      ['ident', 'foo'],
-      ['lbrace', '{'],
-      ['ident', 'color'],
-      ['colon', ':'],
-      ['ident', 'red'],
-      ['rbrace', '}'],
-    ],
-  );
-});
 
 test('parses single rule with simple selector', () => {
   assert.deepEqual(parseStripped('foo { color: red }'), {
@@ -205,7 +191,7 @@ test('parses strings inside values', () => {
   });
 });
 
-test('rejects unrecognized characters in tokenizer', () => {
+test('rejects unrecognized characters', () => {
   // Backtick is not whitespace, not a declared punctuator/delim, not a class start.
   assert.throws(() => parseStripped('foo { color: `red` }'), SyntaxError);
 });

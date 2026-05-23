@@ -1,17 +1,28 @@
 // Inline runtime helpers emitted into every generated parser. Keep this tiny;
 // each helper exists because the generated parser body refers to it.
 //
-// Literal helpers take both `type` and `value` so that named punctuator
-// classes (e.g. `delim` covering '.', '+', '>') can still match a specific
-// literal at a span site.
+// Tokens are stored as a Structure-of-Arrays: parallel `types` (Uint16Array,
+// integer ID per token-class/literal-type), `starts` and `ends` (Uint32Array,
+// byte offsets). `count` is the number of tokens scanned. This replaces a
+// `Token[]` of `{type, value, start, end}` object literals — the same parser
+// without 200k+ object allocations per parse cycle. Helpers compare against
+// integer IDs, which V8 turns into one machine instruction each.
+//
+// `value` is reconstructed on demand: `input.slice(starts[pos], ends[pos])`.
+// For known-literal token types codegen can skip even that — the literal
+// text is a compile-time constant.
 
 export const PARSE_RUNTIME = `type State = {
-  readonly tokens: Token[];
+  readonly types: Uint16Array;
+  readonly starts: Uint32Array;
+  readonly ends: Uint32Array;
+  readonly count: number;
   pos: number;
   readonly input: string;
   readonly lineStarts: number[];
   readonly mode: ParseMode;
   readonly hasComments: boolean;
+  readonly commentTypeId: number;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -55,11 +66,12 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
 }
 
 // Skip comment tokens between sequential spans. Spans that explicitly
-// expect a comment (cls === 'comment') opt out via the call sites below,
-// so standalone comment captures still work.
+// expect a comment opt out via the call sites below, so standalone comment
+// captures still work.
 function skipComments(state: State): void {
   if (!state.hasComments) return;
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) {
     state.pos++;
   }
 }
@@ -89,95 +101,149 @@ function commentRight(raw: string): string {
   return m ? m[0] : '';
 }
 
-function tokenValue(_state: State, tok: Token): string {
-  return tok.value;
+// Reconstruct a token's text value from input + offset arrays. Allocates a
+// new string. Avoid on the hot path: most call sites compare against known
+// literals via integer type IDs and never need the value.
+function tokenValue(state: State, pos: number): string {
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
-function expectLiteral(state: State, type: string, value: string): string {
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    throw new SyntaxError(\`expected '\${value}' at token \${state.pos}\`);
+function tokenEquals(state: State, pos: number, literal: string): boolean {
+  const start = state.starts[pos];
+  const end = state.ends[pos];
+  if (end - start !== literal.length) return false;
+  const input = state.input;
+  for (let i = 0; i < literal.length; i++) {
+    if (input.charCodeAt(start + i) !== literal.charCodeAt(i)) return false;
   }
-  state.pos++;
-  return tok.value ?? value;
+  return true;
 }
 
-function consumeOptionalLiteral(state: State, type: string, value: string): string | null {
+// Single-literal-type variants: when only one literal in the schema maps to
+// the given type ID, a type compare is sufficient (no value check needed).
+function expectLiteralId(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(\`expected '\${literal}' at token \${pos}\`);
+  }
+  state.pos = pos + 1;
+  return literal;
+}
+
+function consumeOptionalLiteralId(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
   skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tok.value ?? value;
+  state.pos = pos + 1;
+  return literal;
 }
 
-function expectClass(state: State, cls: string): string {
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    throw new SyntaxError(\`expected token of class '\${cls}' at token \${state.pos}\`);
+// Multi-literal-type variants: type ID alone isn't enough (e.g. HTML's
+// 'delim' covers many single chars). Verify the literal text without
+// allocating a slice — compare each char of input directly.
+function expectLiteralIdValue(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
+    throw new SyntaxError(\`expected '\${literal}' at token \${pos}\`);
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
 }
 
-function consumeOptionalClass(state: State, cls: string): string | null {
+function consumeOptionalLiteralIdValue(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
+}
+
+function expectClassId(state: State, typeId: number, className: string): string {
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(\`expected token of class '\${className}' at token \${pos}\`);
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
+}
+
+function consumeOptionalClassId(state: State, typeId: number): string | null {
+  const saved = state.pos;
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    state.pos = saved;
+    return null;
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
 function requireNoWhitespaceAfterLastToken(state: State): void {
-  const previous = state.tokens[state.pos - 1];
-  const next = state.tokens[state.pos];
-  if (previous === undefined || next === undefined || previous.end !== next.start) {
-    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  const pos = state.pos;
+  if (pos === 0 || pos >= state.count || state.ends[pos - 1] !== state.starts[pos]) {
+    throw new SyntaxError('expected no whitespace after token ' + (pos - 1));
   }
 }
 
-function peekLiteral(state: State, type: string, value: string): boolean {
-  // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
-  // comment sits between the last child and the body terminator, the loop
-  // must do another iteration so parseComment can pick up the comment as a
-  // sibling node rather than the loop exiting and leaving it stranded.
-  const tok = state.tokens[state.pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+// Single-literal-type peek — type ID alone is enough.
+function peekLiteralId(state: State, typeId: number): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
-  if (!state.hasComments) return peekLiteral(state, type, value);
+function peekLiteralIdValue(state: State, typeId: number, literal: string): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
+}
+
+function peekLiteralIdAfterComments(state: State, typeId: number): boolean {
+  if (!state.hasComments) return peekLiteralId(state, typeId);
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const tok = state.tokens[pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function nextNonCommentToken(state: State, pos: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos];
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  return state.tokens[pos];
+function peekLiteralIdValueAfterComments(state: State, typeId: number, literal: string): boolean {
+  if (!state.hasComments) return peekLiteralIdValue(state, typeId, literal);
+  let pos = state.pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
 }
 
-function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos + index];
+// Skip comment tokens starting at \`pos\`; return the resulting index.
+function nextNonCommentPos(state: State, pos: number): number {
+  if (!state.hasComments) return pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos;
+}
+
+function nthNonCommentPos(state: State, pos: number, index: number): number {
+  if (!state.hasComments) return pos + index;
   let seen = 0;
-  while (pos < state.tokens.length) {
-    const tok = state.tokens[pos++];
-    if (tok.type === 'comment') continue;
-    if (seen === index) return tok;
-    seen++;
+  const cid = state.commentTypeId;
+  while (pos < state.count) {
+    if (state.types[pos] !== cid) {
+      if (seen === index) return pos;
+      seen++;
+    }
+    pos++;
   }
-  return undefined;
+  return state.count;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -221,193 +287,190 @@ function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[
 }
 
 // captureUntil consumes tokens from the current position until it sees a
-// token whose value matches any element of \`stops\`. When \`balanced\` is
-// true, bracket pairs () [] {} nest. A closing bracket at depth zero means
-// we've reached the boundary of an enclosing block — stop without consuming
-// it. The returned string is the slice of original source covered by the
-// consumed tokens (optionally trimmed).
+// token whose type ID matches \`stopId0..2\` (-1 = absent slot). Multi-literal
+// types (e.g. HTML's 'delim' covering many single chars) require a value
+// check too — codegen passes the literal text via \`stopVal0..2\`; empty
+// string = single-literal type (no value check needed).
+//
+// When \`balanced\` is true, bracket pairs () [] {} nest, tracked by leading
+// charcode. A closing bracket at depth zero means we've reached the boundary
+// of an enclosing block — stop without consuming it. Returns the source
+// slice covering consumed tokens (optionally trimmed).
 function captureUntil(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
   balanced: boolean,
   trim: boolean,
 ): string {
   let depth = 0;
-  // Leading comments are absorbed (not part of capture). They typically
-  // belong to raws on the previous sibling — when raws lands they should
-  // be diverted, not silently dropped. Today the body loop's parseComment
-  // pass catches free-floating comments before the capture starts, so this
-  // really only fires when a comment immediately precedes a captured
-  // sub-region (e.g. at-rule params with leading comments).
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) state.pos++;
   const firstIdx = state.pos;
-  const startTok = state.tokens[firstIdx];
-  if (!startTok) {
+  if (firstIdx >= state.count) {
     state.__lastCaptureStart = state.input.length;
     state.__lastCaptureEnd = state.input.length;
     return '';
   }
-  while (state.pos < state.tokens.length) {
-    const t = state.tokens[state.pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) break;
+  const input = state.input;
+  while (state.pos < state.count) {
+    const t = state.types[state.pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, state.pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, state.pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, state.pos, stopVal2))) break;
+    }
     if (balanced) {
-      if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-      else if (t.value === ')' || t.value === ']' || t.value === '}') {
+      const c = input.charCodeAt(state.starts[state.pos]);
+      if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === 0x7b /* { */) depth++;
+      else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === 0x7d /* } */) {
         if (depth === 0) break;
         depth--;
       }
     }
     state.pos++;
   }
-  // Rewind past trailing comments so they remain available for the next
-  // sibling's parseComment to pick up (e.g. \`decl /* trailing */\` should
-  // emit a separate Comment node).
-  while (state.pos > firstIdx && state.tokens[state.pos - 1].type === 'comment') {
-    state.pos--;
-  }
+  while (state.pos > firstIdx && state.types[state.pos - 1] === cid) state.pos--;
   if (state.pos <= firstIdx) {
-    // No tokens consumed — collapse the offset range to the previous
-    // consumed token's end. This matches PostCSS convention: a gap from
-    // (previous span) to (this empty capture) is '', and the whitespace
-    // sits in the NEXT gap (e.g. \`@font-face {\` puts the space in
-    // raws.between, not raws.afterName).
-    const here = state.tokens[state.pos - 1]?.end ?? 0;
+    const here = state.pos > 0 ? state.ends[state.pos - 1] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[state.pos - 1].end;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[state.pos - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
-  // Fold interior comment tokens that have whitespace on either side in
-  // the source. We omit the comment's source range; surrounding whitespace
-  // stays untouched. Token-based — won't accidentally strip /* */ found
-  // inside string tokens (where it isn't a real comment).
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < state.pos; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
 function scanTopLevelBoundary(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  watch0: string | null,
-  watch1: string | null = null,
-): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+  watchId0: number, watchVal0: string,
+  watchId1: number, watchVal1: string,
+): { firstIdx: number; stopIdx: number; captureEndIdx: number; stopId: number; watchIdx: number; watch1Idx: number } {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
   const firstIdx = pos;
   let watchIdx = -1;
   let watch1Idx = -1;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
     if (depth === 0) {
-      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
-      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
-      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
+      if (watchIdx < 0 && watchId0 !== -1 && t === watchId0 && (watchVal0 === '' || tokenEquals(state, pos, watchVal0))) watchIdx = pos;
+      if (watch1Idx < 0 && watchId1 !== -1 && t === watchId1 && (watchVal1 === '' || tokenEquals(state, pos, watchVal1))) watch1Idx = pos;
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) break;
     }
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
       if (depth === 0) break;
       depth--;
     }
     pos++;
   }
   let captureEndIdx = pos;
-  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
+  while (captureEndIdx > firstIdx && state.types[captureEndIdx - 1] === cid) captureEndIdx--;
   return {
     firstIdx,
     stopIdx: pos,
     captureEndIdx,
-    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
+    stopId: pos < state.count ? state.types[pos] : -1,
     watchIdx,
     watch1Idx,
   };
 }
 
 function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
-  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
-    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
+  if (firstIdx >= state.count || endIdx <= firstIdx) {
+    const here = firstIdx > 0 ? state.ends[Math.max(0, firstIdx - 1)] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[endIdx - 1].end;
+  const input = state.input;
+  const cid = state.commentTypeId;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[endIdx - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < endIdx; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
@@ -415,28 +478,14 @@ function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim:
 // looking for the earliest occurrence of any literal in stops. Returns
 // the source slice between current position and the matched stop. State
 // advances to the first token whose start offset is at or past the stop.
-// Used by .rawUntil() modifier for raw-text element bodies (script/style)
-// and unquoted attribute values that can contain arbitrary characters.
-//
-// Performance notes (driven by the html package's huge-page profile):
-//   - The common case is many small captures; we MUST avoid per-call work
-//     that scales with the input size.
-//   - Single-char stops: tight charcode loop. No allocation, no indexOf
-//     scan-to-end on misses.
-//   - Multi-char stops: native indexOf bounded by the running minimum so
-//     later misses don't scan past an earlier hit.
-//   - Case-insensitive: char-by-char ASCII case fold; do NOT lowercase
-//     the input (that allocates an O(input.length) string per call).
 function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
-  const startOff = state.pos < state.tokens.length
-    ? state.tokens[state.pos].start
+  const startOff = state.pos < state.count
+    ? state.starts[state.pos]
     : state.input.length;
   const input = state.input;
   const inputLen = input.length;
   let earliest = inputLen;
 
-  // Partition stops into single-char and multi-char. Both loops short-
-  // circuit against \`earliest\` so we never scan past a found candidate.
   for (let s = 0; s < stops.length; s++) {
     const stop = stops[s];
     if (stop.length !== 1) continue;
@@ -455,7 +504,7 @@ function captureRawUntil(state: State, stops: readonly string[], caseInsensitive
     if (idx !== -1 && idx < earliest) earliest = idx;
   }
 
-  while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
+  while (state.pos < state.count && state.starts[state.pos] < earliest) {
     state.pos++;
   }
   state.__lastCaptureStart = startOff;
@@ -529,21 +578,33 @@ function indexOfCaseInsensitive(input: string, needle: string, from: number, lim
   return -1;
 }
 
-function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
+function nextTopLevelStopId(
+  state: State,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+): number {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) return t.value;
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) return t.value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) return t;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) return t;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) return t;
+    }
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
+      if (depth === 0) return t;
       depth--;
     }
     pos++;
   }
-  return null;
+  return -1;
 }
 
 function isAsciiWs(c: number): boolean {
@@ -582,14 +643,14 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
-function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+function decorateSyntaxError(input: string, error: unknown, state?: State): never {
   if (!(error instanceof SyntaxError)) throw error;
   if (hasSourceFrame(error.message)) throw error;
   const messageOffset = offsetFromMessage(error.message, -1);
   const offset = messageOffset >= 0
     ? messageOffset
-    : tokenPos !== undefined
-    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : state !== undefined
+    ? stateTokenOffset(state, input.length)
     : offsetFromMessage(error.message, input.length);
   throw syntaxErrorWithFrame(input, error.message, offset);
 }
@@ -636,10 +697,11 @@ function hasSourceFrame(message: string): boolean {
   return message.includes('\\n') && message.includes(' | ');
 }
 
-function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
-  const tok = tokens[pos] ?? tokens[tokens.length - 1];
-  if (!tok) return fallback;
-  return tokens[pos] ? tok.start : tok.end;
+function stateTokenOffset(state: State, fallback: number): number {
+  const pos = state.pos;
+  if (pos < state.count) return state.starts[pos];
+  if (state.count > 0) return state.ends[state.count - 1];
+  return fallback;
 }
 
 function offsetFromMessage(message: string, fallback: number): number {

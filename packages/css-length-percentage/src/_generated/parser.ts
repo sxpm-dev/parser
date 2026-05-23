@@ -23,9 +23,42 @@ function isHexDigit(c: number): boolean {
 
 export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
 
-export function tokenize(input: string): Token[] {
-  const tokens: (Token[] & { hasComments?: boolean }) = [];
+const __TYPE_ID_DELIM = 0;
+const __TYPE_ID_IDENT = 1;
+const __TYPE_ID_LPAREN = 2;
+const __TYPE_ID_NUMBER = 3;
+const __TYPE_ID_PERCENT = 4;
+const __TYPE_ID_RPAREN = 5;
+const __TYPE_ID_STRING = 6;
+
+const __TYPE_NAMES_BY_ID: readonly string[] = ["delim","ident","lparen","number","percent","rparen","string"];
+const __COMMENT_TYPE_ID = -1;
+
+type TokenizerOutput = {
+  types: Uint16Array;
+  starts: Uint32Array;
+  ends: Uint32Array;
+  count: number;
+  hasComments: boolean;
+};
+
+// Runs the scanner over `input` and returns the populated typed arrays.
+// Capacity grows geometrically — empirical token density is ~0.2 tokens
+// per source byte for ASCII-heavy markup; `length >> 2` is a safe start.
+function __tokenize(input: string): TokenizerOutput {
   const len = input.length;
+  let capacity = len > 256 ? len >> 2 : 64;
+  let types = new Uint16Array(capacity);
+  let starts = new Uint32Array(capacity);
+  let ends = new Uint32Array(capacity);
+  let count = 0;
+  let hasComments = false;
+  const __grow = (): void => {
+    capacity = capacity * 2;
+    const t2 = new Uint16Array(capacity); t2.set(types); types = t2;
+    const s2 = new Uint32Array(capacity); s2.set(starts); starts = s2;
+    const e2 = new Uint32Array(capacity); e2.set(ends); ends = e2;
+  };
   let i = 0;
   while (i < len) {
     const c = input.charCodeAt(i);
@@ -34,14 +67,14 @@ export function tokenize(input: string): Token[] {
 
 
     switch (c) {
-      case 37: tokens.push({ type: "percent", value: "%", start: i, end: i + 1 }); i++; continue;
-      case 40: tokens.push({ type: "lparen", value: "(", start: i, end: i + 1 }); i++; continue;
-      case 41: tokens.push({ type: "rparen", value: ")", start: i, end: i + 1 }); i++; continue;
-      case 42: tokens.push({ type: "delim", value: "*", start: i, end: i + 1 }); i++; continue;
-      case 43: tokens.push({ type: "delim", value: "+", start: i, end: i + 1 }); i++; continue;
-      case 44: tokens.push({ type: "delim", value: ",", start: i, end: i + 1 }); i++; continue;
-      case 45: tokens.push({ type: "delim", value: "-", start: i, end: i + 1 }); i++; continue;
-      case 47: tokens.push({ type: "delim", value: "/", start: i, end: i + 1 }); i++; continue;
+      case 37: if (count === capacity) __grow(); types[count] = 4; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 40: if (count === capacity) __grow(); types[count] = 2; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 41: if (count === capacity) __grow(); types[count] = 5; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 42: if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 43: if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 44: if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 45: if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 47: if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
     }
     if (isDigit(c)) {
       const start = i;
@@ -59,7 +92,7 @@ export function tokenize(input: string): Token[] {
           while (i < len && isDigit(input.charCodeAt(i))) i++;
         }
       }
-      tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
+      if (count === capacity) __grow(); types[count] = 3; starts[count] = start; ends[count] = i; count++;
       continue;
     }
     if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
@@ -73,7 +106,7 @@ export function tokenize(input: string): Token[] {
         if (ch === 0x0a || ch === 0x0d) { break; }
         i++;
       }
-      tokens.push({ type: 'string', value: input.slice(start, i), start, end: i });
+      if (count === capacity) __grow(); types[count] = 6; starts[count] = start; ends[count] = i; count++;
       continue;
     }
     if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
@@ -131,22 +164,37 @@ export function tokenize(input: string): Token[] {
           i++;
         }
       }
-      tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+      if (count === capacity) __grow(); types[count] = 1; starts[count] = start; ends[count] = i; count++;
       continue;
     }
 
     throw new SyntaxError(`Unexpected character '${input[i]}' at position ${i}`);
   }
+  return { types, starts, ends, count, hasComments };
+}
+
+export function tokenize(input: string): Token[] {
+  const out = __tokenize(input);
+  const tokens: Token[] = new Array(out.count);
+  for (let i = 0; i < out.count; i++) {
+    const s = out.starts[i];
+    const e = out.ends[i];
+    tokens[i] = { type: __TYPE_NAMES_BY_ID[out.types[i]], value: input.slice(s, e), start: s, end: e };
+  }
   return tokens;
 }
 
 type State = {
-  readonly tokens: Token[];
+  readonly types: Uint16Array;
+  readonly starts: Uint32Array;
+  readonly ends: Uint32Array;
+  readonly count: number;
   pos: number;
   readonly input: string;
   readonly lineStarts: number[];
   readonly mode: ParseMode;
   readonly hasComments: boolean;
+  readonly commentTypeId: number;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -190,11 +238,12 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
 }
 
 // Skip comment tokens between sequential spans. Spans that explicitly
-// expect a comment (cls === 'comment') opt out via the call sites below,
-// so standalone comment captures still work.
+// expect a comment opt out via the call sites below, so standalone comment
+// captures still work.
 function skipComments(state: State): void {
   if (!state.hasComments) return;
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) {
     state.pos++;
   }
 }
@@ -224,95 +273,149 @@ function commentRight(raw: string): string {
   return m ? m[0] : '';
 }
 
-function tokenValue(_state: State, tok: Token): string {
-  return tok.value;
+// Reconstruct a token's text value from input + offset arrays. Allocates a
+// new string. Avoid on the hot path: most call sites compare against known
+// literals via integer type IDs and never need the value.
+function tokenValue(state: State, pos: number): string {
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
-function expectLiteral(state: State, type: string, value: string): string {
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    throw new SyntaxError(`expected '${value}' at token ${state.pos}`);
+function tokenEquals(state: State, pos: number, literal: string): boolean {
+  const start = state.starts[pos];
+  const end = state.ends[pos];
+  if (end - start !== literal.length) return false;
+  const input = state.input;
+  for (let i = 0; i < literal.length; i++) {
+    if (input.charCodeAt(start + i) !== literal.charCodeAt(i)) return false;
   }
-  state.pos++;
-  return tok.value ?? value;
+  return true;
 }
 
-function consumeOptionalLiteral(state: State, type: string, value: string): string | null {
+// Single-literal-type variants: when only one literal in the schema maps to
+// the given type ID, a type compare is sufficient (no value check needed).
+function expectLiteralId(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(`expected '${literal}' at token ${pos}`);
+  }
+  state.pos = pos + 1;
+  return literal;
+}
+
+function consumeOptionalLiteralId(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
   skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tok.value ?? value;
+  state.pos = pos + 1;
+  return literal;
 }
 
-function expectClass(state: State, cls: string): string {
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    throw new SyntaxError(`expected token of class '${cls}' at token ${state.pos}`);
+// Multi-literal-type variants: type ID alone isn't enough (e.g. HTML's
+// 'delim' covers many single chars). Verify the literal text without
+// allocating a slice — compare each char of input directly.
+function expectLiteralIdValue(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
+    throw new SyntaxError(`expected '${literal}' at token ${pos}`);
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
 }
 
-function consumeOptionalClass(state: State, cls: string): string | null {
+function consumeOptionalLiteralIdValue(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
+}
+
+function expectClassId(state: State, typeId: number, className: string): string {
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(`expected token of class '${className}' at token ${pos}`);
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
+}
+
+function consumeOptionalClassId(state: State, typeId: number): string | null {
+  const saved = state.pos;
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    state.pos = saved;
+    return null;
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
 function requireNoWhitespaceAfterLastToken(state: State): void {
-  const previous = state.tokens[state.pos - 1];
-  const next = state.tokens[state.pos];
-  if (previous === undefined || next === undefined || previous.end !== next.start) {
-    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  const pos = state.pos;
+  if (pos === 0 || pos >= state.count || state.ends[pos - 1] !== state.starts[pos]) {
+    throw new SyntaxError('expected no whitespace after token ' + (pos - 1));
   }
 }
 
-function peekLiteral(state: State, type: string, value: string): boolean {
-  // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
-  // comment sits between the last child and the body terminator, the loop
-  // must do another iteration so parseComment can pick up the comment as a
-  // sibling node rather than the loop exiting and leaving it stranded.
-  const tok = state.tokens[state.pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+// Single-literal-type peek — type ID alone is enough.
+function peekLiteralId(state: State, typeId: number): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
-  if (!state.hasComments) return peekLiteral(state, type, value);
+function peekLiteralIdValue(state: State, typeId: number, literal: string): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
+}
+
+function peekLiteralIdAfterComments(state: State, typeId: number): boolean {
+  if (!state.hasComments) return peekLiteralId(state, typeId);
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const tok = state.tokens[pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function nextNonCommentToken(state: State, pos: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos];
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  return state.tokens[pos];
+function peekLiteralIdValueAfterComments(state: State, typeId: number, literal: string): boolean {
+  if (!state.hasComments) return peekLiteralIdValue(state, typeId, literal);
+  let pos = state.pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
 }
 
-function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos + index];
+// Skip comment tokens starting at `pos`; return the resulting index.
+function nextNonCommentPos(state: State, pos: number): number {
+  if (!state.hasComments) return pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos;
+}
+
+function nthNonCommentPos(state: State, pos: number, index: number): number {
+  if (!state.hasComments) return pos + index;
   let seen = 0;
-  while (pos < state.tokens.length) {
-    const tok = state.tokens[pos++];
-    if (tok.type === 'comment') continue;
-    if (seen === index) return tok;
-    seen++;
+  const cid = state.commentTypeId;
+  while (pos < state.count) {
+    if (state.types[pos] !== cid) {
+      if (seen === index) return pos;
+      seen++;
+    }
+    pos++;
   }
-  return undefined;
+  return state.count;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -356,193 +459,190 @@ function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[
 }
 
 // captureUntil consumes tokens from the current position until it sees a
-// token whose value matches any element of `stops`. When `balanced` is
-// true, bracket pairs () [] {} nest. A closing bracket at depth zero means
-// we've reached the boundary of an enclosing block — stop without consuming
-// it. The returned string is the slice of original source covered by the
-// consumed tokens (optionally trimmed).
+// token whose type ID matches `stopId0..2` (-1 = absent slot). Multi-literal
+// types (e.g. HTML's 'delim' covering many single chars) require a value
+// check too — codegen passes the literal text via `stopVal0..2`; empty
+// string = single-literal type (no value check needed).
+//
+// When `balanced` is true, bracket pairs () [] {} nest, tracked by leading
+// charcode. A closing bracket at depth zero means we've reached the boundary
+// of an enclosing block — stop without consuming it. Returns the source
+// slice covering consumed tokens (optionally trimmed).
 function captureUntil(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
   balanced: boolean,
   trim: boolean,
 ): string {
   let depth = 0;
-  // Leading comments are absorbed (not part of capture). They typically
-  // belong to raws on the previous sibling — when raws lands they should
-  // be diverted, not silently dropped. Today the body loop's parseComment
-  // pass catches free-floating comments before the capture starts, so this
-  // really only fires when a comment immediately precedes a captured
-  // sub-region (e.g. at-rule params with leading comments).
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) state.pos++;
   const firstIdx = state.pos;
-  const startTok = state.tokens[firstIdx];
-  if (!startTok) {
+  if (firstIdx >= state.count) {
     state.__lastCaptureStart = state.input.length;
     state.__lastCaptureEnd = state.input.length;
     return '';
   }
-  while (state.pos < state.tokens.length) {
-    const t = state.tokens[state.pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) break;
+  const input = state.input;
+  while (state.pos < state.count) {
+    const t = state.types[state.pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, state.pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, state.pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, state.pos, stopVal2))) break;
+    }
     if (balanced) {
-      if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-      else if (t.value === ')' || t.value === ']' || t.value === '}') {
+      const c = input.charCodeAt(state.starts[state.pos]);
+      if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === 0x7b /* { */) depth++;
+      else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === 0x7d /* } */) {
         if (depth === 0) break;
         depth--;
       }
     }
     state.pos++;
   }
-  // Rewind past trailing comments so they remain available for the next
-  // sibling's parseComment to pick up (e.g. `decl /* trailing */` should
-  // emit a separate Comment node).
-  while (state.pos > firstIdx && state.tokens[state.pos - 1].type === 'comment') {
-    state.pos--;
-  }
+  while (state.pos > firstIdx && state.types[state.pos - 1] === cid) state.pos--;
   if (state.pos <= firstIdx) {
-    // No tokens consumed — collapse the offset range to the previous
-    // consumed token's end. This matches PostCSS convention: a gap from
-    // (previous span) to (this empty capture) is '', and the whitespace
-    // sits in the NEXT gap (e.g. `@font-face {` puts the space in
-    // raws.between, not raws.afterName).
-    const here = state.tokens[state.pos - 1]?.end ?? 0;
+    const here = state.pos > 0 ? state.ends[state.pos - 1] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[state.pos - 1].end;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[state.pos - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
-  // Fold interior comment tokens that have whitespace on either side in
-  // the source. We omit the comment's source range; surrounding whitespace
-  // stays untouched. Token-based — won't accidentally strip /* */ found
-  // inside string tokens (where it isn't a real comment).
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < state.pos; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
 function scanTopLevelBoundary(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  watch0: string | null,
-  watch1: string | null = null,
-): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+  watchId0: number, watchVal0: string,
+  watchId1: number, watchVal1: string,
+): { firstIdx: number; stopIdx: number; captureEndIdx: number; stopId: number; watchIdx: number; watch1Idx: number } {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
   const firstIdx = pos;
   let watchIdx = -1;
   let watch1Idx = -1;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
     if (depth === 0) {
-      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
-      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
-      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
+      if (watchIdx < 0 && watchId0 !== -1 && t === watchId0 && (watchVal0 === '' || tokenEquals(state, pos, watchVal0))) watchIdx = pos;
+      if (watch1Idx < 0 && watchId1 !== -1 && t === watchId1 && (watchVal1 === '' || tokenEquals(state, pos, watchVal1))) watch1Idx = pos;
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) break;
     }
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
       if (depth === 0) break;
       depth--;
     }
     pos++;
   }
   let captureEndIdx = pos;
-  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
+  while (captureEndIdx > firstIdx && state.types[captureEndIdx - 1] === cid) captureEndIdx--;
   return {
     firstIdx,
     stopIdx: pos,
     captureEndIdx,
-    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
+    stopId: pos < state.count ? state.types[pos] : -1,
     watchIdx,
     watch1Idx,
   };
 }
 
 function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
-  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
-    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
+  if (firstIdx >= state.count || endIdx <= firstIdx) {
+    const here = firstIdx > 0 ? state.ends[Math.max(0, firstIdx - 1)] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[endIdx - 1].end;
+  const input = state.input;
+  const cid = state.commentTypeId;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[endIdx - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < endIdx; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
@@ -550,28 +650,14 @@ function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim:
 // looking for the earliest occurrence of any literal in stops. Returns
 // the source slice between current position and the matched stop. State
 // advances to the first token whose start offset is at or past the stop.
-// Used by .rawUntil() modifier for raw-text element bodies (script/style)
-// and unquoted attribute values that can contain arbitrary characters.
-//
-// Performance notes (driven by the html package's huge-page profile):
-//   - The common case is many small captures; we MUST avoid per-call work
-//     that scales with the input size.
-//   - Single-char stops: tight charcode loop. No allocation, no indexOf
-//     scan-to-end on misses.
-//   - Multi-char stops: native indexOf bounded by the running minimum so
-//     later misses don't scan past an earlier hit.
-//   - Case-insensitive: char-by-char ASCII case fold; do NOT lowercase
-//     the input (that allocates an O(input.length) string per call).
 function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
-  const startOff = state.pos < state.tokens.length
-    ? state.tokens[state.pos].start
+  const startOff = state.pos < state.count
+    ? state.starts[state.pos]
     : state.input.length;
   const input = state.input;
   const inputLen = input.length;
   let earliest = inputLen;
 
-  // Partition stops into single-char and multi-char. Both loops short-
-  // circuit against `earliest` so we never scan past a found candidate.
   for (let s = 0; s < stops.length; s++) {
     const stop = stops[s];
     if (stop.length !== 1) continue;
@@ -590,7 +676,7 @@ function captureRawUntil(state: State, stops: readonly string[], caseInsensitive
     if (idx !== -1 && idx < earliest) earliest = idx;
   }
 
-  while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
+  while (state.pos < state.count && state.starts[state.pos] < earliest) {
     state.pos++;
   }
   state.__lastCaptureStart = startOff;
@@ -664,21 +750,33 @@ function indexOfCaseInsensitive(input: string, needle: string, from: number, lim
   return -1;
 }
 
-function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
+function nextTopLevelStopId(
+  state: State,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+): number {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) return t.value;
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) return t.value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) return t;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) return t;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) return t;
+    }
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
+      if (depth === 0) return t;
       depth--;
     }
     pos++;
   }
-  return null;
+  return -1;
 }
 
 function isAsciiWs(c: number): boolean {
@@ -717,14 +815,14 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
-function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+function decorateSyntaxError(input: string, error: unknown, state?: State): never {
   if (!(error instanceof SyntaxError)) throw error;
   if (hasSourceFrame(error.message)) throw error;
   const messageOffset = offsetFromMessage(error.message, -1);
   const offset = messageOffset >= 0
     ? messageOffset
-    : tokenPos !== undefined
-    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : state !== undefined
+    ? stateTokenOffset(state, input.length)
     : offsetFromMessage(error.message, input.length);
   throw syntaxErrorWithFrame(input, error.message, offset);
 }
@@ -771,10 +869,11 @@ function hasSourceFrame(message: string): boolean {
   return message.includes('\n') && message.includes(' | ');
 }
 
-function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
-  const tok = tokens[pos] ?? tokens[tokens.length - 1];
-  if (!tok) return fallback;
-  return tokens[pos] ? tok.start : tok.end;
+function stateTokenOffset(state: State, fallback: number): number {
+  const pos = state.pos;
+  if (pos < state.count) return state.starts[pos];
+  if (state.count > 0) return state.ends[state.count - 1];
+  return fallback;
 }
 
 function offsetFromMessage(message: string, fallback: number): number {
@@ -795,103 +894,92 @@ function offsetFromMessage(message: string, fallback: number): number {
 }
 
 function parseLengthPercentageItem__alt0(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
-  const __unit_start = state.tokens[state.pos - 1].start;
-  const __unit_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
+  const __unit_start = state.starts[state.pos - 1];
+  const __unit_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "dimension", value: value, unit: unit };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt1(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
-  const __unit_start = state.tokens[state.pos - 1].start;
-  const __unit_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
+  const __unit_start = state.starts[state.pos - 1];
+  const __unit_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "dimension", value: "-10", unit: unit };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt2(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "percent", "%");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "percentage", value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt3(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "percent", "%");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "percentage", value: "-50" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt4(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "zero", value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt5(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.tokens[state.pos - 1].start);
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "lparen", "(");
-  const __args_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.starts[state.pos - 1]);
+  const __name_start = state.starts[state.pos - 1];
+  const __name_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const __args_startOff = (state.pos > 0 ? state.ends[state.pos - 1] : 0);
   let __prevEnd_args = __args_startOff;
   const args: unknown[] = [];
-  while (!(peekLiteral(state, "rparen", ")"))) {
+  while (!(peekLiteralId(state, __TYPE_ID_RPAREN))) {
     const __before = state.pos;
     const __child = parseLengthFunctionToken(state);
     attachRawsBefore(state, __child, __prevEnd_args);
@@ -900,82 +988,77 @@ function parseLengthPercentageItem__alt5(state: State): unknown {
     __prevEnd_args = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_args;
   }
   if (args.length < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
-  expectLiteral(state, "rparen", ")");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "length-function", name: name, args: args };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt6(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "lparen", "(");
-  const __captured = captureUntil(state, ")", null, null, true, true);
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.starts[state.pos - 1]);
+  const __name_start = state.starts[state.pos - 1];
+  const __name_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const __captured = captureUntil(state, __TYPE_ID_RPAREN, "", -1, "", -1, "", true, true);
   if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
   const args = __captured;
 
   const __args_start = state.__lastCaptureStart;
   const __args_end = state.__lastCaptureEnd;
-  expectLiteral(state, "rparen", ")");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "var-function", name: name, args: args };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem__alt7(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "ident");
-  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.tokens[state.pos - 1].start);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.starts[state.pos - 1]);
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "length-keyword", value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItem(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "number") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
-      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_NUMBER) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      const __tokIdx2__lower = __tokIdx2 < state.count ? state.input.slice(state.starts[__tokIdx2], state.ends[__tokIdx2]).toLowerCase() : undefined;
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_PERCENT) {
         return parseLengthPercentageItem__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT && (__tokIdx2__lower === "cap" || __tokIdx2__lower === "ch" || __tokIdx2__lower === "cm" || __tokIdx2__lower === "dvh" || __tokIdx2__lower === "dvw" || __tokIdx2__lower === "em" || __tokIdx2__lower === "ex" || __tokIdx2__lower === "ic" || __tokIdx2__lower === "in" || __tokIdx2__lower === "lh" || __tokIdx2__lower === "lvh" || __tokIdx2__lower === "lvw" || __tokIdx2__lower === "mm" || __tokIdx2__lower === "pc" || __tokIdx2__lower === "pt" || __tokIdx2__lower === "px" || __tokIdx2__lower === "q" || __tokIdx2__lower === "rem" || __tokIdx2__lower === "rlh" || __tokIdx2__lower === "svh" || __tokIdx2__lower === "svw" || __tokIdx2__lower === "vb" || __tokIdx2__lower === "vh" || __tokIdx2__lower === "vi" || __tokIdx2__lower === "vmax" || __tokIdx2__lower === "vmin" || __tokIdx2__lower === "vw")) {
         return parseLengthPercentageItem__alt1(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LPAREN) {
       { const r = trySpeculate(state, parseLengthPercentageItem__alt5); if (r !== null) return r; }
       return parseLengthPercentageItem__alt6(state);
     }
     return parseLengthPercentageItem__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return parseLengthPercentageItem__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return parseLengthPercentageItem__alt0(state);
     }
     return parseLengthPercentageItem__alt4(state);
@@ -984,133 +1067,117 @@ function parseLengthPercentageItem(state: State): unknown {
 }
 
 function parseLengthFunctionToken__alt0(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
-  const __unit_start = state.tokens[state.pos - 1].start;
-  const __unit_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
+  const __unit_start = state.starts[state.pos - 1];
+  const __unit_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "dimension", value: value, unit: unit };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt1(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "percent", "%");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "percentage", value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt2(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "zero", value: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt3(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "-");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "operator", value: "-" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt4(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "+");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "+");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "operator", value: "+" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt5(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "*");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "*");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "operator", value: "*" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt6(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "/");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "/");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "operator", value: "/" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken__alt7(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", ",");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, ",");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "separator", value: "," };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthFunctionToken(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
     return parseLengthFunctionToken__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "+")) {
     return parseLengthFunctionToken__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "*")) {
     return parseLengthFunctionToken__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "/")) {
     return parseLengthFunctionToken__alt6(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, ",")) {
     return parseLengthFunctionToken__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return parseLengthFunctionToken__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return parseLengthFunctionToken__alt0(state);
     }
     return parseLengthFunctionToken__alt2(state);
@@ -1119,12 +1186,11 @@ function parseLengthFunctionToken(state: State): unknown {
 }
 
 function parseCssLengthPercentage(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const __items_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const __items_startOff = (state.pos > 0 ? state.ends[state.pos - 1] : 0);
   let __prevEnd_items = __items_startOff;
   const items: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     const __child = parseLengthPercentageItem(state);
     attachRawsBefore(state, __child, __prevEnd_items);
@@ -1134,123 +1200,122 @@ function parseCssLengthPercentage(state: State): unknown {
   }
   if (items.length < 1) throw new SyntaxError("expected at least 1 LengthPercentageItem");
   if (items.length > 4) throw new SyntaxError("expected at most 4 LengthPercentageItem");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "css-length-percentage", items: items };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseLengthPercentageItemFast__alt0(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return { type: "dimension", value: value, unit: unit };
 }
 
 function parseLengthPercentageItemFast__alt1(state: State): unknown {
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return { type: "dimension", value: "-10", unit: unit };
 }
 
 function parseLengthPercentageItemFast__alt2(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return { type: "percentage", value: value };
 }
 
 function parseLengthPercentageItemFast__alt3(state: State): unknown {
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return { type: "percentage", value: "-50" };
 }
 
 function parseLengthPercentageItemFast__alt4(state: State): unknown {
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
   return { type: "zero", value: value };
 }
 
 function parseLengthPercentageItemFast__alt5(state: State): unknown {
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.tokens[state.pos - 1].start);
-  expectLiteral(state, "lparen", "(");
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.starts[state.pos - 1]);
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
 
   const args: unknown[] = [];
-  while (!(peekLiteral(state, "rparen", ")"))) {
+  while (!(peekLiteralId(state, __TYPE_ID_RPAREN))) {
     const __before = state.pos;
     const __child = parseLengthFunctionTokenFast(state);
     args.push(__child);
     if (state.pos === __before) break;
   }
   if (args.length < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return { type: "length-function", name: name, args: args };
 }
 
 function parseLengthPercentageItemFast__alt6(state: State): unknown {
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
-  expectLiteral(state, "lparen", "(");
-  const __captured = captureUntil(state, ")", null, null, true, true);
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.starts[state.pos - 1]);
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const __captured = captureUntil(state, __TYPE_ID_RPAREN, "", -1, "", -1, "", true, true);
   if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
   const args = __captured;
 
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return { type: "var-function", name: name, args: args };
 }
 
 function parseLengthPercentageItemFast__alt7(state: State): unknown {
-  const value = expectClass(state, "ident");
-  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.starts[state.pos - 1]);
   return { type: "length-keyword", value: value };
 }
 
 function parseLengthPercentageItemFast(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "number") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
-      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_NUMBER) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      const __tokIdx2__lower = __tokIdx2 < state.count ? state.input.slice(state.starts[__tokIdx2], state.ends[__tokIdx2]).toLowerCase() : undefined;
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_PERCENT) {
         return parseLengthPercentageItemFast__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT && (__tokIdx2__lower === "cap" || __tokIdx2__lower === "ch" || __tokIdx2__lower === "cm" || __tokIdx2__lower === "dvh" || __tokIdx2__lower === "dvw" || __tokIdx2__lower === "em" || __tokIdx2__lower === "ex" || __tokIdx2__lower === "ic" || __tokIdx2__lower === "in" || __tokIdx2__lower === "lh" || __tokIdx2__lower === "lvh" || __tokIdx2__lower === "lvw" || __tokIdx2__lower === "mm" || __tokIdx2__lower === "pc" || __tokIdx2__lower === "pt" || __tokIdx2__lower === "px" || __tokIdx2__lower === "q" || __tokIdx2__lower === "rem" || __tokIdx2__lower === "rlh" || __tokIdx2__lower === "svh" || __tokIdx2__lower === "svw" || __tokIdx2__lower === "vb" || __tokIdx2__lower === "vh" || __tokIdx2__lower === "vi" || __tokIdx2__lower === "vmax" || __tokIdx2__lower === "vmin" || __tokIdx2__lower === "vw")) {
         return parseLengthPercentageItemFast__alt1(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LPAREN) {
       { const r = trySpeculate(state, parseLengthPercentageItemFast__alt5); if (r !== null) return r; }
       return parseLengthPercentageItemFast__alt6(state);
     }
     return parseLengthPercentageItemFast__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return parseLengthPercentageItemFast__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return parseLengthPercentageItemFast__alt0(state);
     }
     return parseLengthPercentageItemFast__alt4(state);
@@ -1259,77 +1324,77 @@ function parseLengthPercentageItemFast(state: State): unknown {
 }
 
 function parseLengthFunctionTokenFast__alt0(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return { type: "dimension", value: value, unit: unit };
 }
 
 function parseLengthFunctionTokenFast__alt1(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return { type: "percentage", value: value };
 }
 
 function parseLengthFunctionTokenFast__alt2(state: State): unknown {
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
   return { type: "zero", value: value };
 }
 
 function parseLengthFunctionTokenFast__alt3(state: State): unknown {
-  expectLiteral(state, "delim", "-");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
   return { type: "operator", value: "-" };
 }
 
 function parseLengthFunctionTokenFast__alt4(state: State): unknown {
-  expectLiteral(state, "delim", "+");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "+");
   return { type: "operator", value: "+" };
 }
 
 function parseLengthFunctionTokenFast__alt5(state: State): unknown {
-  expectLiteral(state, "delim", "*");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "*");
   return { type: "operator", value: "*" };
 }
 
 function parseLengthFunctionTokenFast__alt6(state: State): unknown {
-  expectLiteral(state, "delim", "/");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "/");
   return { type: "operator", value: "/" };
 }
 
 function parseLengthFunctionTokenFast__alt7(state: State): unknown {
-  expectLiteral(state, "delim", ",");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, ",");
   return { type: "separator", value: "," };
 }
 
 function parseLengthFunctionTokenFast(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
     return parseLengthFunctionTokenFast__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "+")) {
     return parseLengthFunctionTokenFast__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "*")) {
     return parseLengthFunctionTokenFast__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "/")) {
     return parseLengthFunctionTokenFast__alt6(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, ",")) {
     return parseLengthFunctionTokenFast__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return parseLengthFunctionTokenFast__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return parseLengthFunctionTokenFast__alt0(state);
     }
     return parseLengthFunctionTokenFast__alt2(state);
@@ -1340,7 +1405,7 @@ function parseLengthFunctionTokenFast(state: State): unknown {
 function parseCssLengthPercentageFast(state: State): unknown {
 
   const items: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     const __child = parseLengthPercentageItemFast(state);
     items.push(__child);
@@ -1352,114 +1417,114 @@ function parseCssLengthPercentageFast(state: State): unknown {
 }
 
 function validateLengthPercentageItem__alt0(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthPercentageItem__alt1(state: State): unknown {
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthPercentageItem__alt2(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return;
 }
 
 function validateLengthPercentageItem__alt3(state: State): unknown {
-  expectLiteral(state, "delim", "-");
-  const value = expectClass(state, "number");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return;
 }
 
 function validateLengthPercentageItem__alt4(state: State): unknown {
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthPercentageItem__alt5(state: State): unknown {
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.tokens[state.pos - 1].start);
-  expectLiteral(state, "lparen", "(");
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) throw new SyntaxError("expected one of calc, clamp, max, min at position " + state.starts[state.pos - 1]);
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
   let __count_args = 0;
-  while (!(peekLiteral(state, "rparen", ")"))) {
+  while (!(peekLiteralId(state, __TYPE_ID_RPAREN))) {
     const __before = state.pos;
     validateLengthFunctionToken(state);
     __count_args++;
     if (state.pos === __before) break;
   }
   if (__count_args < 1) throw new SyntaxError("expected at least 1 LengthFunctionToken");
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return;
 }
 
 function validateLengthPercentageItem__alt6(state: State): unknown {
-  const name = expectClass(state, "ident");
-  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.tokens[state.pos - 1].start);
-  expectLiteral(state, "lparen", "(");
-  const __captured = captureUntil(state, ")", null, null, true, true);
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(name.toLowerCase() === "var")) throw new SyntaxError("expected one of var at position " + state.starts[state.pos - 1]);
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const __captured = captureUntil(state, __TYPE_ID_RPAREN, "", -1, "", -1, "", true, true);
   if (__captured.endsWith(",")) throw new SyntaxError("captured value ends with rejected suffix ','");
   const args = __captured;
 
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return;
 }
 
 function validateLengthPercentageItem__alt7(state: State): unknown {
-  const value = expectClass(state, "ident");
-  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(value.toLowerCase() === "auto" || value.toLowerCase() === "fit-content" || value.toLowerCase() === "max-content" || value.toLowerCase() === "min-content")) throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthPercentageItem(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "number") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      const __tok2__lower = __tok2 !== undefined ? __tok2.value.toLowerCase() : undefined;
-      if (__tok2 !== undefined && __tok2.type === "percent" && __tok2.value === "%") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_NUMBER) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      const __tokIdx2__lower = __tokIdx2 < state.count ? state.input.slice(state.starts[__tokIdx2], state.ends[__tokIdx2]).toLowerCase() : undefined;
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_PERCENT) {
         return validateLengthPercentageItem__alt3(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident" && (__tok2__lower === "cap" || __tok2__lower === "ch" || __tok2__lower === "cm" || __tok2__lower === "dvh" || __tok2__lower === "dvw" || __tok2__lower === "em" || __tok2__lower === "ex" || __tok2__lower === "ic" || __tok2__lower === "in" || __tok2__lower === "lh" || __tok2__lower === "lvh" || __tok2__lower === "lvw" || __tok2__lower === "mm" || __tok2__lower === "pc" || __tok2__lower === "pt" || __tok2__lower === "px" || __tok2__lower === "q" || __tok2__lower === "rem" || __tok2__lower === "rlh" || __tok2__lower === "svh" || __tok2__lower === "svw" || __tok2__lower === "vb" || __tok2__lower === "vh" || __tok2__lower === "vi" || __tok2__lower === "vmax" || __tok2__lower === "vmin" || __tok2__lower === "vw")) {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT && (__tokIdx2__lower === "cap" || __tokIdx2__lower === "ch" || __tokIdx2__lower === "cm" || __tokIdx2__lower === "dvh" || __tokIdx2__lower === "dvw" || __tokIdx2__lower === "em" || __tokIdx2__lower === "ex" || __tokIdx2__lower === "ic" || __tokIdx2__lower === "in" || __tokIdx2__lower === "lh" || __tokIdx2__lower === "lvh" || __tokIdx2__lower === "lvw" || __tokIdx2__lower === "mm" || __tokIdx2__lower === "pc" || __tokIdx2__lower === "pt" || __tokIdx2__lower === "px" || __tokIdx2__lower === "q" || __tokIdx2__lower === "rem" || __tokIdx2__lower === "rlh" || __tokIdx2__lower === "svh" || __tokIdx2__lower === "svw" || __tokIdx2__lower === "vb" || __tokIdx2__lower === "vh" || __tokIdx2__lower === "vi" || __tokIdx2__lower === "vmax" || __tokIdx2__lower === "vmin" || __tokIdx2__lower === "vw")) {
         return validateLengthPercentageItem__alt1(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lparen" && __tok1.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LPAREN) {
       { const r = trySpeculate(state, validateLengthPercentageItem__alt5); if (r !== null) return r; }
       return validateLengthPercentageItem__alt6(state);
     }
     return validateLengthPercentageItem__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return validateLengthPercentageItem__alt2(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return validateLengthPercentageItem__alt0(state);
     }
     return validateLengthPercentageItem__alt4(state);
@@ -1468,77 +1533,77 @@ function validateLengthPercentageItem(state: State): unknown {
 }
 
 function validateLengthFunctionToken__alt0(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  const unit = expectClass(state, "ident");
-  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.tokens[state.pos - 1].start);
+  const unit = expectClassId(state, __TYPE_ID_IDENT, "ident");
+  if (!(unit.toLowerCase() === "cap" || unit.toLowerCase() === "ch" || unit.toLowerCase() === "cm" || unit.toLowerCase() === "dvh" || unit.toLowerCase() === "dvw" || unit.toLowerCase() === "em" || unit.toLowerCase() === "ex" || unit.toLowerCase() === "ic" || unit.toLowerCase() === "in" || unit.toLowerCase() === "lh" || unit.toLowerCase() === "lvh" || unit.toLowerCase() === "lvw" || unit.toLowerCase() === "mm" || unit.toLowerCase() === "pc" || unit.toLowerCase() === "pt" || unit.toLowerCase() === "px" || unit.toLowerCase() === "q" || unit.toLowerCase() === "rem" || unit.toLowerCase() === "rlh" || unit.toLowerCase() === "svh" || unit.toLowerCase() === "svw" || unit.toLowerCase() === "vb" || unit.toLowerCase() === "vh" || unit.toLowerCase() === "vi" || unit.toLowerCase() === "vmax" || unit.toLowerCase() === "vmin" || unit.toLowerCase() === "vw")) throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthFunctionToken__alt1(state: State): unknown {
-  const value = expectClass(state, "number");
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
   requireNoWhitespaceAfterLastToken(state);
-  expectLiteral(state, "percent", "%");
+  expectLiteralId(state, __TYPE_ID_PERCENT, "%");
   return;
 }
 
 function validateLengthFunctionToken__alt2(state: State): unknown {
-  const value = expectClass(state, "number");
-  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.tokens[state.pos - 1].start);
+  const value = expectClassId(state, __TYPE_ID_NUMBER, "number");
+  if (!(value.toLowerCase() === "0")) throw new SyntaxError("expected one of 0 at position " + state.starts[state.pos - 1]);
   return;
 }
 
 function validateLengthFunctionToken__alt3(state: State): unknown {
-  expectLiteral(state, "delim", "-");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "-");
   return;
 }
 
 function validateLengthFunctionToken__alt4(state: State): unknown {
-  expectLiteral(state, "delim", "+");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "+");
   return;
 }
 
 function validateLengthFunctionToken__alt5(state: State): unknown {
-  expectLiteral(state, "delim", "*");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "*");
   return;
 }
 
 function validateLengthFunctionToken__alt6(state: State): unknown {
-  expectLiteral(state, "delim", "/");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, "/");
   return;
 }
 
 function validateLengthFunctionToken__alt7(state: State): unknown {
-  expectLiteral(state, "delim", ",");
+  expectLiteralIdValue(state, __TYPE_ID_DELIM, ",");
   return;
 }
 
 function validateLengthFunctionToken(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "-") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "-")) {
     return validateLengthFunctionToken__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "+")) {
     return validateLengthFunctionToken__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "*")) {
     return validateLengthFunctionToken__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === "/") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, "/")) {
     return validateLengthFunctionToken__alt6(state);
   }
-  else if (__tok !== undefined && __tok.type === "delim" && __tok.value === ",") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DELIM && tokenEquals(state, __tokIdx, ",")) {
     return validateLengthFunctionToken__alt7(state);
   }
-  else if (__tok !== undefined && __tok.type === "number") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    const __tok1__lower = __tok1 !== undefined ? __tok1.value.toLowerCase() : undefined;
-    if (__tok1 !== undefined && __tok1.type === "percent" && __tok1.value === "%") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    const __tokIdx1__lower = __tokIdx1 < state.count ? state.input.slice(state.starts[__tokIdx1], state.ends[__tokIdx1]).toLowerCase() : undefined;
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_PERCENT) {
       return validateLengthFunctionToken__alt1(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident" && (__tok1__lower === "cap" || __tok1__lower === "ch" || __tok1__lower === "cm" || __tok1__lower === "dvh" || __tok1__lower === "dvw" || __tok1__lower === "em" || __tok1__lower === "ex" || __tok1__lower === "ic" || __tok1__lower === "in" || __tok1__lower === "lh" || __tok1__lower === "lvh" || __tok1__lower === "lvw" || __tok1__lower === "mm" || __tok1__lower === "pc" || __tok1__lower === "pt" || __tok1__lower === "px" || __tok1__lower === "q" || __tok1__lower === "rem" || __tok1__lower === "rlh" || __tok1__lower === "svh" || __tok1__lower === "svw" || __tok1__lower === "vb" || __tok1__lower === "vh" || __tok1__lower === "vi" || __tok1__lower === "vmax" || __tok1__lower === "vmin" || __tok1__lower === "vw")) {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT && (__tokIdx1__lower === "cap" || __tokIdx1__lower === "ch" || __tokIdx1__lower === "cm" || __tokIdx1__lower === "dvh" || __tokIdx1__lower === "dvw" || __tokIdx1__lower === "em" || __tokIdx1__lower === "ex" || __tokIdx1__lower === "ic" || __tokIdx1__lower === "in" || __tokIdx1__lower === "lh" || __tokIdx1__lower === "lvh" || __tokIdx1__lower === "lvw" || __tokIdx1__lower === "mm" || __tokIdx1__lower === "pc" || __tokIdx1__lower === "pt" || __tokIdx1__lower === "px" || __tokIdx1__lower === "q" || __tokIdx1__lower === "rem" || __tokIdx1__lower === "rlh" || __tokIdx1__lower === "svh" || __tokIdx1__lower === "svw" || __tokIdx1__lower === "vb" || __tokIdx1__lower === "vh" || __tokIdx1__lower === "vi" || __tokIdx1__lower === "vmax" || __tokIdx1__lower === "vmin" || __tokIdx1__lower === "vw")) {
       return validateLengthFunctionToken__alt0(state);
     }
     return validateLengthFunctionToken__alt2(state);
@@ -1548,7 +1613,7 @@ function validateLengthFunctionToken(state: State): unknown {
 
 function validateCssLengthPercentage(state: State): unknown {
   let __count_items = 0;
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     validateLengthPercentageItem(state);
     __count_items++;
@@ -1561,33 +1626,36 @@ function validateCssLengthPercentage(state: State): unknown {
 
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  let tokens: Token[];
+  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
-  const hasComments = tokens.hasComments === true;
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts,
     mode,
-    hasComments,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     const result = mode === 'raws' ? parseCssLengthPercentage(state) : parseCssLengthPercentageFast(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, stateTokenOffset(state, input.length));
     }
     return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -1598,30 +1666,34 @@ export function validate(input: string, options?: ParseOptions): void {
     parse(input, options);
     return;
   }
-  let tokens: Token[];
+  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts: [],
     mode: 'fast',
-    hasComments: tokens.hasComments === true,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     validateCssLengthPercentage(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, stateTokenOffset(state, input.length));
     }
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -1635,7 +1707,7 @@ export function validate(input: string, options?: ParseOptions): void {
 };
 
 export function countTokens(input: string): number {
-  return tokenize(input).length;
+  return __tokenize(input).count;
 }
 
 

@@ -4,6 +4,7 @@
 
 import type {
   ExampleDef,
+  RecoveryPolicy,
   Refinement,
   SpanClass,
   SpanDef,
@@ -28,6 +29,12 @@ export type Production = {
   readonly source: ExampleDef;
   readonly spans: ReadonlyArray<ResolvedSpan>;
   readonly structure: StructureValue;
+  // Present on productions whose example was marked .recovers({...}). These
+  // are not tried in normal dispatch — only when every valid production for
+  // the node type has failed. The policy's syncAt is reserved for future
+  // partial-recovery codegen; the first slice treats recovered productions
+  // as plain fallback parsers.
+  readonly recovery?: RecoveryPolicy;
 };
 
 export type NodeTypeInfo = {
@@ -65,6 +72,11 @@ export type InferredSchema = {
   // this to translate `.span(text)` into expectLiteral(type, value).
   readonly literalTypeByText: ReadonlyMap<string, string>;
   readonly classes: ReadonlyArray<TokenClassUsage>;
+  // Closed set of distinct token type *names* the tokenizer can emit. Each
+  // name gets a small integer ID; generated code compares `state.types[pos]
+  // === TYPE_<NAME>` instead of `tok.type === '<name>'`. Order is stable
+  // (sorted) so a re-run with the same schema produces identical output.
+  readonly tokenTypeIds: ReadonlyMap<string, number>;
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
   readonly validation?: ValidationDef;

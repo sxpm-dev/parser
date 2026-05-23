@@ -23,48 +23,128 @@ function isHexDigit(c: number): boolean {
 
 export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
 
-export function tokenize(input: string): Token[] {
-  const tokens: (Token[] & { hasComments?: boolean }) = [];
+const __TYPE_ID__23_23 = 0;
+const __TYPE_ID__23_23_23 = 1;
+const __TYPE_ID__23_23_23_23 = 2;
+const __TYPE_ID__23_23_23_23_23 = 3;
+const __TYPE_ID__23_23_23_23_23_23 = 4;
+const __TYPE_ID_AMPERSAND = 5;
+const __TYPE_ID_BACKTICK = 6;
+const __TYPE_ID_BANG = 7;
+const __TYPE_ID_BOLD = 8;
+const __TYPE_ID_CARET = 9;
+const __TYPE_ID_COLON = 10;
+const __TYPE_ID_DASH = 11;
+const __TYPE_ID_DOT = 12;
+const __TYPE_ID_EQUALS = 13;
+const __TYPE_ID_FENCE = 14;
+const __TYPE_ID_GT = 15;
+const __TYPE_ID_HASH = 16;
+const __TYPE_ID_IDENT = 17;
+const __TYPE_ID_ITALIC = 18;
+const __TYPE_ID_LBRACKET = 19;
+const __TYPE_ID_LPAREN = 20;
+const __TYPE_ID_LT = 21;
+const __TYPE_ID_NUMBER = 22;
+const __TYPE_ID_PIPE = 23;
+const __TYPE_ID_PLUS = 24;
+const __TYPE_ID_QUOTE = 25;
+const __TYPE_ID_RBRACKET = 26;
+const __TYPE_ID_RPAREN = 27;
+const __TYPE_ID_SEMICOLON = 28;
+const __TYPE_ID_SLASH = 29;
+const __TYPE_ID_STRIKE = 30;
+const __TYPE_ID_THEMATIC = 31;
+const __TYPE_ID_THEMATICSTAR = 32;
+const __TYPE_ID_THEMATICUNDERSCORE = 33;
+
+const __TYPE_NAMES_BY_ID: readonly string[] = ["##","###","####","#####","######","ampersand","backtick","bang","bold","caret","colon","dash","dot","equals","fence","gt","hash","ident","italic","lbracket","lparen","lt","number","pipe","plus","quote","rbracket","rparen","semicolon","slash","strike","thematic","thematicStar","thematicUnderscore"];
+const __COMMENT_TYPE_ID = -1;
+
+type TokenizerOutput = {
+  types: Uint16Array;
+  starts: Uint32Array;
+  ends: Uint32Array;
+  count: number;
+  hasComments: boolean;
+};
+
+// Runs the scanner over `input` and returns the populated typed arrays.
+// Capacity grows geometrically — empirical token density is ~0.2 tokens
+// per source byte for ASCII-heavy markup; `length >> 2` is a safe start.
+function __tokenize(input: string): TokenizerOutput {
   const len = input.length;
+  let capacity = len > 256 ? len >> 2 : 64;
+  let types = new Uint16Array(capacity);
+  let starts = new Uint32Array(capacity);
+  let ends = new Uint32Array(capacity);
+  let count = 0;
+  let hasComments = false;
+  const __grow = (): void => {
+    capacity = capacity * 2;
+    const t2 = new Uint16Array(capacity); t2.set(types); types = t2;
+    const s2 = new Uint32Array(capacity); s2.set(starts); starts = s2;
+    const e2 = new Uint32Array(capacity); e2.set(ends); ends = e2;
+  };
   let i = 0;
   while (i < len) {
     const c = input.charCodeAt(i);
     // whitespace (skip)
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
-    if (input.startsWith("######", i)) { tokens.push({ type: "######", value: "######", start: i, end: i + 6 }); i += 6; continue; }
-    if (input.startsWith("#####", i)) { tokens.push({ type: "#####", value: "#####", start: i, end: i + 5 }); i += 5; continue; }
-    if (input.startsWith("####", i)) { tokens.push({ type: "####", value: "####", start: i, end: i + 4 }); i += 4; continue; }
-    if (input.startsWith("###", i)) { tokens.push({ type: "###", value: "###", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("***", i)) { tokens.push({ type: "thematicStar", value: "***", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("---", i)) { tokens.push({ type: "thematic", value: "---", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("___", i)) { tokens.push({ type: "thematicUnderscore", value: "___", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("```", i)) { tokens.push({ type: "fence", value: "```", start: i, end: i + 3 }); i += 3; continue; }
-    if (input.startsWith("##", i)) { tokens.push({ type: "##", value: "##", start: i, end: i + 2 }); i += 2; continue; }
-    if (input.startsWith("**", i)) { tokens.push({ type: "bold", value: "**", start: i, end: i + 2 }); i += 2; continue; }
-    if (input.startsWith("~~", i)) { tokens.push({ type: "strike", value: "~~", start: i, end: i + 2 }); i += 2; continue; }
+    switch (c) {
+      case 35: {
+        if (input.startsWith("######", i)) { if (count === capacity) __grow(); types[count] = 4; starts[count] = i; ends[count] = i + 6; count++; i += 6; continue; }
+        if (input.startsWith("#####", i)) { if (count === capacity) __grow(); types[count] = 3; starts[count] = i; ends[count] = i + 5; count++; i += 5; continue; }
+        if (input.startsWith("####", i)) { if (count === capacity) __grow(); types[count] = 2; starts[count] = i; ends[count] = i + 4; count++; i += 4; continue; }
+        if (input.startsWith("###", i)) { if (count === capacity) __grow(); types[count] = 1; starts[count] = i; ends[count] = i + 3; count++; i += 3; continue; }
+        if (input.startsWith("##", i)) { if (count === capacity) __grow(); types[count] = 0; starts[count] = i; ends[count] = i + 2; count++; i += 2; continue; }
+        break;
+      }
+      case 42: {
+        if (input.startsWith("***", i)) { if (count === capacity) __grow(); types[count] = 32; starts[count] = i; ends[count] = i + 3; count++; i += 3; continue; }
+        if (input.startsWith("**", i)) { if (count === capacity) __grow(); types[count] = 8; starts[count] = i; ends[count] = i + 2; count++; i += 2; continue; }
+        break;
+      }
+      case 45: {
+        if (input.startsWith("---", i)) { if (count === capacity) __grow(); types[count] = 31; starts[count] = i; ends[count] = i + 3; count++; i += 3; continue; }
+        break;
+      }
+      case 95: {
+        if (input.startsWith("___", i)) { if (count === capacity) __grow(); types[count] = 33; starts[count] = i; ends[count] = i + 3; count++; i += 3; continue; }
+        break;
+      }
+      case 96: {
+        if (input.startsWith("```", i)) { if (count === capacity) __grow(); types[count] = 14; starts[count] = i; ends[count] = i + 3; count++; i += 3; continue; }
+        break;
+      }
+      case 126: {
+        if (input.startsWith("~~", i)) { if (count === capacity) __grow(); types[count] = 30; starts[count] = i; ends[count] = i + 2; count++; i += 2; continue; }
+        break;
+      }
+    }
 
     switch (c) {
-      case 33: tokens.push({ type: "bang", value: "!", start: i, end: i + 1 }); i++; continue;
-      case 34: tokens.push({ type: "quote", value: "\"", start: i, end: i + 1 }); i++; continue;
-      case 35: tokens.push({ type: "hash", value: "#", start: i, end: i + 1 }); i++; continue;
-      case 38: tokens.push({ type: "ampersand", value: "&", start: i, end: i + 1 }); i++; continue;
-      case 40: tokens.push({ type: "lparen", value: "(", start: i, end: i + 1 }); i++; continue;
-      case 41: tokens.push({ type: "rparen", value: ")", start: i, end: i + 1 }); i++; continue;
-      case 42: tokens.push({ type: "italic", value: "*", start: i, end: i + 1 }); i++; continue;
-      case 43: tokens.push({ type: "plus", value: "+", start: i, end: i + 1 }); i++; continue;
-      case 45: tokens.push({ type: "dash", value: "-", start: i, end: i + 1 }); i++; continue;
-      case 46: tokens.push({ type: "dot", value: ".", start: i, end: i + 1 }); i++; continue;
-      case 47: tokens.push({ type: "slash", value: "/", start: i, end: i + 1 }); i++; continue;
-      case 58: tokens.push({ type: "colon", value: ":", start: i, end: i + 1 }); i++; continue;
-      case 59: tokens.push({ type: "semicolon", value: ";", start: i, end: i + 1 }); i++; continue;
-      case 60: tokens.push({ type: "lt", value: "<", start: i, end: i + 1 }); i++; continue;
-      case 61: tokens.push({ type: "equals", value: "=", start: i, end: i + 1 }); i++; continue;
-      case 62: tokens.push({ type: "gt", value: ">", start: i, end: i + 1 }); i++; continue;
-      case 91: tokens.push({ type: "lbracket", value: "[", start: i, end: i + 1 }); i++; continue;
-      case 93: tokens.push({ type: "rbracket", value: "]", start: i, end: i + 1 }); i++; continue;
-      case 94: tokens.push({ type: "caret", value: "^", start: i, end: i + 1 }); i++; continue;
-      case 96: tokens.push({ type: "backtick", value: "`", start: i, end: i + 1 }); i++; continue;
-      case 124: tokens.push({ type: "pipe", value: "|", start: i, end: i + 1 }); i++; continue;
+      case 33: if (count === capacity) __grow(); types[count] = 7; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 34: if (count === capacity) __grow(); types[count] = 25; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 35: if (count === capacity) __grow(); types[count] = 16; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 38: if (count === capacity) __grow(); types[count] = 5; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 40: if (count === capacity) __grow(); types[count] = 20; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 41: if (count === capacity) __grow(); types[count] = 27; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 42: if (count === capacity) __grow(); types[count] = 18; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 43: if (count === capacity) __grow(); types[count] = 24; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 45: if (count === capacity) __grow(); types[count] = 11; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 46: if (count === capacity) __grow(); types[count] = 12; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 47: if (count === capacity) __grow(); types[count] = 29; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 58: if (count === capacity) __grow(); types[count] = 10; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 59: if (count === capacity) __grow(); types[count] = 28; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 60: if (count === capacity) __grow(); types[count] = 21; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 61: if (count === capacity) __grow(); types[count] = 13; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 62: if (count === capacity) __grow(); types[count] = 15; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 91: if (count === capacity) __grow(); types[count] = 19; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 93: if (count === capacity) __grow(); types[count] = 26; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 94: if (count === capacity) __grow(); types[count] = 9; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 96: if (count === capacity) __grow(); types[count] = 6; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
+      case 124: if (count === capacity) __grow(); types[count] = 23; starts[count] = i; ends[count] = i + 1; count++; i++; continue;
     }
     if (isDigit(c)) {
       const start = i;
@@ -82,7 +162,7 @@ export function tokenize(input: string): Token[] {
           while (i < len && isDigit(input.charCodeAt(i))) i++;
         }
       }
-      tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
+      if (count === capacity) __grow(); types[count] = 22; starts[count] = start; ends[count] = i; count++;
       continue;
     }
     if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
@@ -140,22 +220,37 @@ export function tokenize(input: string): Token[] {
           i++;
         }
       }
-      tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+      if (count === capacity) __grow(); types[count] = 17; starts[count] = start; ends[count] = i; count++;
       continue;
     }
 
     throw new SyntaxError(`Unexpected character '${input[i]}' at position ${i}`);
   }
+  return { types, starts, ends, count, hasComments };
+}
+
+export function tokenize(input: string): Token[] {
+  const out = __tokenize(input);
+  const tokens: Token[] = new Array(out.count);
+  for (let i = 0; i < out.count; i++) {
+    const s = out.starts[i];
+    const e = out.ends[i];
+    tokens[i] = { type: __TYPE_NAMES_BY_ID[out.types[i]], value: input.slice(s, e), start: s, end: e };
+  }
   return tokens;
 }
 
 type State = {
-  readonly tokens: Token[];
+  readonly types: Uint16Array;
+  readonly starts: Uint32Array;
+  readonly ends: Uint32Array;
+  readonly count: number;
   pos: number;
   readonly input: string;
   readonly lineStarts: number[];
   readonly mode: ParseMode;
   readonly hasComments: boolean;
+  readonly commentTypeId: number;
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -199,11 +294,12 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
 }
 
 // Skip comment tokens between sequential spans. Spans that explicitly
-// expect a comment (cls === 'comment') opt out via the call sites below,
-// so standalone comment captures still work.
+// expect a comment opt out via the call sites below, so standalone comment
+// captures still work.
 function skipComments(state: State): void {
   if (!state.hasComments) return;
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) {
     state.pos++;
   }
 }
@@ -233,95 +329,149 @@ function commentRight(raw: string): string {
   return m ? m[0] : '';
 }
 
-function tokenValue(_state: State, tok: Token): string {
-  return tok.value;
+// Reconstruct a token's text value from input + offset arrays. Allocates a
+// new string. Avoid on the hot path: most call sites compare against known
+// literals via integer type IDs and never need the value.
+function tokenValue(state: State, pos: number): string {
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
-function expectLiteral(state: State, type: string, value: string): string {
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    throw new SyntaxError(`expected '${value}' at token ${state.pos}`);
+function tokenEquals(state: State, pos: number, literal: string): boolean {
+  const start = state.starts[pos];
+  const end = state.ends[pos];
+  if (end - start !== literal.length) return false;
+  const input = state.input;
+  for (let i = 0; i < literal.length; i++) {
+    if (input.charCodeAt(start + i) !== literal.charCodeAt(i)) return false;
   }
-  state.pos++;
-  return tok.value ?? value;
+  return true;
 }
 
-function consumeOptionalLiteral(state: State, type: string, value: string): string | null {
+// Single-literal-type variants: when only one literal in the schema maps to
+// the given type ID, a type compare is sufficient (no value check needed).
+function expectLiteralId(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(`expected '${literal}' at token ${pos}`);
+  }
+  state.pos = pos + 1;
+  return literal;
+}
+
+function consumeOptionalLiteralId(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
   skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tok.value ?? value;
+  state.pos = pos + 1;
+  return literal;
 }
 
-function expectClass(state: State, cls: string): string {
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    throw new SyntaxError(`expected token of class '${cls}' at token ${state.pos}`);
+// Multi-literal-type variants: type ID alone isn't enough (e.g. HTML's
+// 'delim' covers many single chars). Verify the literal text without
+// allocating a slice — compare each char of input directly.
+function expectLiteralIdValue(state: State, typeId: number, literal: string): string {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
+    throw new SyntaxError(`expected '${literal}' at token ${pos}`);
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
 }
 
-function consumeOptionalClass(state: State, cls: string): string | null {
+function consumeOptionalLiteralIdValue(state: State, typeId: number, literal: string): string | null {
   const saved = state.pos;
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
+  skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId || !tokenEquals(state, pos, literal)) {
     state.pos = saved;
     return null;
   }
-  state.pos++;
-  return tokenValue(state, tok);
+  state.pos = pos + 1;
+  return literal;
+}
+
+function expectClassId(state: State, typeId: number, className: string): string {
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    throw new SyntaxError(`expected token of class '${className}' at token ${pos}`);
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
+}
+
+function consumeOptionalClassId(state: State, typeId: number): string | null {
+  const saved = state.pos;
+  if (typeId !== state.commentTypeId) skipComments(state);
+  const pos = state.pos;
+  if (pos >= state.count || state.types[pos] !== typeId) {
+    state.pos = saved;
+    return null;
+  }
+  state.pos = pos + 1;
+  return state.input.slice(state.starts[pos], state.ends[pos]);
 }
 
 function requireNoWhitespaceAfterLastToken(state: State): void {
-  const previous = state.tokens[state.pos - 1];
-  const next = state.tokens[state.pos];
-  if (previous === undefined || next === undefined || previous.end !== next.start) {
-    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
+  const pos = state.pos;
+  if (pos === 0 || pos >= state.count || state.ends[pos - 1] !== state.starts[pos]) {
+    throw new SyntaxError('expected no whitespace after token ' + (pos - 1));
   }
 }
 
-function peekLiteral(state: State, type: string, value: string): boolean {
-  // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
-  // comment sits between the last child and the body terminator, the loop
-  // must do another iteration so parseComment can pick up the comment as a
-  // sibling node rather than the loop exiting and leaving it stranded.
-  const tok = state.tokens[state.pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+// Single-literal-type peek — type ID alone is enough.
+function peekLiteralId(state: State, typeId: number): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
-  if (!state.hasComments) return peekLiteral(state, type, value);
+function peekLiteralIdValue(state: State, typeId: number, literal: string): boolean {
+  const pos = state.pos;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
+}
+
+function peekLiteralIdAfterComments(state: State, typeId: number): boolean {
+  if (!state.hasComments) return peekLiteralId(state, typeId);
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const tok = state.tokens[pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId;
 }
 
-function nextNonCommentToken(state: State, pos: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos];
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  return state.tokens[pos];
+function peekLiteralIdValueAfterComments(state: State, typeId: number, literal: string): boolean {
+  if (!state.hasComments) return peekLiteralIdValue(state, typeId, literal);
+  let pos = state.pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos < state.count && state.types[pos] === typeId && tokenEquals(state, pos, literal);
 }
 
-function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos + index];
+// Skip comment tokens starting at `pos`; return the resulting index.
+function nextNonCommentPos(state: State, pos: number): number {
+  if (!state.hasComments) return pos;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  return pos;
+}
+
+function nthNonCommentPos(state: State, pos: number, index: number): number {
+  if (!state.hasComments) return pos + index;
   let seen = 0;
-  while (pos < state.tokens.length) {
-    const tok = state.tokens[pos++];
-    if (tok.type === 'comment') continue;
-    if (seen === index) return tok;
-    seen++;
+  const cid = state.commentTypeId;
+  while (pos < state.count) {
+    if (state.types[pos] !== cid) {
+      if (seen === index) return pos;
+      seen++;
+    }
+    pos++;
   }
-  return undefined;
+  return state.count;
 }
 
 function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
@@ -365,211 +515,324 @@ function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[
 }
 
 // captureUntil consumes tokens from the current position until it sees a
-// token whose value matches any element of `stops`. When `balanced` is
-// true, bracket pairs () [] {} nest. A closing bracket at depth zero means
-// we've reached the boundary of an enclosing block — stop without consuming
-// it. The returned string is the slice of original source covered by the
-// consumed tokens (optionally trimmed).
+// token whose type ID matches `stopId0..2` (-1 = absent slot). Multi-literal
+// types (e.g. HTML's 'delim' covering many single chars) require a value
+// check too — codegen passes the literal text via `stopVal0..2`; empty
+// string = single-literal type (no value check needed).
+//
+// When `balanced` is true, bracket pairs () [] {} nest, tracked by leading
+// charcode. A closing bracket at depth zero means we've reached the boundary
+// of an enclosing block — stop without consuming it. Returns the source
+// slice covering consumed tokens (optionally trimmed).
 function captureUntil(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
   balanced: boolean,
   trim: boolean,
 ): string {
   let depth = 0;
-  // Leading comments are absorbed (not part of capture). They typically
-  // belong to raws on the previous sibling — when raws lands they should
-  // be diverted, not silently dropped. Today the body loop's parseComment
-  // pass catches free-floating comments before the capture starts, so this
-  // really only fires when a comment immediately precedes a captured
-  // sub-region (e.g. at-rule params with leading comments).
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
+  const cid = state.commentTypeId;
+  while (state.pos < state.count && state.types[state.pos] === cid) state.pos++;
   const firstIdx = state.pos;
-  const startTok = state.tokens[firstIdx];
-  if (!startTok) {
+  if (firstIdx >= state.count) {
     state.__lastCaptureStart = state.input.length;
     state.__lastCaptureEnd = state.input.length;
     return '';
   }
-  while (state.pos < state.tokens.length) {
-    const t = state.tokens[state.pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) break;
+  const input = state.input;
+  while (state.pos < state.count) {
+    const t = state.types[state.pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, state.pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, state.pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, state.pos, stopVal2))) break;
+    }
     if (balanced) {
-      if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-      else if (t.value === ')' || t.value === ']' || t.value === '}') {
+      const c = input.charCodeAt(state.starts[state.pos]);
+      if (c === 0x28 /* ( */ || c === 0x5b /* [ */ || c === 0x7b /* { */) depth++;
+      else if (c === 0x29 /* ) */ || c === 0x5d /* ] */ || c === 0x7d /* } */) {
         if (depth === 0) break;
         depth--;
       }
     }
     state.pos++;
   }
-  // Rewind past trailing comments so they remain available for the next
-  // sibling's parseComment to pick up (e.g. `decl /* trailing */` should
-  // emit a separate Comment node).
-  while (state.pos > firstIdx && state.tokens[state.pos - 1].type === 'comment') {
-    state.pos--;
-  }
+  while (state.pos > firstIdx && state.types[state.pos - 1] === cid) state.pos--;
   if (state.pos <= firstIdx) {
-    // No tokens consumed — collapse the offset range to the previous
-    // consumed token's end. This matches PostCSS convention: a gap from
-    // (previous span) to (this empty capture) is '', and the whitespace
-    // sits in the NEXT gap (e.g. `@font-face {` puts the space in
-    // raws.between, not raws.afterName).
-    const here = state.tokens[state.pos - 1]?.end ?? 0;
+    const here = state.pos > 0 ? state.ends[state.pos - 1] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[state.pos - 1].end;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[state.pos - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
-  // Fold interior comment tokens that have whitespace on either side in
-  // the source. We omit the comment's source range; surrounding whitespace
-  // stays untouched. Token-based — won't accidentally strip /* */ found
-  // inside string tokens (where it isn't a real comment).
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < state.pos; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
 function scanTopLevelBoundary(
   state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  watch0: string | null,
-  watch1: string | null = null,
-): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+  watchId0: number, watchVal0: string,
+  watchId1: number, watchVal1: string,
+): { firstIdx: number; stopIdx: number; captureEndIdx: number; stopId: number; watchIdx: number; watch1Idx: number } {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
   const firstIdx = pos;
   let watchIdx = -1;
   let watch1Idx = -1;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
     if (depth === 0) {
-      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
-      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
-      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
+      if (watchIdx < 0 && watchId0 !== -1 && t === watchId0 && (watchVal0 === '' || tokenEquals(state, pos, watchVal0))) watchIdx = pos;
+      if (watch1Idx < 0 && watchId1 !== -1 && t === watchId1 && (watchVal1 === '' || tokenEquals(state, pos, watchVal1))) watch1Idx = pos;
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) break;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) break;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) break;
     }
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
       if (depth === 0) break;
       depth--;
     }
     pos++;
   }
   let captureEndIdx = pos;
-  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
+  while (captureEndIdx > firstIdx && state.types[captureEndIdx - 1] === cid) captureEndIdx--;
   return {
     firstIdx,
     stopIdx: pos,
     captureEndIdx,
-    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
+    stopId: pos < state.count ? state.types[pos] : -1,
     watchIdx,
     watch1Idx,
   };
 }
 
 function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
-  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
-    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
+  if (firstIdx >= state.count || endIdx <= firstIdx) {
+    const here = firstIdx > 0 ? state.ends[Math.max(0, firstIdx - 1)] : 0;
     state.__lastCaptureStart = here;
     state.__lastCaptureEnd = here;
     return '';
   }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[endIdx - 1].end;
+  const input = state.input;
+  const cid = state.commentTypeId;
+  const startOff = state.starts[firstIdx];
+  const endOff = state.ends[endIdx - 1];
   state.__lastCaptureStart = startOff;
   state.__lastCaptureEnd = endOff;
 
   if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
 
   const omit: Array<[number, number]> = [];
   for (let i = firstIdx; i < endIdx; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
+    if (state.types[i] !== cid) continue;
+    const tStart = state.starts[i];
+    const tEnd = state.ends[i];
+    const before = tStart > 0 ? input.charCodeAt(tStart - 1) : -1;
+    const after = tEnd < input.length ? input.charCodeAt(tEnd) : -1;
+    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([tStart, tEnd]);
   }
   if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
+    if (!trim) return input.slice(startOff, endOff);
     let valueStart = startOff;
     let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
+    while (valueStart < valueEnd && isAsciiWs(input.charCodeAt(valueStart))) valueStart++;
+    while (valueEnd > valueStart && isAsciiWs(input.charCodeAt(valueEnd - 1))) valueEnd--;
+    return input.slice(valueStart, valueEnd);
   }
   let buf = '';
   let cursor = startOff;
   for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
+    buf += input.slice(cursor, s);
     cursor = e;
   }
-  buf += state.input.slice(cursor, endOff);
+  buf += input.slice(cursor, endOff);
   return trim ? buf.trim() : buf;
 }
 
-function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
+// captureRawUntil scans raw source from the current token's start offset
+// looking for the earliest occurrence of any literal in stops. Returns
+// the source slice between current position and the matched stop. State
+// advances to the first token whose start offset is at or past the stop.
+function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
+  const startOff = state.pos < state.count
+    ? state.starts[state.pos]
+    : state.input.length;
+  const input = state.input;
+  const inputLen = input.length;
+  let earliest = inputLen;
+
+  for (let s = 0; s < stops.length; s++) {
+    const stop = stops[s];
+    if (stop.length !== 1) continue;
+    const code = stop.charCodeAt(0);
+    const idx = caseInsensitive
+      ? indexOfCharCI(input, code, startOff, earliest)
+      : indexOfChar(input, code, startOff, earliest);
+    if (idx !== -1 && idx < earliest) earliest = idx;
+  }
+  for (let s = 0; s < stops.length; s++) {
+    const stop = stops[s];
+    if (stop.length < 2) continue;
+    const idx = caseInsensitive
+      ? indexOfCaseInsensitive(input, stop, startOff, earliest)
+      : indexOfBounded(input, stop, startOff, earliest);
+    if (idx !== -1 && idx < earliest) earliest = idx;
+  }
+
+  while (state.pos < state.count && state.starts[state.pos] < earliest) {
+    state.pos++;
+  }
+  state.__lastCaptureStart = startOff;
+  state.__lastCaptureEnd = earliest;
+  return input.slice(startOff, earliest);
+}
+
+// Tight scan: find the first occurrence of `code` in input[from..limit).
+// Returns -1 if absent. Avoids native indexOf's "scan to end of string"
+// behavior on misses — important when many parallel stops are checked.
+function indexOfChar(input: string, code: number, from: number, limit: number): number {
+  const end = limit < input.length ? limit : input.length;
+  for (let i = from; i < end; i++) {
+    if (input.charCodeAt(i) === code) return i;
+  }
+  return -1;
+}
+
+// ASCII case-insensitive variant of indexOfChar.
+function indexOfCharCI(input: string, code: number, from: number, limit: number): number {
+  const fold = (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) ? code | 0x20 : code;
+  const end = limit < input.length ? limit : input.length;
+  for (let i = from; i < end; i++) {
+    const c = input.charCodeAt(i);
+    const f = (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) ? c | 0x20 : c;
+    if (f === fold) return i;
+  }
+  return -1;
+}
+
+// Bounded multi-char indexOf. Manual scan with first-char filter; stops at
+// limit. Critical that this NOT delegate to input.indexOf — native indexOf
+// scans to end-of-string on misses (catastrophic for the multi-stop path
+// where most needles don't appear at all in the local region).
+function indexOfBounded(input: string, needle: string, from: number, limit: number): number {
+  const needleLen = needle.length;
+  const end = (limit < input.length ? limit : input.length) - needleLen;
+  const first = needle.charCodeAt(0);
+  if (needleLen === 2) {
+    const second = needle.charCodeAt(1);
+    for (let i = from; i <= end; i++) {
+      if (input.charCodeAt(i) === first && input.charCodeAt(i + 1) === second) return i;
+    }
+    return -1;
+  }
+  outer: for (let i = from; i <= end; i++) {
+    if (input.charCodeAt(i) !== first) continue;
+    for (let j = 1; j < needleLen; j++) {
+      if (input.charCodeAt(i + j) !== needle.charCodeAt(j)) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+// ASCII case-insensitive indexOf scanning input[from..limit) for needle.
+// Returns the first match offset or -1. No allocation.
+function indexOfCaseInsensitive(input: string, needle: string, from: number, limit: number): number {
+  const needleLen = needle.length;
+  const maxStart = (limit < input.length ? limit : input.length) - needleLen;
+  outer: for (let i = from; i <= maxStart; i++) {
+    for (let j = 0; j < needleLen; j++) {
+      const ic = input.charCodeAt(i + j);
+      const nc = needle.charCodeAt(j);
+      const ifold = (ic >= 0x41 && ic <= 0x5a) || (ic >= 0x61 && ic <= 0x7a) ? ic | 0x20 : ic;
+      const nfold = (nc >= 0x41 && nc <= 0x5a) || (nc >= 0x61 && nc <= 0x7a) ? nc | 0x20 : nc;
+      if (ifold !== nfold) continue outer;
+    }
+    return i;
+  }
+  return -1;
+}
+
+function nextTopLevelStopId(
+  state: State,
+  stopId0: number, stopVal0: string,
+  stopId1: number, stopVal1: string,
+  stopId2: number, stopVal2: string,
+): number {
   let depth = 0;
   let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) return t.value;
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) return t.value;
+  const cid = state.commentTypeId;
+  while (pos < state.count && state.types[pos] === cid) pos++;
+  const input = state.input;
+  while (pos < state.count) {
+    const t = state.types[pos];
+    if (depth === 0) {
+      if (t === stopId0 && (stopVal0 === '' || tokenEquals(state, pos, stopVal0))) return t;
+      if (t === stopId1 && (stopVal1 === '' || tokenEquals(state, pos, stopVal1))) return t;
+      if (t === stopId2 && (stopVal2 === '' || tokenEquals(state, pos, stopVal2))) return t;
+    }
+    const c = input.charCodeAt(state.starts[pos]);
+    if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+    else if (c === 0x29 || c === 0x5d || c === 0x7d) {
+      if (depth === 0) return t;
       depth--;
     }
     pos++;
   }
-  return null;
+  return -1;
 }
 
 function isAsciiWs(c: number): boolean {
@@ -608,14 +871,14 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
-function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+function decorateSyntaxError(input: string, error: unknown, state?: State): never {
   if (!(error instanceof SyntaxError)) throw error;
   if (hasSourceFrame(error.message)) throw error;
   const messageOffset = offsetFromMessage(error.message, -1);
   const offset = messageOffset >= 0
     ? messageOffset
-    : tokenPos !== undefined
-    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : state !== undefined
+    ? stateTokenOffset(state, input.length)
     : offsetFromMessage(error.message, input.length);
   throw syntaxErrorWithFrame(input, error.message, offset);
 }
@@ -662,10 +925,11 @@ function hasSourceFrame(message: string): boolean {
   return message.includes('\n') && message.includes(' | ');
 }
 
-function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
-  const tok = tokens[pos] ?? tokens[tokens.length - 1];
-  if (!tok) return fallback;
-  return tokens[pos] ? tok.start : tok.end;
+function stateTokenOffset(state: State, fallback: number): number {
+  const pos = state.pos;
+  if (pos < state.count) return state.starts[pos];
+  if (state.count > 0) return state.ends[state.count - 1];
+  return fallback;
 }
 
 function offsetFromMessage(message: string, fallback: number): number {
@@ -686,12 +950,11 @@ function offsetFromMessage(message: string, fallback: number): number {
 }
 
 function parseMarkdownDocument(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const __children_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const __children_startOff = (state.pos > 0 ? state.ends[state.pos - 1] : 0);
   let __prevEnd_children = __children_startOff;
   const children: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     const __child = parseMarkdownLeaf(state);
     attachRawsBefore(state, __child, __prevEnd_children);
@@ -699,850 +962,775 @@ function parseMarkdownDocument(state: State): unknown {
     if (state.pos === __before) break;
     __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
   }
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "document", children: children };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt0(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "hash", "#");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_HASH, "#");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 1, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt1(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "##", "##");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID__23_23, "##");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 2, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt2(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "###", "###");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID__23_23_23, "###");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 3, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt3(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "####", "####");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID__23_23_23_23, "####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 4, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt4(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "#####", "#####");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23, "#####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 5, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt5(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "######", "######");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23_23, "######");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 6, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt6(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "thematic", "---");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "heading", depth: 2, text: [first, second], style: "setext" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt7(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "paragraph", text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt8(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "dash", "-");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "list-item", ordered: false, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt9(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "plus", "+");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_PLUS, "+");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "list-item", ordered: false, marker: "+", text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt10(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "italic", "*");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "list-item", ordered: false, marker: "*", text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt11(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const index = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  const index = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  const __index_start = state.tokens[state.pos - 1].start;
-  const __index_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const first = expectClass(state, "ident");
+  const __index_start = state.starts[state.pos - 1];
+  const __index_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "list-item", ordered: true, index: index, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt12(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  const checked = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const checked = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __checked_start = state.tokens[state.pos - 1].start;
-  const __checked_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  const __checked_start = state.starts[state.pos - 1];
+  const __checked_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "task-list-item", checked: true, marker: checked, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt13(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "task-list-item", checked: false, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt14(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "gt", ">");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "blockquote", text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt15(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "thematic", "---");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "thematic-break" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt16(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "thematicStar", "***");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_THEMATICSTAR, "***");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "thematic-break", marker: "*" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt17(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "thematicUnderscore", "___");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_THEMATICUNDERSCORE, "___");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "thematic-break", marker: "_" };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt18(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "bold", "**");
-  const value = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "bold", "**");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "bold", text: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt19(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "italic", "*");
-  const value = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "italic", "*");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "italic", text: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt20(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "strike", "~~");
-  const value = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "strike", "~~");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "strikethrough", text: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt21(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "backtick", "`");
-  const value = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __value_start = state.tokens[state.pos - 1].start;
-  const __value_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "backtick", "`");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __value_start = state.starts[state.pos - 1];
+  const __value_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "inline-code", text: value };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt22(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __label_start = state.tokens[state.pos - 1].start;
-  const __label_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  const __label_start = state.starts[state.pos - 1];
+  const __label_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __scheme_start = state.tokens[state.pos - 1].start;
-  const __scheme_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  const __scheme_start = state.starts[state.pos - 1];
+  const __scheme_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __host_start = state.tokens[state.pos - 1].start;
-  const __host_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  const __host_start = state.starts[state.pos - 1];
+  const __host_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __tld_start = state.tokens[state.pos - 1].start;
-  const __tld_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rparen", ")");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __tld_start = state.starts[state.pos - 1];
+  const __tld_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "link", label: label, scheme: scheme, host: [host, tld] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt23(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __label_start = state.tokens[state.pos - 1].start;
-  const __label_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  const __label_start = state.starts[state.pos - 1];
+  const __label_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __id_start = state.tokens[state.pos - 1].start;
-  const __id_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __id_start = state.starts[state.pos - 1];
+  const __id_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "reference-link", label: label, id: id };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt24(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __alt_start = state.tokens[state.pos - 1].start;
-  const __alt_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  const __alt_start = state.starts[state.pos - 1];
+  const __alt_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __scheme_start = state.tokens[state.pos - 1].start;
-  const __scheme_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  const __scheme_start = state.starts[state.pos - 1];
+  const __scheme_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __host_start = state.tokens[state.pos - 1].start;
-  const __host_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  const __host_start = state.starts[state.pos - 1];
+  const __host_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __tld_start = state.tokens[state.pos - 1].start;
-  const __tld_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "slash", "/");
-  const path = expectClass(state, "ident");
+  const __tld_start = state.starts[state.pos - 1];
+  const __tld_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const path = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __path_start = state.tokens[state.pos - 1].start;
-  const __path_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const ext = expectClass(state, "ident");
+  const __path_start = state.starts[state.pos - 1];
+  const __path_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const ext = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __ext_start = state.tokens[state.pos - 1].start;
-  const __ext_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rparen", ")");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __ext_start = state.starts[state.pos - 1];
+  const __ext_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "image", alt: alt, scheme: scheme, host: [host, tld], path: [path, ext] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt25(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __alt_start = state.tokens[state.pos - 1].start;
-  const __alt_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  const __alt_start = state.starts[state.pos - 1];
+  const __alt_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __id_start = state.tokens[state.pos - 1].start;
-  const __id_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __id_start = state.starts[state.pos - 1];
+  const __id_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "reference-image", alt: alt, id: id };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt26(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lt", "<");
-  const scheme = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __scheme_start = state.tokens[state.pos - 1].start;
-  const __scheme_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  const __scheme_start = state.starts[state.pos - 1];
+  const __scheme_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __host_start = state.tokens[state.pos - 1].start;
-  const __host_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  const __host_start = state.starts[state.pos - 1];
+  const __host_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __tld_start = state.tokens[state.pos - 1].start;
-  const __tld_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "gt", ">");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __tld_start = state.starts[state.pos - 1];
+  const __tld_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "autolink", scheme: scheme, host: [host, tld] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt27(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "ampersand", "&");
-  const name = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_AMPERSAND, "&");
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "semicolon", ";");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __name_start = state.starts[state.pos - 1];
+  const __name_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_SEMICOLON, ";");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "entity", name: name };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt28(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "fence", "```");
-  const lang = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const lang = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __lang_start = state.tokens[state.pos - 1].start;
-  const __lang_end = state.tokens[state.pos - 1].end;
-  const body = expectClass(state, "ident");
+  const __lang_start = state.starts[state.pos - 1];
+  const __lang_end = state.ends[state.pos - 1];
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __body_start = state.tokens[state.pos - 1].start;
-  const __body_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "fence", "```");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __body_start = state.starts[state.pos - 1];
+  const __body_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "code-block", lang: lang, text: body };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt29(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "fence", "```");
-  const body = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __body_start = state.tokens[state.pos - 1].start;
-  const __body_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "fence", "```");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __body_start = state.starts[state.pos - 1];
+  const __body_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "code-block", text: body };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt30(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "pipe", "|");
-  const first = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "pipe", "|");
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "pipe", "|");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "table-row", cells: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt31(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "table-delimiter", align: ["default", "default"] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt32(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "pipe", "|");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "table-delimiter", align: ["left", "right"] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt33(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __id_start = state.tokens[state.pos - 1].start;
-  const __id_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const scheme = expectClass(state, "ident");
+  const __id_start = state.starts[state.pos - 1];
+  const __id_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __scheme_start = state.tokens[state.pos - 1].start;
-  const __scheme_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  const __scheme_start = state.starts[state.pos - 1];
+  const __scheme_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __host_start = state.tokens[state.pos - 1].start;
-  const __host_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  const __host_start = state.starts[state.pos - 1];
+  const __host_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __tld_start = state.tokens[state.pos - 1].start;
-  const __tld_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __tld_start = state.starts[state.pos - 1];
+  const __tld_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "definition", id: id, scheme: scheme, host: [host, tld] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt34(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  const __id_start = state.tokens[state.pos - 1].start;
-  const __id_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const first = expectClass(state, "ident");
+  const __id_start = state.starts[state.pos - 1];
+  const __id_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __first_start = state.tokens[state.pos - 1].start;
-  const __first_end = state.tokens[state.pos - 1].end;
-  const second = expectClass(state, "ident");
+  const __first_start = state.starts[state.pos - 1];
+  const __first_end = state.ends[state.pos - 1];
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __second_start = state.tokens[state.pos - 1].start;
-  const __second_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __second_start = state.starts[state.pos - 1];
+  const __second_end = state.ends[state.pos - 1];
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "footnote-definition", id: id, text: [first, second] };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt35(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  const __id_start = state.tokens[state.pos - 1].start;
-  const __id_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "rbracket", "]");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __id_start = state.starts[state.pos - 1];
+  const __id_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "footnote-reference", id: id };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf__alt36(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
+  const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const tag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __tag_start = state.tokens[state.pos - 1].start;
-  const __tag_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "gt", ">");
-  const body = expectClass(state, "ident");
+  const __tag_start = state.starts[state.pos - 1];
+  const __tag_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __body_start = state.tokens[state.pos - 1].start;
-  const __body_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "lt", "<");
-  expectLiteral(state, "slash", "/");
-  const closingTag = expectClass(state, "ident");
+  const __body_start = state.starts[state.pos - 1];
+  const __body_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const closingTag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const __closingTag_start = state.tokens[state.pos - 1].start;
-  const __closingTag_end = state.tokens[state.pos - 1].end;
-  expectLiteral(state, "gt", ">");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  const __closingTag_start = state.starts[state.pos - 1];
+  const __closingTag_end = state.ends[state.pos - 1];
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;
   const __struct: Record<string, unknown> = { type: "html", tag: tag, text: body, closingTag: closingTag };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseMarkdownLeaf(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "hash" && __tok.value === "#") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_HASH) {
     return parseMarkdownLeaf__alt0(state);
   }
-  else if (__tok !== undefined && __tok.type === "##" && __tok.value === "##") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23) {
     return parseMarkdownLeaf__alt1(state);
   }
-  else if (__tok !== undefined && __tok.type === "###" && __tok.value === "###") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23) {
     return parseMarkdownLeaf__alt2(state);
   }
-  else if (__tok !== undefined && __tok.type === "####" && __tok.value === "####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23) {
     return parseMarkdownLeaf__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "#####" && __tok.value === "#####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23) {
     return parseMarkdownLeaf__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "######" && __tok.value === "######") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23_23) {
     return parseMarkdownLeaf__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DASH) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
         return parseMarkdownLeaf__alt13(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeaf__alt12(state);
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return parseMarkdownLeaf__alt8(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PLUS) {
     return parseMarkdownLeaf__alt9(state);
   }
-  else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_ITALIC) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_ITALIC) {
         return parseMarkdownLeaf__alt19(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeaf__alt10(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_GT) {
     return parseMarkdownLeaf__alt14(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematic" && __tok.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATIC) {
     return parseMarkdownLeaf__alt15(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicStar" && __tok.value === "***") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICSTAR) {
     return parseMarkdownLeaf__alt16(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicUnderscore" && __tok.value === "___") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICUNDERSCORE) {
     return parseMarkdownLeaf__alt17(state);
   }
-  else if (__tok !== undefined && __tok.type === "bold" && __tok.value === "**") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BOLD) {
     return parseMarkdownLeaf__alt18(state);
   }
-  else if (__tok !== undefined && __tok.type === "strike" && __tok.value === "~~") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_STRIKE) {
     return parseMarkdownLeaf__alt20(state);
   }
-  else if (__tok !== undefined && __tok.type === "backtick" && __tok.value === "`") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BACKTICK) {
     return parseMarkdownLeaf__alt21(state);
   }
-  else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "number") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LBRACKET) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_CARET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_NUMBER) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_COLON) {
             return parseMarkdownLeaf__alt34(state);
           }
           return parseMarkdownLeaf__alt35(state);
@@ -1551,17 +1739,17 @@ function parseMarkdownLeaf(state: State): unknown {
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LPAREN) {
           return parseMarkdownLeaf__alt22(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LBRACKET) {
           return parseMarkdownLeaf__alt23(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_COLON) {
           return parseMarkdownLeaf__alt33(state);
         }
         throw new SyntaxError('no production matched');
@@ -1570,18 +1758,18 @@ function parseMarkdownLeaf(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "ident") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BANG) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LPAREN) {
             return parseMarkdownLeaf__alt24(state);
           }
-          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+          else if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LBRACKET) {
             return parseMarkdownLeaf__alt25(state);
           }
           throw new SyntaxError('no production matched');
@@ -1592,62 +1780,62 @@ function parseMarkdownLeaf(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_COLON) {
         return parseMarkdownLeaf__alt26(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_GT) {
         return parseMarkdownLeaf__alt36(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_AMPERSAND) {
     return parseMarkdownLeaf__alt27(state);
   }
-  else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_FENCE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_FENCE) {
         return parseMarkdownLeaf__alt29(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeaf__alt28(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PIPE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_THEMATIC) {
       return parseMarkdownLeaf__alt31(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_COLON) {
       return parseMarkdownLeaf__alt32(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return parseMarkdownLeaf__alt30(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_THEMATIC) {
         return parseMarkdownLeaf__alt6(state);
       }
       return parseMarkdownLeaf__alt7(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "number") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
     return parseMarkdownLeaf__alt11(state);
   }
   throw new SyntaxError('no production matched');
@@ -1656,7 +1844,7 @@ function parseMarkdownLeaf(state: State): unknown {
 function parseMarkdownDocumentFast(state: State): unknown {
 
   const children: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     const __child = parseMarkdownLeafFast(state);
     children.push(__child);
@@ -1666,480 +1854,480 @@ function parseMarkdownDocumentFast(state: State): unknown {
 }
 
 function parseMarkdownLeafFast__alt0(state: State): unknown {
-  expectLiteral(state, "hash", "#");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_HASH, "#");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 1, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt1(state: State): unknown {
-  expectLiteral(state, "##", "##");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23, "##");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 2, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt2(state: State): unknown {
-  expectLiteral(state, "###", "###");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23, "###");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 3, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt3(state: State): unknown {
-  expectLiteral(state, "####", "####");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23, "####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 4, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt4(state: State): unknown {
-  expectLiteral(state, "#####", "#####");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23, "#####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 5, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt5(state: State): unknown {
-  expectLiteral(state, "######", "######");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23_23, "######");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "heading", depth: 6, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt6(state: State): unknown {
-  const first = expectClass(state, "ident");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "thematic", "---");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
   return { type: "heading", depth: 2, text: [first, second], style: "setext" };
 }
 
 function parseMarkdownLeafFast__alt7(state: State): unknown {
-  const first = expectClass(state, "ident");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "paragraph", text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt8(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "list-item", ordered: false, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt9(state: State): unknown {
-  expectLiteral(state, "plus", "+");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PLUS, "+");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "list-item", ordered: false, marker: "+", text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt10(state: State): unknown {
-  expectLiteral(state, "italic", "*");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "list-item", ordered: false, marker: "*", text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt11(state: State): unknown {
-  const index = expectClass(state, "number");
+  const index = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "dot", ".");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "list-item", ordered: true, index: index, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt12(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  const checked = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const checked = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "task-list-item", checked: true, marker: checked, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt13(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "task-list-item", checked: false, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt14(state: State): unknown {
-  expectLiteral(state, "gt", ">");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "blockquote", text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt15(state: State): unknown {
-  expectLiteral(state, "thematic", "---");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
   return { type: "thematic-break" };
 }
 
 function parseMarkdownLeafFast__alt16(state: State): unknown {
-  expectLiteral(state, "thematicStar", "***");
+  expectLiteralId(state, __TYPE_ID_THEMATICSTAR, "***");
   return { type: "thematic-break", marker: "*" };
 }
 
 function parseMarkdownLeafFast__alt17(state: State): unknown {
-  expectLiteral(state, "thematicUnderscore", "___");
+  expectLiteralId(state, __TYPE_ID_THEMATICUNDERSCORE, "___");
   return { type: "thematic-break", marker: "_" };
 }
 
 function parseMarkdownLeafFast__alt18(state: State): unknown {
-  expectLiteral(state, "bold", "**");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "bold", "**");
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
   return { type: "bold", text: value };
 }
 
 function parseMarkdownLeafFast__alt19(state: State): unknown {
-  expectLiteral(state, "italic", "*");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "italic", "*");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
   return { type: "italic", text: value };
 }
 
 function parseMarkdownLeafFast__alt20(state: State): unknown {
-  expectLiteral(state, "strike", "~~");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "strike", "~~");
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
   return { type: "strikethrough", text: value };
 }
 
 function parseMarkdownLeafFast__alt21(state: State): unknown {
-  expectLiteral(state, "backtick", "`");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "backtick", "`");
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
   return { type: "inline-code", text: value };
 }
 
 function parseMarkdownLeafFast__alt22(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return { type: "link", label: label, scheme: scheme, host: [host, tld] };
 }
 
 function parseMarkdownLeafFast__alt23(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return { type: "reference-link", label: label, id: id };
 }
 
 function parseMarkdownLeafFast__alt24(state: State): unknown {
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "slash", "/");
-  const path = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const path = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const ext = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const ext = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return { type: "image", alt: alt, scheme: scheme, host: [host, tld], path: [path, ext] };
 }
 
 function parseMarkdownLeafFast__alt25(state: State): unknown {
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return { type: "reference-image", alt: alt, id: id };
 }
 
 function parseMarkdownLeafFast__alt26(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
   return { type: "autolink", scheme: scheme, host: [host, tld] };
 }
 
 function parseMarkdownLeafFast__alt27(state: State): unknown {
-  expectLiteral(state, "ampersand", "&");
-  const name = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_AMPERSAND, "&");
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "semicolon", ";");
+  expectLiteralId(state, __TYPE_ID_SEMICOLON, ";");
   return { type: "entity", name: name };
 }
 
 function parseMarkdownLeafFast__alt28(state: State): unknown {
-  expectLiteral(state, "fence", "```");
-  const lang = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const lang = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const body = expectClass(state, "ident");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "fence", "```");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
   return { type: "code-block", lang: lang, text: body };
 }
 
 function parseMarkdownLeafFast__alt29(state: State): unknown {
-  expectLiteral(state, "fence", "```");
-  const body = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "fence", "```");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
   return { type: "code-block", text: body };
 }
 
 function parseMarkdownLeafFast__alt30(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "pipe", "|");
-  const second = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return { type: "table-row", cells: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt31(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return { type: "table-delimiter", align: ["default", "default"] };
 }
 
 function parseMarkdownLeafFast__alt32(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return { type: "table-delimiter", align: ["left", "right"] };
 }
 
 function parseMarkdownLeafFast__alt33(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "definition", id: id, scheme: scheme, host: [host, tld] };
 }
 
 function parseMarkdownLeafFast__alt34(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return { type: "footnote-definition", id: id, text: [first, second] };
 }
 
 function parseMarkdownLeafFast__alt35(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return { type: "footnote-reference", id: id };
 }
 
 function parseMarkdownLeafFast__alt36(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const tag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
-  const body = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "lt", "<");
-  expectLiteral(state, "slash", "/");
-  const closingTag = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const closingTag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
   return { type: "html", tag: tag, text: body, closingTag: closingTag };
 }
 
 function parseMarkdownLeafFast(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "hash" && __tok.value === "#") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_HASH) {
     return parseMarkdownLeafFast__alt0(state);
   }
-  else if (__tok !== undefined && __tok.type === "##" && __tok.value === "##") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23) {
     return parseMarkdownLeafFast__alt1(state);
   }
-  else if (__tok !== undefined && __tok.type === "###" && __tok.value === "###") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23) {
     return parseMarkdownLeafFast__alt2(state);
   }
-  else if (__tok !== undefined && __tok.type === "####" && __tok.value === "####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23) {
     return parseMarkdownLeafFast__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "#####" && __tok.value === "#####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23) {
     return parseMarkdownLeafFast__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "######" && __tok.value === "######") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23_23) {
     return parseMarkdownLeafFast__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DASH) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
         return parseMarkdownLeafFast__alt13(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeafFast__alt12(state);
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return parseMarkdownLeafFast__alt8(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PLUS) {
     return parseMarkdownLeafFast__alt9(state);
   }
-  else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_ITALIC) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_ITALIC) {
         return parseMarkdownLeafFast__alt19(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeafFast__alt10(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_GT) {
     return parseMarkdownLeafFast__alt14(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematic" && __tok.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATIC) {
     return parseMarkdownLeafFast__alt15(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicStar" && __tok.value === "***") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICSTAR) {
     return parseMarkdownLeafFast__alt16(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicUnderscore" && __tok.value === "___") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICUNDERSCORE) {
     return parseMarkdownLeafFast__alt17(state);
   }
-  else if (__tok !== undefined && __tok.type === "bold" && __tok.value === "**") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BOLD) {
     return parseMarkdownLeafFast__alt18(state);
   }
-  else if (__tok !== undefined && __tok.type === "strike" && __tok.value === "~~") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_STRIKE) {
     return parseMarkdownLeafFast__alt20(state);
   }
-  else if (__tok !== undefined && __tok.type === "backtick" && __tok.value === "`") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BACKTICK) {
     return parseMarkdownLeafFast__alt21(state);
   }
-  else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "number") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LBRACKET) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_CARET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_NUMBER) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_COLON) {
             return parseMarkdownLeafFast__alt34(state);
           }
           return parseMarkdownLeafFast__alt35(state);
@@ -2148,17 +2336,17 @@ function parseMarkdownLeafFast(state: State): unknown {
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LPAREN) {
           return parseMarkdownLeafFast__alt22(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LBRACKET) {
           return parseMarkdownLeafFast__alt23(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_COLON) {
           return parseMarkdownLeafFast__alt33(state);
         }
         throw new SyntaxError('no production matched');
@@ -2167,18 +2355,18 @@ function parseMarkdownLeafFast(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "ident") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BANG) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LPAREN) {
             return parseMarkdownLeafFast__alt24(state);
           }
-          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+          else if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LBRACKET) {
             return parseMarkdownLeafFast__alt25(state);
           }
           throw new SyntaxError('no production matched');
@@ -2189,62 +2377,62 @@ function parseMarkdownLeafFast(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_COLON) {
         return parseMarkdownLeafFast__alt26(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_GT) {
         return parseMarkdownLeafFast__alt36(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_AMPERSAND) {
     return parseMarkdownLeafFast__alt27(state);
   }
-  else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_FENCE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_FENCE) {
         return parseMarkdownLeafFast__alt29(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return parseMarkdownLeafFast__alt28(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PIPE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_THEMATIC) {
       return parseMarkdownLeafFast__alt31(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_COLON) {
       return parseMarkdownLeafFast__alt32(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return parseMarkdownLeafFast__alt30(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_THEMATIC) {
         return parseMarkdownLeafFast__alt6(state);
       }
       return parseMarkdownLeafFast__alt7(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "number") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
     return parseMarkdownLeafFast__alt11(state);
   }
   throw new SyntaxError('no production matched');
@@ -2252,7 +2440,7 @@ function parseMarkdownLeafFast(state: State): unknown {
 
 function validateMarkdownDocument(state: State): unknown {
   let __count_children = 0;
-  while (!(state.pos >= state.tokens.length)) {
+  while (!(state.pos >= state.count)) {
     const __before = state.pos;
     validateMarkdownLeaf(state);
     __count_children++;
@@ -2262,480 +2450,480 @@ function validateMarkdownDocument(state: State): unknown {
 }
 
 function validateMarkdownLeaf__alt0(state: State): unknown {
-  expectLiteral(state, "hash", "#");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_HASH, "#");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt1(state: State): unknown {
-  expectLiteral(state, "##", "##");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23, "##");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt2(state: State): unknown {
-  expectLiteral(state, "###", "###");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23, "###");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt3(state: State): unknown {
-  expectLiteral(state, "####", "####");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23, "####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt4(state: State): unknown {
-  expectLiteral(state, "#####", "#####");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23, "#####");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt5(state: State): unknown {
-  expectLiteral(state, "######", "######");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID__23_23_23_23_23_23, "######");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt6(state: State): unknown {
-  const first = expectClass(state, "ident");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "thematic", "---");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
   return;
 }
 
 function validateMarkdownLeaf__alt7(state: State): unknown {
-  const first = expectClass(state, "ident");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt8(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt9(state: State): unknown {
-  expectLiteral(state, "plus", "+");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PLUS, "+");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt10(state: State): unknown {
-  expectLiteral(state, "italic", "*");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt11(state: State): unknown {
-  const index = expectClass(state, "number");
+  const index = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "dot", ".");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt12(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  const checked = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const checked = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt13(state: State): unknown {
-  expectLiteral(state, "dash", "-");
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "rbracket", "]");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DASH, "-");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt14(state: State): unknown {
-  expectLiteral(state, "gt", ">");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt15(state: State): unknown {
-  expectLiteral(state, "thematic", "---");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
   return;
 }
 
 function validateMarkdownLeaf__alt16(state: State): unknown {
-  expectLiteral(state, "thematicStar", "***");
+  expectLiteralId(state, __TYPE_ID_THEMATICSTAR, "***");
   return;
 }
 
 function validateMarkdownLeaf__alt17(state: State): unknown {
-  expectLiteral(state, "thematicUnderscore", "___");
+  expectLiteralId(state, __TYPE_ID_THEMATICUNDERSCORE, "___");
   return;
 }
 
 function validateMarkdownLeaf__alt18(state: State): unknown {
-  expectLiteral(state, "bold", "**");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "bold", "**");
+  expectLiteralId(state, __TYPE_ID_BOLD, "**");
   return;
 }
 
 function validateMarkdownLeaf__alt19(state: State): unknown {
-  expectLiteral(state, "italic", "*");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "italic", "*");
+  expectLiteralId(state, __TYPE_ID_ITALIC, "*");
   return;
 }
 
 function validateMarkdownLeaf__alt20(state: State): unknown {
-  expectLiteral(state, "strike", "~~");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "strike", "~~");
+  expectLiteralId(state, __TYPE_ID_STRIKE, "~~");
   return;
 }
 
 function validateMarkdownLeaf__alt21(state: State): unknown {
-  expectLiteral(state, "backtick", "`");
-  const value = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
+  const value = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "backtick", "`");
+  expectLiteralId(state, __TYPE_ID_BACKTICK, "`");
   return;
 }
 
 function validateMarkdownLeaf__alt22(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return;
 }
 
 function validateMarkdownLeaf__alt23(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const label = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const label = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return;
 }
 
 function validateMarkdownLeaf__alt24(state: State): unknown {
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lparen", "(");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LPAREN, "(");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "slash", "/");
-  const path = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const path = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const ext = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const ext = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rparen", ")");
+  expectLiteralId(state, __TYPE_ID_RPAREN, ")");
   return;
 }
 
 function validateMarkdownLeaf__alt25(state: State): unknown {
-  expectLiteral(state, "bang", "!");
-  expectLiteral(state, "lbracket", "[");
-  const alt = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_BANG, "!");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const alt = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return;
 }
 
 function validateMarkdownLeaf__alt26(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
   return;
 }
 
 function validateMarkdownLeaf__alt27(state: State): unknown {
-  expectLiteral(state, "ampersand", "&");
-  const name = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_AMPERSAND, "&");
+  const name = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "semicolon", ";");
+  expectLiteralId(state, __TYPE_ID_SEMICOLON, ";");
   return;
 }
 
 function validateMarkdownLeaf__alt28(state: State): unknown {
-  expectLiteral(state, "fence", "```");
-  const lang = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const lang = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const body = expectClass(state, "ident");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "fence", "```");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
   return;
 }
 
 function validateMarkdownLeaf__alt29(state: State): unknown {
-  expectLiteral(state, "fence", "```");
-  const body = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "fence", "```");
+  expectLiteralId(state, __TYPE_ID_FENCE, "```");
   return;
 }
 
 function validateMarkdownLeaf__alt30(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "pipe", "|");
-  const second = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return;
 }
 
 function validateMarkdownLeaf__alt31(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return;
 }
 
 function validateMarkdownLeaf__alt32(state: State): unknown {
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "pipe", "|");
-  expectLiteral(state, "thematic", "---");
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "pipe", "|");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
+  expectLiteralId(state, __TYPE_ID_THEMATIC, "---");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_PIPE, "|");
   return;
 }
 
 function validateMarkdownLeaf__alt33(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  const id = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  const id = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const scheme = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const scheme = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "colon", ":");
-  expectLiteral(state, "slash", "/");
-  expectLiteral(state, "slash", "/");
-  const host = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const host = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "dot", ".");
-  const tld = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_DOT, ".");
+  const tld = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt34(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "rbracket", "]");
-  expectLiteral(state, "colon", ":");
-  const first = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
+  expectLiteralId(state, __TYPE_ID_COLON, ":");
+  const first = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  const second = expectClass(state, "ident");
+  const second = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
   return;
 }
 
 function validateMarkdownLeaf__alt35(state: State): unknown {
-  expectLiteral(state, "lbracket", "[");
-  expectLiteral(state, "caret", "^");
-  const id = expectClass(state, "number");
+  expectLiteralId(state, __TYPE_ID_LBRACKET, "[");
+  expectLiteralId(state, __TYPE_ID_CARET, "^");
+  const id = expectClassId(state, __TYPE_ID_NUMBER, "number");
 
-  expectLiteral(state, "rbracket", "]");
+  expectLiteralId(state, __TYPE_ID_RBRACKET, "]");
   return;
 }
 
 function validateMarkdownLeaf__alt36(state: State): unknown {
-  expectLiteral(state, "lt", "<");
-  const tag = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  const tag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
-  const body = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
+  const body = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "lt", "<");
-  expectLiteral(state, "slash", "/");
-  const closingTag = expectClass(state, "ident");
+  expectLiteralId(state, __TYPE_ID_LT, "<");
+  expectLiteralId(state, __TYPE_ID_SLASH, "/");
+  const closingTag = expectClassId(state, __TYPE_ID_IDENT, "ident");
 
-  expectLiteral(state, "gt", ">");
+  expectLiteralId(state, __TYPE_ID_GT, ">");
   return;
 }
 
 function validateMarkdownLeaf(state: State): unknown {
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "hash" && __tok.value === "#") {
+  const __tokIdx = state.pos;
+  if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_HASH) {
     return validateMarkdownLeaf__alt0(state);
   }
-  else if (__tok !== undefined && __tok.type === "##" && __tok.value === "##") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23) {
     return validateMarkdownLeaf__alt1(state);
   }
-  else if (__tok !== undefined && __tok.type === "###" && __tok.value === "###") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23) {
     return validateMarkdownLeaf__alt2(state);
   }
-  else if (__tok !== undefined && __tok.type === "####" && __tok.value === "####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23) {
     return validateMarkdownLeaf__alt3(state);
   }
-  else if (__tok !== undefined && __tok.type === "#####" && __tok.value === "#####") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23) {
     return validateMarkdownLeaf__alt4(state);
   }
-  else if (__tok !== undefined && __tok.type === "######" && __tok.value === "######") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID__23_23_23_23_23_23) {
     return validateMarkdownLeaf__alt5(state);
   }
-  else if (__tok !== undefined && __tok.type === "dash" && __tok.value === "-") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_DASH) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
         return validateMarkdownLeaf__alt13(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return validateMarkdownLeaf__alt12(state);
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return validateMarkdownLeaf__alt8(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "plus" && __tok.value === "+") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PLUS) {
     return validateMarkdownLeaf__alt9(state);
   }
-  else if (__tok !== undefined && __tok.type === "italic" && __tok.value === "*") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "italic" && __tok2.value === "*") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_ITALIC) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_ITALIC) {
         return validateMarkdownLeaf__alt19(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return validateMarkdownLeaf__alt10(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "gt" && __tok.value === ">") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_GT) {
     return validateMarkdownLeaf__alt14(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematic" && __tok.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATIC) {
     return validateMarkdownLeaf__alt15(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicStar" && __tok.value === "***") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICSTAR) {
     return validateMarkdownLeaf__alt16(state);
   }
-  else if (__tok !== undefined && __tok.type === "thematicUnderscore" && __tok.value === "___") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_THEMATICUNDERSCORE) {
     return validateMarkdownLeaf__alt17(state);
   }
-  else if (__tok !== undefined && __tok.type === "bold" && __tok.value === "**") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BOLD) {
     return validateMarkdownLeaf__alt18(state);
   }
-  else if (__tok !== undefined && __tok.type === "strike" && __tok.value === "~~") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_STRIKE) {
     return validateMarkdownLeaf__alt20(state);
   }
-  else if (__tok !== undefined && __tok.type === "backtick" && __tok.value === "`") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BACKTICK) {
     return validateMarkdownLeaf__alt21(state);
   }
-  else if (__tok !== undefined && __tok.type === "lbracket" && __tok.value === "[") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "caret" && __tok1.value === "^") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "number") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "colon" && __tok4.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LBRACKET) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_CARET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_NUMBER) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_COLON) {
             return validateMarkdownLeaf__alt34(state);
           }
           return validateMarkdownLeaf__alt35(state);
@@ -2744,17 +2932,17 @@ function validateMarkdownLeaf(state: State): unknown {
       }
       throw new SyntaxError('no production matched');
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "rbracket" && __tok2.value === "]") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "lparen" && __tok3.value === "(") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_RBRACKET) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LPAREN) {
           return validateMarkdownLeaf__alt22(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "lbracket" && __tok3.value === "[") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_LBRACKET) {
           return validateMarkdownLeaf__alt23(state);
         }
-        else if (__tok3 !== undefined && __tok3.type === "colon" && __tok3.value === ":") {
+        else if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_COLON) {
           return validateMarkdownLeaf__alt33(state);
         }
         throw new SyntaxError('no production matched');
@@ -2763,18 +2951,18 @@ function validateMarkdownLeaf(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "bang" && __tok.value === "!") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "lbracket" && __tok1.value === "[") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "ident") {
-        const __tok3 = nthNonCommentToken(state, state.pos, 3);
-        if (__tok3 !== undefined && __tok3.type === "rbracket" && __tok3.value === "]") {
-          const __tok4 = nthNonCommentToken(state, state.pos, 4);
-          if (__tok4 !== undefined && __tok4.type === "lparen" && __tok4.value === "(") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_BANG) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_LBRACKET) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
+        const __tokIdx3 = nthNonCommentPos(state, state.pos, 3);
+        if (__tokIdx3 < state.count && state.types[__tokIdx3] === __TYPE_ID_RBRACKET) {
+          const __tokIdx4 = nthNonCommentPos(state, state.pos, 4);
+          if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LPAREN) {
             return validateMarkdownLeaf__alt24(state);
           }
-          else if (__tok4 !== undefined && __tok4.type === "lbracket" && __tok4.value === "[") {
+          else if (__tokIdx4 < state.count && state.types[__tokIdx4] === __TYPE_ID_LBRACKET) {
             return validateMarkdownLeaf__alt25(state);
           }
           throw new SyntaxError('no production matched');
@@ -2785,62 +2973,62 @@ function validateMarkdownLeaf(state: State): unknown {
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "lt" && __tok.value === "<") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "colon" && __tok2.value === ":") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_LT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_COLON) {
         return validateMarkdownLeaf__alt26(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "gt" && __tok2.value === ">") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_GT) {
         return validateMarkdownLeaf__alt36(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ampersand" && __tok.value === "&") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_AMPERSAND) {
     return validateMarkdownLeaf__alt27(state);
   }
-  else if (__tok !== undefined && __tok.type === "fence" && __tok.value === "```") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "fence" && __tok2.value === "```") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_FENCE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_FENCE) {
         return validateMarkdownLeaf__alt29(state);
       }
-      else if (__tok2 !== undefined && __tok2.type === "ident") {
+      else if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_IDENT) {
         return validateMarkdownLeaf__alt28(state);
       }
       throw new SyntaxError('no production matched');
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "pipe" && __tok.value === "|") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "thematic" && __tok1.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_PIPE) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_THEMATIC) {
       return validateMarkdownLeaf__alt31(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "colon" && __tok1.value === ":") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_COLON) {
       return validateMarkdownLeaf__alt32(state);
     }
-    else if (__tok1 !== undefined && __tok1.type === "ident") {
+    else if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
       return validateMarkdownLeaf__alt30(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "ident") {
-    const __tok1 = nthNonCommentToken(state, state.pos, 1);
-    if (__tok1 !== undefined && __tok1.type === "ident") {
-      const __tok2 = nthNonCommentToken(state, state.pos, 2);
-      if (__tok2 !== undefined && __tok2.type === "thematic" && __tok2.value === "---") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_IDENT) {
+    const __tokIdx1 = nthNonCommentPos(state, state.pos, 1);
+    if (__tokIdx1 < state.count && state.types[__tokIdx1] === __TYPE_ID_IDENT) {
+      const __tokIdx2 = nthNonCommentPos(state, state.pos, 2);
+      if (__tokIdx2 < state.count && state.types[__tokIdx2] === __TYPE_ID_THEMATIC) {
         return validateMarkdownLeaf__alt6(state);
       }
       return validateMarkdownLeaf__alt7(state);
     }
     throw new SyntaxError('no production matched');
   }
-  else if (__tok !== undefined && __tok.type === "number") {
+  else if (__tokIdx < state.count && state.types[__tokIdx] === __TYPE_ID_NUMBER) {
     return validateMarkdownLeaf__alt11(state);
   }
   throw new SyntaxError('no production matched');
@@ -2848,33 +3036,36 @@ function validateMarkdownLeaf(state: State): unknown {
 
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  let tokens: Token[];
+  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
-  const hasComments = tokens.hasComments === true;
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts,
     mode,
-    hasComments,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     const result = mode === 'raws' ? parseMarkdownDocument(state) : parseMarkdownDocumentFast(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, stateTokenOffset(state, input.length));
     }
     return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -2885,30 +3076,34 @@ export function validate(input: string, options?: ParseOptions): void {
     parse(input, options);
     return;
   }
-  let tokens: Token[];
+  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts: [],
     mode: 'fast',
-    hasComments: tokens.hasComments === true,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     validateMarkdownDocument(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, stateTokenOffset(state, input.length));
     }
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -2922,7 +3117,7 @@ export function validate(input: string, options?: ParseOptions): void {
 };
 
 export function countTokens(input: string): number {
-  return tokenize(input).length;
+  return __tokenize(input).count;
 }
 
 

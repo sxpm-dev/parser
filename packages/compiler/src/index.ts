@@ -5,6 +5,8 @@ import { resolveRecursiveRoles } from './infer/roles.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
 import { emitParser } from './emit/index.ts';
+import { emitScannerlessParser } from './emit/scannerless/index.ts';
+import { emitV2Parser } from './emit/v2/index.ts';
 import type { InferredSchema } from './model.ts';
 
 export type { InferredSchema } from './model.ts';
@@ -15,6 +17,13 @@ export type GenerateOptions = {
   // behavior. Defaults to 'parser' if not supplied — keep it explicit at
   // CLI / package-build level.
   readonly packageName?: string;
+  // When true, emit a scannerless parser (bytes → structure directly, no
+  // intermediate token stream). Temporary flag during the per-schema
+  // migration; will be removed once all schemas are converted.
+  readonly scannerless?: boolean;
+  // When true, emit using the v2 backend (see docs/scannerless-emit-v2.md).
+  // Implies scannerless. Per-schema opt-in while v2 is rolled out.
+  readonly v2?: boolean;
 };
 
 export function inferSchema(
@@ -26,7 +35,7 @@ export function inferSchema(
   const nodeTypes = buildProductions(schemas);
   resolveRecursiveRoles(nodeTypes, root.rootType);
   validate(nodeTypes);
-  const { literals, literalTypeByText, classes } = buildTokenizerProgram(schemas, nodeTypes);
+  const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
   return {
     packageName: options.packageName ?? 'parser',
     rootType: root.rootType,
@@ -34,6 +43,7 @@ export function inferSchema(
     literals,
     literalTypeByText,
     classes,
+    tokenTypeIds,
     whitespace: root.whitespace,
     unknownChars: root.unknownChars,
     validation,
@@ -45,5 +55,8 @@ export function generateParser(
   validation?: ValidationDef,
   options: GenerateOptions = {},
 ): string {
-  return emitParser(inferSchema(root, validation, options));
+  const schema = inferSchema(root, validation, options);
+  if (options.v2) return emitV2Parser(schema);
+  if (options.scannerless) return emitScannerlessParser(schema);
+  return emitParser(schema);
 }

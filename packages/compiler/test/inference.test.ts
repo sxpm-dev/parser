@@ -150,5 +150,5 @@ test('emitter factors shared recursive repeats before literal branch points', as
 
   const emitted = generateParser(schema);
   assert.doesNotMatch(emitted, /trySpeculate\(state, parseNodeFast__alt1\)/);
-  assert.match(emitted, /while \(!\(peekLiteral\(state, "close", ">"\) \|\| peekLiteral\(state, "selfClose", "\/>"\)\)\)/);
+  assert.match(emitted, /while \(!\(peekLiteralId\(state, __TYPE_ID_CLOSE\) \|\| peekLiteralId\(state, __TYPE_ID_SELFCLOSE\)\)\)/);
 });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import postcss from 'postcss';
-import { countTokens, parse, tokenize } from '../src/index.ts';
+import { parse } from '../src/index.ts';
 
 const syntaxMatrix = [
   {
@@ -78,7 +78,6 @@ const syntaxMatrix = [
 test('accepts the CSS syntax coverage matrix', () => {
   for (const entry of syntaxMatrix) {
     assert.doesNotThrow(() => parse(entry.css), entry.area);
-    assert.equal(countTokens(entry.css), tokenize(entry.css).length, entry.area);
   }
 });
 
@@ -215,6 +214,5 @@ test('deterministic fuzz: valid balanced CSS parses and token counts', () => {
     ].join('\n');
 
     parse(css);
-    assert.equal(countTokens(css), tokenize(css).length, css);
   }
 });

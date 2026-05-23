@@ -5,30 +5,63 @@ import { jsString } from './strings.ts';
 // literal longest-match (each literal pushed with its assigned type), then
 // class scanners in priority order. Each token carries its source position
 // so `.until()` captures can slice the original input.
+//
+// Tokens are stored in parallel typed arrays (Structure-of-Arrays):
+//   types[i]  -> integer type ID (lookup name via TYPE_NAMES_BY_ID[id])
+//   starts[i] -> source byte offset (inclusive)
+//   ends[i]   -> source byte offset (exclusive)
+// `count` is the number of tokens scanned. This replaces a Token object
+// array; on a 1 MB HTML synthetic input that's ~200 000 object allocations
+// dropped, cutting both tokenize time and garbage-collection pressure.
 
 export function emitTokenizer(schema: InferredSchema): string {
-  // Multi-char punctuators must be tried before single-char ones (longest
-  // match). Class scanners are tried BETWEEN multi-char and single-char
-  // punctuators so that e.g. comment `/*` wins over delim `/` while
-  // multi-char punctuators like `=>` still win over class scanners.
   const multiChar = schema.literals.filter((l) => l.literal.length > 1);
   const singleChar = schema.literals.filter((l) => l.literal.length === 1);
-  const multiCharBranches = emitMultiCharDispatch(multiChar);
+  const multiCharBranches = emitMultiCharDispatch(multiChar, schema);
   const earlySingleChar = singleChar.filter((l) => !literalNeedsClassPriority(l.literal, schema.classes));
   const lateSingleChar = singleChar.filter((l) => literalNeedsClassPriority(l.literal, schema.classes));
-  const earlySingleCharBranches = emitSingleCharSwitch(earlySingleChar);
-  const lateSingleCharBranches = emitSingleCharSwitch(lateSingleChar);
-  const commentBranches = schema.classes.filter((c) => c.class === 'comment').map((c) => emitClassBranch(c)).join('\n');
-  const classBranches = schema.classes.filter((c) => c.class !== 'comment').map((c) => emitClassBranch(c)).join('\n');
+  const earlySingleCharBranches = emitSingleCharSwitch(earlySingleChar, schema);
+  const lateSingleCharBranches = emitSingleCharSwitch(lateSingleChar, schema);
+  const commentBranches = schema.classes.filter((c) => c.class === 'comment').map((c) => emitClassBranch(c, schema)).join('\n');
+  const classBranches = schema.classes.filter((c) => c.class !== 'comment').map((c) => emitClassBranch(c, schema)).join('\n');
   const helpers = collectHelpers(schema.classes);
+  const typeConsts = emitTypeIdConstants(schema);
+  const commentTypeId = schema.tokenTypeIds.get('comment') ?? -1;
 
   return `${helpers}
 
 export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
 
-export function tokenize(input: string): Token[] {
-  const tokens: (Token[] & { hasComments?: boolean }) = [];
+${typeConsts}
+
+const __TYPE_NAMES_BY_ID: readonly string[] = ${JSON.stringify([...schema.tokenTypeIds.keys()])};
+const __COMMENT_TYPE_ID = ${commentTypeId};
+
+type TokenizerOutput = {
+  types: Uint16Array;
+  starts: Uint32Array;
+  ends: Uint32Array;
+  count: number;
+  hasComments: boolean;
+};
+
+// Runs the scanner over \`input\` and returns the populated typed arrays.
+// Capacity grows geometrically — empirical token density is ~0.2 tokens
+// per source byte for ASCII-heavy markup; \`length >> 2\` is a safe start.
+function __tokenize(input: string): TokenizerOutput {
   const len = input.length;
+  let capacity = len > 256 ? len >> 2 : 64;
+  let types = new Uint16Array(capacity);
+  let starts = new Uint32Array(capacity);
+  let ends = new Uint32Array(capacity);
+  let count = 0;
+  let hasComments = false;
+  const __grow = (): void => {
+    capacity = capacity * 2;
+    const t2 = new Uint16Array(capacity); t2.set(types); types = t2;
+    const s2 = new Uint32Array(capacity); s2.set(starts); starts = s2;
+    const e2 = new Uint32Array(capacity); e2.set(ends); ends = e2;
+  };
   let i = 0;
   while (i < len) {
     const c = input.charCodeAt(i);
@@ -39,19 +72,28 @@ ${indentLines(commentBranches, 4)}
 ${indentLines(earlySingleCharBranches, 4)}
 ${indentLines(classBranches, 4)}
 ${indentLines(lateSingleCharBranches, 4)}
-${indentLines(emitUnknownCharFallback(schema.unknownChars), 4)}
+${indentLines(emitUnknownCharFallback(schema.unknownChars, schema), 4)}
+  }
+  return { types, starts, ends, count, hasComments };
+}
+
+export function tokenize(input: string): Token[] {
+  const out = __tokenize(input);
+  const tokens: Token[] = new Array(out.count);
+  for (let i = 0; i < out.count; i++) {
+    const s = out.starts[i];
+    const e = out.ends[i];
+    tokens[i] = { type: __TYPE_NAMES_BY_ID[out.types[i]], value: input.slice(s, e), start: s, end: e };
   }
   return tokens;
 }`;
 }
 
-function emitUnknownCharFallback(policy: InferredSchema['unknownChars']): string {
+function emitUnknownCharFallback(policy: InferredSchema['unknownChars'], schema: InferredSchema): string {
   if (policy === 'tolerate') {
-    // Permissive fallback: any unclassified byte becomes a single-char `raw`
-    // token. Captures cover it via source-slice; productions that expect
-    // specific token types simply won't match `raw` and dispatch falls
-    // through.
-    return `{ const ch = input[i]; tokens.push({ type: 'raw', value: ch, start: i, end: i + 1 }); i++; continue; }`;
+    const rawId = schema.tokenTypeIds.get('raw');
+    if (rawId === undefined) throw new Error("Emitter: unknownChars=tolerate requires 'raw' in tokenTypeIds");
+    return `{ if (count === capacity) __grow(); types[count] = ${rawId}; starts[count] = i; ends[count] = i + 1; count++; i++; continue; }`;
   }
   return `throw new SyntaxError(\`Unexpected character '\${input[i]}' at position \${i}\`);`;
 }
@@ -77,7 +119,7 @@ function literalNeedsClassPriority(literal: string, classes: ReadonlyArray<Token
 // only does startsWith checks when the leading byte could possibly match.
 // Cuts the inner-loop work from O(multiChar.length) per byte to O(group).
 // Within each group, sort longest-first so longest-match still wins.
-function emitMultiCharDispatch(decls: ReadonlyArray<LiteralDecl>): string {
+function emitMultiCharDispatch(decls: ReadonlyArray<LiteralDecl>, schema: InferredSchema): string {
   if (decls.length === 0) return '';
   const groups = new Map<number, LiteralDecl[]>();
   for (const decl of decls) {
@@ -89,7 +131,7 @@ function emitMultiCharDispatch(decls: ReadonlyArray<LiteralDecl>): string {
   const cases: string[] = [];
   for (const [code, bucket] of [...groups.entries()].sort(([a], [b]) => a - b)) {
     bucket.sort((a, b) => b.literal.length - a.literal.length);
-    const checks = bucket.map((decl) => emitLiteralBranch(decl)).join('\n');
+    const checks = bucket.map((decl) => emitLiteralBranch(decl, schema)).join('\n');
     cases.push(`case ${code}: {
 ${indentLines(checks, 2)}
   break;
@@ -100,45 +142,62 @@ ${indentLines(cases.join('\n'), 2)}
 }`;
 }
 
-function emitLiteralBranch(decl: LiteralDecl): string {
+function emitLiteralBranch(decl: LiteralDecl, schema: InferredSchema): string {
   const { literal, type } = decl;
-  const typeExpr = jsString(type);
+  const typeId = schema.tokenTypeIds.get(type);
+  if (typeId === undefined) throw new Error(`Emitter: no type ID for '${type}'`);
   const valueExpr = jsString(literal);
   if (literal.length === 1) {
     const code = literal.charCodeAt(0);
-    return `if (c === ${code}) { tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + 1 }); i++; continue; }`;
+    return `if (c === ${code}) { if (count === capacity) __grow(); types[count] = ${typeId}; starts[count] = i; ends[count] = i + 1; count++; i++; continue; }`;
   }
-  return `if (input.startsWith(${valueExpr}, i)) { tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + ${literal.length} }); i += ${literal.length}; continue; }`;
+  return `if (input.startsWith(${valueExpr}, i)) { if (count === capacity) __grow(); types[count] = ${typeId}; starts[count] = i; ends[count] = i + ${literal.length}; count++; i += ${literal.length}; continue; }`;
 }
 
-function emitSingleCharSwitch(decls: ReadonlyArray<LiteralDecl>): string {
+function emitSingleCharSwitch(decls: ReadonlyArray<LiteralDecl>, schema: InferredSchema): string {
   if (decls.length === 0) return '';
   const cases = decls.map((decl) => {
     const code = decl.literal.charCodeAt(0);
-    const typeExpr = jsString(decl.type);
-    const valueExpr = jsString(decl.literal);
-    return `case ${code}: tokens.push({ type: ${typeExpr}, value: ${valueExpr}, start: i, end: i + 1 }); i++; continue;`;
+    const typeId = schema.tokenTypeIds.get(decl.type);
+    if (typeId === undefined) throw new Error(`Emitter: no type ID for '${decl.type}'`);
+    return `case ${code}: if (count === capacity) __grow(); types[count] = ${typeId}; starts[count] = i; ends[count] = i + 1; count++; i++; continue;`;
   }).join('\n');
   return `switch (c) {
 ${indentLines(cases, 2)}
 }`;
 }
 
-function emitClassBranch(usage: TokenClassUsage): string {
+function emitTypeIdConstants(schema: InferredSchema): string {
+  const lines: string[] = [];
+  for (const [name, id] of [...schema.tokenTypeIds.entries()].sort((a, b) => a[1] - b[1])) {
+    lines.push(`const ${typeIdConst(name)} = ${id};`);
+  }
+  return lines.join('\n');
+}
+
+export function typeIdConst(name: string): string {
+  // 'comment' -> '__TYPE_ID_COMMENT'. The class IDs are emitted alongside
+  // literal types in the same namespace.
+  return `__TYPE_ID_${name.replace(/[^a-zA-Z0-9_]/g, (c) => '_' + c.charCodeAt(0).toString(16).toUpperCase()).toUpperCase()}`;
+}
+
+function emitClassBranch(usage: TokenClassUsage, schema: InferredSchema): string {
   const { class: cls, refinements } = usage;
   const refSet = new Set(refinements.map((r) => r.name));
-  if (cls === 'ident' && refSet.has('html')) return emitHtmlIdentBranch();
-  if (cls === 'ident' && refSet.has('css')) return emitCssIdentBranch();
-  if (cls === 'ident' && refSet.has('js')) return emitJsIdentBranch();
-  if (cls === 'ident') return emitCssIdentBranch();
-  if (cls === 'number') return emitNumberBranch();
-  if (cls === 'hex') return emitHexBranch();
-  if (cls === 'string') return emitStringBranch();
-  if (cls === 'comment') return emitCommentBranch();
+  const id = schema.tokenTypeIds.get(cls);
+  if (id === undefined) throw new Error(`Emitter: no type ID for class '${cls}'`);
+  if (cls === 'ident' && refSet.has('html')) return emitHtmlIdentBranch(id);
+  if (cls === 'ident' && refSet.has('css')) return emitCssIdentBranch(id);
+  if (cls === 'ident' && refSet.has('js')) return emitJsIdentBranch(id);
+  if (cls === 'ident') return emitCssIdentBranch(id);
+  if (cls === 'number') return emitNumberBranch(id);
+  if (cls === 'hex') return emitHexBranch(id);
+  if (cls === 'string') return emitStringBranch(id);
+  if (cls === 'comment') return emitCommentBranch(id);
   throw new Error(`Emitter: class '${cls}' with refinements [${[...refSet].join(',')}] not implemented yet`);
 }
 
-function emitCssIdentBranch(): string {
+function emitCssIdentBranch(id: number): string {
   return `if (isCssIdentStart(c) || c === 0x5c /* \\\\ */) {
   const start = i;
   while (i < len) {
@@ -194,12 +253,12 @@ function emitCssIdentBranch(): string {
       i++;
     }
   }
-  tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitHtmlIdentBranch(): string {
+function emitHtmlIdentBranch(id: number): string {
   // HTML ident: start with ASCII letter or `_`; continue with letters,
   // digits, `-`, `_`. No backslash escapes — a raw `\` belongs to text.
   return `if (isCssIdentStart(c)) {
@@ -210,22 +269,22 @@ function emitHtmlIdentBranch(): string {
     if (!isCssIdentPart(c2)) break;
     i++;
   }
-  tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitJsIdentBranch(): string {
+function emitJsIdentBranch(id: number): string {
   return `if (isJsIdentStart(c)) {
   const start = i;
   i++;
   while (i < len && isJsIdentPart(input.charCodeAt(i))) i++;
-  tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitNumberBranch(): string {
+function emitNumberBranch(id: number): string {
   return `if (isDigit(c)) {
   const start = i;
   while (i < len && isDigit(input.charCodeAt(i))) i++;
@@ -242,21 +301,21 @@ function emitNumberBranch(): string {
       while (i < len && isDigit(input.charCodeAt(i))) i++;
     }
   }
-  tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitHexBranch(): string {
+function emitHexBranch(id: number): string {
   return `if (isHexDigit(c)) {
   const start = i;
   while (i < len && isHexDigit(input.charCodeAt(i))) i++;
-  tokens.push({ type: 'hex', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitStringBranch(): string {
+function emitStringBranch(id: number): string {
   return `if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
   const quote = c;
   const start = i;
@@ -268,19 +327,19 @@ function emitStringBranch(): string {
     if (ch === 0x0a || ch === 0x0d) { break; }
     i++;
   }
-  tokens.push({ type: 'string', value: input.slice(start, i), start, end: i });
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }
 
-function emitCommentBranch(): string {
+function emitCommentBranch(id: number): string {
   return `if (c === 0x2f /* / */ && i + 1 < len && input.charCodeAt(i + 1) === 0x2a /* * */) {
   const start = i;
   i += 2;
   while (i < len && !(input.charCodeAt(i) === 0x2a && i + 1 < len && input.charCodeAt(i + 1) === 0x2f)) i++;
   if (i < len) i += 2;
-  tokens.hasComments = true;
-  tokens.push({ type: 'comment', value: input.slice(start, i), start, end: i });
+  hasComments = true;
+  if (count === capacity) __grow(); types[count] = ${id}; starts[count] = start; ends[count] = i; count++;
   continue;
 }`;
 }

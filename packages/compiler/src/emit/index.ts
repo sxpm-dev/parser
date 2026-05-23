@@ -49,33 +49,36 @@ function emitPublicApi(schema: InferredSchema, hasDirectFast: boolean): string {
   const validationRuntime = hasValidation ? `\n${emitPropertyValidation(schema)}\n` : '';
   return `export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-${directFastDispatch}  let tokens: Token[];
+${directFastDispatch}  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
-  const hasComments = tokens.hasComments === true;
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts,
     mode,
-    hasComments,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     const result = mode === 'raws' ? ${rootFn}(state) : ${fastRootFn}(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, \`unexpected trailing token at position \${state.pos}\`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, \`unexpected trailing token at position \${state.pos}\`, stateTokenOffset(state, input.length));
     }
 ${validateAfterParse}    return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -88,30 +91,34 @@ export function validate(input: string, options?: ParseOptions): void {
   }
 ${hasDirectFast ? `  validateDirectFast(input);
   return;
-` : ''}  let tokens: Token[];
+` : ''}  let __out: ReturnType<typeof __tokenize>;
   try {
-    tokens = tokenize(input);
+    __out = __tokenize(input);
   } catch (error) {
     throw decorateSyntaxError(input, error);
   }
   const state: State = {
-    tokens,
+    types: __out.types,
+    starts: __out.starts,
+    ends: __out.ends,
+    count: __out.count,
     pos: 0,
     input,
     lineStarts: [],
     mode: 'fast',
-    hasComments: tokens.hasComments === true,
+    hasComments: __out.hasComments,
+    commentTypeId: __COMMENT_TYPE_ID,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     ${validateRootFn}(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, \`unexpected trailing token at position \${state.pos}\`, tokenOffset(tokens, state.pos, input.length));
+    if (state.pos !== state.count) {
+      throw syntaxErrorWithFrame(input, \`unexpected trailing token at position \${state.pos}\`, stateTokenOffset(state, input.length));
     }
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -125,7 +132,7 @@ ${hasDirectFast ? `  validateDirectFast(input);
 };
 
 export function countTokens(input: string): number {
-  return tokenize(input).length;
+  return __tokenize(input).count;
 }
 
 ${validationRuntime}

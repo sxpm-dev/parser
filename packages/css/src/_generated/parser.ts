@@ -8,175 +8,11 @@ import { validate as __propertyValidator1 } from "@parser2/css-length-percentage
 
 
 
-function isCssIdentStart(c: number): boolean {
-  // a-z A-Z _ -
-  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
-}
-function isCssIdentPart(c: number): boolean {
-  return isCssIdentStart(c) || (c >= 48 && c <= 57);
-}
-
-function isDigit(c: number): boolean {
-  return c >= 48 && c <= 57;
-}
-
-function isHexDigit(c: number): boolean {
-  return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
-}
-
-export type Token = { readonly type: string; readonly value: string; readonly start: number; readonly end: number };
-
-export function tokenize(input: string): Token[] {
-  const tokens: (Token[] & { hasComments?: boolean }) = [];
-  const len = input.length;
-  let i = 0;
-  while (i < len) {
-    const c = input.charCodeAt(i);
-    // whitespace (skip)
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { i++; continue; }
-
-    if (c === 0x2f /* / */ && i + 1 < len && input.charCodeAt(i + 1) === 0x2a /* * */) {
-      const start = i;
-      i += 2;
-      while (i < len && !(input.charCodeAt(i) === 0x2a && i + 1 < len && input.charCodeAt(i + 1) === 0x2f)) i++;
-      if (i < len) i += 2;
-      tokens.hasComments = true;
-      tokens.push({ type: 'comment', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-    switch (c) {
-      case 33: tokens.push({ type: "delim", value: "!", start: i, end: i + 1 }); i++; continue;
-      case 35: tokens.push({ type: "delim", value: "#", start: i, end: i + 1 }); i++; continue;
-      case 36: tokens.push({ type: "delim", value: "$", start: i, end: i + 1 }); i++; continue;
-      case 37: tokens.push({ type: "delim", value: "%", start: i, end: i + 1 }); i++; continue;
-      case 38: tokens.push({ type: "delim", value: "&", start: i, end: i + 1 }); i++; continue;
-      case 40: tokens.push({ type: "lparen", value: "(", start: i, end: i + 1 }); i++; continue;
-      case 41: tokens.push({ type: "rparen", value: ")", start: i, end: i + 1 }); i++; continue;
-      case 42: tokens.push({ type: "delim", value: "*", start: i, end: i + 1 }); i++; continue;
-      case 43: tokens.push({ type: "delim", value: "+", start: i, end: i + 1 }); i++; continue;
-      case 44: tokens.push({ type: "comma", value: ",", start: i, end: i + 1 }); i++; continue;
-      case 46: tokens.push({ type: "delim", value: ".", start: i, end: i + 1 }); i++; continue;
-      case 58: tokens.push({ type: "colon", value: ":", start: i, end: i + 1 }); i++; continue;
-      case 59: tokens.push({ type: "semicolon", value: ";", start: i, end: i + 1 }); i++; continue;
-      case 61: tokens.push({ type: "delim", value: "=", start: i, end: i + 1 }); i++; continue;
-      case 62: tokens.push({ type: "delim", value: ">", start: i, end: i + 1 }); i++; continue;
-      case 63: tokens.push({ type: "delim", value: "?", start: i, end: i + 1 }); i++; continue;
-      case 64: tokens.push({ type: "delim", value: "@", start: i, end: i + 1 }); i++; continue;
-      case 91: tokens.push({ type: "lbracket", value: "[", start: i, end: i + 1 }); i++; continue;
-      case 93: tokens.push({ type: "rbracket", value: "]", start: i, end: i + 1 }); i++; continue;
-      case 94: tokens.push({ type: "delim", value: "^", start: i, end: i + 1 }); i++; continue;
-      case 123: tokens.push({ type: "lbrace", value: "{", start: i, end: i + 1 }); i++; continue;
-      case 124: tokens.push({ type: "delim", value: "|", start: i, end: i + 1 }); i++; continue;
-      case 125: tokens.push({ type: "rbrace", value: "}", start: i, end: i + 1 }); i++; continue;
-      case 126: tokens.push({ type: "delim", value: "~", start: i, end: i + 1 }); i++; continue;
-    }
-    if (isDigit(c)) {
-      const start = i;
-      while (i < len && isDigit(input.charCodeAt(i))) i++;
-      if (i < len && input.charCodeAt(i) === 0x2e /* . */ && i + 1 < len && isDigit(input.charCodeAt(i + 1))) {
-        i++;
-        while (i < len && isDigit(input.charCodeAt(i))) i++;
-      }
-      const ec = i < len ? input.charCodeAt(i) : 0;
-      if (ec === 0x65 || ec === 0x45 /* e E */) {
-        let j = i + 1;
-        if (j < len && (input.charCodeAt(j) === 0x2b || input.charCodeAt(j) === 0x2d)) j++;
-        if (j < len && isDigit(input.charCodeAt(j))) {
-          i = j;
-          while (i < len && isDigit(input.charCodeAt(i))) i++;
-        }
-      }
-      tokens.push({ type: 'number', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
-      const quote = c;
-      const start = i;
-      i++;
-      while (i < len) {
-        const ch = input.charCodeAt(i);
-        if (ch === 0x5c /* backslash */) { i += 2; continue; }
-        if (ch === quote) { i++; break; }
-        if (ch === 0x0a || ch === 0x0d) { break; }
-        i++;
-      }
-      tokens.push({ type: 'string', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-    if (isCssIdentStart(c) || c === 0x5c /* \\ */) {
-      const start = i;
-      while (i < len) {
-        const c2 = input.charCodeAt(i);
-        if (c2 === 0x5c /* \\ */) {
-          i++;
-          if (i < len && isHexDigit(input.charCodeAt(i))) {
-            // Hex escape: up to 6 hex digits + one optional whitespace
-            let n = 0;
-            while (i < len && n < 6 && isHexDigit(input.charCodeAt(i))) { i++; n++; }
-            if (i < len) {
-              const w = input.charCodeAt(i);
-              if (w === 0x20 || w === 0x09 || w === 0x0a || w === 0x0d) i++;
-            }
-          } else if (i < len) {
-            // Single-char escape: any non-newline char
-            i++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(c2)) break;
-        i++;
-      }
-      // Raw url(...) tokenization: contents are opaque (no comment recognition,
-      // no balanced brackets) until the matching ')'. Strings are tracked so
-      // that a ')' inside a quoted url like url("./image (1).jpg") doesn't
-      // close the url early.
-      if (
-        i - start === 3
-        && i < len
-        && input.charCodeAt(i) === 0x28 /* ( */
-        && (input.charCodeAt(start) | 32) === 0x75 /* u */
-        && (input.charCodeAt(start + 1) | 32) === 0x72 /* r */
-        && (input.charCodeAt(start + 2) | 32) === 0x6c /* l */
-      ) {
-        i++; // consume (
-        while (i < len) {
-          const cu = input.charCodeAt(i);
-          if (cu === 0x29 /* ) */) { i++; break; }
-          if (cu === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-          if (cu === 0x22 /* " */ || cu === 0x27 /* ' */) {
-            const q = cu;
-            i++;
-            while (i < len) {
-              const ch = input.charCodeAt(i);
-              if (ch === 0x5c /* \\ */ && i + 1 < len) { i += 2; continue; }
-              if (ch === q) { i++; break; }
-              if (ch === 0x0a || ch === 0x0d) break;
-              i++;
-            }
-            continue;
-          }
-          i++;
-        }
-      }
-      tokens.push({ type: 'ident', value: input.slice(start, i), start, end: i });
-      continue;
-    }
-    switch (c) {
-      case 47: tokens.push({ type: "delim", value: "/", start: i, end: i + 1 }); i++; continue;
-      case 92: tokens.push({ type: "delim", value: "\\", start: i, end: i + 1 }); i++; continue;
-    }
-    throw new SyntaxError(`Unexpected character '${input[i]}' at position ${i}`);
-  }
-  return tokens;
-}
-
 type State = {
-  readonly tokens: Token[];
-  pos: number;
   readonly input: string;
-  readonly lineStarts: number[];
+  off: number;
   readonly mode: ParseMode;
-  readonly hasComments: boolean;
+  readonly lineStarts: number[];
   __lastCaptureStart: number;
   __lastCaptureEnd: number;
 };
@@ -209,9 +45,6 @@ function offsetToPos(state: State, offset: number): SourcePos {
 }
 
 function makeSource(state: State, startOff: number, endOff: number): SourceRange {
-  // PostCSS convention: end.offset is exclusive (one past last consumed char)
-  // but end.line/column refer to the LAST consumed char (inclusive). So we
-  // compute end's line/column from (endOff - 1) and keep offset as-is.
   const start = offsetToPos(state, startOff);
   const end = endOff > startOff
     ? { ...offsetToPos(state, endOff - 1), offset: endOff }
@@ -219,500 +52,46 @@ function makeSource(state: State, startOff: number, endOff: number): SourceRange
   return { start, end };
 }
 
-// Skip comment tokens between sequential spans. Spans that explicitly
-// expect a comment (cls === 'comment') opt out via the call sites below,
-// so standalone comment captures still work.
-function skipComments(state: State): void {
-  if (!state.hasComments) return;
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
-}
-
-// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
-// .text and the leading/trailing whitespace inside the comment in raws.
-function commentInterior(text: string): string {
-  return text.slice(2, -2).trim();
-}
-
-// Leading whitespace inside a comment's interior (between /* and the first
-// non-whitespace char). For all-whitespace interiors, left captures the
-// entire interior and right is empty — matching PostCSS's convention of
-// not double-counting whitespace.
-function commentLeft(raw: string): string {
-  const inner = raw.slice(2, -2);
-  const m = /^\s*/.exec(inner);
-  return m ? m[0] : '';
-}
-
-// Trailing whitespace inside a comment's interior. Returns '' when the
-// interior is entirely whitespace (left already captured all of it).
-function commentRight(raw: string): string {
-  const inner = raw.slice(2, -2);
-  if (inner.trim() === '') return '';
-  const m = /\s*$/.exec(inner);
-  return m ? m[0] : '';
-}
-
-function tokenValue(_state: State, tok: Token): string {
-  return tok.value;
-}
-
-function expectLiteral(state: State, type: string, value: string): string {
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    throw new SyntaxError(`expected '${value}' at token ${state.pos}`);
-  }
-  state.pos++;
-  return tok.value ?? value;
-}
-
-function consumeOptionalLiteral(state: State, type: string, value: string): string | null {
-  const saved = state.pos;
-  skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== type || tok.value !== value) {
-    state.pos = saved;
-    return null;
-  }
-  state.pos++;
-  return tok.value ?? value;
-}
-
-function expectClass(state: State, cls: string): string {
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    throw new SyntaxError(`expected token of class '${cls}' at token ${state.pos}`);
-  }
-  state.pos++;
-  return tokenValue(state, tok);
-}
-
-function consumeOptionalClass(state: State, cls: string): string | null {
-  const saved = state.pos;
-  if (cls !== 'comment') skipComments(state);
-  const tok = state.tokens[state.pos];
-  if (!tok || tok.type !== cls) {
-    state.pos = saved;
-    return null;
-  }
-  state.pos++;
-  return tokenValue(state, tok);
-}
-
-function requireNoWhitespaceAfterLastToken(state: State): void {
-  const previous = state.tokens[state.pos - 1];
-  const next = state.tokens[state.pos];
-  if (previous === undefined || next === undefined || previous.end !== next.start) {
-    throw new SyntaxError('expected no whitespace after token ' + (state.pos - 1));
-  }
-}
-
-function peekLiteral(state: State, type: string, value: string): boolean {
-  // Does NOT skip comments. Used by repeats-loop stop checks; if a trailing
-  // comment sits between the last child and the body terminator, the loop
-  // must do another iteration so parseComment can pick up the comment as a
-  // sibling node rather than the loop exiting and leaving it stranded.
-  const tok = state.tokens[state.pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
-}
-
-function peekLiteralAfterComments(state: State, type: string, value: string): boolean {
-  if (!state.hasComments) return peekLiteral(state, type, value);
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const tok = state.tokens[pos];
-  return tok !== undefined && tok.type === type && tok.value === value;
-}
-
-function nextNonCommentToken(state: State, pos: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos];
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  return state.tokens[pos];
-}
-
-function nthNonCommentToken(state: State, pos: number, index: number): Token | undefined {
-  if (!state.hasComments) return state.tokens[pos + index];
-  let seen = 0;
-  while (pos < state.tokens.length) {
-    const tok = state.tokens[pos++];
-    if (tok.type === 'comment') continue;
-    if (seen === index) return tok;
-    seen++;
-  }
-  return undefined;
-}
-
-function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
-  const start = state.pos;
-  try {
-    return fn(state);
-  } catch {
-    state.pos = start;
-    return null;
-  }
-}
-
-// Try each role function in order. The first one that succeeds wins.
-// Throws if none succeed (preserves the error from the LAST attempt).
-function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  let lastError: unknown;
-  const start = state.pos;
-  for (const fn of fns) {
-    state.pos = start;
-    try {
-      return fn(state);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new SyntaxError('no role matched');
-}
-
-function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  const start = state.pos;
-  for (const fn of fns) {
-    state.pos = start;
-    try {
-      return fn(state);
-    } catch {
-      // try next
-    }
-  }
-  state.pos = start;
-  return null;
-}
-
-// captureUntil consumes tokens from the current position until it sees a
-// token whose value matches any element of `stops`. When `balanced` is
-// true, bracket pairs () [] {} nest. A closing bracket at depth zero means
-// we've reached the boundary of an enclosing block — stop without consuming
-// it. The returned string is the slice of original source covered by the
-// consumed tokens (optionally trimmed).
-function captureUntil(
-  state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  balanced: boolean,
-  trim: boolean,
-): string {
-  let depth = 0;
-  // Leading comments are absorbed (not part of capture). They typically
-  // belong to raws on the previous sibling — when raws lands they should
-  // be diverted, not silently dropped. Today the body loop's parseComment
-  // pass catches free-floating comments before the capture starts, so this
-  // really only fires when a comment immediately precedes a captured
-  // sub-region (e.g. at-rule params with leading comments).
-  while (state.pos < state.tokens.length && state.tokens[state.pos].type === 'comment') {
-    state.pos++;
-  }
-  const firstIdx = state.pos;
-  const startTok = state.tokens[firstIdx];
-  if (!startTok) {
-    state.__lastCaptureStart = state.input.length;
-    state.__lastCaptureEnd = state.input.length;
-    return '';
-  }
-  while (state.pos < state.tokens.length) {
-    const t = state.tokens[state.pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) break;
-    if (balanced) {
-      if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-      else if (t.value === ')' || t.value === ']' || t.value === '}') {
-        if (depth === 0) break;
-        depth--;
-      }
-    }
-    state.pos++;
-  }
-  // Rewind past trailing comments so they remain available for the next
-  // sibling's parseComment to pick up (e.g. `decl /* trailing */` should
-  // emit a separate Comment node).
-  while (state.pos > firstIdx && state.tokens[state.pos - 1].type === 'comment') {
-    state.pos--;
-  }
-  if (state.pos <= firstIdx) {
-    // No tokens consumed — collapse the offset range to the previous
-    // consumed token's end. This matches PostCSS convention: a gap from
-    // (previous span) to (this empty capture) is '', and the whitespace
-    // sits in the NEXT gap (e.g. `@font-face {` puts the space in
-    // raws.between, not raws.afterName).
-    const here = state.tokens[state.pos - 1]?.end ?? 0;
-    state.__lastCaptureStart = here;
-    state.__lastCaptureEnd = here;
-    return '';
-  }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[state.pos - 1].end;
-  state.__lastCaptureStart = startOff;
-  state.__lastCaptureEnd = endOff;
-
-  // Fold interior comment tokens that have whitespace on either side in
-  // the source. We omit the comment's source range; surrounding whitespace
-  // stays untouched. Token-based — won't accidentally strip /* */ found
-  // inside string tokens (where it isn't a real comment).
-  if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-
-  const omit: Array<[number, number]> = [];
-  for (let i = firstIdx; i < state.pos; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
-  }
-  if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-  let buf = '';
-  let cursor = startOff;
-  for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
-    cursor = e;
-  }
-  buf += state.input.slice(cursor, endOff);
-  return trim ? buf.trim() : buf;
-}
-
-function scanTopLevelBoundary(
-  state: State,
-  stop0: string,
-  stop1: string | null,
-  stop2: string | null,
-  watch0: string | null,
-  watch1: string | null = null,
-): { firstIdx: number; stopIdx: number; captureEndIdx: number; stop: string | null; watchIdx: number; watch1Idx: number } {
-  let depth = 0;
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  const firstIdx = pos;
-  let watchIdx = -1;
-  let watch1Idx = -1;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0) {
-      if (watchIdx < 0 && watch0 !== null && t.value === watch0) watchIdx = pos;
-      if (watch1Idx < 0 && watch1 !== null && t.value === watch1) watch1Idx = pos;
-      if (t.value === stop0 || t.value === stop1 || t.value === stop2) break;
-    }
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) break;
-      depth--;
-    }
-    pos++;
-  }
-  let captureEndIdx = pos;
-  while (captureEndIdx > firstIdx && state.tokens[captureEndIdx - 1].type === 'comment') captureEndIdx--;
-  return {
-    firstIdx,
-    stopIdx: pos,
-    captureEndIdx,
-    stop: pos < state.tokens.length ? state.tokens[pos].value : null,
-    watchIdx,
-    watch1Idx,
-  };
-}
-
-function captureTokenRange(state: State, firstIdx: number, endIdx: number, trim: boolean): string {
-  if (firstIdx >= state.tokens.length || endIdx <= firstIdx) {
-    const here = state.tokens[Math.max(0, firstIdx - 1)]?.end ?? 0;
-    state.__lastCaptureStart = here;
-    state.__lastCaptureEnd = here;
-    return '';
-  }
-  const startOff = state.tokens[firstIdx].start;
-  const endOff = state.tokens[endIdx - 1].end;
-  state.__lastCaptureStart = startOff;
-  state.__lastCaptureEnd = endOff;
-
-  if (!state.hasComments) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-
-  const omit: Array<[number, number]> = [];
-  for (let i = firstIdx; i < endIdx; i++) {
-    const t = state.tokens[i];
-    if (t.type !== 'comment') continue;
-    const before = t.start > 0 ? state.input.charCodeAt(t.start - 1) : -1;
-    const after = t.end < state.input.length ? state.input.charCodeAt(t.end) : -1;
-    if (isAsciiWs(before) || isAsciiWs(after)) omit.push([t.start, t.end]);
-  }
-  if (omit.length === 0) {
-    if (!trim) return state.input.slice(startOff, endOff);
-    let valueStart = startOff;
-    let valueEnd = endOff;
-    while (valueStart < valueEnd && isAsciiWs(state.input.charCodeAt(valueStart))) valueStart++;
-    while (valueEnd > valueStart && isAsciiWs(state.input.charCodeAt(valueEnd - 1))) valueEnd--;
-    return state.input.slice(valueStart, valueEnd);
-  }
-  let buf = '';
-  let cursor = startOff;
-  for (const [s, e] of omit) {
-    buf += state.input.slice(cursor, s);
-    cursor = e;
-  }
-  buf += state.input.slice(cursor, endOff);
-  return trim ? buf.trim() : buf;
-}
-
-// captureRawUntil scans raw source from the current token's start offset
-// looking for the earliest occurrence of any literal in stops. Returns
-// the source slice between current position and the matched stop. State
-// advances to the first token whose start offset is at or past the stop.
-// Used by .rawUntil() modifier for raw-text element bodies (script/style)
-// and unquoted attribute values that can contain arbitrary characters.
-//
-// Performance notes (driven by the html package's huge-page profile):
-//   - The common case is many small captures; we MUST avoid per-call work
-//     that scales with the input size.
-//   - Single-char stops: tight charcode loop. No allocation, no indexOf
-//     scan-to-end on misses.
-//   - Multi-char stops: native indexOf bounded by the running minimum so
-//     later misses don't scan past an earlier hit.
-//   - Case-insensitive: char-by-char ASCII case fold; do NOT lowercase
-//     the input (that allocates an O(input.length) string per call).
-function captureRawUntil(state: State, stops: readonly string[], caseInsensitive: boolean): string {
-  const startOff = state.pos < state.tokens.length
-    ? state.tokens[state.pos].start
-    : state.input.length;
-  const input = state.input;
-  const inputLen = input.length;
-  let earliest = inputLen;
-
-  // Partition stops into single-char and multi-char. Both loops short-
-  // circuit against `earliest` so we never scan past a found candidate.
-  for (let s = 0; s < stops.length; s++) {
-    const stop = stops[s];
-    if (stop.length !== 1) continue;
-    const code = stop.charCodeAt(0);
-    const idx = caseInsensitive
-      ? indexOfCharCI(input, code, startOff, earliest)
-      : indexOfChar(input, code, startOff, earliest);
-    if (idx !== -1 && idx < earliest) earliest = idx;
-  }
-  for (let s = 0; s < stops.length; s++) {
-    const stop = stops[s];
-    if (stop.length < 2) continue;
-    const idx = caseInsensitive
-      ? indexOfCaseInsensitive(input, stop, startOff, earliest)
-      : indexOfBounded(input, stop, startOff, earliest);
-    if (idx !== -1 && idx < earliest) earliest = idx;
-  }
-
-  while (state.pos < state.tokens.length && state.tokens[state.pos].start < earliest) {
-    state.pos++;
-  }
-  state.__lastCaptureStart = startOff;
-  state.__lastCaptureEnd = earliest;
-  return input.slice(startOff, earliest);
-}
-
-// Tight scan: find the first occurrence of `code` in input[from..limit).
-// Returns -1 if absent. Avoids native indexOf's "scan to end of string"
-// behavior on misses — important when many parallel stops are checked.
-function indexOfChar(input: string, code: number, from: number, limit: number): number {
-  const end = limit < input.length ? limit : input.length;
-  for (let i = from; i < end; i++) {
-    if (input.charCodeAt(i) === code) return i;
-  }
-  return -1;
-}
-
-// ASCII case-insensitive variant of indexOfChar.
-function indexOfCharCI(input: string, code: number, from: number, limit: number): number {
-  const fold = (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a) ? code | 0x20 : code;
-  const end = limit < input.length ? limit : input.length;
-  for (let i = from; i < end; i++) {
-    const c = input.charCodeAt(i);
-    const f = (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a) ? c | 0x20 : c;
-    if (f === fold) return i;
-  }
-  return -1;
-}
-
-// Bounded multi-char indexOf. Manual scan with first-char filter; stops at
-// limit. Critical that this NOT delegate to input.indexOf — native indexOf
-// scans to end-of-string on misses (catastrophic for the multi-stop path
-// where most needles don't appear at all in the local region).
-function indexOfBounded(input: string, needle: string, from: number, limit: number): number {
-  const needleLen = needle.length;
-  const end = (limit < input.length ? limit : input.length) - needleLen;
-  const first = needle.charCodeAt(0);
-  if (needleLen === 2) {
-    const second = needle.charCodeAt(1);
-    for (let i = from; i <= end; i++) {
-      if (input.charCodeAt(i) === first && input.charCodeAt(i + 1) === second) return i;
-    }
-    return -1;
-  }
-  outer: for (let i = from; i <= end; i++) {
-    if (input.charCodeAt(i) !== first) continue;
-    for (let j = 1; j < needleLen; j++) {
-      if (input.charCodeAt(i + j) !== needle.charCodeAt(j)) continue outer;
-    }
-    return i;
-  }
-  return -1;
-}
-
-// ASCII case-insensitive indexOf scanning input[from..limit) for needle.
-// Returns the first match offset or -1. No allocation.
-function indexOfCaseInsensitive(input: string, needle: string, from: number, limit: number): number {
-  const needleLen = needle.length;
-  const maxStart = (limit < input.length ? limit : input.length) - needleLen;
-  outer: for (let i = from; i <= maxStart; i++) {
-    for (let j = 0; j < needleLen; j++) {
-      const ic = input.charCodeAt(i + j);
-      const nc = needle.charCodeAt(j);
-      const ifold = (ic >= 0x41 && ic <= 0x5a) || (ic >= 0x61 && ic <= 0x7a) ? ic | 0x20 : ic;
-      const nfold = (nc >= 0x41 && nc <= 0x5a) || (nc >= 0x61 && nc <= 0x7a) ? nc | 0x20 : nc;
-      if (ifold !== nfold) continue outer;
-    }
-    return i;
-  }
-  return -1;
-}
-
-function nextTopLevelStop(state: State, stop0: string, stop1: string | null, stop2: string | null): string | null {
-  let depth = 0;
-  let pos = state.pos;
-  while (pos < state.tokens.length && state.tokens[pos].type === 'comment') pos++;
-  while (pos < state.tokens.length) {
-    const t = state.tokens[pos];
-    if (depth === 0 && (t.value === stop0 || t.value === stop1 || t.value === stop2)) return t.value;
-    if (t.value === '(' || t.value === '[' || t.value === '{') depth++;
-    else if (t.value === ')' || t.value === ']' || t.value === '}') {
-      if (depth === 0) return t.value;
-      depth--;
-    }
-    pos++;
-  }
-  return null;
-}
-
 function isAsciiWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
+}
+
+function isDigit(c: number): boolean {
+  return c >= 48 && c <= 57;
+}
+
+function isHexDigit(c: number): boolean {
+  return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
+}
+
+function isCssIdentStart(c: number): boolean {
+  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
+}
+
+function isCssIdentPart(c: number): boolean {
+  return isCssIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function isJsIdentStart(c: number): boolean {
+  return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36;
+}
+
+function isJsIdentPart(c: number): boolean {
+  return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+// Skip whitespace. Always emitted; called between every span where
+// whitespace is allowed (default for whitespace: 'standard' schemas).
+function skipWs(state: State): void {
+  const input = state.input;
+  const len = input.length;
+  let off = state.off;
+  while (off < len) {
+    const c = input.charCodeAt(off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+    break;
+  }
+  state.off = off;
 }
 
 function isHexString(value: string): boolean {
@@ -723,16 +102,69 @@ function isHexString(value: string): boolean {
   return true;
 }
 
-// Attach raws.before to a parsed child. The body loop knows the offset
-// where the previous sibling ended (or where the body's opening token ended
-// for the first child); raws.before is the source slice from that point up
-// to this child's source.start.offset. Children that don't expose source
-// are skipped (e.g. lookahead failures returning null).
-//
-// Root-level first-child special case: PostCSS folds leading file
-// whitespace into the first child's source range (source.start = 0,
-// raws.before = ''). We approximate by detecting prevEnd === 0 with a
-// whitespace-only gap and emitting '' instead of the actual whitespace.
+// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
+// .text and the leading/trailing whitespace inside the comment in raws.
+function commentInterior(text: string): string {
+  return text.slice(2, -2).trim();
+}
+
+function commentLeft(raw: string): string {
+  const inner = raw.slice(2, -2);
+  const match = inner.match(/^\s*/);
+  return match ? match[0] : '';
+}
+
+function commentRight(raw: string): string {
+  const inner = raw.slice(2, -2);
+  if (inner.trim() === '') return '';
+  const match = inner.match(/\s*$/);
+  return match ? match[0] : '';
+}
+
+// Speculate: try fn; on throw rewind state.off and return null. Used for
+// .optional() recursive spans and multi-role dispatch.
+function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
+  const start = state.off;
+  try {
+    return fn(state);
+  } catch {
+    state.off = start;
+    return null;
+  }
+}
+
+function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
+  let lastError: unknown;
+  const start = state.off;
+  for (const fn of fns) {
+    state.off = start;
+    try {
+      return fn(state);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError ?? new SyntaxError('no role matched');
+}
+
+function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
+  const start = state.off;
+  for (const fn of fns) {
+    state.off = start;
+    try {
+      return fn(state);
+    } catch {
+      // try next
+    }
+  }
+  state.off = start;
+  return null;
+}
+
+// Attach raws.before to a parsed child. Used in raws mode for repeated
+// children — the body loop knows where the previous sibling ended (or where
+// the body's opening token ended for the first child); raws.before is the
+// source slice from that point up to this child's source.start.offset.
 function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   if (!child || typeof child !== 'object') return;
   const node = child as { raws?: Record<string, unknown>; source?: { start?: { offset?: number } } };
@@ -747,14 +179,14 @@ function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
   }
 }
 
-function decorateSyntaxError(input: string, error: unknown, tokens?: readonly Token[], tokenPos?: number): never {
+function decorateSyntaxError(input: string, error: unknown, state?: State): never {
   if (!(error instanceof SyntaxError)) throw error;
   if (hasSourceFrame(error.message)) throw error;
   const messageOffset = offsetFromMessage(error.message, -1);
   const offset = messageOffset >= 0
     ? messageOffset
-    : tokenPos !== undefined
-    ? tokenOffset(tokens ?? [], tokenPos, input.length)
+    : state !== undefined
+    ? state.off
     : offsetFromMessage(error.message, input.length);
   throw syntaxErrorWithFrame(input, error.message, offset);
 }
@@ -801,12 +233,6 @@ function hasSourceFrame(message: string): boolean {
   return message.includes('\n') && message.includes(' | ');
 }
 
-function tokenOffset(tokens: readonly Token[], pos: number, fallback: number): number {
-  const tok = tokens[pos] ?? tokens[tokens.length - 1];
-  if (!tok) return fallback;
-  return tokens[pos] ? tok.start : tok.end;
-}
-
 function offsetFromMessage(message: string, fallback: number): number {
   const marker = 'position ';
   const index = message.indexOf(marker);
@@ -825,668 +251,4714 @@ function offsetFromMessage(message: string, fallback: number): number {
 }
 
 function parseComment(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const __raw_text = expectClass(state, "comment");
-  const text = commentInterior(__raw_text);
-
-  const __text_start = state.tokens[state.pos - 1].start;
-  const __text_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
-  const __struct: Record<string, unknown> = { type: "comment", text: text, raws: { left: commentLeft(state.input.slice(__text_start, __text_end)), right: commentRight(state.input.slice(__text_start, __text_end)) } };
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  const __text_s = __off;
+  let text;
+  if (!((__input.charCodeAt(__off) === 0x2f && __input.charCodeAt(__off + 1) === 0x2a))) throw new SyntaxError("expected comment at position " + __text_s);
+    __off += 2;
+    while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+    if (__off < __len) __off += 2;
+  text = __input.slice(__text_s, __off);
+  const text__interior = commentInterior(text);
+  const __text_start = __text_s;
+  const __text_end = __off;
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  const __struct: Record<string, unknown> = { type: "comment", text: text__interior, raws: { left: commentLeft(state.input.slice(__text_start, __text_end)), right: commentRight(state.input.slice(__text_start, __text_end)) } };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseDeclaration(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const prop = captureUntil(state, ":", ";", "}", true, true);
-
+function parseDeclaration__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
   const __prop_start = state.__lastCaptureStart;
   const __prop_end = state.__lastCaptureEnd;
-  expectLiteral(state, "colon", ":");
-  const value = captureUntil(state, ";", "}", "!", true, true);
-
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125 || __c === 33)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
   const __value_start = state.__lastCaptureStart;
   const __value_end = state.__lastCaptureEnd;
-  if (peekLiteralAfterComments(state, "delim", "!")) {
-    expectLiteral(state, "delim", "!");
-    const important = expectClass(state, "ident");
-
-    const __important_start = state.tokens[state.pos - 1].start;
-    const __important_end = state.tokens[state.pos - 1].end;
-    consumeOptionalLiteral(state, "semicolon", ";");
-    const __lastTok = state.tokens[state.pos - 1];
-    const __endOff = __lastTok ? __lastTok.end : __startOff;
-    const __struct: Record<string, unknown> = { type: "decl", prop: prop, value: value, important: true, raws: { between: state.input.slice(__prop_end, __value_start) } };
-    __struct.source = makeSource(state, __startOff, __endOff);
-    return __struct;
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
   }
-  consumeOptionalLiteral(state, "semicolon", ";");
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __important_s = __off;
+  let important;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __important_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__important_s) | 32) === 0x75
+        && (__input.charCodeAt(__important_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__important_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  important = __input.slice(__important_s, __off);
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  const __struct: Record<string, unknown> = { type: "decl", prop: prop, value: value, important: true, raws: { between: state.input.slice(__prop_end, __value_start) } };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
+
+function parseDeclaration__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
+  const __prop_start = state.__lastCaptureStart;
+  const __prop_end = state.__lastCaptureEnd;
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
+  const __value_start = state.__lastCaptureStart;
+  const __value_end = state.__lastCaptureEnd;
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "decl", prop: prop, value: value, raws: { between: state.input.slice(__prop_end, __value_start) } };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseRule(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const __captured = captureUntil(state, "{", ";", null, true, true);
-  if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
-  const selector = __captured;
+function parseDeclaration(state: State): unknown {
+  { const r = trySpeculate(state, parseDeclaration__alt0); if (r !== null) return r; }
+  return parseDeclaration__alt1(state);
+}
 
+function parseRule(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  let selector = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 123 || __c === 59)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      selector = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      selector = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      selector = __buf;
+    }
+    }
+  }
+  if (selector.endsWith(":")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ':'"); }
   const __selector_start = state.__lastCaptureStart;
   const __selector_end = state.__lastCaptureEnd;
-  const lbrace = expectLiteral(state, "lbrace", "{");
-  const __lbrace_start = state.tokens[state.pos - 1].start;
-  const __lbrace_end = state.tokens[state.pos - 1].end;
-  const __nodes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  const __lbrace_start = __off - 1;
+  const __lbrace_end = __off;
+  __consumedEnd = __off;
+  const __nodes_startOff = __off;
   let __prevEnd_nodes = __nodes_startOff;
   const nodes: unknown[] = [];
-  while (!(peekLiteral(state, "rbrace", "}"))) {
-    // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-    // The separators are silently consumed; they're recoverable as raws
-    // because raws.before for the next child is computed against
-    // __prevEnd_nodes (which doesn't advance during this skip).
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (peekLiteral(state, "rbrace", "}")) break;
-    const __before = state.pos;
-    let __child: unknown;
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
-  else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-  else {
-    if (nextTopLevelStop(state, "{", ";", null) === "{") {
-      const __first = trySpeculate(state, parseRule);
-      __child = __first !== null ? __first : parseDeclaration(state);
-    } else {
-      __child = parseDeclaration(state);
-    }
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
   }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_raws_Comment_AtRule_Rule_Declaration_0(state); __off = state.off;
     attachRawsBefore(state, __child, __prevEnd_nodes);
     nodes.push(__child);
-    if (state.pos === __before) break;
+    if (__off === __before) break;
     __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
   }
-  const rbrace = expectLiteral(state, "rbrace", "}");
-  const __rbrace_start = state.tokens[state.pos - 1].start;
-  const __rbrace_end = state.tokens[state.pos - 1].end;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  __consumedEnd = __prevEnd_nodes;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  const __rbrace_start = __off - 1;
+  const __rbrace_end = __off;
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "rule", selector: selector, nodes: nodes, raws: { between: state.input.slice(__selector_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
-function parseAtRule(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  expectLiteral(state, "delim", "@");
-  const name = expectClass(state, "ident");
-
-  const __name_start = state.tokens[state.pos - 1].start;
-  const __name_end = state.tokens[state.pos - 1].end;
-  const params = captureUntil(state, ";", "{", "}", true, true);
-
+function parseAtRule__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  const __name_start = __name_s;
+  const __name_end = __off;
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
+  }
   const __params_start = state.__lastCaptureStart;
   const __params_end = state.__lastCaptureEnd;
-  if (peekLiteralAfterComments(state, "lbrace", "{")) {
-    const lbrace = expectLiteral(state, "lbrace", "{");
-    const __lbrace_start = state.tokens[state.pos - 1].start;
-    const __lbrace_end = state.tokens[state.pos - 1].end;
-    const __nodes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
-    let __prevEnd_nodes = __nodes_startOff;
-    const nodes: unknown[] = [];
-    while (!(peekLiteral(state, "rbrace", "}"))) {
-      // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-      // The separators are silently consumed; they're recoverable as raws
-      // because raws.before for the next child is computed against
-      // __prevEnd_nodes (which doesn't advance during this skip).
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
-      }
-      if (peekLiteral(state, "rbrace", "}")) break;
-      const __before = state.pos;
-      let __child: unknown;
-    const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
-    else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-    else {
-      if (nextTopLevelStop(state, "{", ";", null) === "{") {
-        const __first = trySpeculate(state, parseRule);
-        __child = __first !== null ? __first : parseDeclaration(state);
-      } else {
-        __child = parseDeclaration(state);
-      }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
     }
-      attachRawsBefore(state, __child, __prevEnd_nodes);
-      nodes.push(__child);
-      if (state.pos === __before) break;
-      __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
-      }
-    }
-    const rbrace = expectLiteral(state, "rbrace", "}");
-    const __rbrace_start = state.tokens[state.pos - 1].start;
-    const __rbrace_end = state.tokens[state.pos - 1].end;
-    const __lastTok = state.tokens[state.pos - 1];
-    const __endOff = __lastTok ? __lastTok.end : __startOff;
-    const __struct: Record<string, unknown> = { type: "atrule", name: name, params: params, nodes: nodes, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
-    __struct.source = makeSource(state, __startOff, __endOff);
-    return __struct;
+    break;
   }
-  const semi = consumeOptionalLiteral(state, "semicolon", ";");
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  const __lbrace_start = __off - 1;
+  const __lbrace_end = __off;
+  __consumedEnd = __off;
+  const __nodes_startOff = __off;
+  let __prevEnd_nodes = __nodes_startOff;
+  const nodes: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_raws_Comment_AtRule_Rule_Declaration_1(state); __off = state.off;
+    attachRawsBefore(state, __child, __prevEnd_nodes);
+    nodes.push(__child);
+    if (__off === __before) break;
+    __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
+  }
+  __consumedEnd = __prevEnd_nodes;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  const __rbrace_start = __off - 1;
+  const __rbrace_end = __off;
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  const __struct: Record<string, unknown> = { type: "atrule", name: name, params: params, nodes: nodes, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __lbrace_start), after: state.input.slice(__prevEnd_nodes, __rbrace_start), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
+  __struct.source = makeSource(state, __startOff, __endOff);
+  return __struct;
+}
 
-  const __semi_start = semi !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
-  const __semi_end = semi !== null ? state.tokens[state.pos - 1].end : __semi_start;
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+function parseAtRule__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  name = __input.slice(__name_s, __off);
+  const __name_start = __name_s;
+  const __name_end = __off;
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
+  }
+  const __params_start = state.__lastCaptureStart;
+  const __params_end = state.__lastCaptureEnd;
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  let semi: string | null = null;
+  if (__input.charCodeAt(__off) === 59) {
+    __off += 1;
+    semi = ";";
+  } else {
+    __off = __consumedEnd;
+  }
+  const __semi_start = semi !== null ? __off - 1 : __consumedEnd;
+  const __semi_end = semi !== null ? __off : __consumedEnd;
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "atrule", name: name, params: params, raws: { afterName: state.input.slice(__name_end, __params_start), between: state.input.slice(__params_end, __semi_start) } };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
+function parseAtRule(state: State): unknown {
+  { const r = trySpeculate(state, parseAtRule__alt0); if (r !== null) return r; }
+  return parseAtRule__alt1(state);
+}
+
 function parseStylesheet(state: State): unknown {
-  const __startTok = state.tokens[state.pos];
-  const __startOff = __startTok ? __startTok.start : state.input.length;
-  const __nodes_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  const __nodes_startOff = __off;
   let __prevEnd_nodes = __nodes_startOff;
   const nodes: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
-    // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-    // The separators are silently consumed; they're recoverable as raws
-    // because raws.before for the next child is computed against
-    // __prevEnd_nodes (which doesn't advance during this skip).
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (state.pos >= state.tokens.length) break;
-    const __before = state.pos;
-    let __child: unknown;
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRule(state); }
-  else if (__tok !== undefined && __tok.type === "comment") { __child = parseComment(state); }
-  else {
-    if (nextTopLevelStop(state, "{", ";", null) === "{") {
-      const __first = trySpeculate(state, parseRule);
-      __child = __first !== null ? __first : parseDeclaration(state);
-    } else {
-      __child = parseDeclaration(state);
-    }
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
   }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__off >= __len) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_raws_Comment_AtRule_Rule_Declaration_2(state); __off = state.off;
     attachRawsBefore(state, __child, __prevEnd_nodes);
     nodes.push(__child);
-    if (state.pos === __before) break;
+    if (__off === __before) break;
     __prevEnd_nodes = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_nodes;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
   }
-  const __lastTok = state.tokens[state.pos - 1];
-  const __endOff = __lastTok ? __lastTok.end : __startOff;
+  __consumedEnd = __prevEnd_nodes;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   const __struct: Record<string, unknown> = { type: "root", nodes: nodes, raws: { after: state.input.slice(__prevEnd_nodes, __endOff), semicolon: (state.input.slice(__prevEnd_nodes - 1, __prevEnd_nodes) === ";") } };
   __struct.source = makeSource(state, __startOff, __endOff);
   return __struct;
 }
 
 function parseCommentFast(state: State): unknown {
-  const __raw_text = expectClass(state, "comment");
-  const text = commentInterior(__raw_text);
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __text_s = __off;
+  let text;
+  if (!((__input.charCodeAt(__off) === 0x2f && __input.charCodeAt(__off + 1) === 0x2a))) throw new SyntaxError("expected comment at position " + __text_s);
+    __off += 2;
+    while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+    if (__off < __len) __off += 2;
+  text = __input.slice(__text_s, __off);
+  const text__interior = commentInterior(text);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { type: "comment", text: text__interior };
+}
 
-  return { type: "comment", text: text };
+function parseDeclarationFast__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125 || __c === 33)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __important_s = __off;
+  let important;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __important_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__important_s) | 32) === 0x75
+        && (__input.charCodeAt(__important_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__important_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+  important = __input.slice(__important_s, __off);
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { type: "decl", prop: prop, value: value, important: true };
+}
+
+function parseDeclarationFast__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { type: "decl", prop: prop, value: value };
 }
 
 function parseDeclarationFast(state: State): unknown {
-  const prop = captureUntil(state, ":", ";", "}", true, true);
-
-  expectLiteral(state, "colon", ":");
-  const value = captureUntil(state, ";", "}", "!", true, true);
-
-  if (peekLiteralAfterComments(state, "delim", "!")) {
-    expectLiteral(state, "delim", "!");
-    const important = expectClass(state, "ident");
-
-    consumeOptionalLiteral(state, "semicolon", ";");
-    return { type: "decl", prop: prop, value: value, important: true };
-  }
-  consumeOptionalLiteral(state, "semicolon", ";");
-  return { type: "decl", prop: prop, value: value };
-}
-
-function parseDeclarationFast__fromLeadingCapture(state: State, prop: string): unknown {
-  expectLiteral(state, "colon", ":");
-  const value = captureUntil(state, ";", "}", "!", true, true);
-
-  if (peekLiteralAfterComments(state, "delim", "!")) {
-    expectLiteral(state, "delim", "!");
-    const important = expectClass(state, "ident");
-
-    consumeOptionalLiteral(state, "semicolon", ";");
-    return { type: "decl", prop: prop, value: value, important: true };
-  }
-  consumeOptionalLiteral(state, "semicolon", ";");
-  return { type: "decl", prop: prop, value: value };
+  { const r = trySpeculate(state, parseDeclarationFast__alt0); if (r !== null) return r; }
+  return parseDeclarationFast__alt1(state);
 }
 
 function parseRuleFast(state: State): unknown {
-  const __captured = captureUntil(state, "{", ";", null, true, true);
-  if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
-  const selector = __captured;
-
-
-  const lbrace = expectLiteral(state, "lbrace", "{");
-
-  const nodes: unknown[] = [];
-  while (!(peekLiteral(state, "rbrace", "}"))) {
-    // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-    // The separators are silently consumed; they're recoverable as raws
-    // because raws.before for the next child is computed against
-    // __prevEnd_nodes (which doesn't advance during this skip).
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (peekLiteral(state, "rbrace", "}")) break;
-    const __before = state.pos;
-    let __child: unknown;
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
-  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else {
-    const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
-    if (__scan.stop === "{") {
-      const selector = captureTokenRange(state, __scan.firstIdx, __scan.captureEndIdx, true);
-      if (selector.endsWith(":")) {
-        state.pos = __scan.firstIdx;
-        __child = parseDeclarationFast(state);
-      } else {
-        state.pos = __scan.stopIdx;
-        __child = parseRuleFast__fromLeadingCapture(state, selector);
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let selector = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
       }
-    } else {
-      if (__scan.watchIdx < 0) {
-        __child = parseDeclarationFast(state);
-      } else {
-        const prop = captureTokenRange(state, __scan.firstIdx, __scan.watchIdx, true);
-        state.pos = __scan.watchIdx;
-        expectLiteral(state, "colon", ":");
-        const __valueStart = state.pos;
-        if (__scan.watch1Idx >= 0) {
-          const value = captureTokenRange(state, __valueStart, __scan.watch1Idx, true);
-          state.pos = __scan.watch1Idx;
-          __child = (() => {
-            expectLiteral(state, "delim", "!");
-            const important = expectClass(state, "ident");
-
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value, important: true };
-          })();
-        } else {
-          const value = captureTokenRange(state, __valueStart, __scan.captureEndIdx, true);
-          state.pos = __scan.stopIdx;
-          __child = (() => {
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value };
-          })();
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 123 || __c === 59)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
         }
+        __lastNonWs = __off;
+        continue;
       }
-    }
-  }
-    nodes.push(__child);
-    if (state.pos === __before) break;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-  }
-  const rbrace = expectLiteral(state, "rbrace", "}");
-  return { type: "rule", selector: selector, nodes: nodes };
-}
-
-function parseRuleFast__fromLeadingCapture(state: State, selector: string): unknown {
-  const lbrace = expectLiteral(state, "lbrace", "{");
-
-  const nodes: unknown[] = [];
-  while (!(peekLiteral(state, "rbrace", "}"))) {
-    // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-    // The separators are silently consumed; they're recoverable as raws
-    // because raws.before for the next child is computed against
-    // __prevEnd_nodes (which doesn't advance during this skip).
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (peekLiteral(state, "rbrace", "}")) break;
-    const __before = state.pos;
-    let __child: unknown;
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
-  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else {
-    const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
-    if (__scan.stop === "{") {
-      const selector = captureTokenRange(state, __scan.firstIdx, __scan.captureEndIdx, true);
-      if (selector.endsWith(":")) {
-        state.pos = __scan.firstIdx;
-        __child = parseDeclarationFast(state);
-      } else {
-        state.pos = __scan.stopIdx;
-        __child = parseRuleFast__fromLeadingCapture(state, selector);
-      }
-    } else {
-      if (__scan.watchIdx < 0) {
-        __child = parseDeclarationFast(state);
-      } else {
-        const prop = captureTokenRange(state, __scan.firstIdx, __scan.watchIdx, true);
-        state.pos = __scan.watchIdx;
-        expectLiteral(state, "colon", ":");
-        const __valueStart = state.pos;
-        if (__scan.watch1Idx >= 0) {
-          const value = captureTokenRange(state, __valueStart, __scan.watch1Idx, true);
-          state.pos = __scan.watch1Idx;
-          __child = (() => {
-            expectLiteral(state, "delim", "!");
-            const important = expectClass(state, "ident");
-
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value, important: true };
-          })();
-        } else {
-          const value = captureTokenRange(state, __valueStart, __scan.captureEndIdx, true);
-          state.pos = __scan.stopIdx;
-          __child = (() => {
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value };
-          })();
-        }
-      }
-    }
-  }
-    nodes.push(__child);
-    if (state.pos === __before) break;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-  }
-  const rbrace = expectLiteral(state, "rbrace", "}");
-  return { type: "rule", selector: selector, nodes: nodes };
-}
-
-function parseAtRuleFast(state: State): unknown {
-  expectLiteral(state, "delim", "@");
-  const name = expectClass(state, "ident");
-
-  const params = captureUntil(state, ";", "{", "}", true, true);
-
-  if (peekLiteralAfterComments(state, "lbrace", "{")) {
-    const lbrace = expectLiteral(state, "lbrace", "{");
-
-    const nodes: unknown[] = [];
-    while (!(peekLiteral(state, "rbrace", "}"))) {
-      // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-      // The separators are silently consumed; they're recoverable as raws
-      // because raws.before for the next child is computed against
-      // __prevEnd_nodes (which doesn't advance during this skip).
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
-      }
-      if (peekLiteral(state, "rbrace", "}")) break;
-      const __before = state.pos;
-      let __child: unknown;
-    const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
-    else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-    else {
-      const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
-      if (__scan.stop === "{") {
-        const selector = captureTokenRange(state, __scan.firstIdx, __scan.captureEndIdx, true);
-        if (selector.endsWith(":")) {
-          state.pos = __scan.firstIdx;
-          __child = parseDeclarationFast(state);
-        } else {
-          state.pos = __scan.stopIdx;
-          __child = parseRuleFast__fromLeadingCapture(state, selector);
-        }
-      } else {
-        if (__scan.watchIdx < 0) {
-          __child = parseDeclarationFast(state);
-        } else {
-          const prop = captureTokenRange(state, __scan.firstIdx, __scan.watchIdx, true);
-          state.pos = __scan.watchIdx;
-          expectLiteral(state, "colon", ":");
-          const __valueStart = state.pos;
-          if (__scan.watch1Idx >= 0) {
-            const value = captureTokenRange(state, __valueStart, __scan.watch1Idx, true);
-            state.pos = __scan.watch1Idx;
-            __child = (() => {
-              expectLiteral(state, "delim", "!");
-              const important = expectClass(state, "ident");
-
-              consumeOptionalLiteral(state, "semicolon", ";");
-              return { type: "decl", prop: prop, value: value, important: true };
-            })();
-          } else {
-            const value = captureTokenRange(state, __valueStart, __scan.captureEndIdx, true);
-            state.pos = __scan.stopIdx;
-            __child = (() => {
-              consumeOptionalLiteral(state, "semicolon", ";");
-              return { type: "decl", prop: prop, value: value };
-            })();
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
           }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      selector = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      selector = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      selector = __buf;
+    }
+    }
+  }
+  if (selector.endsWith(":")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ':'"); }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  __consumedEnd = __off;
+
+  const nodes: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Comment_AtRule_Rule_Declaration_3(state); __off = state.off;
+    nodes.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { type: "rule", selector: selector, nodes: nodes };
+}
+
+function parseAtRuleFast__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
         }
       }
     }
-      nodes.push(__child);
-      if (state.pos === __before) break;
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  __consumedEnd = __off;
+
+  const nodes: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Comment_AtRule_Rule_Declaration_4(state); __off = state.off;
+    nodes.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { type: "atrule", name: name, params: params, nodes: nodes };
+}
+
+function parseAtRuleFast__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+  let name;
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
       }
     }
-    const rbrace = expectLiteral(state, "rbrace", "}");
-    return { type: "atrule", name: name, params: params, nodes: nodes };
+  name = __input.slice(__name_s, __off);
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
   }
-  const semi = consumeOptionalLiteral(state, "semicolon", ";");
-
-
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  let semi: string | null = null;
+  if (__input.charCodeAt(__off) === 59) {
+    __off += 1;
+    semi = ";";
+  } else {
+    __off = __consumedEnd;
+  }
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "atrule", name: name, params: params };
 }
 
+function parseAtRuleFast(state: State): unknown {
+  { const r = trySpeculate(state, parseAtRuleFast__alt0); if (r !== null) return r; }
+  return parseAtRuleFast__alt1(state);
+}
+
 function parseStylesheetFast(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
 
   const nodes: unknown[] = [];
-  while (!(state.pos >= state.tokens.length)) {
-    // Tolerate stray leading separators (e.g. `a {;; color: red }`).
-    // The separators are silently consumed; they're recoverable as raws
-    // because raws.before for the next child is computed against
-    // __prevEnd_nodes (which doesn't advance during this skip).
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (state.pos >= state.tokens.length) break;
-    const __before = state.pos;
-    let __child: unknown;
-  const __tok = state.tokens[state.pos];
-  if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") { __child = parseAtRuleFast(state); }
-  else if (__tok !== undefined && __tok.type === "comment") { __child = parseCommentFast(state); }
-  else {
-    const __scan = scanTopLevelBoundary(state, "{", ";", null, ":", "!");
-    if (__scan.stop === "{") {
-      const selector = captureTokenRange(state, __scan.firstIdx, __scan.captureEndIdx, true);
-      if (selector.endsWith(":")) {
-        state.pos = __scan.firstIdx;
-        __child = parseDeclarationFast(state);
-      } else {
-        state.pos = __scan.stopIdx;
-        __child = parseRuleFast__fromLeadingCapture(state, selector);
-      }
-    } else {
-      if (__scan.watchIdx < 0) {
-        __child = parseDeclarationFast(state);
-      } else {
-        const prop = captureTokenRange(state, __scan.firstIdx, __scan.watchIdx, true);
-        state.pos = __scan.watchIdx;
-        expectLiteral(state, "colon", ":");
-        const __valueStart = state.pos;
-        if (__scan.watch1Idx >= 0) {
-          const value = captureTokenRange(state, __valueStart, __scan.watch1Idx, true);
-          state.pos = __scan.watch1Idx;
-          __child = (() => {
-            expectLiteral(state, "delim", "!");
-            const important = expectClass(state, "ident");
-
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value, important: true };
-          })();
-        } else {
-          const value = captureTokenRange(state, __valueStart, __scan.captureEndIdx, true);
-          state.pos = __scan.stopIdx;
-          __child = (() => {
-            consumeOptionalLiteral(state, "semicolon", ";");
-            return { type: "decl", prop: prop, value: value };
-          })();
-        }
-      }
-    }
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
   }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__off >= __len) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Comment_AtRule_Rule_Declaration_5(state); __off = state.off;
     nodes.push(__child);
-    if (state.pos === __before) break;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
+    if (__off === __before) break;
   }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return { type: "root", nodes: nodes };
 }
 
 function validateComment(state: State): unknown {
-  const __raw_text = expectClass(state, "comment");
-  const text = commentInterior(__raw_text);
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  const __text_s = __off;
 
+  if (!((__input.charCodeAt(__off) === 0x2f && __input.charCodeAt(__off + 1) === 0x2a))) throw new SyntaxError("expected comment at position " + __text_s);
+    __off += 2;
+    while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+    if (__off < __len) __off += 2;
+
+  const text__interior = commentInterior(text);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateDeclaration__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125 || __c === 33)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __important_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __important_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __important_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__important_s) | 32) === 0x75
+        && (__input.charCodeAt(__important_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__important_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateDeclaration__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let prop = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      prop = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      prop = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      prop = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let value = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      value = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      value = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      value = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (__input.charCodeAt(__off) === 59) { __off += 1; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
 function validateDeclaration(state: State): unknown {
-  const prop = captureUntil(state, ":", ";", "}", true, true);
-
-  expectLiteral(state, "colon", ":");
-  const value = captureUntil(state, ";", "}", "!", true, true);
-
-  if (peekLiteralAfterComments(state, "delim", "!")) {
-    expectLiteral(state, "delim", "!");
-    const important = expectClass(state, "ident");
-
-    consumeOptionalLiteral(state, "semicolon", ";");
-    return;
-  }
-  consumeOptionalLiteral(state, "semicolon", ";");
-  return;
+  { const r = trySpeculate(state, validateDeclaration__alt0); if (r !== null) return r; }
+  return validateDeclaration__alt1(state);
 }
 
 function validateRule(state: State): unknown {
-  const __captured = captureUntil(state, "{", ";", null, true, true);
-  if (__captured.endsWith(":")) throw new SyntaxError("captured value ends with rejected suffix ':'");
-  const selector = __captured;
-
-
-  const lbrace = expectLiteral(state, "lbrace", "{");
-  let __count_nodes = 0;
-  while (!(peekLiteral(state, "rbrace", "}"))) {
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  let selector = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
     }
-    if (peekLiteral(state, "rbrace", "}")) break;
-    const __before = state.pos;
-    (() => {
-    const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
-    if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
-    if (nextTopLevelStop(state, "{", ";", null) === "{") {
-      const __first = trySpeculate(state, validateRule);
-      if (__first !== null) return __first;
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 123 || __c === 59)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
     }
-    return validateDeclaration(state);
-  })();
-    __count_nodes++;
-    if (state.pos === __before) break;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      selector = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      selector = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      selector = __buf;
+    }
     }
   }
-  const rbrace = expectLiteral(state, "rbrace", "}");
+  if (selector.endsWith(":")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ':'"); }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  __consumedEnd = __off;
+  let __count_nodes = 0;
+  while (!(__input.charCodeAt(__off) === 125)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) break;
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Comment_AtRule_Rule_Declaration_6(state); __off = state.off;
+    __count_nodes++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateAtRule__alt0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
+  __off += 1;
+  const lbrace = "{";
+  __consumedEnd = __off;
+  let __count_nodes = 0;
+  while (!(__input.charCodeAt(__off) === 125)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__input.charCodeAt(__off) === 125) break;
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Comment_AtRule_Rule_Declaration_7(state); __off = state.off;
+    __count_nodes++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
+  __off += 1;
+  const rbrace = "}";
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateAtRule__alt1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 64)) { state.off = __off; throw new SyntaxError("expected " + "@" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  const __name_s = __off;
+
+  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
+    {
+      const __c0 = __input.charCodeAt(__off);
+      __off++;
+      if (__c0 === 0x5c) {
+        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+          let __n = 0;
+          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+          if (__off < __len) {
+            const __w = __input.charCodeAt(__off);
+            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+          }
+        } else if (__off < __len) {
+          __off++;
+        }
+      }
+      while (__off < __len) {
+        const __c2 = __input.charCodeAt(__off);
+        if (__c2 === 0x5c) {
+          __off++;
+          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
+            let __n = 0;
+            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
+            if (__off < __len) {
+              const __w = __input.charCodeAt(__off);
+              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
+            }
+          } else if (__off < __len) {
+            __off++;
+          }
+          continue;
+        }
+        if (!isCssIdentPart(__c2)) break;
+        __off++;
+      }
+      // Raw url(...) tokenization (matches tokenized backend).
+      if (
+        __off - __name_s === 3
+        && __off < __len
+        && __input.charCodeAt(__off) === 0x28
+        && (__input.charCodeAt(__name_s) | 32) === 0x75
+        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
+        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
+      ) {
+        __off++;
+        while (__off < __len) {
+          const __cu = __input.charCodeAt(__off);
+          if (__cu === 0x29) { __off++; break; }
+          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__cu === 0x22 || __cu === 0x27) {
+            const __q = __cu;
+            __off++;
+            while (__off < __len) {
+              const __ch = __input.charCodeAt(__off);
+              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__ch === __q) { __off++; break; }
+              if (__ch === 0x0a || __ch === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+      }
+    }
+
+  __consumedEnd = __off;
+  let params = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    let __lastLeadingCommentEnd = -1;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        __off += 2;
+        while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+        if (__off < __len) __off += 2;
+        __lastLeadingCommentEnd = __off;
+        continue;
+      }
+      break;
+    }
+    const __startOff = __off;
+    let __lastNonWs = __off;
+    let __depth = 0;
+    const __comments: [number, number][] = [];
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__depth === 0 && (__c === 59 || __c === 123 || __c === 125)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+      }
+      if (__c === 0x22 || __c === 0x27) {
+        const __q = __c;
+        __off++;
+        while (__off < __len) {
+          const __sc = __input.charCodeAt(__off);
+          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__sc === __q) { __off++; break; }
+          if (__sc === 0x0a || __sc === 0x0d) break;
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__depth === 0
+        && (__c === 0x75 || __c === 0x55)
+        && __off + 3 < __len
+        && (__input.charCodeAt(__off + 1) | 32) === 0x72
+        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
+        && __input.charCodeAt(__off + 3) === 0x28) {
+        __off += 4;
+        while (__off < __len) {
+          const __uc = __input.charCodeAt(__off);
+          if (__uc === 0x29) { __off++; break; }
+          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+          if (__uc === 0x22 || __uc === 0x27) {
+            const __uq = __uc;
+            __off++;
+            while (__off < __len) {
+              const __usc = __input.charCodeAt(__off);
+              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+              if (__usc === __uq) { __off++; break; }
+              if (__usc === 0x0a || __usc === 0x0d) break;
+              __off++;
+            }
+            continue;
+          }
+          __off++;
+        }
+        __lastNonWs = __off;
+        continue;
+      }
+      if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+        let __ce = __off + 2;
+        while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+        if (__ce < __len) {
+          __comments.push([__off, __ce + 2]);
+          __off = __ce + 2;
+          continue;
+        }
+      }
+      if (__c === 0x5c && __off + 1 < __len) {
+        __lastNonWs = __off + 2;
+        __off += 2;
+        continue;
+      }
+      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      __off++;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      params = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    if (__comments.length === 0) {
+      params = __input.slice(__startOff, __lastNonWs);
+    } else {
+      let __buf = '';
+      let __cursor = __startOff;
+      for (let __i = 0; __i < __comments.length; __i++) {
+        const __cs = __comments[__i][0];
+        const __ce = __comments[__i][1];
+        if (__ce > __lastNonWs) break;
+        const __before = __cs > 0 ? __input.charCodeAt(__cs - 1) : -1;
+        const __after = __ce < __len ? __input.charCodeAt(__ce) : -1;
+        if (!(isAsciiWs(__before) || isAsciiWs(__after))) continue;
+        __buf += __input.slice(__cursor, __cs);
+        __cursor = __ce;
+      }
+      __buf += __input.slice(__cursor, __lastNonWs);
+      params = __buf;
+    }
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  const __beforeSpan3 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    if (__ws_c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
+      __off += 2;
+      while (__off < __len && !(__input.charCodeAt(__off) === 0x2a && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2f)) __off++;
+      if (__off < __len) __off += 2;
+      continue;
+    }
+    break;
+  }
+  let semi: string | null = null;
+  if (__input.charCodeAt(__off) === 59) {
+    __off += 1;
+    semi = ";";
+  } else {
+    __off = __consumedEnd;
+  }
+  if (__off > __beforeSpan3) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
 }
 
 function validateAtRule(state: State): unknown {
-  expectLiteral(state, "delim", "@");
-  const name = expectClass(state, "ident");
-
-  const params = captureUntil(state, ";", "{", "}", true, true);
-
-  if (peekLiteralAfterComments(state, "lbrace", "{")) {
-    const lbrace = expectLiteral(state, "lbrace", "{");
-    let __count_nodes = 0;
-    while (!(peekLiteral(state, "rbrace", "}"))) {
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
-      }
-      if (peekLiteral(state, "rbrace", "}")) break;
-      const __before = state.pos;
-      (() => {
-      const __tok = state.tokens[state.pos];
-      if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
-      if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
-      if (nextTopLevelStop(state, "{", ";", null) === "{") {
-        const __first = trySpeculate(state, validateRule);
-        if (__first !== null) return __first;
-      }
-      return validateDeclaration(state);
-    })();
-      __count_nodes++;
-      if (state.pos === __before) break;
-      while (peekLiteral(state, "semicolon", ";")) {
-        expectLiteral(state, "semicolon", ";");
-      }
-    }
-    const rbrace = expectLiteral(state, "rbrace", "}");
-    return;
-  }
-  const semi = consumeOptionalLiteral(state, "semicolon", ";");
-
-
-  return;
+  { const r = trySpeculate(state, validateAtRule__alt0); if (r !== null) return r; }
+  return validateAtRule__alt1(state);
 }
 
 function validateStylesheet(state: State): unknown {
-  let __count_nodes = 0;
-  while (!(state.pos >= state.tokens.length)) {
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
-    if (state.pos >= state.tokens.length) break;
-    const __before = state.pos;
-    (() => {
-    const __tok = state.tokens[state.pos];
-    if (__tok !== undefined && __tok.type === "delim" && __tok.value === "@") return validateAtRule(state);
-    if (__tok !== undefined && __tok.type === "comment") return validateComment(state);
-    if (nextTopLevelStop(state, "{", ";", null) === "{") {
-      const __first = trySpeculate(state, validateRule);
-      if (__first !== null) return __first;
-    }
-    return validateDeclaration(state);
-  })();
-    __count_nodes++;
-    if (state.pos === __before) break;
-    while (peekLiteral(state, "semicolon", ";")) {
-      expectLiteral(state, "semicolon", ";");
-    }
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
   }
+  let __consumedEnd = __off;
+  let __count_nodes = 0;
+  while (!(__off >= __len)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+    if (__off >= __len) break;
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Comment_AtRule_Rule_Declaration_8(state); __off = state.off;
+    __count_nodes++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    while (__input.charCodeAt(__off) === 59) { __off += 1; while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  } }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
   return;
+}
+
+function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_0(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
+  return tryRoles(state, [parseRule, parseDeclaration]);
+}
+
+function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_1(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
+  return tryRoles(state, [parseRule, parseDeclaration]);
+}
+
+function __roleDispatch_raws_Comment_AtRule_Rule_Declaration_2(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseComment(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRule(state);
+  return tryRoles(state, [parseRule, parseDeclaration]);
+}
+
+function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_3(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
+  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+}
+
+function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_4(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
+  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+}
+
+function __roleDispatch_fast_Comment_AtRule_Rule_Declaration_5(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 64) return parseAtRuleFast(state);
+  return tryRoles(state, [parseRuleFast, parseDeclarationFast]);
+}
+
+function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_6(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
+  if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
+  return tryRoles(state, [validateRule, validateDeclaration]);
+}
+
+function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_7(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
+  if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
+  return tryRoles(state, [validateRule, validateDeclaration]);
+}
+
+function __roleDispatch_validate_Comment_AtRule_Rule_Declaration_8(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 42) return validateComment(state);
+  if (__input.charCodeAt(__off) === 64) return validateAtRule(state);
+  return tryRoles(state, [validateRule, validateDeclaration]);
 }
 
 type DirectState = {
@@ -2071,34 +5543,25 @@ export function parse(input: string, options?: ParseOptions): unknown {
     if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }
-  let tokens: Token[];
-  try {
-    tokens = tokenize(input);
-  } catch (error) {
-    throw decorateSyntaxError(input, error);
-  }
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
-  const hasComments = tokens.hasComments === true;
   const state: State = {
-    tokens,
-    pos: 0,
     input,
-    lineStarts,
+    off: 0,
     mode,
-    hasComments,
+    lineStarts,
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     const result = mode === 'raws' ? parseStylesheet(state) : parseStylesheetFast(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.off !== input.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
     }
   if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -2111,30 +5574,22 @@ export function validate(input: string, options?: ParseOptions): void {
   }
   validateDirectFast(input);
   return;
-  let tokens: Token[];
-  try {
-    tokens = tokenize(input);
-  } catch (error) {
-    throw decorateSyntaxError(input, error);
-  }
   const state: State = {
-    tokens,
-    pos: 0,
     input,
-    lineStarts: [],
+    off: 0,
     mode: 'fast',
-    hasComments: tokens.hasComments === true,
+    lineStarts: [],
     __lastCaptureStart: 0,
     __lastCaptureEnd: 0,
   };
   try {
     validateStylesheet(state);
-    if (state.pos !== state.tokens.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing token at position ${state.pos}`, tokenOffset(tokens, state.pos, input.length));
+    if (state.off !== input.length) {
+      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
     }
   } catch (error) {
     if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, tokens, state.pos);
+      throw decorateSyntaxError(input, error, state);
     }
     throw error;
   }
@@ -2146,11 +5601,6 @@ export function validate(input: string, options?: ParseOptions): void {
   module: "@parser2/css",
   exportName: 'validate',
 };
-
-export function countTokens(input: string): number {
-  return tokenize(input).length;
-}
-
 
 const __validationSet0 = new Set<string>(["accent-color", "border-block-color", "border-block-end-color", "border-block-start-color", "border-bottom-color", "border-color", "border-inline-color", "border-inline-end-color", "border-inline-start-color", "border-left-color", "border-right-color", "border-top-color", "caret-color", "color", "column-rule-color", "fill", "flood-color", "lighting-color", "outline-color", "stop-color", "stroke", "text-decoration-color"]);
 const __validationSet1 = new Set<string>(["block-size", "border-block-end-width", "border-block-start-width", "border-block-width", "border-bottom-width", "border-inline-end-width", "border-inline-start-width", "border-inline-width", "border-left-width", "border-right-width", "border-spacing", "border-top-width", "border-width", "bottom", "column-gap", "column-width", "flex-basis", "font-size", "gap", "height", "inline-size", "inset", "inset-block", "inset-block-end", "inset-block-start", "inset-inline", "inset-inline-end", "inset-inline-start", "left", "letter-spacing", "margin", "margin-block", "margin-block-end", "margin-block-start", "margin-bottom", "margin-inline", "margin-inline-end", "margin-inline-start", "margin-left", "margin-right", "margin-top", "max-block-size", "max-height", "max-inline-size", "max-width", "min-block-size", "min-height", "min-inline-size", "min-width", "outline-offset", "outline-width", "padding", "padding-block", "padding-block-end", "padding-block-start", "padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left", "padding-right", "padding-top", "right", "row-gap", "scroll-margin", "scroll-padding", "top", "width", "word-spacing"]);

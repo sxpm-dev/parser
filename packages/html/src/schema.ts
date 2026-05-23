@@ -137,6 +137,25 @@ export default defineSchema({
       })
       .build(),
 
+    // Recovery: malformed doctype with no closing `>` (e.g. EOF-truncated
+    // `<!doctype broken`). Spans match the partial input — no terminator.
+    // Recovery productions are tried only after every valid production
+    // throws, so the well-formed shape above always wins on good input.
+    ex('<!DOCTYPE broken')
+      .as('Doctype')
+      .recovers({ syncAt: ['>'], drop: 'incomplete-doctype' })
+      .span('<!')
+      .span('keyword', 'DOCTYPE').ident().oneOf(['DOCTYPE'])
+      .span('name', 'broken').ident().html()
+      .structure({
+        nodeName: '#documentType',
+        name: $.name,
+        publicId: '',
+        systemId: '',
+        parentNode: null,
+      })
+      .build(),
+
     // ===== Comment =================================================
     // Use punctuator-bracketed capture rather than `.comment().block()`
     // because the compiler's comment tokenizer is currently hardcoded to
@@ -202,6 +221,35 @@ export default defineSchema({
       .as('HtmlElement')
       .span('<')
       .span('tag', 'br').ident().html().oneOf(VOID_TAGS)
+      .span('attrs', '', 'Attribute').repeats({ min: 0 })
+      .span('/>')
+      .structure({
+        nodeName: $.tag,
+        tagName: $.tag,
+        namespaceURI: HTML_NS,
+        attrs: $.attrs,
+        childNodes: [],
+        parentNode: null,
+      })
+      .build(),
+
+    // ----- Recovery productions (tried only when valid productions fail) ----
+    // Per WHATWG, HTML parsing is unfailing — any byte sequence yields some
+    // DOM. The valid productions above cover well-formed HTML; the recoveries
+    // below pick up the common malformed shapes that real-world input throws
+    // at us. Each `.recovers({...})` production runs only after every valid
+    // production has thrown.
+
+    // Recovery 1: any self-closing custom tag (`<my-element/>`, `<div123/>`).
+    // Valid void elements use the same shape but are restricted via
+    // `.oneOf(VOID_TAGS)`. When the dispatcher routes a non-void tag through
+    // the regular-element path (which then fails on `/>`), this recovery
+    // kicks in and treats it as self-closed.
+    ex('<custom/>')
+      .as('HtmlElement')
+      .recovers({ syncAt: ['>', '/>'], drop: 'self-closing-element' })
+      .span('<')
+      .span('tag', 'custom').ident().html()
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('/>')
       .structure({

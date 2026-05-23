@@ -1,7 +1,8 @@
 import type { SpanModifier } from '@parser2/parser';
-import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
+import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production, type ResolvedSpan } from '../model.ts';
 import { jsIdent, jsString } from './strings.ts';
 import { collectOffsetRefs, emitStructureExpr } from './structure.ts';
+import { typeIdConst } from './tokenize.ts';
 
 // Emits one parseXxx(state) function per node type. The smoke-test slice has
 // one production per node type so we can take the direct path; multi-
@@ -10,6 +11,13 @@ import { collectOffsetRefs, emitStructureExpr } from './structure.ts';
 type Ctx = {
   readonly literalTypeByText: ReadonlyMap<string, string>;
   readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
+  readonly tokenTypeIds: ReadonlyMap<string, number>;
+  // Token type names whose tokenization maps to exactly one literal text.
+  // For these the codegen can drop the value-equality check at every
+  // expectLiteral / peekLiteral site (one int compare against TYPE_<NAME>
+  // is sufficient). Types covering many literals (e.g. HTML's 'delim'
+  // covers `?`, `/`, `:` etc.) need both type-id and value compares.
+  readonly singleLiteralTypes: ReadonlySet<string>;
   readonly variant: ParseVariant;
   readonly capturedDispatch?: boolean;
 };
@@ -17,9 +25,16 @@ type Ctx = {
 type ParseVariant = 'fast' | 'raws' | 'validate';
 
 export function emitNodeFunctions(schema: InferredSchema): string {
+  const singleLiteralTypes = inferSingleLiteralTypes(schema);
   const parts: string[] = [];
   for (const variant of ['raws', 'fast', 'validate'] as const) {
-    const ctx: Ctx = { literalTypeByText: schema.literalTypeByText, nodeTypes: schema.nodeTypes, variant };
+    const ctx: Ctx = {
+      literalTypeByText: schema.literalTypeByText,
+      nodeTypes: schema.nodeTypes,
+      tokenTypeIds: schema.tokenTypeIds,
+      singleLiteralTypes,
+      variant,
+    };
     for (const info of schema.nodeTypes.values()) {
       parts.push(emitNodeFunction(info, ctx));
       const continuation = emitLeadingCaptureContinuationFunction(info, ctx);
@@ -27,6 +42,69 @@ export function emitNodeFunctions(schema: InferredSchema): string {
     }
   }
   return parts.join('\n\n');
+}
+
+// True iff every production starts with the same literal span. Then the
+// multi-prod dispatcher routes by inspecting later spans, where values DO
+// participate in the check — safe to elide the inner .oneOf on those later
+// class spans.
+function allProductionsShareLeadingLiteral(info: NodeTypeInfo): boolean {
+  if (info.productions.length < 2) return false;
+  const first = info.productions[0]!.spans[0];
+  if (!first || first.class !== 'literal' || !first.text) return false;
+  const headText = first.text;
+  for (let i = 1; i < info.productions.length; i++) {
+    const span = info.productions[i]!.spans[0];
+    if (!span || span.class !== 'literal' || span.text !== headText) return false;
+  }
+  return true;
+}
+
+function inferSingleLiteralTypes(schema: InferredSchema): ReadonlySet<string> {
+  const counts = new Map<string, number>();
+  for (const decl of schema.literals) counts.set(decl.type, (counts.get(decl.type) ?? 0) + 1);
+  const single = new Set<string>();
+  for (const [type, count] of counts) if (count === 1) single.add(type);
+  return single;
+}
+
+// Emits the TYPE_ID_<NAME> reference used by codegen call sites.
+function typeIdRef(typeName: string, ctx: Ctx): string {
+  if (!ctx.tokenTypeIds.has(typeName)) {
+    throw new Error(`emitter: no type ID for token type '${typeName}'`);
+  }
+  return typeIdConst(typeName);
+}
+
+// Pseudo-stop ID for "absent slot" — runtime captureUntil / scan helpers
+// compare against this and never match. -1 is safe: real IDs start at 0.
+const NO_TYPE_ID = '-1';
+
+// Emits the (type-id, optional-value) helper-call expression for an
+// expect/peek/consume on a literal token. Single-literal types drop the
+// value compare entirely.
+function expectLiteralCall(typeName: string, valueText: string, ctx: Ctx): string {
+  const id = typeIdRef(typeName, ctx);
+  if (ctx.singleLiteralTypes.has(typeName)) return `expectLiteralId(state, ${id}, ${jsString(valueText)})`;
+  return `expectLiteralIdValue(state, ${id}, ${jsString(valueText)})`;
+}
+
+function consumeOptionalLiteralCall(typeName: string, valueText: string, ctx: Ctx): string {
+  const id = typeIdRef(typeName, ctx);
+  if (ctx.singleLiteralTypes.has(typeName)) return `consumeOptionalLiteralId(state, ${id}, ${jsString(valueText)})`;
+  return `consumeOptionalLiteralIdValue(state, ${id}, ${jsString(valueText)})`;
+}
+
+function peekLiteralCall(typeName: string, valueText: string, ctx: Ctx): string {
+  const id = typeIdRef(typeName, ctx);
+  if (ctx.singleLiteralTypes.has(typeName)) return `peekLiteralId(state, ${id})`;
+  return `peekLiteralIdValue(state, ${id}, ${jsString(valueText)})`;
+}
+
+function peekLiteralAfterCommentsCall(typeName: string, valueText: string, ctx: Ctx): string {
+  const id = typeIdRef(typeName, ctx);
+  if (ctx.singleLiteralTypes.has(typeName)) return `peekLiteralIdAfterComments(state, ${id})`;
+  return `peekLiteralIdValueAfterComments(state, ${id}, ${jsString(valueText)})`;
 }
 
 function emitLeadingCaptureContinuationFunction(info: NodeTypeInfo, ctx: Ctx): string | null {
@@ -53,8 +131,25 @@ ${indent(body, 1)}
 }`;
 }
 
-function emitNodeFunction(info: NodeTypeInfo, ctx: Ctx): string {
-  const fnName = parseFnName(info.name, ctx.variant);
+function emitNodeFunction(info: NodeTypeInfo, ctx: Ctx, fnNameOverride?: string): string {
+  const fnName = fnNameOverride ?? parseFnName(info.name, ctx.variant);
+
+  // Recovery productions are tried only as fallbacks after every valid
+  // production has failed. Split them out and emit the existing dispatch
+  // over the valid-only subset (under ${fnName}__valid), then wrap with a
+  // try/catch that runs each recovery production via trySpeculate. If all
+  // recoveries fail too, the valid dispatch's error is re-thrown.
+  if (fnNameOverride === undefined) {
+    const validProductions = info.productions.filter((p) => p.recovery === undefined);
+    const recoveryProductions = info.productions.filter((p) => p.recovery !== undefined);
+    if (recoveryProductions.length > 0) {
+      if (validProductions.length === 0) {
+        throw new CompilerError(`Node type '${info.name}' has only .recovers() productions — at least one valid production is required`);
+      }
+      return emitNodeFunctionWithRecovery(info.name, validProductions, recoveryProductions, ctx);
+    }
+  }
+
   if (info.productions.length === 1) {
     const body = emitProductionBody(info.productions[0]!, ctx);
     return `function ${fnName}(state: State): unknown {
@@ -64,15 +159,30 @@ ${indent(body, 1)}
   // Multi-production: emit each production as its own __alt function and a
   // dispatch wrapper that speculatively tries each. The last attempt runs
   // directly so its error propagates.
-  const factored = emitFactoredTwoProductionFunction(info, ctx);
+  const factored = emitFactoredTwoProductionFunction(info, ctx, fnName);
   if (factored) return factored;
+  // Try the lookahead dispatch first. If we can generate a guarded direct
+  // dispatch (no speculation), every __alt is reached only after the
+  // dispatcher proved its discriminating .oneOf — so the inner check is
+  // safe to elide. Without a guarded dispatcher (pure trySpeculate) the
+  // .oneOf check is what makes the speculation fail-fast; keep it.
+  //
+  // BUT: the top-level dispatcher (emitFirstTokenProductionDispatch) strips
+  // .oneOf values when checking the first token; only sub-dispatchers on
+  // later spans actually filter by values. So elision is only safe when the
+  // discriminating span is NOT span 0 — i.e. all productions share at least
+  // one leading literal. In that case the dispatcher's value-check lands on
+  // the first class span (span ≥ 1), making the inner .oneOf redundant.
+  const lookaheadDispatch = emitProductionLookaheadDispatch(info, ctx, fnName);
+  const altOptions = lookaheadDispatch && allProductionsShareLeadingLiteral(info)
+    ? { skipFirstOneOfRefinement: true }
+    : undefined;
   const altFns = info.productions.map((production, i) => {
-    const body = emitProductionBody(production, ctx);
+    const body = emitProductionBody(production, ctx, altOptions);
     return `function ${fnName}__alt${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
   }).join('\n\n');
-  const lookaheadDispatch = emitProductionLookaheadDispatch(info, ctx);
   if (lookaheadDispatch) return `${altFns}\n\n${lookaheadDispatch}`;
   const speculativeAttempts = info.productions.slice(0, -1).map((_, i) =>
     `  { const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
@@ -85,7 +195,59 @@ ${speculativeAttempts}
   return `${altFns}\n\n${dispatch}`;
 }
 
-function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx): string | null {
+// Emit the public dispatcher for a node with recovery productions:
+//
+//   parseFoo(state) tries parseFoo__valid first. If it throws (any partial
+//   consumption is rolled back by the catch resetting state.pos), each
+//   recovery production is tried via trySpeculate in declaration order. If
+//   none match either, the original valid-dispatch error propagates so the
+//   caller sees a real syntax error and the source frame points at the
+//   right offset.
+//
+// The valid-only dispatch is emitted by recursively calling emitNodeFunction
+// with a synthetic info containing the valid productions and a renamed
+// output function ${fnName}__valid. Each recovery production is emitted as
+// a normal __recoveryN function via emitProductionBody — recovery production
+// bodies are plain productions, not multi-dispatched.
+function emitNodeFunctionWithRecovery(
+  nodeName: string,
+  validProductions: ReadonlyArray<Production>,
+  recoveryProductions: ReadonlyArray<Production>,
+  ctx: Ctx,
+): string {
+  const fnName = parseFnName(nodeName, ctx.variant);
+  const validFnName = `${fnName}__valid`;
+  const validInfo: NodeTypeInfo = { name: nodeName, productions: validProductions };
+  const validDispatch = emitNodeFunction(validInfo, ctx, validFnName);
+
+  const recoveryFns = recoveryProductions.map((production, i) => {
+    const body = emitProductionBody(production, ctx);
+    return `function ${fnName}__recovery${i}(state: State): unknown {
+${indent(body, 1)}
+}`;
+  }).join('\n\n');
+
+  const recoveryAttempts = recoveryProductions.map((_, i) =>
+    `    const __r${i} = trySpeculate(state, ${fnName}__recovery${i});
+    if (__r${i} !== null) return __r${i};`,
+  ).join('\n');
+
+  const wrapper = `function ${fnName}(state: State): unknown {
+  const __recoverStart = state.pos;
+  try {
+    return ${validFnName}(state);
+  } catch (__validErr) {
+    state.pos = __recoverStart;
+${recoveryAttempts}
+    state.pos = __recoverStart;
+    throw __validErr;
+  }
+}`;
+
+  return `${validDispatch}\n\n${recoveryFns}\n\n${wrapper}`;
+}
+
+function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx, fnName: string = parseFnName(info.name, ctx.variant)): string | null {
   if (info.productions.length !== 2) return null;
   const [first, second] = info.productions;
   if (!first || !second) return null;
@@ -127,8 +289,7 @@ function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx): string
   const lines: string[] = [];
 
   if (ctx.variant === 'raws') {
-    lines.push(`const __startTok = state.tokens[state.pos];`);
-    lines.push(`const __startOff = __startTok ? __startTok.start : state.input.length;`);
+    lines.push(`const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;`);
   }
   for (let i = 0; i < pivot; i++) {
     lines.push(emitSpan(
@@ -156,12 +317,12 @@ function emitFactoredTwoProductionFunction(info: NodeTypeInfo, ctx: Ctx): string
   const branchType = ctx.literalTypeByText.get(firstBranchLiteral.text) ?? firstBranchLiteral.text;
   const firstBranch = emitFactoredBranch(first, pivot + 1, commonValue, commonPresence, commonStart, commonEnd, firstOffsetRefs, ctx);
   const secondBranch = emitFactoredBranch(second, pivot + 1, commonValue, commonPresence, commonStart, commonEnd, secondOffsetRefs, ctx);
-  lines.push(`if (peekLiteralAfterComments(state, ${jsString(branchType)}, ${jsString(firstBranchLiteral.text)})) {
+  lines.push(`if (${peekLiteralAfterCommentsCall(branchType, firstBranchLiteral.text, ctx)}) {
 ${indent(firstBranch, 1)}
 }`);
   lines.push(secondBranch);
 
-  return `function ${parseFnName(info.name, ctx.variant)}(state: State): unknown {
+  return `function ${fnName}(state: State): unknown {
 ${indent(lines.join('\n'), 1)}
 }`;
 }
@@ -194,8 +355,7 @@ function emitFactoredBranch(
     ));
   }
   if (ctx.variant === 'raws') {
-    lines.push(`const __lastTok = state.tokens[state.pos - 1];`);
-    lines.push(`const __endOff = __lastTok ? __lastTok.end : __startOff;`);
+    lines.push(`const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;`);
   }
   if (ctx.variant === 'validate') {
     lines.push(`return;`);
@@ -292,7 +452,7 @@ function emitFactoredContinuationBody(
   const branchType = ctx.literalTypeByText.get(firstBranchLiteral.text) ?? firstBranchLiteral.text;
   const firstBranch = emitFactoredBranch(first, pivot + 1, valueExpr, presenceExpr, startOffExpr, endOffExpr, firstOffsetRefs, ctx);
   const secondBranch = emitFactoredBranch(second, pivot + 1, valueExpr, presenceExpr, startOffExpr, endOffExpr, secondOffsetRefs, ctx);
-  lines.push(`if (peekLiteralAfterComments(state, ${jsString(branchType)}, ${jsString(firstBranchLiteral.text)})) {
+  lines.push(`if (${peekLiteralAfterCommentsCall(branchType, firstBranchLiteral.text, ctx)}) {
 ${indent(firstBranch, 1)}
 }`);
   lines.push(secondBranch);
@@ -324,8 +484,8 @@ function sameModifiers(a: ReadonlyArray<SpanModifier>, b: ReadonlyArray<SpanModi
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx): string | null {
-  const grouped = emitFirstTokenProductionDispatch(info, ctx);
+function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx, fnName: string = parseFnName(info.name, ctx.variant)): string | null {
+  const grouped = emitFirstTokenProductionDispatch(info, ctx, fnName);
   if (grouped) return grouped;
 
   if (info.productions.length !== 2) return null;
@@ -344,9 +504,8 @@ function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx): string |
 
     const fallbackStops = secondUntil.stops.slice(0, 2);
     const stops = [uniqueStops[0]!, ...fallbackStops].slice(0, 3);
-    const fnName = parseFnName(info.name, ctx.variant);
     const dispatch = `function ${fnName}(state: State): unknown {
-  if (nextTopLevelStop(state, ${stopArgs(stops)}) === ${jsString(uniqueStops[0]!)}) {
+  if (nextTopLevelStopId(state, ${stopIdArgs(stops, ctx)}) === ${literalTypeIdRef(uniqueStops[0]!, ctx)}) {
     const r = trySpeculate(state, ${fnName}__alt0);
     if (r !== null) return r;
   }
@@ -357,7 +516,7 @@ function emitProductionLookaheadDispatch(info: NodeTypeInfo, ctx: Ctx): string |
   return null;
 }
 
-function emitFirstTokenProductionDispatch(info: NodeTypeInfo, ctx: Ctx): string | null {
+function emitFirstTokenProductionDispatch(info: NodeTypeInfo, ctx: Ctx, fnName: string = parseFnName(info.name, ctx.variant)): string | null {
   if (info.productions.length < 2) return null;
 
   const groups: Array<{ readonly first: FirstToken; readonly indexes: number[] }> = [];
@@ -386,14 +545,13 @@ function emitFirstTokenProductionDispatch(info: NodeTypeInfo, ctx: Ctx): string 
   if (fallback.length > 0 && groups.length === 1) return null;
   groups.sort((a, b) => firstTokenSpecificity(b.first) - firstTokenSpecificity(a.first));
 
-  const fnName = parseFnName(info.name, ctx.variant);
   const lines: string[] = [];
   lines.push(`function ${fnName}(state: State): unknown {`);
-  lines.push(`  const __tok = state.tokens[state.pos];`);
+  lines.push(`  const __tokIdx = state.pos;`);
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i]!;
     const first = group.first.kind === 'class' ? { kind: 'class' as const, type: group.first.type } : group.first;
-    const check = emitFirstTokenCheck('__tok', first);
+    const check = emitFirstTokenCheck('__tokIdx', first, ctx);
     lines.push(`  ${i === 0 ? 'if' : 'else if'} (${check}) {`);
     lines.push(indent(emitProductionGroupDispatch(info, fnName, group.indexes, ctx), 2));
     lines.push(`  }`);
@@ -462,8 +620,7 @@ function emitSharedPrefixRepeatedLiteralDispatch(
   const lines: string[] = [];
 
   if (ctx.variant === 'raws') {
-    lines.push(`const __startTok = state.tokens[state.pos];`);
-    lines.push(`const __startOff = __startTok ? __startTok.start : state.input.length;`);
+    lines.push(`const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;`);
   }
   for (let i = 0; i < pivot - 1; i++) {
     lines.push(emitSpan(
@@ -493,10 +650,10 @@ function emitSharedPrefixRepeatedLiteralDispatch(
   const secondType = ctx.literalTypeByText.get(secondLiteral.text) ?? secondLiteral.text;
   const firstBranch = emitFactoredBranch(first, pivot, valueExpr, presenceExpr, startOffExpr, endOffExpr, firstOffsetRefs, ctx);
   const secondBranch = emitFactoredBranch(second, pivot, valueExpr, presenceExpr, startOffExpr, endOffExpr, secondOffsetRefs, ctx);
-  lines.push(`if (peekLiteral(state, ${jsString(firstType)}, ${jsString(firstLiteral.text)})) {
+  lines.push(`if (${peekLiteralCall(firstType, firstLiteral.text, ctx)}) {
 ${indent(firstBranch, 1)}
 }`);
-  lines.push(`if (peekLiteral(state, ${jsString(secondType)}, ${jsString(secondLiteral.text)})) {
+  lines.push(`if (${peekLiteralCall(secondType, secondLiteral.text, ctx)}) {
 ${indent(secondBranch, 1)}
 }`);
   lines.push(`throw new SyntaxError('no production matched');`);
@@ -536,7 +693,7 @@ function emitSharedRepeatedSpan(
   const stopPredicate = stops.map((stop) => {
     if (stop.class !== 'literal' || !stop.text) throw new Error('shared repeated stop must be a literal span');
     const type = ctx.literalTypeByText.get(stop.text) ?? stop.text;
-    return `peekLiteral(state, ${jsString(type)}, ${jsString(stop.text)})`;
+    return peekLiteralCall(type, stop.text, ctx);
   }).join(' || ');
   const childDecl = roles.length === 1
     ? `const __child = ${parseFnName(roles[0]!, ctx.variant)}(state);`
@@ -551,10 +708,10 @@ function emitSharedRepeatedSpan(
   const updatePrevEnd = needsOffsets
     ? ctx.variant === 'raws'
       ? `__prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};`
-      : `__prevEnd_${listVar} = state.tokens[state.pos - 1]?.end ?? __prevEnd_${listVar};`
+      : `__prevEnd_${listVar} = (state.pos > 0 ? state.ends[state.pos - 1] : __prevEnd_${listVar});`
     : '';
   const offsetDecls = needsOffsets
-    ? `const __${listVar}_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+    ? `const __${listVar}_startOff = (state.pos > 0 ? state.ends[state.pos - 1] : 0);
 let __prevEnd_${listVar} = __${listVar}_startOff;`
     : '';
   const attachLine = attachBefore ? `  ${attachBefore}\n` : '';
@@ -607,25 +764,24 @@ function emitTokenSequenceProductionGroupDispatch(
   if (fallback.length > 1) return null;
   groups.sort((a, b) => firstTokenSpecificity(b.token) - firstTokenSpecificity(a.token));
 
-  const tokVar = `__tok${spanIndex}`;
+  const tokVar = `__tokIdx${spanIndex}`;
   const lines: string[] = [];
-  lines.push(`const ${tokVar} = nthNonCommentToken(state, state.pos, ${spanIndex});`);
+  lines.push(`const ${tokVar} = nthNonCommentPos(state, state.pos, ${spanIndex});`);
 
-  // Hoist `__tokN.value.toLowerCase()` once when at least one branch needs
-  // it. Without this every if/else branch re-runs toLowerCase on the same
-  // value — fine semantically, but hot dispatchers (HTML, CSS) call it
-  // thousands of times per parse. The lower-cased value is also reused by
-  // emitFirstTokenCheck via the lowerVar shortcut below.
+  // Hoist `tokenValue(state, idx).toLowerCase()` once when at least one
+  // branch needs it. Without this every if/else branch re-slices and
+  // re-toLowerCases the same span — fine semantically, but hot dispatchers
+  // (HTML, CSS) call it thousands of times per parse.
   const needsLower = groups.some(
     (g) => g.token.kind === 'class' && g.token.values && g.token.values.length > 0,
   );
   const lowerVar = needsLower ? `${tokVar}__lower` : undefined;
   if (lowerVar) {
-    lines.push(`const ${lowerVar} = ${tokVar} !== undefined ? ${tokVar}.value.toLowerCase() : undefined;`);
+    lines.push(`const ${lowerVar} = ${tokVar} < state.count ? state.input.slice(state.starts[${tokVar}], state.ends[${tokVar}]).toLowerCase() : undefined;`);
   }
 
   groups.forEach((group, i) => {
-    const check = emitFirstTokenCheck(tokVar, group.token, lowerVar);
+    const check = emitFirstTokenCheck(tokVar, group.token, ctx, lowerVar);
     lines.push(`${i === 0 ? 'if' : 'else if'} (${check}) {`);
     const branch = group.indexes.length === 1
       ? `return ${fnName}__alt${group.indexes[0]}(state);`
@@ -642,7 +798,16 @@ function emitTokenSequenceProductionGroupDispatch(
   return lines.join('\n');
 }
 
-function emitProductionBody(production: Production, ctx: Ctx): string {
+// `skipFirstOneOfRefinement` elides the runtime `.oneOf` check on the first
+// class-typed span. Used when this production is reached via a multi-prod
+// dispatcher that already filtered the value through the same .oneOf — the
+// inner check is dead code on that path. Set by emitNodeFunction when a
+// guarded dispatch wrapper was generated.
+function emitProductionBody(
+  production: Production,
+  ctx: Ctx,
+  options?: { readonly skipFirstOneOfRefinement?: boolean },
+): string {
   const lines: string[] = [];
   const valueExpr = new Map<string, string>();
   const presenceExpr = new Map<string, string>();
@@ -652,23 +817,24 @@ function emitProductionBody(production: Production, ctx: Ctx): string {
   const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const offsetRefs = collectOffsetRefs(production.structure, structureOptions);
   const needsNodeRange = ctx.variant === 'raws';
+  let elideOneOfPending = options?.skipFirstOneOfRefinement === true;
 
   // Capture node-start before any spans are consumed.
   if (needsNodeRange) {
-    lines.push(`const __startTok = state.tokens[state.pos];`);
-    lines.push(`const __startOff = __startTok ? __startTok.start : state.input.length;`);
+    lines.push(`const __startOff = state.pos < state.count ? state.starts[state.pos] : state.input.length;`);
   }
 
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]!;
     const next = spans[i + 1];
-    lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx));
+    const elide = elideOneOfPending && span.class !== 'literal';
+    if (elide) elideOneOfPending = false;
+    lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, elide));
   }
 
   // After all spans, compute end from the last consumed token.
   if (needsNodeRange) {
-    lines.push(`const __lastTok = state.tokens[state.pos - 1];`);
-    lines.push(`const __endOff = __lastTok ? __lastTok.end : __startOff;`);
+    lines.push(`const __endOff = state.pos > 0 ? state.ends[state.pos - 1] : __startOff;`);
   }
 
   if (ctx.variant === 'validate') {
@@ -701,6 +867,7 @@ function emitSpan(
   endOffExpr: Map<string, string>,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
+  elideOneOfRefinement: boolean = false,
 ): string {
   const optional = hasModifier(span.modifiers, 'optional');
   const repeats = findModifier(span.modifiers, 'repeats');
@@ -723,7 +890,7 @@ function emitSpan(
   if (span.class === 'literal') {
     return emitLiteralSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx);
   }
-  return emitClassedSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx);
+  return emitClassedSpan(span, valueExpr, presenceExpr, startOffExpr, endOffExpr, optional, noWhitespaceAfter, offsetRefs, ctx, elideOneOfRefinement);
 }
 
 // Helper: emit start/end offset variables for a consumed-from-tokens span,
@@ -737,11 +904,11 @@ function emitOneTokenOffsets(name: string, optional: boolean): string {
   const startVar = `__${name}_start`;
   const endVar = `__${name}_end`;
   if (optional) {
-    return `const ${startVar} = ${name} !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
-const ${endVar} = ${name} !== null ? state.tokens[state.pos - 1].end : ${startVar};`;
+    return `const ${startVar} = ${name} !== null ? state.starts[state.pos - 1] : (state.pos > 0 ? state.ends[state.pos - 1] : 0);
+const ${endVar} = ${name} !== null ? state.ends[state.pos - 1] : ${startVar};`;
   }
-  return `const ${startVar} = state.tokens[state.pos - 1].start;
-const ${endVar} = state.tokens[state.pos - 1].end;`;
+  return `const ${startVar} = state.starts[state.pos - 1];
+const ${endVar} = state.ends[state.pos - 1];`;
 }
 
 function emitUntilSpan(
@@ -754,7 +921,7 @@ function emitUntilSpan(
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
 ): string {
-  const stopsArgs = stopArgs(until.stops);
+  const stopsArgs = stopIdArgs(until.stops, ctx);
   const balanced = until.balanced ? 'true' : 'false';
   const trim = until.trim ? 'true' : 'false';
   const captureCall = `captureUntil(state, ${stopsArgs}, ${balanced}, ${trim})`;
@@ -850,7 +1017,7 @@ function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): str
 }`);
   }
   return `{
-  const __off = state.tokens[state.pos]?.start ?? state.input.length;
+  const __off = state.pos < state.count ? state.starts[state.pos] : state.input.length;
   const __c = state.input.charCodeAt(__off);
   ${branches.join('\n  ')}
 }`;
@@ -899,8 +1066,6 @@ function emitLiteralSpan(
 ): string {
   if (!span.text) throw new Error('emitter: literal span has no text');
   const type = ctx.literalTypeByText.get(span.text) ?? span.text;
-  const typeExpr = jsString(type);
-  const valueLit = jsString(span.text);
   const adjacencyCheck = noWhitespaceAfter ? '\nrequireNoWhitespaceAfterLastToken(state);' : '';
   const optionalAdjacencyCheck = noWhitespaceAfter ? `\nif (${span.name ? jsIdent(span.name) : '__optional'} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
   if (span.name) {
@@ -913,16 +1078,16 @@ function emitLiteralSpan(
     }
     if (optional) {
       presenceExpr.set(span.name, `(${v} !== null)`);
-      return `const ${v} = consumeOptionalLiteral(state, ${typeExpr}, ${valueLit});
+      return `const ${v} = ${consumeOptionalLiteralCall(type, span.text, ctx)};
 ${optionalAdjacencyCheck.trimStart()}
 ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     }
-    return `const ${v} = expectLiteral(state, ${typeExpr}, ${valueLit});${adjacencyCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
+    return `const ${v} = ${expectLiteralCall(type, span.text, ctx)};${adjacencyCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
   }
   if (optional) return noWhitespaceAfter
-    ? `{ const __optional = consumeOptionalLiteral(state, ${typeExpr}, ${valueLit}); if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
-    : `consumeOptionalLiteral(state, ${typeExpr}, ${valueLit});`;
-  return `expectLiteral(state, ${typeExpr}, ${valueLit});${adjacencyCheck}`;
+    ? `{ const __optional = ${consumeOptionalLiteralCall(type, span.text, ctx)}; if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
+    : `${consumeOptionalLiteralCall(type, span.text, ctx)};`;
+  return `${expectLiteralCall(type, span.text, ctx)};${adjacencyCheck}`;
 }
 
 function emitClassedSpan(
@@ -935,13 +1100,11 @@ function emitClassedSpan(
   noWhitespaceAfter: boolean,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
+  elideOneOfRefinement: boolean = false,
 ): string {
   const typeName = classToTokenType(span);
+  const typeId = typeIdRef(typeName, ctx);
   const adjacencyCheck = noWhitespaceAfter ? '\nrequireNoWhitespaceAfterLastToken(state);' : '';
-  // Comment captures store the trimmed interior (no /* */), matching the
-  // PostCSS `text` convention. Apply this transformation at the call site
-  // rather than mutating the token's value so other consumers still see
-  // the raw source slice if needed.
   const isComment = span.class === 'comment';
   if (span.name) {
     const v = jsIdent(span.name);
@@ -953,16 +1116,16 @@ function emitClassedSpan(
     }
     if (optional) {
       presenceExpr.set(span.name, `(${v} !== null)`);
-      const call = `consumeOptionalClass(state, ${jsString(typeName)})`;
-      const refinementCheck = emitSpanRefinementCheck(span, v, true, 'state.tokens[state.pos - 1].start');
+      const call = `consumeOptionalClassId(state, ${typeId})`;
+      const refinementCheck = emitSpanRefinementCheck(span, v, true, 'state.starts[state.pos - 1]', elideOneOfRefinement);
       if (isComment) {
         const optionalCommentAdjacencyCheck = noWhitespaceAfter ? `\nif (__raw_${v} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
         return `const __raw_${v} = ${call};
 const ${v} = __raw_${v} === null ? null : commentInterior(__raw_${v});
 ${optionalCommentAdjacencyCheck.trimStart()}
 ${refinementCheck}${needsOffsets ? `
-const __${v}_start = __raw_${v} !== null ? state.tokens[state.pos - 1].start : (state.tokens[state.pos - 1]?.end ?? 0);
-const __${v}_end = __raw_${v} !== null ? state.tokens[state.pos - 1].end : __${v}_start;` : ''}`;
+const __${v}_start = __raw_${v} !== null ? state.starts[state.pos - 1] : (state.pos > 0 ? state.ends[state.pos - 1] : 0);
+const __${v}_end = __raw_${v} !== null ? state.ends[state.pos - 1] : __${v}_start;` : ''}`;
       }
       const optionalAdjacencyCheck = noWhitespaceAfter ? `\nif (${v} !== null) requireNoWhitespaceAfterLastToken(state);` : '';
       return `const ${v} = ${call};
@@ -970,28 +1133,29 @@ ${optionalAdjacencyCheck.trimStart()}
 ${refinementCheck}
 ${needsOffsets ? emitOneTokenOffsets(v, true) : ''}`;
     }
-    const call = `expectClass(state, ${jsString(typeName)})`;
-    const refinementCheck = emitSpanRefinementCheck(span, v, false, 'state.tokens[state.pos - 1].start');
+    const call = `expectClassId(state, ${typeId}, ${jsString(typeName)})`;
+    const refinementCheck = emitSpanRefinementCheck(span, v, false, 'state.starts[state.pos - 1]', elideOneOfRefinement);
     if (isComment) {
       return `const __raw_${v} = ${call};
 const ${v} = commentInterior(__raw_${v});
 ${adjacencyCheck}${refinementCheck}${needsOffsets ? `
-const __${v}_start = state.tokens[state.pos - 1].start;
-const __${v}_end = state.tokens[state.pos - 1].end;` : ''}`;
+const __${v}_start = state.starts[state.pos - 1];
+const __${v}_end = state.ends[state.pos - 1];` : ''}`;
     }
     return `const ${v} = ${call};
 ${adjacencyCheck}${refinementCheck}${needsOffsets ? `\n${emitOneTokenOffsets(v, false)}` : ''}`;
   }
   if (optional) return noWhitespaceAfter
-    ? `{ const __optional = consumeOptionalClass(state, ${jsString(typeName)}); if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
-    : `consumeOptionalClass(state, ${jsString(typeName)});`;
-  return `expectClass(state, ${jsString(typeName)});${adjacencyCheck}`;
+    ? `{ const __optional = consumeOptionalClassId(state, ${typeId}); if (__optional !== null) requireNoWhitespaceAfterLastToken(state); }`
+    : `consumeOptionalClassId(state, ${typeId});`;
+  return `expectClassId(state, ${typeId}, ${jsString(typeName)});${adjacencyCheck}`;
 }
 
-function emitSpanRefinementCheck(span: ResolvedSpan, valueVar: string, optional: boolean, positionExpr: string): string {
+function emitSpanRefinementCheck(span: ResolvedSpan, valueVar: string, optional: boolean, positionExpr: string, elideOneOf: boolean = false): string {
   const checks: string[] = [];
   for (const refinement of span.refinements) {
     if (refinement.name === 'oneOf') {
+      if (elideOneOf) continue;
       const values = refinement.args?.[0];
       if (!Array.isArray(values) || values.some((value) => typeof value !== 'string')) continue;
       const condition = oneOfCondition(valueVar, values.map((value) => value.toLowerCase()));
@@ -1097,20 +1261,20 @@ while (!(${stopPredicate})) {
 }${minCheck}${maxCheck}`;
     }
     const sepType = ctx.literalTypeByText.get(sep) ?? sep;
-    const sepTypeExpr = jsString(sepType);
-    const sepValueLit = jsString(sep);
+    const sepPeek = peekLiteralCall(sepType, sep, ctx);
+    const sepExpect = expectLiteralCall(sepType, sep, ctx);
     return `let __count_${listVar} = 0;
 while (!(${stopPredicate})) {
-  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
-    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+  while (${sepPeek}) {
+    ${sepExpect};
   }
   if (${stopPredicate}) break;
   const __before = state.pos;
   ${validateChildCall}
   __count_${listVar}++;
   if (state.pos === __before) break;
-  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
-    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+  while (${sepPeek}) {
+    ${sepExpect};
   }
 }${minCheck}${maxCheck}`;
   }
@@ -1153,10 +1317,10 @@ while (!(${stopPredicate})) {
   const updatePrevEnd = needsOffsets
     ? ctx.variant === 'raws'
       ? `__prevEnd_${listVar} = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_${listVar};`
-      : `__prevEnd_${listVar} = state.tokens[state.pos - 1]?.end ?? __prevEnd_${listVar};`
+      : `__prevEnd_${listVar} = (state.pos > 0 ? state.ends[state.pos - 1] : __prevEnd_${listVar});`
     : '';
   const offsetDecls = needsOffsets
-    ? `const __${listVar}_startOff = state.tokens[state.pos - 1]?.end ?? 0;
+    ? `const __${listVar}_startOff = (state.pos > 0 ? state.ends[state.pos - 1] : 0);
 let __prevEnd_${listVar} = __${listVar}_startOff;`
     : '';
   const attachLine = attachBefore ? `  ${attachBefore}\n` : '';
@@ -1176,8 +1340,8 @@ ${updateLine}}${minCheck}${maxCheck}`;
   }
 
   const sepType = ctx.literalTypeByText.get(sep) ?? sep;
-  const sepTypeExpr = jsString(sepType);
-  const sepValueLit = jsString(sep);
+  const sepPeek = peekLiteralCall(sepType, sep, ctx);
+  const sepExpect = expectLiteralCall(sepType, sep, ctx);
 
   // Separator is OPTIONAL between children — consume when present, but don't
   // require it. This lets a single repeats group mix children that naturally
@@ -1190,16 +1354,16 @@ ${stopBeforeLine}  // Tolerate stray leading separators (e.g. \`a {;; color: red
   // The separators are silently consumed; they're recoverable as raws
   // because raws.before for the next child is computed against
   // __prevEnd_${listVar} (which doesn't advance during this skip).
-  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
-    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+  while (${sepPeek}) {
+    ${sepExpect};
   }
   if (${stopPredicate}) break;
   const __before = state.pos;
   ${childDecl}
 ${attachLine}  ${listVar}.push(__child);
   if (state.pos === __before) break;
-${updateLine}  while (peekLiteral(state, ${sepTypeExpr}, ${sepValueLit})) {
-    expectLiteral(state, ${sepTypeExpr}, ${sepValueLit});
+${updateLine}  while (${sepPeek}) {
+    ${sepExpect};
   }
 }${minCheck}${maxCheck}`;
 }
@@ -1229,16 +1393,16 @@ function emitRoleDispatchExpr(roles: ReadonlyArray<string>, ctx: Ctx): string {
   }
 
   if (keyed.length === 0) {
-    return `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
+    return rolesDispatchCall(roles, ctx);
   }
   keyed.sort((a, b) => firstTokenSpecificity(firstTokenForRole(b, ctx)!) - firstTokenSpecificity(firstTokenForRole(a, ctx)!));
 
   const lines: string[] = [];
   lines.push(`(() => {`);
-  lines.push(`  const __tok = state.tokens[state.pos];`);
+  lines.push(`  const __tokIdx = state.pos;`);
   for (const role of keyed) {
     const first = firstTokenForRole(role, ctx)!;
-    const check = emitFirstTokenCheck('__tok', first);
+    const check = emitFirstTokenCheck('__tokIdx', first, ctx);
     lines.push(`  if (${check}) return ${parseFnName(role, ctx.variant)}(state);`);
   }
   const fallbackRoles = [...fallback, ...roles.filter((role) => !keyed.includes(role) && !fallback.includes(role))];
@@ -1272,10 +1436,10 @@ function emitRoleDispatchAssignment(target: string, roles: ReadonlyArray<string>
   lines.push(`let ${target}: unknown;`);
   if (keyed.length > 0) {
     keyed.sort((a, b) => firstTokenSpecificity(firstTokenForRole(b, ctx)!) - firstTokenSpecificity(firstTokenForRole(a, ctx)!));
-    lines.push(`const __tok = state.tokens[state.pos];`);
+    lines.push(`const __tokIdx = state.pos;`);
     keyed.forEach((role, i) => {
       const first = firstTokenForRole(role, ctx)!;
-      const check = emitFirstTokenCheck('__tok', first);
+      const check = emitFirstTokenCheck('__tokIdx', first, ctx);
       lines.push(`${i === 0 ? 'if' : 'else if'} (${check}) { ${target} = ${parseFnName(role, ctx.variant)}(state); }`);
     });
     const fallbackRoles = [...fallback, ...roles.filter((role) => !keyed.includes(role) && !fallback.includes(role))];
@@ -1299,21 +1463,21 @@ function emitFallbackAssignment(target: string, roles: ReadonlyArray<string>, ct
       const firstFn = parseFnName(roles[0]!, ctx.variant);
       const secondFn = parseFnName(roles[1]!, ctx.variant);
       if (first.rejectSuffix) {
-        return `if (nextTopLevelStop(state, ${stopArgs(first.stops)}) === ${jsString(first.literal)}) {
+        return `if (nextTopLevelStopId(state, ${stopIdArgs(first.stops, ctx)}) === ${literalTypeIdRef(first.literal, ctx)}) {
   const __first = trySpeculate(state, ${firstFn});
   ${target} = __first !== null ? __first : ${secondFn}(state);
 } else {
   ${target} = ${secondFn}(state);
 }`;
       }
-      return `if (nextTopLevelStop(state, ${stopArgs(first.stops)}) === ${jsString(first.literal)}) {
+      return `if (nextTopLevelStopId(state, ${stopIdArgs(first.stops, ctx)}) === ${literalTypeIdRef(first.literal, ctx)}) {
   ${target} = ${firstFn}(state);
 } else {
   ${target} = ${secondFn}(state);
 }`;
     }
   }
-  return `${target} = tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}]);`;
+  return `${target} = ${rolesDispatchCall(roles, ctx)};`;
 }
 
 function emitCapturedUntilAssignment(target: string, roles: ReadonlyArray<string>, ctx: Ctx): string | null {
@@ -1337,9 +1501,12 @@ function emitCapturedUntilAssignment(target: string, roles: ReadonlyArray<string
   }
   const secondaryValueBranch = factoredContinuationPivot(secondary, 1);
   const lines: string[] = [];
-  const secondaryWatch = secondaryValueBranch ? jsString(secondaryValueBranch.literal) : 'null';
-  lines.push(`const __scan = scanTopLevelBoundary(state, ${stopArgs(primary.until.stops)}, ${jsString(secondary.literal)}, ${secondaryWatch});`);
-  lines.push(`if (__scan.stop === ${jsString(primary.literal)}) {`);
+  const secondaryWatchPair = secondaryValueBranch
+    ? literalTypeIdValuePair(secondaryValueBranch.literal, ctx)
+    : `${NO_TYPE_ID}, ""`;
+  const secondaryLiteralPair = literalTypeIdValuePair(secondary.literal, ctx);
+  lines.push(`const __scan = scanTopLevelBoundary(state, ${stopIdArgs(primary.until.stops, ctx)}, ${secondaryLiteralPair}, ${secondaryWatchPair});`);
+  lines.push(`if (__scan.stopId === ${literalTypeIdRef(primary.literal, ctx)}) {`);
   lines.push(indent(emitCapturedProbeBranch(
     target,
     primary,
@@ -1612,17 +1779,26 @@ function emitFallbackDispatch(roles: ReadonlyArray<string>, ctx: Ctx, pad: strin
     const first = untilThenLiteralForRole(roles[0]!, ctx);
     if (first) {
       if (first.rejectSuffix) {
-        return `${pad}if (nextTopLevelStop(state, ${stopArgs(first.stops)}) === ${jsString(first.literal)}) {
+        return `${pad}if (nextTopLevelStopId(state, ${stopIdArgs(first.stops, ctx)}) === ${literalTypeIdRef(first.literal, ctx)}) {
 ${pad}  const __first = trySpeculate(state, ${parseFnName(roles[0]!, ctx.variant)});
 ${pad}  if (__first !== null) return __first;
 ${pad}}
 ${pad}return ${parseFnName(roles[1]!, ctx.variant)}(state);`;
       }
-      return `${pad}if (nextTopLevelStop(state, ${stopArgs(first.stops)}) === ${jsString(first.literal)}) return ${parseFnName(roles[0]!, ctx.variant)}(state);
+      return `${pad}if (nextTopLevelStopId(state, ${stopIdArgs(first.stops, ctx)}) === ${literalTypeIdRef(first.literal, ctx)}) return ${parseFnName(roles[0]!, ctx.variant)}(state);
 ${pad}return ${parseFnName(roles[1]!, ctx.variant)}(state);`;
     }
   }
-  return `${pad}return tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}]);`;
+  return `${pad}return ${rolesDispatchCall(roles, ctx)};`;
+}
+
+// When a fallback list has exactly one role, emit a direct call. tryRoles
+// otherwise allocates a single-element array literal on every dispatch — pure
+// waste when there's no real disjunction to try. For multi-role fallbacks we
+// still go through tryRoles so the speculation semantics are preserved.
+function rolesDispatchCall(roles: ReadonlyArray<string>, ctx: Ctx): string {
+  if (roles.length === 1) return `${parseFnName(roles[0]!, ctx.variant)}(state)`;
+  return `tryRoles(state, [${roles.map((r) => parseFnName(r, ctx.variant)).join(', ')}])`;
 }
 
 function untilThenLiteralForRole(
@@ -1638,15 +1814,32 @@ function untilThenLiteralForRole(
   return { stops: until.stops, literal: second.text, rejectSuffix: until.rejectSuffix };
 }
 
-function stopArgs(stops: ReadonlyArray<string>): string {
+// Three (id, value) pairs for captureUntil/scanTopLevelBoundary/etc. Each
+// stop slot becomes \`<typeId>, "<value>"\` — empty string for single-literal
+// types skips the value check at runtime.
+function stopIdArgs(stops: ReadonlyArray<string>, ctx: Ctx): string {
   if (stops.length < 1 || stops.length > 3) {
     throw new Error(`emitter: lookahead supports 1-3 stop tokens, got ${stops.length}`);
   }
-  return [
-    jsString(stops[0]!),
-    jsString(stops[1] ?? null),
-    jsString(stops[2] ?? null),
-  ].join(', ');
+  return [stopIdValuePair(stops[0], ctx), stopIdValuePair(stops[1], ctx), stopIdValuePair(stops[2], ctx)].join(', ');
+}
+
+function stopIdValuePair(stopLiteral: string | undefined, ctx: Ctx): string {
+  if (stopLiteral === undefined) return `${NO_TYPE_ID}, ""`;
+  const typeName = ctx.literalTypeByText.get(stopLiteral) ?? stopLiteral;
+  const id = typeIdRef(typeName, ctx);
+  const valueArg = ctx.singleLiteralTypes.has(typeName) ? '""' : jsString(stopLiteral);
+  return `${id}, ${valueArg}`;
+}
+
+function literalTypeIdRef(literal: string, ctx: Ctx): string {
+  const typeName = ctx.literalTypeByText.get(literal) ?? literal;
+  return typeIdRef(typeName, ctx);
+}
+
+function literalTypeIdValuePair(literal: string | undefined, ctx: Ctx): string {
+  if (literal === undefined) return `${NO_TYPE_ID}, ""`;
+  return stopIdValuePair(literal, ctx);
 }
 
 function firstTokenForRole(role: string, ctx: Ctx): FirstToken | null {
@@ -1702,19 +1895,24 @@ function firstTokenSpecificity(first: FirstToken): number {
   return first.values && first.values.length > 0 ? 2 : 1;
 }
 
+// `tokIdxExpr` is an index variable (or expression) pointing into state.types.
+// If the index is out of range (>= state.count) the check returns false.
 function emitFirstTokenCheck(
-  tokenExpr: string,
+  tokIdxExpr: string,
   first: FirstToken,
+  ctx: Ctx,
   lowerVar?: string,
 ): string {
+  const typeId = typeIdRef(first.type, ctx);
+  const inRange = `${tokIdxExpr} < state.count`;
   if (first.kind === 'literal') {
-    return `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)} && ${tokenExpr}.value === ${jsString(first.value)}`;
+    const typeCheck = `${inRange} && state.types[${tokIdxExpr}] === ${typeId}`;
+    if (ctx.singleLiteralTypes.has(first.type)) return typeCheck;
+    return `${typeCheck} && tokenEquals(state, ${tokIdxExpr}, ${jsString(first.value)})`;
   }
-  const base = `${tokenExpr} !== undefined && ${tokenExpr}.type === ${jsString(first.type)}`;
+  const base = `${inRange} && state.types[${tokIdxExpr}] === ${typeId}`;
   if (!first.values || first.values.length === 0) return base;
-  // If the caller hoisted `tokenExpr.value.toLowerCase()` once, reuse it
-  // instead of recomputing toLowerCase in each branch of a long dispatch.
-  const lowerExpr = lowerVar ?? `${tokenExpr}.value.toLowerCase()`;
+  const lowerExpr = lowerVar ?? `state.input.slice(state.starts[${tokIdxExpr}], state.ends[${tokIdxExpr}]).toLowerCase()`;
   return `${base} && (${oneOfCondition(lowerExpr, first.values)})`;
 }
 
@@ -1740,12 +1938,12 @@ function oneOfCondition(valueExpr: string, values: readonly string[]): string {
 }
 
 function stopPredicateFor(next: ResolvedSpan | undefined, ctx: Ctx): string {
-  if (!next) return 'state.pos >= state.tokens.length';
+  if (!next) return 'state.pos >= state.count';
   if (next.class === 'literal' && next.text) {
     const type = ctx.literalTypeByText.get(next.text) ?? next.text;
-    return `peekLiteral(state, ${jsString(type)}, ${jsString(next.text)})`;
+    return peekLiteralCall(type, next.text, ctx);
   }
-  return 'state.pos >= state.tokens.length';
+  return 'state.pos >= state.count';
 }
 
 function enforceMin(listVar: string, min: number, role: string): string {

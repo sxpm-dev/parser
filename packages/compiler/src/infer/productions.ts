@@ -20,7 +20,7 @@ export function buildProductions(
   for (const schema of schemas) {
     for (const example of schema.examples) {
       if (example.status.kind === 'rejected') continue;
-      if (example.structure === undefined && example.status.kind === 'valid') {
+      if (example.structure === undefined) {
         throw new CompilerError(
           `Example '${truncate(example.input)}' has no .structure(...) literal`,
         );
@@ -31,6 +31,7 @@ export function buildProductions(
         source: example,
         spans: example.spans.map(toResolvedSpan),
         structure: example.structure as StructureValue,
+        recovery: example.status.kind === 'recovered' ? example.status.recovery : undefined,
       };
       const list = productionsByNodeType.get(nodeType) ?? [];
       list.push(production);

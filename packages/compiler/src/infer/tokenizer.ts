@@ -21,6 +21,11 @@ export type TokenizerProgram = {
   readonly literals: ReadonlyArray<LiteralDecl>;
   readonly literalTypeByText: ReadonlyMap<string, string>;
   readonly classes: ReadonlyArray<TokenClassUsage>;
+  // Stable name->int mapping for every distinct type the tokenizer can emit
+  // (every literal's `type` field plus each class's class name plus 'raw'
+  // when unknownChars === 'tolerate'). Drives typed-array storage in the
+  // generated parser: `state.types[pos] === TYPE_<NAME>`.
+  readonly tokenTypeIds: ReadonlyMap<string, number>;
 };
 
 export function buildTokenizerProgram(
@@ -98,5 +103,19 @@ export function buildTokenizerProgram(
     });
   }
 
-  return { literals, literalTypeByText: literalToType, classes };
+  // Distinct type names: every literal's mapped type + every class name +
+  // 'raw' when the schema tolerates unknown characters (`unknownChars:
+  // 'tolerate'`). Sorted so the assignment is stable across builds.
+  const typeNames = new Set<string>();
+  for (const type of literalToType.values()) typeNames.add(type);
+  for (const usage of classes) typeNames.add(usage.class);
+  for (const schema of schemas) {
+    if (schema.unknownChars === 'tolerate') typeNames.add('raw');
+  }
+  const tokenTypeIds = new Map<string, number>();
+  for (const name of [...typeNames].sort()) {
+    tokenTypeIds.set(name, tokenTypeIds.size);
+  }
+
+  return { literals, literalTypeByText: literalToType, classes, tokenTypeIds };
 }

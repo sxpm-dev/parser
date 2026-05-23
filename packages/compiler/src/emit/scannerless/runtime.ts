@@ -23,7 +23,7 @@ export const SCANNERLESS_PARSE_RUNTIME = `type State = {
   __lastCaptureEnd: number;
 };
 
-export type ParseMode = 'fast' | 'raws';
+export type ParseMode = 'fast' | 'raws' | 'lazy';
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;

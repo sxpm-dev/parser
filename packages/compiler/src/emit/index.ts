@@ -40,8 +40,15 @@ function emitPublicApi(schema: InferredSchema, hasDirectFast: boolean): string {
     if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }
+  if (mode === 'lazy') {
+    const result = parseDirectLazy(input);
+    if (options?.validate === true) validateParsedProperties(input, result);
+    return result;
+  }
 `
-      : `  if (mode === 'fast') return parseDirectFast(input);\n`
+      : `  if (mode === 'fast') return parseDirectFast(input);
+  if (mode === 'lazy') return parseDirectLazy(input);
+`
     : '';
   const validateAfterParse = hasValidation
     ? `  if (options?.validate === true) validateParsedProperties(input, result);\n`

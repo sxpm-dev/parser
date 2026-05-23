@@ -2,7 +2,7 @@ import * as cssTree from 'css-tree';
 import postcss from 'postcss';
 import CSSOM from 'cssom';
 import rework from 'rework';
-import { parse, type CssNode, type CssRoot } from '../src/index.ts';
+import { parse, validate, type CssNode, type CssRoot } from '../src/index.ts';
 import { type BenchResult, type Contestant, runBenchTable } from './common.ts';
 
 const contestants: Contestant[] = [
@@ -15,6 +15,19 @@ const contestants: Contestant[] = [
     label: 'parser2 css raws',
     unit: 'nodes',
     fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'raws' })) }),
+  },
+  {
+    label: 'parser2 css lazy',
+    unit: 'nodes',
+    fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'lazy' })) }),
+  },
+  {
+    label: 'parser2 css validate',
+    unit: 'bytes',
+    fn: (input: string): BenchResult => {
+      validate(input);
+      return { units: input.length };
+    },
   },
   {
     label: 'postcss parse',

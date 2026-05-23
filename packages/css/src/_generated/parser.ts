@@ -17,7 +17,7 @@ type State = {
   __lastCaptureEnd: number;
 };
 
-export type ParseMode = 'fast' | 'raws';
+export type ParseMode = 'fast' | 'raws' | 'lazy';
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
@@ -6377,6 +6377,357 @@ function directSyntaxError(state: DirectState, message: string, offset: number):
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
+// ---------------------------------------------------------------------------
+// EXPERIMENTAL: parse(input, { mode: 'lazy' })
+// ---------------------------------------------------------------------------
+// Each node is a class instance that stores the input plus byte offsets.
+// String fields are exposed as prototype getters that slice on first access.
+// Internals are kept on Symbol-keyed properties so Object.keys() returns
+// only the user-visible keys. toJSON() materializes lazy fields so
+// JSON.stringify works as if the node were eager.
+const __LAZY_INPUT = Symbol('input');
+const __LAZY_A = Symbol('a');
+const __LAZY_B = Symbol('b');
+const __LAZY_C = Symbol('c');
+const __LAZY_D = Symbol('d');
+
+class LazyComment {
+  type = "comment";
+  [__LAZY_INPUT]: string;
+  [__LAZY_A]: number;
+  [__LAZY_B]: number;
+  constructor(input: string, textStart: number, textEnd: number) {
+    this[__LAZY_INPUT] = input;
+    this[__LAZY_A] = textStart;
+    this[__LAZY_B] = textEnd;
+  }
+  get text(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_A], this[__LAZY_B]);
+  }
+  toJSON(): unknown {
+    return { type: "comment", text: this.text };
+  }
+}
+
+class LazyPair {
+  type = "decl";
+  [__LAZY_INPUT]: string;
+  [__LAZY_A]: number;
+  [__LAZY_B]: number;
+  [__LAZY_C]: number;
+  [__LAZY_D]: number;
+  constructor(input: string, leftStart: number, leftEnd: number, rightStart: number, rightEnd: number) {
+    this[__LAZY_INPUT] = input;
+    this[__LAZY_A] = leftStart;
+    this[__LAZY_B] = leftEnd;
+    this[__LAZY_C] = rightStart;
+    this[__LAZY_D] = rightEnd;
+  }
+  get prop(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_A], this[__LAZY_B]);
+  }
+  get value(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_C], this[__LAZY_D]);
+  }
+  toJSON(): unknown {
+    return { type: "decl", prop: this.prop, value: this.value };
+  }
+}
+
+class LazyImportantPair extends LazyPair {
+  important = true as const;
+  toJSON(): unknown {
+    return { type: "decl", prop: this.prop, value: this.value, important: true };
+  }
+}
+
+class LazyBlock {
+  type = "rule";
+  nodes: unknown[];
+  [__LAZY_INPUT]: string;
+  [__LAZY_A]: number;
+  [__LAZY_B]: number;
+  constructor(input: string, captureStart: number, captureEnd: number, nodes: unknown[]) {
+    this[__LAZY_INPUT] = input;
+    this[__LAZY_A] = captureStart;
+    this[__LAZY_B] = captureEnd;
+    this.nodes = nodes;
+  }
+  get selector(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_A], this[__LAZY_B]);
+  }
+  toJSON(): unknown {
+    return { type: "rule", selector: this.selector, nodes: this.nodes };
+  }
+}
+
+class LazyAtRuleBlock {
+  type = "atrule";
+  nodes: unknown[];
+  [__LAZY_INPUT]: string;
+  [__LAZY_A]: number;
+  [__LAZY_B]: number;
+  [__LAZY_C]: number;
+  [__LAZY_D]: number;
+  constructor(input: string, nameStart: number, nameEnd: number, paramsStart: number, paramsEnd: number, nodes: unknown[]) {
+    this[__LAZY_INPUT] = input;
+    this[__LAZY_A] = nameStart;
+    this[__LAZY_B] = nameEnd;
+    this[__LAZY_C] = paramsStart;
+    this[__LAZY_D] = paramsEnd;
+    this.nodes = nodes;
+  }
+  get name(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_A], this[__LAZY_B]);
+  }
+  get params(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_C], this[__LAZY_D]);
+  }
+  toJSON(): unknown {
+    return { type: "atrule", name: this.name, params: this.params, nodes: this.nodes };
+  }
+}
+
+class LazyAtRuleStatement {
+  type = "atrule";
+  [__LAZY_INPUT]: string;
+  [__LAZY_A]: number;
+  [__LAZY_B]: number;
+  [__LAZY_C]: number;
+  [__LAZY_D]: number;
+  constructor(input: string, nameStart: number, nameEnd: number, paramsStart: number, paramsEnd: number) {
+    this[__LAZY_INPUT] = input;
+    this[__LAZY_A] = nameStart;
+    this[__LAZY_B] = nameEnd;
+    this[__LAZY_C] = paramsStart;
+    this[__LAZY_D] = paramsEnd;
+  }
+  get name(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_A], this[__LAZY_B]);
+  }
+  get params(): string {
+    return this[__LAZY_INPUT].slice(this[__LAZY_C], this[__LAZY_D]);
+  }
+  toJSON(): unknown {
+    return { type: "atrule", name: this.name, params: this.params };
+  }
+}
+
+class LazyRoot {
+  type = "root";
+  nodes: unknown[];
+  constructor(nodes: unknown[]) {
+    this.nodes = nodes;
+  }
+}
+
+function parseDirectLazy(input: string): unknown {
+  const state: DirectState = {
+    input,
+    len: input.length,
+    pos: 0,
+    scanStop: -1,
+    scanStopIdx: 0,
+    scanCaptureStart: 0,
+    scanCaptureEnd: 0,
+    scanColonIdx: -1,
+    scanBangIdx: -1,
+    scanHadComment: false,
+    lastNodeStart: 0,
+    lastNodeEnd: 0,
+  };
+  const nodes = parseDirectRootChildrenLazy(state);
+  skipDirectWsAndSeparators(state);
+  if (state.pos !== state.len) throw new SyntaxError(`unexpected trailing character at position ${state.pos}`);
+  return new LazyRoot(nodes);
+}
+
+function parseDirectRootChildrenLazy(state: DirectState): unknown[] {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
+    }
+    state.pos = pos;
+    if (pos >= len) return nodes;
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
+    if (c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      nodes[nodes.length] = parseDirectCommentLazy(state);
+      continue;
+    }
+    if (c === 64) {
+      nodes[nodes.length] = parseDirectPrefixedLazy(state);
+      continue;
+    }
+    nodes[nodes.length] = parseDirectBlockOrPairLazy(state);
+  }
+}
+
+function parseDirectChildrenLazy(state: DirectState): unknown[] {
+  const nodes: unknown[] = [];
+  const input = state.input;
+  const len = state.len;
+  while (true) {
+    let pos = state.pos;
+    let c = 0;
+    while (pos < len) {
+      c = input.charCodeAt(pos);
+      if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 59) break;
+      pos++;
+    }
+    state.pos = pos;
+    if (pos >= len) {
+      throw new SyntaxError(`expected '}' at position ${pos}`);
+    }
+    if (c === 125) {
+      state.pos = pos + 1;
+      return nodes;
+    }
+    if (c === 0x60 /* ` */) throw new SyntaxError(`Unexpected character '${input[pos]}' at position ${pos}`);
+    if (c === 0x2f /* / */ && pos + 1 < len && input.charCodeAt(pos + 1) === 0x2a /* * */) {
+      nodes[nodes.length] = parseDirectCommentLazy(state);
+      continue;
+    }
+    if (c === 64) {
+      nodes[nodes.length] = parseDirectPrefixedLazy(state);
+      continue;
+    }
+    nodes[nodes.length] = parseDirectBlockOrPairLazy(state);
+  }
+}
+
+function parseDirectCommentLazy(state: DirectState): unknown {
+  const input = state.input;
+  const len = state.len;
+  const start = state.pos;
+  state.pos += 2;
+  while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+  if (state.pos < len) state.pos += 2;
+  let textStart = start + 2;
+  let textEnd = state.pos - 2;
+  while (textStart < textEnd) {
+    const lc = input.charCodeAt(textStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    textStart++;
+  }
+  while (textEnd > textStart) {
+    const tc = input.charCodeAt(textEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    textEnd--;
+  }
+  return new LazyComment(input, textStart, textEnd);
+}
+
+function parseDirectPrefixedLazy(state: DirectState): unknown {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const nameStart = state.pos;
+  readDirectIdent(state);
+  const nameEnd = state.pos;
+  scanDirectBoundary(state, 59, 123, 125);
+  const paramsStart = state.scanCaptureStart;
+  const paramsEnd = state.scanCaptureEnd;
+  const scanStop = state.scanStop;
+  state.pos = state.scanStopIdx;
+  if (scanStop === 123) {
+    state.pos++;
+    const nodes = parseDirectChildrenLazy(state);
+    return new LazyAtRuleBlock(input, nameStart, nameEnd, paramsStart, paramsEnd, nodes);
+  }
+  if (scanStop === 59) state.pos++;
+  return new LazyAtRuleStatement(input, nameStart, nameEnd, paramsStart, paramsEnd);
+}
+
+function parseDirectBlockOrPairLazy(state: DirectState): unknown {
+  const input = state.input;
+  scanDirectPairBoundary(state, 123, 59, 125);
+  if (state.scanStop === 123) {
+    const rejectsBlock = (state.scanCaptureEnd > state.scanCaptureStart && input.charCodeAt(state.scanCaptureEnd - 1) === 58)
+      || (state.scanColonIdx >= 0 && input.charCodeAt(state.scanCaptureStart) === 0x2d && state.scanCaptureStart + 1 < state.scanColonIdx && input.charCodeAt(state.scanCaptureStart + 1) === 0x2d);
+    if (!rejectsBlock) {
+      const selectorStart = state.scanCaptureStart;
+      const selectorEnd = state.scanCaptureEnd;
+      if (selectorEnd <= selectorStart) throw new SyntaxError(`expected selector at position ${state.pos}`);
+      const selectorLastByte = input.charCodeAt(selectorEnd - 1);
+      if (selectorLastByte === 0x2c /* , */ || selectorLastByte === 0x3e /* > */ || selectorLastByte === 0x2b /* + */ || selectorLastByte === 0x7e /* ~ */) {
+        throw new SyntaxError(`expected selector after combinator at position ${selectorEnd}`);
+      }
+      state.pos = state.scanStopIdx + 1;
+      const nodes = parseDirectChildrenLazy(state);
+      return new LazyBlock(input, selectorStart, selectorEnd, nodes);
+    }
+  }
+  const scanColonIdx = state.scanColonIdx;
+  if (scanColonIdx < 0) {
+    const found = state.scanStopIdx < state.len ? `'${input[state.scanStopIdx]}'` : 'end of input';
+    directSyntaxError(state, `Unexpected ${found}`, state.scanStopIdx);
+  }
+  const scanCaptureStart = state.scanCaptureStart;
+  const scanCaptureEnd = state.scanCaptureEnd;
+  const scanBangIdx = state.scanBangIdx;
+  let pairLeftEnd = scanColonIdx;
+  while (pairLeftEnd > scanCaptureStart) {
+    const lc = input.charCodeAt(pairLeftEnd - 1);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    pairLeftEnd--;
+  }
+  if (state.scanStop === 123) {
+    state.pos = scanColonIdx + 1;
+    return parseDirectDeclarationRestLazy(state, scanCaptureStart, pairLeftEnd);
+  }
+  let pairRightStart = scanColonIdx + 1;
+  const rawRightEnd = scanBangIdx >= 0 ? scanBangIdx : scanCaptureEnd;
+  while (pairRightStart < rawRightEnd) {
+    const lc = input.charCodeAt(pairRightStart);
+    if (lc !== 0x20 && lc !== 0x09 && lc !== 0x0a && lc !== 0x0d) break;
+    pairRightStart++;
+  }
+  let pairRightEnd = rawRightEnd;
+  while (pairRightEnd > pairRightStart) {
+    const tc = input.charCodeAt(pairRightEnd - 1);
+    if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
+    pairRightEnd--;
+  }
+  state.pos = scanBangIdx >= 0 ? scanBangIdx : state.scanStopIdx;
+  if (scanBangIdx >= 0) return parseDirectImportantDeclarationRestLazy(state, scanCaptureStart, pairLeftEnd, pairRightStart, pairRightEnd);
+  if (state.scanStop === 59) state.pos++;
+  return new LazyPair(input, scanCaptureStart, pairLeftEnd, pairRightStart, pairRightEnd);
+}
+
+function parseDirectDeclarationRestLazy(state: DirectState, propStart: number, propEnd: number): unknown {
+  const input = state.input;
+  scanDirectValueBoundary(state, 59, 125, 33);
+  const valueStart = state.scanCaptureStart;
+  const valueEnd = state.scanCaptureEnd;
+  const scanStop = state.scanStop;
+  state.pos = state.scanStopIdx;
+  if (scanStop === 33) {
+    return parseDirectImportantDeclarationRestLazy(state, propStart, propEnd, valueStart, valueEnd);
+  }
+  if (scanStop === 59) state.pos++;
+  return new LazyPair(input, propStart, propEnd, valueStart, valueEnd);
+}
+
+function parseDirectImportantDeclarationRestLazy(state: DirectState, propStart: number, propEnd: number, valueStart: number, valueEnd: number): unknown {
+  const input = state.input;
+  state.pos++;
+  skipDirectWs(state);
+  const importantStart = state.pos;
+  readDirectIdent(state);
+  if (state.pos === importantStart) throw new SyntaxError(`expected token of class 'ident' at position ${importantStart}`);
+  skipDirectWs(state);
+  if (input.charCodeAt(state.pos) === 59) state.pos++;
+  return new LazyImportantPair(input, propStart, propEnd, valueStart, valueEnd);
+}
+
+
 
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
@@ -6387,6 +6738,11 @@ export function parse(input: string, options?: ParseOptions): unknown {
   }
   if (mode === 'raws') {
     const result = parseDirectRaws(input);
+    if (options?.validate === true) validateParsedProperties(input, result);
+    return result;
+  }
+  if (mode === 'lazy') {
+    const result = parseDirectLazy(input);
     if (options?.validate === true) validateParsedProperties(input, result);
     return result;
   }

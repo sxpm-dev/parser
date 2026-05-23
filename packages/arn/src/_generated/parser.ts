@@ -2818,6 +2818,7 @@ function validateDirectFast(input: string): void {
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (mode === 'fast') return parseDirectFast(input);
+  if (mode === 'raws') return parseDirectRaws(input);
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     input,

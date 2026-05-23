@@ -17,11 +17,6 @@ const contestants: Contestant[] = [
     fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'raws' })) }),
   },
   {
-    label: 'parser2 css lazy',
-    unit: 'nodes',
-    fn: (input: string): BenchResult => ({ units: countAst(parse(input, { mode: 'lazy' })) }),
-  },
-  {
     label: 'parser2 css validate',
     unit: 'bytes',
     fn: (input: string): BenchResult => {

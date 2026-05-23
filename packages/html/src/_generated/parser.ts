@@ -375,7 +375,8 @@ function parseDoctype__valid(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -496,7 +497,8 @@ function parseDoctype__recovery0(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -645,7 +647,8 @@ function parseHtmlElement__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -682,8 +685,9 @@ function parseHtmlElement__valid__alt0(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60 && __input.charCodeAt(__i + 1) === 47) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -710,7 +714,8 @@ function parseHtmlElement__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   closeTag = __input.slice(__closeTag_s, __off);
-  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
+  const __closeTag_lc = closeTag.toLowerCase();
+  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -757,7 +762,8 @@ function parseHtmlElement__valid__alt1(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -822,7 +828,8 @@ function parseHtmlElement__valid__alt2(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -887,7 +894,8 @@ function parseHtmlElement__valid__alt3(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -986,7 +994,8 @@ function parseHtmlElement__valid__alt4(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1093,7 +1102,8 @@ function parseHtmlElement__valid__alt5(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1192,7 +1202,8 @@ function parseHtmlElement__valid__alt6(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1299,7 +1310,8 @@ function parseHtmlElement__valid__alt7(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1408,7 +1420,8 @@ function parseHtmlElement__valid__alt8(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1515,7 +1528,8 @@ function parseHtmlElement__valid__alt9(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1610,7 +1624,8 @@ function parseHtmlElement__valid__alt10(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1709,7 +1724,8 @@ function parseHtmlElement__valid__alt11(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1808,7 +1824,8 @@ function parseHtmlElement__valid__alt12(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -1907,7 +1924,8 @@ function parseHtmlElement__valid__alt13(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -2002,7 +2020,8 @@ function parseHtmlElement__valid__alt14(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
   __consumedEnd = __off;
   const __attrs_startOff = __off;
   let __prevEnd_attrs = __attrs_startOff;
@@ -2414,8 +2433,9 @@ function parseTextNode(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -2680,26 +2700,10 @@ function parseAttribute__alt2(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 32) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 9) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 10) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 13) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 12) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 62) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 47 && __input.charCodeAt(__i + 1) === 62) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -2921,7 +2925,8 @@ function parseDoctypeFast__valid(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -3038,7 +3043,8 @@ function parseDoctypeFast__recovery0(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -3179,7 +3185,8 @@ function parseHtmlElementFast__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3213,8 +3220,9 @@ function parseHtmlElementFast__valid__alt0(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60 && __input.charCodeAt(__i + 1) === 47) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -3241,7 +3249,8 @@ function parseHtmlElementFast__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   closeTag = __input.slice(__closeTag_s, __off);
-  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
+  const __closeTag_lc = closeTag.toLowerCase();
+  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -3284,7 +3293,8 @@ function parseHtmlElementFast__valid__alt1(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3342,7 +3352,8 @@ function parseHtmlElementFast__valid__alt2(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3400,7 +3411,8 @@ function parseHtmlElementFast__valid__alt3(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3489,7 +3501,8 @@ function parseHtmlElementFast__valid__alt4(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3586,7 +3599,8 @@ function parseHtmlElementFast__valid__alt5(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3675,7 +3689,8 @@ function parseHtmlElementFast__valid__alt6(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3772,7 +3787,8 @@ function parseHtmlElementFast__valid__alt7(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3871,7 +3887,8 @@ function parseHtmlElementFast__valid__alt8(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -3968,7 +3985,8 @@ function parseHtmlElementFast__valid__alt9(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4053,7 +4071,8 @@ function parseHtmlElementFast__valid__alt10(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4142,7 +4161,8 @@ function parseHtmlElementFast__valid__alt11(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4231,7 +4251,8 @@ function parseHtmlElementFast__valid__alt12(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4320,7 +4341,8 @@ function parseHtmlElementFast__valid__alt13(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4405,7 +4427,8 @@ function parseHtmlElementFast__valid__alt14(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
   __consumedEnd = __off;
 
   const attrs: unknown[] = [];
@@ -4588,18 +4611,19 @@ function parseHtmlElementFast__valid(state: State): unknown {
     const __identStart = __peek;
     __peek++;
     while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-    const __ident = __input.slice(__identStart, __peek).toLowerCase();
+    const __tagOrig = __input.slice(__identStart, __peek);
+    const __ident = __tagOrig.toLowerCase();
     if (__ident === "script") {
-    return parseHtmlElementFast__valid__alt0(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "style") {
-    return parseHtmlElementFast__valid__alt0(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "textarea") {
-    return parseHtmlElementFast__valid__alt0(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "title") {
-    return parseHtmlElementFast__valid__alt0(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "area") {
     { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
@@ -4658,51 +4682,51 @@ function parseHtmlElementFast__valid(state: State): unknown {
     return parseHtmlElementFast__valid__alt2(state);
   }
     if (__ident === "li") {
-    return parseHtmlElementFast__valid__alt3(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt3__body(state, __tagOrig);
   }
     if (__ident === "dt") {
-    return parseHtmlElementFast__valid__alt4(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt4__body(state, __tagOrig);
   }
     if (__ident === "dd") {
-    return parseHtmlElementFast__valid__alt4(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt4__body(state, __tagOrig);
   }
     if (__ident === "tr") {
-    return parseHtmlElementFast__valid__alt5(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt5__body(state, __tagOrig);
   }
     if (__ident === "td") {
-    return parseHtmlElementFast__valid__alt6(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt6__body(state, __tagOrig);
   }
     if (__ident === "th") {
-    return parseHtmlElementFast__valid__alt6(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt6__body(state, __tagOrig);
   }
     if (__ident === "p") {
-    return parseHtmlElementFast__valid__alt7(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt7__body(state, __tagOrig);
   }
     if (__ident === "option") {
-    return parseHtmlElementFast__valid__alt8(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt8__body(state, __tagOrig);
   }
     if (__ident === "optgroup") {
-    return parseHtmlElementFast__valid__alt8(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt8__body(state, __tagOrig);
   }
     if (__ident === "html") {
-    return parseHtmlElementFast__valid__alt9(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt9__body(state, __tagOrig);
   }
     if (__ident === "head") {
-    return parseHtmlElementFast__valid__alt10(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt10__body(state, __tagOrig);
   }
     if (__ident === "tbody") {
-    return parseHtmlElementFast__valid__alt11(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt11__body(state, __tagOrig);
   }
     if (__ident === "thead") {
-    return parseHtmlElementFast__valid__alt12(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt12__body(state, __tagOrig);
   }
     if (__ident === "tfoot") {
-    return parseHtmlElementFast__valid__alt13(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt13__body(state, __tagOrig);
   }
     if (__ident === "body") {
-    return parseHtmlElementFast__valid__alt14(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt14__body(state, __tagOrig);
   }
-    return parseHtmlElementFast__valid__alt15(state);
+    state.off = __peek; return parseHtmlElementFast__valid__alt15__body(state, __tagOrig);
   }
 }
 
@@ -4790,8 +4814,9 @@ function parseTextNodeFast(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -5044,26 +5069,10 @@ function parseAttributeFast__alt2(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 32) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 9) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 10) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 13) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 12) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 62) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 47 && __input.charCodeAt(__i + 1) === 62) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -5176,7 +5185,7 @@ function validateHtmlDocument(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_28(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -5281,7 +5290,8 @@ function validateDoctype__valid(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -5398,7 +5408,8 @@ function validateDoctype__recovery0(state: State): unknown {
       }
     }
   keyword = __input.slice(__keyword_s, __off);
-  if (!(keyword.toLowerCase() === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
+  const __keyword_lc = keyword.toLowerCase();
+  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -5539,7 +5550,8 @@ function validateHtmlElement__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -5576,8 +5588,9 @@ function validateHtmlElement__valid__alt0(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60 && __input.charCodeAt(__i + 1) === 47) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -5604,7 +5617,8 @@ function validateHtmlElement__valid__alt0(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   closeTag = __input.slice(__closeTag_s, __off);
-  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
+  const __closeTag_lc = closeTag.toLowerCase();
+  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
   __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -5647,7 +5661,8 @@ function validateHtmlElement__valid__alt1(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -5708,7 +5723,8 @@ function validateHtmlElement__valid__alt2(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) {
@@ -5769,7 +5785,8 @@ function validateHtmlElement__valid__alt3(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -5813,7 +5830,7 @@ function validateHtmlElement__valid__alt3(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_29(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_42(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -5864,7 +5881,8 @@ function validateHtmlElement__valid__alt4(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -5908,7 +5926,7 @@ function validateHtmlElement__valid__alt4(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_30(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_43(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -5967,7 +5985,8 @@ function validateHtmlElement__valid__alt5(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6011,7 +6030,7 @@ function validateHtmlElement__valid__alt5(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_31(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_44(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6062,7 +6081,8 @@ function validateHtmlElement__valid__alt6(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6106,7 +6126,7 @@ function validateHtmlElement__valid__alt6(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_32(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_45(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6165,7 +6185,8 @@ function validateHtmlElement__valid__alt7(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6219,7 +6240,7 @@ function validateHtmlElement__valid__alt7(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_33(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_46(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6270,7 +6291,8 @@ function validateHtmlElement__valid__alt8(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6314,7 +6336,7 @@ function validateHtmlElement__valid__alt8(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_34(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_47(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6373,7 +6395,8 @@ function validateHtmlElement__valid__alt9(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6413,7 +6436,7 @@ function validateHtmlElement__valid__alt9(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_35(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_48(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6464,7 +6487,8 @@ function validateHtmlElement__valid__alt10(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6508,7 +6532,7 @@ function validateHtmlElement__valid__alt10(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_36(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_49(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6559,7 +6583,8 @@ function validateHtmlElement__valid__alt11(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6603,7 +6628,7 @@ function validateHtmlElement__valid__alt11(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_37(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_50(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6654,7 +6679,8 @@ function validateHtmlElement__valid__alt12(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6698,7 +6724,7 @@ function validateHtmlElement__valid__alt12(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_38(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_51(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6749,7 +6775,8 @@ function validateHtmlElement__valid__alt13(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6789,7 +6816,7 @@ function validateHtmlElement__valid__alt13(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_39(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_52(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6840,7 +6867,8 @@ function validateHtmlElement__valid__alt14(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   tag = __input.slice(__tag_s, __off);
-  if (!(tag.toLowerCase() === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
+  const __tag_lc = tag.toLowerCase();
+  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
   __consumedEnd = __off;
   let __count_attrs = 0;
   while (!(__input.charCodeAt(__off) === 62)) {
@@ -6880,7 +6908,7 @@ function validateHtmlElement__valid__alt14(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_40(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_53(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -6966,7 +6994,7 @@ function validateHtmlElement__valid__alt15(state: State): unknown {
     break;
   }
     const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state); __off = state.off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_54(state); __off = state.off;
     __count_children++;
     if (__off === __before) break;
     while (__off < __len) {
@@ -7035,18 +7063,19 @@ function validateHtmlElement__valid(state: State): unknown {
     const __identStart = __peek;
     __peek++;
     while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-    const __ident = __input.slice(__identStart, __peek).toLowerCase();
+    const __tagOrig = __input.slice(__identStart, __peek);
+    const __ident = __tagOrig.toLowerCase();
     if (__ident === "script") {
-    return validateHtmlElement__valid__alt0(state);
+    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "style") {
-    return validateHtmlElement__valid__alt0(state);
+    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "textarea") {
-    return validateHtmlElement__valid__alt0(state);
+    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "title") {
-    return validateHtmlElement__valid__alt0(state);
+    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
   }
     if (__ident === "area") {
     { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
@@ -7105,51 +7134,51 @@ function validateHtmlElement__valid(state: State): unknown {
     return validateHtmlElement__valid__alt2(state);
   }
     if (__ident === "li") {
-    return validateHtmlElement__valid__alt3(state);
+    state.off = __peek; return validateHtmlElement__valid__alt3__body(state, __tagOrig);
   }
     if (__ident === "dt") {
-    return validateHtmlElement__valid__alt4(state);
+    state.off = __peek; return validateHtmlElement__valid__alt4__body(state, __tagOrig);
   }
     if (__ident === "dd") {
-    return validateHtmlElement__valid__alt4(state);
+    state.off = __peek; return validateHtmlElement__valid__alt4__body(state, __tagOrig);
   }
     if (__ident === "tr") {
-    return validateHtmlElement__valid__alt5(state);
+    state.off = __peek; return validateHtmlElement__valid__alt5__body(state, __tagOrig);
   }
     if (__ident === "td") {
-    return validateHtmlElement__valid__alt6(state);
+    state.off = __peek; return validateHtmlElement__valid__alt6__body(state, __tagOrig);
   }
     if (__ident === "th") {
-    return validateHtmlElement__valid__alt6(state);
+    state.off = __peek; return validateHtmlElement__valid__alt6__body(state, __tagOrig);
   }
     if (__ident === "p") {
-    return validateHtmlElement__valid__alt7(state);
+    state.off = __peek; return validateHtmlElement__valid__alt7__body(state, __tagOrig);
   }
     if (__ident === "option") {
-    return validateHtmlElement__valid__alt8(state);
+    state.off = __peek; return validateHtmlElement__valid__alt8__body(state, __tagOrig);
   }
     if (__ident === "optgroup") {
-    return validateHtmlElement__valid__alt8(state);
+    state.off = __peek; return validateHtmlElement__valid__alt8__body(state, __tagOrig);
   }
     if (__ident === "html") {
-    return validateHtmlElement__valid__alt9(state);
+    state.off = __peek; return validateHtmlElement__valid__alt9__body(state, __tagOrig);
   }
     if (__ident === "head") {
-    return validateHtmlElement__valid__alt10(state);
+    state.off = __peek; return validateHtmlElement__valid__alt10__body(state, __tagOrig);
   }
     if (__ident === "tbody") {
-    return validateHtmlElement__valid__alt11(state);
+    state.off = __peek; return validateHtmlElement__valid__alt11__body(state, __tagOrig);
   }
     if (__ident === "thead") {
-    return validateHtmlElement__valid__alt12(state);
+    state.off = __peek; return validateHtmlElement__valid__alt12__body(state, __tagOrig);
   }
     if (__ident === "tfoot") {
-    return validateHtmlElement__valid__alt13(state);
+    state.off = __peek; return validateHtmlElement__valid__alt13__body(state, __tagOrig);
   }
     if (__ident === "body") {
-    return validateHtmlElement__valid__alt14(state);
+    state.off = __peek; return validateHtmlElement__valid__alt14__body(state, __tagOrig);
   }
-    return validateHtmlElement__valid__alt15(state);
+    state.off = __peek; return validateHtmlElement__valid__alt15__body(state, __tagOrig);
   }
 }
 
@@ -7240,8 +7269,9 @@ function validateTextNode(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 60) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -7494,26 +7524,10 @@ function validateAttribute__alt2(state: State): unknown {
   {
     const __startOff = __off;
     let __earliest = __len;
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 32) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 9) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 10) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 13) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 12) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 62) { __earliest = __i; break; }
-    }
-    for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-      if (__input.charCodeAt(__i) === 47 && __input.charCodeAt(__i + 1) === 62) { __earliest = __i; break; }
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
     }
     __off = __earliest;
     state.__lastCaptureStart = __startOff;
@@ -8084,7 +8098,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_27(state: Stat
   return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_28(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_28(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8095,13 +8109,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_28(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_29(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_29(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8112,13 +8126,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_29(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_30(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_30(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8129,13 +8143,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_30(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_31(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_31(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8146,13 +8160,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_31(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_32(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_32(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8163,13 +8177,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_32(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_33(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_33(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8180,13 +8194,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_33(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_34(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_34(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8197,13 +8211,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_34(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_35(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_35(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8214,13 +8228,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_35(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_36(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_36(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8231,13 +8245,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_36(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_37(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_37(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8248,13 +8262,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_37(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_38(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_38(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8265,13 +8279,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_38(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_39(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_39(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8282,13 +8296,13 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_39(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
 }
 
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_40(state: State): unknown {
+function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_40(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   // Skip ws to first non-ws byte for dispatch.
@@ -8299,10 +8313,1014 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_40(state: 
     break;
   }
   state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
-  return validateTextNode(state);
+  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  return parseTextNodeFast(state);
+}
+
+function parseHtmlElementFast__valid__alt0__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let body = '';
+  {
+    const __startOff = __off;
+    let __earliest = __len;
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    }
+    __off = __earliest;
+    state.__lastCaptureStart = __startOff;
+    state.__lastCaptureEnd = __earliest;
+    body = __input.slice(__startOff, __earliest);
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
+  __off += 2;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __closeTag_s = __off;
+  let closeTag;
+  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
+    __off++;
+    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
+  closeTag = __input.slice(__closeTag_s, __off);
+  const __closeTag_lc = closeTag.toLowerCase();
+  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [{ nodeName: "#text", value: body, parentNode: null }], parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt3__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</li>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
+      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_28(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt4__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</dt>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
+      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_29(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt5__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</tr>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_30(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt6__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</td>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_31(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt7__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</p>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
+      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
+      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
+      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
+      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
+      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
+      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
+      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
+      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
+      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
+      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_32(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt8__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</option>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
+      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_33(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt9__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</html>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_34(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt10__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</head>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
+      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_35(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt11__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</tbody>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_36(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt12__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</thead>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
+    }
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_37(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt13__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</tfoot>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_38(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt14__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.startsWith("</body>", __off)) {  break; }
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
+    }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_39(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function parseHtmlElementFast__valid__alt15__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+
+  const attrs: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 62) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
+    attrs.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+
+  const children: unknown[] = [];
+  while (true) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47) {  break; }
+    const __before = __off;
+    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_40(state); __off = state.off;
+    children.push(__child);
+    if (__off === __before) break;
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
+  __off += 2;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __closeTag_s = __off;
+  let closeTag;
+  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
+    __off++;
+    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
+  closeTag = __input.slice(__closeTag_s, __off);
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { nodeName: __pre_tag, tagName: __pre_tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
 }
 
 function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state: State): unknown {
@@ -8320,6 +9338,1533 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state: 
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
   if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
   return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_42(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_43(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_44(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_45(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_46(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_47(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_48(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_49(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_50(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_51(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_52(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_53(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_54(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_55(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_56(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_57(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_58(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_59(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_60(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_61(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_62(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_63(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_64(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_65(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_66(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  // Skip ws to first non-ws byte for dispatch.
+  let __off = state.off;
+  while (__off < __len) {
+    const __c = __input.charCodeAt(__off);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  if (__input.startsWith("<!--", __off)) return validateComment(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
+  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  return validateTextNode(state);
+}
+
+function validateHtmlElement__valid__alt0__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  let body = '';
+  {
+    const __startOff = __off;
+    let __earliest = __len;
+    for (let __i = __startOff; __i < __len; __i++) {
+      const __c = __input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    }
+    __off = __earliest;
+    state.__lastCaptureStart = __startOff;
+    state.__lastCaptureEnd = __earliest;
+    body = __input.slice(__startOff, __earliest);
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
+  __off += 2;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __closeTag_s = __off;
+  let closeTag;
+  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
+    __off++;
+    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
+  closeTag = __input.slice(__closeTag_s, __off);
+  const __closeTag_lc = closeTag.toLowerCase();
+  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt3__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</li>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
+      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_55(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt4__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</dt>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
+      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_56(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt5__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</tr>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_57(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt6__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</td>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_58(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt7__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</p>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
+      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
+      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
+      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
+      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
+      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
+      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
+      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
+      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
+      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
+      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_59(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt8__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</option>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
+      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_60(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  const __beforeSpan6 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan6) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt9__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</html>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_61(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt10__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</head>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
+      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_62(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt11__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</tbody>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_63(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt12__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</thead>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60) {
+      const __c2 = __input.charCodeAt(__off + 1);
+      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
+      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
+    }
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_64(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt13__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</tfoot>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_65(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt14__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.startsWith("</body>", __off))) {
+    {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
+    }
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_66(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  const __beforeSpan5 = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
+  if (__off > __beforeSpan5) __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
+}
+
+function validateHtmlElement__valid__alt15__body(state: State, __pre_tag: string): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  let __consumedEnd = __off;
+  let __count_attrs = 0;
+  while (!(__input.charCodeAt(__off) === 62)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; validateAttribute(state); __off = state.off;
+    __count_attrs++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  let __count_children = 0;
+  while (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) {
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+    const __before = __off;
+    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state); __off = state.off;
+    __count_children++;
+    if (__off === __before) break;
+    while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  }
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
+  __off += 2;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __closeTag_s = __off;
+
+  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
+    __off++;
+    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
+
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
+  __off += 1;
+  __consumedEnd = __off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return;
 }
 
 export function parse(input: string, options?: ParseOptions): unknown {

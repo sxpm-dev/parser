@@ -92,7 +92,7 @@ ${indent(body, 1)}
 }`;
   }).join('\n\n');
 
-  const lookaheadDispatch = emitLookaheadDispatch(info, fnName);
+  const lookaheadDispatch = emitLookaheadDispatch(info, fnName, ctx);
   if (lookaheadDispatch !== null) {
     return `${altFns}\n\n${lookaheadDispatch}`;
   }
@@ -118,10 +118,10 @@ ${speculativeAttempts}
 //      production may have no N-th span — it becomes the fallback).
 //   B. Group-by-first-span: productions group by first-span signature.
 //      Each group is then recursively dispatched (case A or A again).
-function emitLookaheadDispatch(info: NodeTypeInfo, fnName: string): string | null {
+function emitLookaheadDispatch(info: NodeTypeInfo, fnName: string, ctx: Ctx): string | null {
   const productions = info.productions;
   if (productions.length < 2) return null;
-  const body = emitDispatchBody(productions.map((_, i) => i), productions, fnName);
+  const body = emitDispatchBody(productions.map((_, i) => i), productions, fnName, ctx);
   if (body === null) return null;
   return `function ${fnName}(state: State): unknown {
   const __input = state.input;
@@ -138,14 +138,15 @@ function emitDispatchBody(
   indexes: ReadonlyArray<number>,
   productions: ReadonlyArray<Production>,
   fnName: string,
+  ctx: Ctx,
 ): string | null {
   if (indexes.length === 0) return null;
   if (indexes.length === 1) {
     return `return ${fnName}__alt${indexes[0]}(state);`;
   }
-  const sharedPrefix = emitSharedPrefixDispatch(indexes, productions, fnName);
+  const sharedPrefix = emitSharedPrefixDispatch(indexes, productions, fnName, ctx);
   if (sharedPrefix !== null) return sharedPrefix;
-  const grouped = emitGroupedFirstSpanDispatch(indexes, productions, fnName);
+  const grouped = emitGroupedFirstSpanDispatch(indexes, productions, fnName, ctx);
   if (grouped !== null) return grouped;
   return null;
 }
@@ -156,6 +157,7 @@ function emitSharedPrefixDispatch(
   indexes: ReadonlyArray<number>,
   productions: ReadonlyArray<Production>,
   fnName: string,
+  ctx: Ctx,
 ): string | null {
   const minLen = Math.min(...indexes.map((i) => productions[i]!.spans.length));
   let prefixLen = 0;
@@ -267,7 +269,7 @@ while (__peek < __len) {
       if (subIndexes.length === 1) {
         body = `return ${fnName}__alt${subIndexes[0]}(state);`;
       } else {
-        const sub = emitDispatchBody(subIndexes, productions, fnName);
+        const sub = emitDispatchBody(subIndexes, productions, fnName, ctx);
         if (sub === null) return null;
         // The recursive dispatch re-walks from the start of the production
         // because emitPeekScanForSpans always anchors at the current
@@ -300,6 +302,47 @@ ${tail}`;
     : refSet.has('js')
       ? `isJsIdentStart(__input.charCodeAt(__peek))`
       : `(isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)`;
+  // The discriminator span has a name (e.g. 'tag') — its source slice is
+  // captured into the structure as that name. When we inline an alt's
+  // body, we need to pass the original-case slice in so $.tag references
+  // still resolve correctly. We capture both __tagOrig (original case,
+  // used as the value) and __ident (lowercased, used for branch dispatch).
+  const discName = discSpan.name;
+  // Body-helper extraction is only safe in variants that don't need source
+  // ranges (`source.start.offset` etc. anchored on __startOff) — i.e.
+  // fast and validate. In raws mode we'd lose the __startOff alignment,
+  // so call the standalone alt instead.
+  const canExtractBody = discName !== undefined && ctx.variant !== 'raws';
+  const preboundValues = canExtractBody
+    ? new Map([[discName!, '__pre_' + discName!]])
+    : new Map<string, string>();
+
+  // Generate per-alt body helpers that skip the prefix the dispatcher
+  // already walked. Without this, every HtmlElement parse re-walks `<` +
+  // ident + oneOf check inside the called alt, duplicating the dispatcher.
+  // The dispatcher just sets state.off past the discriminator and passes
+  // the captured ident slice in.
+  const bodyHelpers = new Map<number, string>();
+  const bodyHelperName = (idx: number): string => `${fnName}__alt${idx}__body`;
+  const ensureBodyHelper = (idx: number): string => {
+    if (bodyHelpers.has(idx)) return bodyHelperName(idx);
+    const name = bodyHelperName(idx);
+    const inlineSpec: InlineFromDispatcher = {
+      skipSpans: prefixLen + 1,
+      preboundValues,
+    };
+    const altBody = emitProductionBody(productions[idx]!, ctx, inlineSpec);
+    // The discriminator value (e.g. tag string) flows through as a fn arg
+    // so the helper itself doesn't allocate; the dispatcher passes the
+    // slice it already needed for the oneOf compare.
+    const paramName = '__pre_' + (discName ?? 'disc');
+    const helper = `function ${name}(state: State, ${paramName}: string): unknown {
+${indent(altBody, 1)}
+}`;
+    bodyHelpers.set(idx, helper);
+    return name;
+  };
+
   // Collapse identical sub-bucket targets so void elements (which map every
   // tag in the void list to the same [alt1, alt2] pair) don't each emit a
   // separately-numbered helper. Same key → same emitted body.
@@ -310,9 +353,14 @@ ${tail}`;
     if (!subDispatchBodies.has(key)) {
       let body: string;
       if (subIndexes.length === 1) {
-        body = `return ${fnName}__alt${subIndexes[0]}(state);`;
+        if (canExtractBody) {
+          const helper = ensureBodyHelper(subIndexes[0]!);
+          body = `state.off = __peek; return ${helper}(state, __tagOrig);`;
+        } else {
+          body = `return ${fnName}__alt${subIndexes[0]}(state);`;
+        }
       } else {
-        const sub = emitDispatchBody(subIndexes, productions, fnName);
+        const sub = emitDispatchBody(subIndexes, productions, fnName, ctx);
         if (sub !== null) {
           body = `__peek = state.off;\n${sub}`;
         } else {
@@ -335,9 +383,34 @@ ${tail}`;
 ${indent(body, 1)}
 }`);
   }
-  const tail = fallbackIdx >= 0
+  // Fallback (no .oneOf — accepts any tag): also extract its body so the
+  // common `<div>`/`<span>`/`<a>` path skips the prefix the dispatcher
+  // just walked. Without this the fallback retains the full standalone
+  // alt body and dominates the profile for regular-element-heavy input.
+  let fallbackCall = fallbackIdx >= 0
     ? `return ${fnName}__alt${fallbackIdx}(state);`
     : `throw new SyntaxError('no production matched at position ' + __peek);`;
+  if (canExtractBody && fallbackIdx >= 0) {
+    // Same shape as the keyed branches: the fallback production also
+    // starts with `<` + ident discriminator (just no .oneOf).
+    const fbProd = productions[fallbackIdx]!;
+    const fbDisc = fbProd.spans[prefixLen];
+    if (fbDisc && fbDisc.class === 'ident' && fbDisc.name === discName) {
+      const helper = ensureBodyHelper(fallbackIdx);
+      fallbackCall = `state.off = __peek; return ${helper}(state, __tagOrig);`;
+    }
+  }
+  // Emit body helpers BEFORE the dispatcher; they're function declarations,
+  // so they hoist within the surrounding module, but emitting in source
+  // order makes the generated file easier to read.
+  if (bodyHelpers.size > 0) {
+    pendingHelpers.push([...bodyHelpers.values()].join('\n\n'));
+  }
+  const tail = fallbackCall;
+  const identCapture = canExtractBody
+    ? `  const __tagOrig = __input.slice(__identStart, __peek);
+  const __ident = __tagOrig.toLowerCase();`
+    : `  const __ident = __input.slice(__identStart, __peek).toLowerCase();`;
   return `${peekScan}
 ${wsSkip}
 if (!(${identStart})) ${fallbackIdx >= 0 ? `return ${fnName}__alt${fallbackIdx}(state);` : `throw new SyntaxError('expected ident at position ' + __peek);`}
@@ -345,7 +418,7 @@ if (!(${identStart})) ${fallbackIdx >= 0 ? `return ${fnName}__alt${fallbackIdx}(
   const __identStart = __peek;
   __peek++;
   while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-  const __ident = __input.slice(__identStart, __peek).toLowerCase();
+${identCapture}
   ${dispatchLines.join('\n  ')}
   ${tail}
 }`;
@@ -358,6 +431,7 @@ function emitGroupedFirstSpanDispatch(
   indexes: ReadonlyArray<number>,
   productions: ReadonlyArray<Production>,
   fnName: string,
+  ctx: Ctx,
 ): string | null {
   // Group by first-byte predicate (NOT first-span signature). Two
   // productions with the same byte predicate go in the same group even if
@@ -396,7 +470,7 @@ function emitGroupedFirstSpanDispatch(
   // single, speculation chain if multi-prod with no further structure.
   const groupBodies: Array<{ check: string; body: string }> = [];
   for (const group of groups) {
-    let body: string | null = emitDispatchBody(group.indexes, productions, fnName);
+    let body: string | null = emitDispatchBody(group.indexes, productions, fnName, ctx);
     if (body === null) {
       // Fall back to speculation among the group's productions.
       body = emitSpeculationChain(group.indexes, fnName);
@@ -626,6 +700,10 @@ function emitNodeFunctionWithRecovery(
   const fnName = parseFnName(nodeName, ctx.variant);
   const validFnName = `${fnName}__valid`;
   const validInfo: NodeTypeInfo = { name: nodeName, productions: validProductions };
+  // Snapshot pendingHelpers so we can apply the same rename to any helpers
+  // emitNodeFunction pushes onto it (e.g. dispatcher-extracted alt body
+  // helpers like `parseHtmlElement__alt5__body` → `parseHtmlElement__valid__alt5__body`).
+  const helpersBefore = pendingHelpers.length;
   const validDispatch = emitNodeFunction(validInfo, { ...ctx }).replace(
     new RegExp(`function ${escapeRegex(fnName)}\\(`, 'g'),
     `function ${validFnName}(`,
@@ -633,6 +711,12 @@ function emitNodeFunctionWithRecovery(
     new RegExp(`${escapeRegex(fnName)}__alt`, 'g'),
     `${validFnName}__alt`,
   );
+  for (let i = helpersBefore; i < pendingHelpers.length; i++) {
+    pendingHelpers[i] = pendingHelpers[i]!.replace(
+      new RegExp(`${escapeRegex(fnName)}__alt`, 'g'),
+      `${validFnName}__alt`,
+    );
+  }
 
   const recoveryFns = recoveryProductions.map((production, i) => {
     const body = emitProductionBody(production, ctx);
@@ -694,7 +778,18 @@ function inlineSkipWs(ctx?: Ctx): string {
 
 // --- Production body -------------------------------------------------------
 
-function emitProductionBody(production: Production, ctx: Ctx): string {
+type InlineFromDispatcher = {
+  // Number of leading spans the dispatcher has already walked (and which
+  // the inlined body should skip).
+  readonly skipSpans: number;
+  // Map of span name → JS variable in the dispatcher's scope holding the
+  // value the body would otherwise compute. For HtmlElement this is
+  // `{ tag: '__tagOrig' }` so the body's structure references `tag`
+  // resolve to the dispatcher's pre-captured source slice.
+  readonly preboundValues: ReadonlyMap<string, string>;
+};
+
+function emitProductionBody(production: Production, ctx: Ctx, inline?: InlineFromDispatcher): string {
   const lines: string[] = [];
   const valueExpr = new Map<string, string>();
   const presenceExpr = new Map<string, string>();
@@ -704,20 +799,34 @@ function emitProductionBody(production: Production, ctx: Ctx): string {
   const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
   const offsetRefs = collectOffsetRefs(production.structure, structureOptions);
   const needsNodeRange = ctx.variant === 'raws';
+  const skipSpans = inline?.skipSpans ?? 0;
 
-  // Hoist state into function-scope locals. Spans operate on these; the
-  // wrapper flushes __off back to state.off before any external parse call
-  // and at function exit.
+  if (inline) {
+    // Pre-populate value/presence maps so $.<name> references in the
+    // structure resolve to the dispatcher's locals.
+    for (const [name, varName] of inline.preboundValues) {
+      valueExpr.set(name, varName);
+      presenceExpr.set(name, `(${varName} !== '' && ${varName} !== null)`);
+    }
+  }
+
+  // Always emit __input/__len/__off — the body either runs inside its own
+  // function (standalone or extracted helper) or is wrapped in `{}` when
+  // truly inlined. The dispatcher's pre-walked position is stored in
+  // state.off before the call, so __off = state.off is correct in both
+  // modes; the inline skipWs is only safe to omit when the dispatcher
+  // already advanced past leading whitespace.
   lines.push(`const __input = state.input;
 const __len = __input.length;
 let __off = state.off;`);
-
-  // Initial skipWs is ws-only — the parent's tryRoles dispatcher relies
-  // on parseComment seeing '/*' at __off to match the comment production.
-  // If we skipped comments here, parseComment would skip its own content.
-  lines.push(inlineSkipWs());
-  if (needsNodeRange) {
-    lines.push(`const __startOff = __off;`);
+  if (!inline) {
+    // Initial skipWs is ws-only — the parent's tryRoles dispatcher relies
+    // on parseComment seeing '/*' at __off to match the comment production.
+    // If we skipped comments here, parseComment would skip its own content.
+    lines.push(inlineSkipWs());
+    if (needsNodeRange) {
+      lines.push(`const __startOff = __off;`);
+    }
   }
   // Track the position right after the last consumed byte. Distinct from
   // __off, which after the final span may sit at an unconsumed stop char
@@ -728,6 +837,19 @@ let __off = state.off;`);
   lines.push(`let __consumedEnd = __off;`);
 
   for (let i = 0; i < spans.length; i++) {
+    if (i < skipSpans) continue;
+    // When we resume after a skipped prefix, the inter-span ws skip the
+    // skipped span would normally emit (after its body) must still run
+    // for the first emitted span — unless it'd be skipped in the
+    // standalone path too (next-span repeats/until).
+    if (i === skipSpans && skipSpans > 0) {
+      const span = spans[i]!;
+      const isRepeats = findModifier(span.modifiers, 'repeats') !== undefined;
+      const isUntil = findModifier(span.modifiers, 'until') !== undefined;
+      if (!isRepeats && !isUntil) {
+        lines.push(inlineSkipWs(ctx));
+      }
+    }
     const span = spans[i]!;
     const next = spans[i + 1];
     const isUntil = findModifier(span.modifiers, 'until') !== undefined;
@@ -997,12 +1119,17 @@ function emitSpanRefinementCheck(
     if (refinement.name === 'oneOf') {
       const values = refinement.args?.[0];
       if (!Array.isArray(values) || values.some((value) => typeof value !== 'string')) continue;
-      const lowered = (values as readonly string[]).map((value) => value.toLowerCase());
-      const condition = lowered.map((value) => `${valueVar}.toLowerCase() === ${jsString(value)}`).join(' || ') || 'false';
+      const lowered = [...new Set((values as readonly string[]).map((value) => value.toLowerCase()))];
+      // Hoist the toLowerCase() result into a local so we allocate one new
+      // string per check instead of one per oneOf value. HTML's
+      // .ident().html().oneOf([...]) checks fire on every element.
+      const loweredVar = `__${valueVar}_lc`;
+      const condition = lowered.map((value) => `${loweredVar} === ${jsString(value)}`).join(' || ') || 'false';
       const message = `expected one of ${(values as readonly string[]).join(', ')} at position `;
+      const decl = `const ${loweredVar} = ${optional ? `${valueVar} === null ? null : ${valueVar}.toLowerCase()` : `${valueVar}.toLowerCase()`};`;
       checks.push(optional
-        ? `if (${valueVar} !== null && !(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`
-        : `if (!(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`);
+        ? `${decl}\nif (${valueVar} !== null && !(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`
+        : `${decl}\nif (!(${condition})) { state.off = __off; throw new SyntaxError(${jsString(message)} + ${positionExpr}); }`);
       continue;
     }
     if (refinement.name === 'hexString') {
@@ -1937,32 +2064,98 @@ function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseIns
   const singleCharStops = stops.filter((s) => s.length === 1);
   const multiCharStops = stops.filter((s) => s.length >= 2);
 
-  const lines: string[] = [];
-  lines.push(`{
-  const __startOff = __off;
-  let __earliest = __len;`);
+  // Build a single fused scan: one pass over bytes, checking all stop chars
+  // per byte. The previous emit ran one full pass per stop, which on HTML's
+  // unquoted-attr value (6 single-char + 1 multi-char stop) did 7x the
+  // work per attribute and dominated bench profiles at 22%.
+  const setOff = `  __off = __earliest;
+  state.__lastCaptureStart = __startOff;
+  state.__lastCaptureEnd = __earliest;
+  ${varName === '__rawCaptured' ? '' : `${varName} = __input.slice(__startOff, __earliest);`}
+}`;
 
-  for (const stop of singleCharStops) {
-    const code = stop.charCodeAt(0);
-    if (caseInsensitive && ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a))) {
-      const fold = code | 0x20;
-      lines.push(`  for (let __i = __startOff; __i < __earliest; __i++) {
-    const __c = __input.charCodeAt(__i);
-    const __f = (__c >= 0x41 && __c <= 0x5a) || (__c >= 0x61 && __c <= 0x7a) ? __c | 0x20 : __c;
-    if (__f === ${fold}) { __earliest = __i; break; }
-  }`);
-    } else {
-      lines.push(`  for (let __i = __startOff; __i < __earliest; __i++) {
-    if (__input.charCodeAt(__i) === ${code}) { __earliest = __i; break; }
-  }`);
-    }
+  if (stops.length === 0) {
+    return `{
+  const __startOff = __off;
+  const __earliest = __len;
+${setOff}`;
   }
 
-  for (const stop of multiCharStops) {
-    if (caseInsensitive) {
-      lines.push(`  {
-    const __needle = ${jsString(stop)};
-    const __nlen = ${stop.length};
+  // Inline character predicate for the per-byte single-char check. For
+  // case-insensitive single-char ASCII letter stops we fold on the fly;
+  // non-letter chars need no folding. Multi-char stops are checked per
+  // first-byte match below the predicate.
+  const singleCharCodes = singleCharStops.map((s) => s.charCodeAt(0));
+  const ciLetterCodes = caseInsensitive
+    ? singleCharCodes.filter((c) => (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a))
+    : [];
+  const literalSingles = caseInsensitive
+    ? singleCharCodes.filter((c) => !((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)))
+    : singleCharCodes;
+  // For ci letters we collapse upper/lower to the lower-case form once and
+  // compare against the folded byte. The collapsed-set must be unique to
+  // avoid redundant branches.
+  const ciFoldedSet = [...new Set(ciLetterCodes.map((c) => c | 0x20))];
+
+  const singleCheck = (() => {
+    const parts: string[] = [];
+    if (literalSingles.length > 0) {
+      const ors = literalSingles.map((c) => `__c === ${c}`).join(' || ');
+      parts.push(ors);
+    }
+    if (ciFoldedSet.length > 0) {
+      const fold = `((__c >= 0x41 && __c <= 0x5a) ? (__c | 0x20) : __c)`;
+      const ors = ciFoldedSet.map((c) => `${fold} === ${c}`).join(' || ');
+      parts.push(`(${ors})`);
+    }
+    return parts.length > 0 ? parts.join(' || ') : null;
+  })();
+
+  // Multi-char stops checked at each position. Group by first byte so the
+  // per-byte gate is cheap; on match, verify the rest of the needle.
+  type MultiStop = { readonly first: number; readonly text: string };
+  const multiStops: MultiStop[] = multiCharStops.map((s) => ({
+    first: s.charCodeAt(0),
+    text: s,
+  }));
+
+  const multiCheck = (() => {
+    if (multiStops.length === 0) return null;
+    // Case-insensitive multi-char stops fall back to a separate trailing
+    // pass — none of the current schemas hit this combination, so we
+    // avoid the inlining complexity until someone needs it.
+    if (caseInsensitive) return null;
+    const byFirst = new Map<number, string[]>();
+    for (const { first, text } of multiStops) {
+      const bucket = byFirst.get(first) ?? [];
+      bucket.push(text);
+      byFirst.set(first, bucket);
+    }
+    const branches: string[] = [];
+    for (const [first, texts] of byFirst) {
+      texts.sort((a, b) => b.length - a.length);
+      const tests = texts.map((text) => {
+        const len = text.length;
+        if (len === 1) return 'true';
+        const seq: string[] = [];
+        for (let j = 1; j < len; j++) {
+          seq.push(`__input.charCodeAt(__i + ${j}) === ${text.charCodeAt(j)}`);
+        }
+        return `(__i + ${len - 1} < __len && ${seq.join(' && ')})`;
+      });
+      branches.push(`if (__c === ${first} && (${tests.join(' || ')})) { __earliest = __i; break; }`);
+    }
+    return branches.join('\n    ');
+  })();
+
+  // Trailing fallback pass for case-insensitive multi-char stops.
+  let trailingMulti = '';
+  if (caseInsensitive && multiStops.length > 0) {
+    const parts: string[] = [];
+    for (const { text } of multiStops) {
+      parts.push(`  {
+    const __needle = ${jsString(text)};
+    const __nlen = ${text.length};
     outer: for (let __i = __startOff; __i + __nlen <= __earliest; __i++) {
       for (let __j = 0; __j < __nlen; __j++) {
         const __ic = __input.charCodeAt(__i + __j);
@@ -1974,35 +2167,27 @@ function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseIns
       __earliest = __i; break;
     }
   }`);
-    } else if (stop.length === 2) {
-      const c0 = stop.charCodeAt(0);
-      const c1 = stop.charCodeAt(1);
-      lines.push(`  for (let __i = __startOff; __i + 1 < __earliest; __i++) {
-    if (__input.charCodeAt(__i) === ${c0} && __input.charCodeAt(__i + 1) === ${c1}) { __earliest = __i; break; }
-  }`);
-    } else {
-      const c0 = stop.charCodeAt(0);
-      lines.push(`  {
-    const __needle = ${jsString(stop)};
-    const __nlen = ${stop.length};
-    outer: for (let __i = __startOff; __i + __nlen <= __earliest; __i++) {
-      if (__input.charCodeAt(__i) !== ${c0}) continue;
-      for (let __j = 1; __j < __nlen; __j++) {
-        if (__input.charCodeAt(__i + __j) !== __needle.charCodeAt(__j)) continue outer;
-      }
-      __earliest = __i; break;
     }
-  }`);
-    }
+    trailingMulti = '\n' + parts.join('\n');
   }
 
-  lines.push(`  __off = __earliest;
-  state.__lastCaptureStart = __startOff;
-  state.__lastCaptureEnd = __earliest;
-  ${varName === '__rawCaptured' ? '' : `${varName} = __input.slice(__startOff, __earliest);`}
-}`);
+  // Assemble the single-pass scan.
+  const loopBody: string[] = [];
+  if (singleCheck) {
+    loopBody.push(`if (${singleCheck}) { __earliest = __i; break; }`);
+  }
+  if (multiCheck) {
+    loopBody.push(multiCheck);
+  }
 
-  return lines.join('\n');
+  return `{
+  const __startOff = __off;
+  let __earliest = __len;
+  for (let __i = __startOff; __i < __len; __i++) {
+    const __c = __input.charCodeAt(__i);
+    ${loopBody.join('\n    ')}
+  }${trailingMulti}
+${setOff}`;
 }
 
 // --- Utilities -------------------------------------------------------------

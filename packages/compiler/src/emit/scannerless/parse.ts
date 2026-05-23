@@ -191,9 +191,16 @@ function emitSharedPrefixDispatch(
   // disambiguate via `"`/`'`/(rawUntil), while the boolean alt has no `=`
   // at all and becomes the fallback.
   const literalGroups = new Map<string, number[]>();
-  const onByValue = new Map<string, number>();
-  type OneOfDisc = { values: readonly string[]; idx: number };
-  const oneOfBuckets: OneOfDisc[] = [];
+  // oneOfGroups maps each lowercased tag name to the alts that accept it.
+  // HTML's HtmlElement has 15+ alts sharing `<` and discriminating on
+  // `tag.ident().oneOf([...])` — most tag names route to one alt, but void
+  // elements ('br','hr',...) appear in both the void and void-self-close
+  // alts (so the group has 2 entries, dispatched by speculation among them).
+  const oneOfGroups = new Map<string, number[]>();
+  // Track classOf-routed indexes (each has its own oneOf set) so we can
+  // verify all are accounted for. An alt may contribute multiple keys to
+  // oneOfGroups (one per value in its oneOf), so just track membership.
+  const oneOfRoutedIdx = new Set<number>();
   let kind: 'literal' | 'oneOf' | null = null;
   let fallbackIdx = -1;
   for (const idx of indexes) {
@@ -229,17 +236,18 @@ function emitSharedPrefixDispatch(
     kind = 'oneOf';
     const lowered = (values as readonly string[]).map((v) => v.toLowerCase());
     for (const v of lowered) {
-      if (onByValue.has(v)) return null; // conflicting routes
-      onByValue.set(v, idx);
+      let bucket = oneOfGroups.get(v);
+      if (!bucket) { bucket = []; oneOfGroups.set(v, bucket); }
+      bucket.push(idx);
     }
-    oneOfBuckets.push({ values: lowered, idx });
+    oneOfRoutedIdx.add(idx);
   }
   if (kind === null) return null;
   if (kind === 'literal' && literalGroups.size === 0) return null;
-  if (kind === 'oneOf' && oneOfBuckets.length === 0) return null;
+  if (kind === 'oneOf' && oneOfRoutedIdx.size === 0) return null;
   const literalCount = [...literalGroups.values()].reduce((s, g) => s + g.length, 0);
   if (kind === 'literal' && literalCount + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
-  if (kind === 'oneOf' && oneOfBuckets.length + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+  if (kind === 'oneOf' && oneOfRoutedIdx.size + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
 
   const peekScan = emitPeekScanForSpans(productions[indexes[0]!]!.spans.slice(0, prefixLen));
   if (peekScan === null) return null;
@@ -292,9 +300,40 @@ ${tail}`;
     : refSet.has('js')
       ? `isJsIdentStart(__input.charCodeAt(__peek))`
       : `(isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)`;
+  // Collapse identical sub-bucket targets so void elements (which map every
+  // tag in the void list to the same [alt1, alt2] pair) don't each emit a
+  // separately-numbered helper. Same key → same emitted body.
   const dispatchLines: string[] = [];
-  for (const [value, idx] of onByValue) {
-    dispatchLines.push(`if (__ident === ${jsString(value)}) return ${fnName}__alt${idx}(state);`);
+  const subDispatchBodies = new Map<string, string>();
+  for (const [value, subIndexes] of oneOfGroups) {
+    const key = subIndexes.join(',');
+    if (!subDispatchBodies.has(key)) {
+      let body: string;
+      if (subIndexes.length === 1) {
+        body = `return ${fnName}__alt${subIndexes[0]}(state);`;
+      } else {
+        const sub = emitDispatchBody(subIndexes, productions, fnName);
+        if (sub !== null) {
+          body = `__peek = state.off;\n${sub}`;
+        } else {
+          // Sub-group can't be cheaply disambiguated by peek — speculate
+          // among them. Vastly cheaper than the outer dispatcher's full
+          // alt chain, because the bucket is small (typically 2).
+          // Don't touch state.off: __peek is past the tag ident, but the
+          // sub-alts parse the full production from the element start.
+          const last = subIndexes[subIndexes.length - 1]!;
+          const speculative = subIndexes.slice(0, -1).map((i) =>
+            `{ const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
+          ).join('\n');
+          body = `${speculative}\nreturn ${fnName}__alt${last}(state);`;
+        }
+      }
+      subDispatchBodies.set(key, body);
+    }
+    const body = subDispatchBodies.get(key)!;
+    dispatchLines.push(`if (__ident === ${jsString(value)}) {
+${indent(body, 1)}
+}`);
   }
   const tail = fallbackIdx >= 0
     ? `return ${fnName}__alt${fallbackIdx}(state);`

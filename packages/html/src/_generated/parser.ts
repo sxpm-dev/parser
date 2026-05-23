@@ -2183,22 +2183,143 @@ function parseHtmlElement__valid__alt15(state: State): unknown {
 }
 
 function parseHtmlElement__valid(state: State): unknown {
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt0); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt2); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt3); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt4); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt5); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt6); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt7); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt8); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt9); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt10); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt11); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt12); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt13); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElement__valid__alt14); if (r !== null) return r; }
-  return parseHtmlElement__valid__alt15(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
+    }
+    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek += 1;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
+  }
+  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseHtmlElement__valid__alt15(state);
+  {
+    const __identStart = __peek;
+    __peek++;
+    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
+    const __ident = __input.slice(__identStart, __peek).toLowerCase();
+    if (__ident === "script") {
+    return parseHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "style") {
+    return parseHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "textarea") {
+    return parseHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "title") {
+    return parseHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "area") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "base") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "br") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "col") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "embed") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "hr") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "img") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "input") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "link") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "meta") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "param") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "source") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "track") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "wbr") {
+    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "li") {
+    return parseHtmlElement__valid__alt3(state);
+  }
+    if (__ident === "dt") {
+    return parseHtmlElement__valid__alt4(state);
+  }
+    if (__ident === "dd") {
+    return parseHtmlElement__valid__alt4(state);
+  }
+    if (__ident === "tr") {
+    return parseHtmlElement__valid__alt5(state);
+  }
+    if (__ident === "td") {
+    return parseHtmlElement__valid__alt6(state);
+  }
+    if (__ident === "th") {
+    return parseHtmlElement__valid__alt6(state);
+  }
+    if (__ident === "p") {
+    return parseHtmlElement__valid__alt7(state);
+  }
+    if (__ident === "option") {
+    return parseHtmlElement__valid__alt8(state);
+  }
+    if (__ident === "optgroup") {
+    return parseHtmlElement__valid__alt8(state);
+  }
+    if (__ident === "html") {
+    return parseHtmlElement__valid__alt9(state);
+  }
+    if (__ident === "head") {
+    return parseHtmlElement__valid__alt10(state);
+  }
+    if (__ident === "tbody") {
+    return parseHtmlElement__valid__alt11(state);
+  }
+    if (__ident === "thead") {
+    return parseHtmlElement__valid__alt12(state);
+  }
+    if (__ident === "tfoot") {
+    return parseHtmlElement__valid__alt13(state);
+  }
+    if (__ident === "body") {
+    return parseHtmlElement__valid__alt14(state);
+  }
+    return parseHtmlElement__valid__alt15(state);
+  }
 }
 
 function parseHtmlElement__recovery0(state: State): unknown {
@@ -4446,22 +4567,143 @@ function parseHtmlElementFast__valid__alt15(state: State): unknown {
 }
 
 function parseHtmlElementFast__valid(state: State): unknown {
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt0); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt2); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt3); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt4); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt5); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt6); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt7); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt8); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt9); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt10); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt11); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt12); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt13); if (r !== null) return r; }
-  { const r = trySpeculate(state, parseHtmlElementFast__valid__alt14); if (r !== null) return r; }
-  return parseHtmlElementFast__valid__alt15(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
+    }
+    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek += 1;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
+  }
+  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseHtmlElementFast__valid__alt15(state);
+  {
+    const __identStart = __peek;
+    __peek++;
+    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
+    const __ident = __input.slice(__identStart, __peek).toLowerCase();
+    if (__ident === "script") {
+    return parseHtmlElementFast__valid__alt0(state);
+  }
+    if (__ident === "style") {
+    return parseHtmlElementFast__valid__alt0(state);
+  }
+    if (__ident === "textarea") {
+    return parseHtmlElementFast__valid__alt0(state);
+  }
+    if (__ident === "title") {
+    return parseHtmlElementFast__valid__alt0(state);
+  }
+    if (__ident === "area") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "base") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "br") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "col") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "embed") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "hr") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "img") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "input") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "link") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "meta") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "param") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "source") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "track") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "wbr") {
+    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
+    return parseHtmlElementFast__valid__alt2(state);
+  }
+    if (__ident === "li") {
+    return parseHtmlElementFast__valid__alt3(state);
+  }
+    if (__ident === "dt") {
+    return parseHtmlElementFast__valid__alt4(state);
+  }
+    if (__ident === "dd") {
+    return parseHtmlElementFast__valid__alt4(state);
+  }
+    if (__ident === "tr") {
+    return parseHtmlElementFast__valid__alt5(state);
+  }
+    if (__ident === "td") {
+    return parseHtmlElementFast__valid__alt6(state);
+  }
+    if (__ident === "th") {
+    return parseHtmlElementFast__valid__alt6(state);
+  }
+    if (__ident === "p") {
+    return parseHtmlElementFast__valid__alt7(state);
+  }
+    if (__ident === "option") {
+    return parseHtmlElementFast__valid__alt8(state);
+  }
+    if (__ident === "optgroup") {
+    return parseHtmlElementFast__valid__alt8(state);
+  }
+    if (__ident === "html") {
+    return parseHtmlElementFast__valid__alt9(state);
+  }
+    if (__ident === "head") {
+    return parseHtmlElementFast__valid__alt10(state);
+  }
+    if (__ident === "tbody") {
+    return parseHtmlElementFast__valid__alt11(state);
+  }
+    if (__ident === "thead") {
+    return parseHtmlElementFast__valid__alt12(state);
+  }
+    if (__ident === "tfoot") {
+    return parseHtmlElementFast__valid__alt13(state);
+  }
+    if (__ident === "body") {
+    return parseHtmlElementFast__valid__alt14(state);
+  }
+    return parseHtmlElementFast__valid__alt15(state);
+  }
 }
 
 function parseHtmlElementFast__recovery0(state: State): unknown {
@@ -6772,22 +7014,143 @@ function validateHtmlElement__valid__alt15(state: State): unknown {
 }
 
 function validateHtmlElement__valid(state: State): unknown {
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt0); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt2); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt3); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt4); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt5); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt6); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt7); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt8); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt9); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt10); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt11); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt12); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt13); if (r !== null) return r; }
-  { const r = trySpeculate(state, validateHtmlElement__valid__alt14); if (r !== null) return r; }
-  return validateHtmlElement__valid__alt15(state);
+  const __input = state.input;
+  const __len = __input.length;
+  let __peek = state.off;
+    while (__peek < __len) {
+      const __c = __input.charCodeAt(__peek);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+      break;
+    }
+    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
+    __peek += 1;
+  // Skip ws before the discriminator.
+  while (__peek < __len) {
+    const __c = __input.charCodeAt(__peek);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
+    break;
+  }
+  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return validateHtmlElement__valid__alt15(state);
+  {
+    const __identStart = __peek;
+    __peek++;
+    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
+    const __ident = __input.slice(__identStart, __peek).toLowerCase();
+    if (__ident === "script") {
+    return validateHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "style") {
+    return validateHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "textarea") {
+    return validateHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "title") {
+    return validateHtmlElement__valid__alt0(state);
+  }
+    if (__ident === "area") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "base") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "br") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "col") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "embed") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "hr") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "img") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "input") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "link") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "meta") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "param") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "source") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "track") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "wbr") {
+    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
+    return validateHtmlElement__valid__alt2(state);
+  }
+    if (__ident === "li") {
+    return validateHtmlElement__valid__alt3(state);
+  }
+    if (__ident === "dt") {
+    return validateHtmlElement__valid__alt4(state);
+  }
+    if (__ident === "dd") {
+    return validateHtmlElement__valid__alt4(state);
+  }
+    if (__ident === "tr") {
+    return validateHtmlElement__valid__alt5(state);
+  }
+    if (__ident === "td") {
+    return validateHtmlElement__valid__alt6(state);
+  }
+    if (__ident === "th") {
+    return validateHtmlElement__valid__alt6(state);
+  }
+    if (__ident === "p") {
+    return validateHtmlElement__valid__alt7(state);
+  }
+    if (__ident === "option") {
+    return validateHtmlElement__valid__alt8(state);
+  }
+    if (__ident === "optgroup") {
+    return validateHtmlElement__valid__alt8(state);
+  }
+    if (__ident === "html") {
+    return validateHtmlElement__valid__alt9(state);
+  }
+    if (__ident === "head") {
+    return validateHtmlElement__valid__alt10(state);
+  }
+    if (__ident === "tbody") {
+    return validateHtmlElement__valid__alt11(state);
+  }
+    if (__ident === "thead") {
+    return validateHtmlElement__valid__alt12(state);
+  }
+    if (__ident === "tfoot") {
+    return validateHtmlElement__valid__alt13(state);
+  }
+    if (__ident === "body") {
+    return validateHtmlElement__valid__alt14(state);
+  }
+    return validateHtmlElement__valid__alt15(state);
+  }
 }
 
 function validateHtmlElement__recovery0(state: State): unknown {

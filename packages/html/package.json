@@ -8,6 +8,7 @@
     "test": "npm run generate && tsx --test test/*.test.ts",
     "bench": "npm run generate && npm run bench:parse",
     "bench:parse": "tsx bench/parse.ts",
+    "bench:focused": "tsx bench/focused.ts",
     "browser:build": "tsx ../../scripts/browser-build.ts html",
     "perf:baseline": "tsx ../../scripts/perf-gate.ts html --write",
     "perf:gate": "tsx ../../scripts/perf-gate.ts html",

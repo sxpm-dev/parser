@@ -16,6 +16,7 @@
     "test:css:conformance": "npm run generate && npm run test:conformance -w @parser2/css",
     "audit:parser-contract": "tsx scripts/parser-contract-audit.ts",
     "bench": "npm run bench -w @parser2/arn && npm run bench -w @parser2/cron && npm run bench -w @parser2/css-color && npm run bench -w @parser2/css-length-percentage && npm run bench -w @parser2/css && npm run bench -w @parser2/html && npm run bench -w @parser2/log && npm run bench -w @parser2/mac && npm run bench -w @parser2/markdown && npm run bench -w @parser2/proto && npm run bench -w @parser2/url",
+    "bench:focused": "npm run generate && npm run bench:focused -w @parser2/html && npm run bench:focused -w @parser2/css && npm run bench:focused -w @parser2/markdown",
     "bench:arn:parse": "npm run generate -w @parser2/arn && tsx packages/arn/bench/parse.ts",
     "bench:cron:parse": "npm run generate -w @parser2/cron && tsx packages/cron/bench/parse.ts",
     "bench:css-color:validate": "npm run generate -w @parser2/css-color && tsx packages/css-color/bench/validate.ts",

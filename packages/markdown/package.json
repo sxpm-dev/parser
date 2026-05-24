@@ -9,6 +9,7 @@
     "bench": "npm run generate && npm run bench:ast && npm run bench:html",
     "bench:ast": "tsx bench/ast.ts",
     "bench:html": "tsx bench/html.ts",
+    "bench:focused": "tsx bench/focused.ts",
     "browser:build": "tsx ../../scripts/browser-build.ts markdown",
     "perf:baseline": "tsx ../../scripts/perf-gate.ts markdown --write",
     "perf:gate": "tsx ../../scripts/perf-gate.ts markdown",

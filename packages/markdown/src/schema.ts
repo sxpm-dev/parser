@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'MarkdownDocument',
@@ -42,6 +42,7 @@ export default defineSchema({
       .span('children', '# Release notes\nPlain paragraph', 'MarkdownLeaf')
         .repeats({ min: 0 })
       .structure({ type: 'document', children: $.children })
+      .stringify('html', tpl`${$.children}`)
       .build(),
 
     ex('# Release notes')
@@ -50,6 +51,7 @@ export default defineSchema({
       .span('first', 'Release').ident().css()
       .span('second', 'notes').ident().css()
       .structure({ type: 'heading', depth: 1, text: [$.first, $.second] })
+      .stringify('html', tpl`<h1>${$.first} ${$.second}</h1>`)
       .build(),
 
     ex('## Installation guide')
@@ -58,6 +60,7 @@ export default defineSchema({
       .span('first', 'Installation').ident().css()
       .span('second', 'guide').ident().css()
       .structure({ type: 'heading', depth: 2, text: [$.first, $.second] })
+      .stringify('html', tpl`<h2>${$.first} ${$.second}</h2>`)
       .build(),
 
     ex('### API reference')
@@ -66,6 +69,7 @@ export default defineSchema({
       .span('first', 'API').ident().css()
       .span('second', 'reference').ident().css()
       .structure({ type: 'heading', depth: 3, text: [$.first, $.second] })
+      .stringify('html', tpl`<h3>${$.first} ${$.second}</h3>`)
       .build(),
 
     ex('#### Deep section')
@@ -74,6 +78,7 @@ export default defineSchema({
       .span('first', 'Deep').ident().css()
       .span('second', 'section').ident().css()
       .structure({ type: 'heading', depth: 4, text: [$.first, $.second] })
+      .stringify('html', tpl`<h4>${$.first} ${$.second}</h4>`)
       .build(),
 
     ex('##### Small section')
@@ -82,6 +87,7 @@ export default defineSchema({
       .span('first', 'Small').ident().css()
       .span('second', 'section').ident().css()
       .structure({ type: 'heading', depth: 5, text: [$.first, $.second] })
+      .stringify('html', tpl`<h5>${$.first} ${$.second}</h5>`)
       .build(),
 
     ex('###### Tiny heading')
@@ -90,6 +96,7 @@ export default defineSchema({
       .span('first', 'Tiny').ident().css()
       .span('second', 'heading').ident().css()
       .structure({ type: 'heading', depth: 6, text: [$.first, $.second] })
+      .stringify('html', tpl`<h6>${$.first} ${$.second}</h6>`)
       .build(),
 
     ex('Setext heading\n---')
@@ -98,6 +105,7 @@ export default defineSchema({
       .span('second', 'heading').ident().css()
       .span('---')
       .structure({ type: 'heading', depth: 2, text: [$.first, $.second], style: 'setext' })
+      .stringify('html', tpl`<h2>${$.first} ${$.second}</h2>`)
       .build(),
 
     ex('Plain paragraph')
@@ -105,6 +113,7 @@ export default defineSchema({
       .span('first', 'Plain').ident().css()
       .span('second', 'paragraph').ident().css()
       .structure({ type: 'paragraph', text: [$.first, $.second] })
+      .stringify('html', tpl`<p>${$.first} ${$.second}</p>`)
       .build(),
 
     ex('- first item')
@@ -113,6 +122,7 @@ export default defineSchema({
       .span('first', 'first').ident().css()
       .span('second', 'item').ident().css()
       .structure({ type: 'list-item', ordered: false, text: [$.first, $.second] })
+      .stringify('html', tpl`<li>${$.first} ${$.second}</li>`)
       .build(),
 
     ex('+ alternate marker')
@@ -121,6 +131,7 @@ export default defineSchema({
       .span('first', 'alternate').ident().css()
       .span('second', 'marker').ident().css()
       .structure({ type: 'list-item', ordered: false, marker: '+', text: [$.first, $.second] })
+      .stringify('html', tpl`<li>${$.first} ${$.second}</li>`)
       .build(),
 
     ex('* star marker')
@@ -129,6 +140,7 @@ export default defineSchema({
       .span('first', 'star').ident().css()
       .span('second', 'marker').ident().css()
       .structure({ type: 'list-item', ordered: false, marker: '*', text: [$.first, $.second] })
+      .stringify('html', tpl`<li>${$.first} ${$.second}</li>`)
       .build(),
 
     ex('1. ordered item')
@@ -138,6 +150,7 @@ export default defineSchema({
       .span('first', 'ordered').ident().css()
       .span('second', 'item').ident().css()
       .structure({ type: 'list-item', ordered: true, index: $.index, text: [$.first, $.second] })
+      .stringify('html', tpl`<li>${$.first} ${$.second}</li>`)
       .build(),
 
     ex('- [x] completed task')
@@ -149,6 +162,7 @@ export default defineSchema({
       .span('first', 'completed').ident().css()
       .span('second', 'task').ident().css()
       .structure({ type: 'task-list-item', checked: true, marker: $.checked, text: [$.first, $.second] })
+      .stringify('html', tpl`<li><input type="checkbox" checked>${$.first} ${$.second}</li>`)
       .build(),
 
     ex('- [ ] pending task')
@@ -159,6 +173,7 @@ export default defineSchema({
       .span('first', 'pending').ident().css()
       .span('second', 'task').ident().css()
       .structure({ type: 'task-list-item', checked: false, text: [$.first, $.second] })
+      .stringify('html', tpl`<li><input type="checkbox">${$.first} ${$.second}</li>`)
       .build(),
 
     ex('> quoted text')
@@ -167,24 +182,28 @@ export default defineSchema({
       .span('first', 'quoted').ident().css()
       .span('second', 'text').ident().css()
       .structure({ type: 'blockquote', text: [$.first, $.second] })
+      .stringify('html', tpl`<blockquote>${$.first} ${$.second}</blockquote>`)
       .build(),
 
     ex('---')
       .as('MarkdownLeaf')
       .span('---')
       .structure({ type: 'thematic-break' })
+      .stringify('html', tpl`<hr>`)
       .build(),
 
     ex('***')
       .as('MarkdownLeaf')
       .span('***')
       .structure({ type: 'thematic-break', marker: '*' })
+      .stringify('html', tpl`<hr>`)
       .build(),
 
     ex('___')
       .as('MarkdownLeaf')
       .span('___')
       .structure({ type: 'thematic-break', marker: '_' })
+      .stringify('html', tpl`<hr>`)
       .build(),
 
     ex('**bold**')
@@ -193,6 +212,7 @@ export default defineSchema({
       .span('value', 'bold').ident().css()
       .span('**')
       .structure({ type: 'bold', text: $.value })
+      .stringify('html', tpl`<strong>${$.value}</strong>`)
       .build(),
 
     ex('*italic*')
@@ -201,6 +221,7 @@ export default defineSchema({
       .span('value', 'italic').ident().css()
       .span('*')
       .structure({ type: 'italic', text: $.value })
+      .stringify('html', tpl`<em>${$.value}</em>`)
       .build(),
 
     ex('~~removed~~')
@@ -209,6 +230,7 @@ export default defineSchema({
       .span('value', 'removed').ident().css()
       .span('~~')
       .structure({ type: 'strikethrough', text: $.value })
+      .stringify('html', tpl`<s>${$.value}</s>`)
       .build(),
 
     ex('`code`')
@@ -217,6 +239,7 @@ export default defineSchema({
       .span('value', 'code').ident().css()
       .span('`')
       .structure({ type: 'inline-code', text: $.value })
+      .stringify('html', tpl`<code>${$.value}</code>`)
       .build(),
 
     ex('[docs](https://example.com)')
@@ -234,6 +257,7 @@ export default defineSchema({
       .span('tld', 'com').ident().css()
       .span(')')
       .structure({ type: 'link', label: $.label, scheme: $.scheme, host: [$.host, $.tld] })
+      .stringify('html', tpl`<a href="${$.scheme}://${$.host}.${$.tld}">${$.label}</a>`)
       .build(),
 
     ex('[docs][id]')
@@ -245,6 +269,7 @@ export default defineSchema({
       .span('id', 'id').ident().css()
       .span(']')
       .structure({ type: 'reference-link', label: $.label, id: $.id })
+      .stringify('html', tpl`<a href="#${$.id}">${$.label}</a>`)
       .build(),
 
     ex('![diagram](https://example.com/diagram.png)')
@@ -267,6 +292,7 @@ export default defineSchema({
       .span('ext', 'png').ident().css()
       .span(')')
       .structure({ type: 'image', alt: $.alt, scheme: $.scheme, host: [$.host, $.tld], path: [$.path, $.ext] })
+      .stringify('html', tpl`<img src="${$.scheme}://${$.host}.${$.tld}/${$.path}.${$.ext}" alt="${$.alt}">`)
       .build(),
 
     ex('![diagram][image-id]')
@@ -279,6 +305,7 @@ export default defineSchema({
       .span('id', 'image-id').ident().css()
       .span(']')
       .structure({ type: 'reference-image', alt: $.alt, id: $.id })
+      .stringify('html', tpl`<img src="#${$.id}" alt="${$.alt}">`)
       .build(),
 
     ex('<https://example.com>')
@@ -293,6 +320,7 @@ export default defineSchema({
       .span('tld', 'com').ident().css()
       .span('>')
       .structure({ type: 'autolink', scheme: $.scheme, host: [$.host, $.tld] })
+      .stringify('html', tpl`<a href="${$.scheme}://${$.host}.${$.tld}">${$.scheme}://${$.host}.${$.tld}</a>`)
       .build(),
 
     ex('&amp;')
@@ -301,6 +329,7 @@ export default defineSchema({
       .span('name', 'amp').ident().css()
       .span(';')
       .structure({ type: 'entity', name: $.name })
+      .stringify('html', tpl`&${$.name};`)
       .build(),
 
     ex('```js\nsample\n```')
@@ -310,6 +339,7 @@ export default defineSchema({
       .span('body', 'sample').ident().css()
       .span('```')
       .structure({ type: 'code-block', lang: $.lang, text: $.body })
+      .stringify('html', tpl`<pre><code class="lang-${$.lang}">${$.body}</code></pre>`)
       .build(),
 
     ex('```\nplain\n```')
@@ -318,6 +348,7 @@ export default defineSchema({
       .span('body', 'plain').ident().css()
       .span('```')
       .structure({ type: 'code-block', text: $.body })
+      .stringify('html', tpl`<pre><code>${$.body}</code></pre>`)
       .build(),
 
     ex('| name | value |')
@@ -328,6 +359,7 @@ export default defineSchema({
       .span('second', 'value').ident().css()
       .span('|')
       .structure({ type: 'table-row', cells: [$.first, $.second] })
+      .stringify('html', tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`)
       .build(),
 
     ex('| --- | --- |')
@@ -338,6 +370,7 @@ export default defineSchema({
       .span('---')
       .span('|')
       .structure({ type: 'table-delimiter', align: ['default', 'default'] })
+      .stringify('html', tpl``)
       .build(),
 
     ex('|:---|---:|')
@@ -350,6 +383,7 @@ export default defineSchema({
       .span(':')
       .span('|')
       .structure({ type: 'table-delimiter', align: ['left', 'right'] })
+      .stringify('html', tpl``)
       .build(),
 
     ex('[id]: https://example.com')
@@ -366,6 +400,7 @@ export default defineSchema({
       .span('.')
       .span('tld', 'com').ident().css()
       .structure({ type: 'definition', id: $.id, scheme: $.scheme, host: [$.host, $.tld] })
+      .stringify('html', tpl``)
       .build(),
 
     ex('[^1]: footnote text')
@@ -378,6 +413,7 @@ export default defineSchema({
       .span('first', 'footnote').ident().css()
       .span('second', 'text').ident().css()
       .structure({ type: 'footnote-definition', id: $.id, text: [$.first, $.second] })
+      .stringify('html', tpl`<div class="footnote" id="fn${$.id}">${$.first} ${$.second}</div>`)
       .build(),
 
     ex('[^1]')
@@ -387,6 +423,7 @@ export default defineSchema({
       .span('id', '1').number().int()
       .span(']')
       .structure({ type: 'footnote-reference', id: $.id })
+      .stringify('html', tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`)
       .build(),
 
     ex('<div>html</div>')
@@ -400,6 +437,7 @@ export default defineSchema({
       .span('closingTag', 'div').ident().css()
       .span('>')
       .structure({ type: 'html', tag: $.tag, text: $.body, closingTag: $.closingTag })
+      .stringify('html', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
       .build(),
   ],
 });

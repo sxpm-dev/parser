@@ -233,30 +233,78 @@ function structureTypeLiteral(production: Production): string | null {
 }
 
 function emitDiscriminator(production: Production, all: ReadonlyArray<Production>): string {
-  // If this production has a unique structure.type literal among its
-  // siblings, dispatch is unambiguous and the public dispatcher already
-  // routed by type — return `true`. Otherwise find a field that exists on
-  // this production but not on others; fall back to `true` so the first
-  // matching production wins.
-  const typeHere = structureTypeLiteral(production);
-  if (typeHere !== null) {
-    let typeShared = false;
+  // Build a shape discriminator combining (a) literal-valued field equality
+  // checks and (b) presence/absence checks for capture fields whose presence
+  // differs across siblings. This uniquely identifies a production among
+  // siblings sharing the same `type:` literal, even when discrimination
+  // depends on capture-field shape (e.g. code-block with vs. without lang).
+  const checks: string[] = [];
+  checks.push(...literalFieldChecks(production));
+
+  // Compute the union of all sibling fields excluding this production's
+  // literal fields (already covered above).
+  const myFields = new Set(structureFieldNames(production));
+  const allSiblingFields = new Set<string>();
+  for (const other of all) {
+    if (other === production) continue;
+    for (const f of structureFieldNames(other)) allSiblingFields.add(f);
+  }
+  const myLiteralFields = new Set(literalFieldNames(production));
+  for (const field of new Set([...myFields, ...allSiblingFields])) {
+    if (myLiteralFields.has(field)) continue; // value check already emitted
+    const inMine = myFields.has(field);
+    let presentInAllSiblings = true;
+    let absentInAllSiblings = true;
     for (const other of all) {
       if (other === production) continue;
-      if (structureTypeLiteral(other) === typeHere) { typeShared = true; break; }
+      const has = structureFieldNames(other).includes(field);
+      if (has) absentInAllSiblings = false;
+      else presentInAllSiblings = false;
     }
-    if (!typeShared) return `s.type === ${jsString(typeHere)}`;
-  }
-  const fieldsHere = new Set(structureFieldNames(production));
-  for (const field of fieldsHere) {
-    let unique = true;
-    for (const other of all) {
-      if (other === production) continue;
-      if (structureFieldNames(other).includes(field)) { unique = false; break; }
+    if (inMine && !presentInAllSiblings) {
+      checks.push(`s[${jsString(field)}] !== undefined`);
+    } else if (!inMine && !absentInAllSiblings) {
+      checks.push(`s[${jsString(field)}] === undefined`);
     }
-    if (unique) return `s[${jsString(field)}] !== undefined`;
   }
-  return 'true';
+  if (checks.length === 0) return 'true';
+  return checks.join(' && ');
+}
+
+function literalFieldNames(production: Production): ReadonlyArray<string> {
+  const s = production.structure;
+  if (!(s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object)))) return [];
+  const out: string[] = [];
+  for (const [key, value] of Object.entries(s as Record<string, unknown>)) {
+    if (
+      value === null
+      || typeof value === 'string'
+      || typeof value === 'number'
+      || typeof value === 'boolean'
+    ) {
+      out.push(key);
+    }
+  }
+  return out;
+}
+
+function literalFieldChecks(production: Production): ReadonlyArray<string> {
+  const s = production.structure;
+  if (!(s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object)))) {
+    return [];
+  }
+  const checks: string[] = [];
+  for (const [key, value] of Object.entries(s as Record<string, unknown>)) {
+    if (value === null) {
+      checks.push(`s[${jsString(key)}] === null`);
+    } else if (typeof value === 'string') {
+      checks.push(`s[${jsString(key)}] === ${jsString(value)}`);
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+      checks.push(`s[${jsString(key)}] === ${String(value)}`);
+    }
+    // Skip $ refs and nested objects/arrays — those carry capture data.
+  }
+  return checks;
 }
 
 function structureFieldNames(production: Production): ReadonlyArray<string> {

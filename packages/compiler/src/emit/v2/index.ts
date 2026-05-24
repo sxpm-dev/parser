@@ -9,6 +9,8 @@
 // body — never post-construct mutation.
 
 import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../model.ts';
+import { emitRender } from '../render.ts';
+import { emitStringify } from '../stringify.ts';
 import { jsString } from '../strings.ts';
 import { emitDispatcher } from './dispatch.ts';
 import { emitProduction } from './production.ts';
@@ -21,8 +23,10 @@ export function emitV2Parser(schema: InferredSchema): string {
   for (const info of schema.nodeTypes.values()) {
     nodeFns.push(emitNodeType(info, schema));
   }
+  const stringify = emitStringify(schema);
+  const render = emitRender(schema);
   const api = emitPublicApi(schema);
-  return [header, runtime, nodeFns.join('\n\n'), api].join('\n\n') + '\n';
+  return [header, runtime, nodeFns.join('\n\n'), stringify, render, api].join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {
@@ -93,9 +97,5 @@ export function validate(input: string, options?: ParseOptions): void {
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
   module: ${jsString(`@parser2/${schema.packageName}`)},
   exportName: 'validate',
-};
-
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}`;
+};`;
 }

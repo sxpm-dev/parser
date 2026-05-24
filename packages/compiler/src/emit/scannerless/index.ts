@@ -1,5 +1,7 @@
 import type { InferredSchema } from '../../model.ts';
 import { emitDirectFastPath } from '../direct-fast.ts';
+import { emitRender } from '../render.ts';
+import { emitStringify } from '../stringify.ts';
 import { jsString } from '../strings.ts';
 import { emitNodeFunctions, parseFnName, takePendingHelpers } from './parse.ts';
 import { SCANNERLESS_PARSE_RUNTIME } from './runtime.ts';
@@ -18,8 +20,10 @@ export function emitScannerlessParser(schema: InferredSchema): string {
   // bypassing the generic production-driven body. Already byte-based, so
   // wiring it into scannerless mode is just dispatch.
   const directFast = emitDirectFastPath(schema);
+  const stringify = emitStringify(schema);
+  const render = emitRender(schema);
   const api = emitPublicApi(schema, directFast !== null);
-  return [header, runtime, parsers, helpers, directFast, api].filter((p) => p !== null && p !== '').join('\n\n') + '\n';
+  return [header, runtime, parsers, helpers, directFast, stringify, render, api].filter((p) => p !== null && p !== '').join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {
@@ -121,10 +125,7 @@ ${validateDirectFastDispatch}  const state: State = {
   module: ${jsString(`@parser2/${schema.packageName}`)},
   exportName: 'validate',
 };
-${validationRuntime}
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}`;
+${validationRuntime}`;
 }
 
 function emitValidationImports(schema: InferredSchema): string {

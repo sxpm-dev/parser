@@ -117,3 +117,118 @@ test('every production gets a source template even when no author templates exis
   const production = inferred.nodeTypes.get('Atom')!.productions[0]!;
   assert.ok(production.stringifyTemplates.find((t) => t.target === 'source'));
 });
+
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { generateParser } from '../src/index.ts';
+
+test('generateParser emits a stringify function that dispatches by structure.type', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Heading',
+    examples: [
+      ex('# title').as('Heading')
+        .span('#')
+        .span('first', 'title').ident().css()
+        .structure({ type: 'heading', text: $.first })
+        .stringify('html', tpl`<h1>${$.first}</h1>`)
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { packageName: 'test' });
+  assert.match(code, /export function stringify\(/);
+  assert.match(code, /stringify_Heading_html/);
+  assert.match(code, /stringify_Heading_source/);
+  // Compiler must not branch on target name strings — the generated code
+  // dispatches on the opaque target value, but the helper string-equality
+  // checks inside the generated file are data, not compiler logic. The
+  // acceptance grep at Task 16 only fails on `target === 'html'` etc. in
+  // packages/compiler/src/, never in generated files.
+});
+
+test('stringify(parse(input), { target: "html" }) returns the templated HTML', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Heading',
+    examples: [
+      ex('# title').as('Heading')
+        .span('#')
+        .span('first', 'title').ident().css()
+        .structure({ type: 'heading', text: $.first })
+        .stringify('html', tpl`<h1>${$.first}</h1>`)
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { packageName: 'test-stringify' });
+  const dir = mkdtempSync(join(tmpdir(), 'parser2-stringify-'));
+  const file = join(dir, 'parser.ts');
+  writeFileSync(file, code);
+  const mod = await import(pathToFileURL(file).href) as {
+    parse: (input: string) => unknown;
+    stringify: (s: unknown, opts?: { target?: string }) => string;
+  };
+  const parsed = mod.parse('# title');
+  assert.equal(mod.stringify(parsed, { target: 'html' }), '<h1>title</h1>');
+});
+
+test('render(input, { target: "html" }) returns the templated HTML', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Heading',
+    examples: [
+      ex('# title').as('Heading')
+        .span('#')
+        .span('first', 'title').ident().css()
+        .structure({ type: 'heading', text: $.first })
+        .stringify('html', tpl`<h1>${$.first}</h1>`)
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { packageName: 'test-render' });
+  const dir = mkdtempSync(join(tmpdir(), 'parser2-render-'));
+  const file = join(dir, 'parser.ts');
+  writeFileSync(file, code);
+  const mod = await import(pathToFileURL(file).href) as {
+    parse: (input: string) => unknown;
+    stringify: (s: unknown, opts?: { target?: string }) => string;
+    render: (input: string, opts?: { target?: string }) => string;
+  };
+  assert.equal(mod.render('# title', { target: 'html' }), '<h1>title</h1>');
+  // Default target = 'source'; auto-derived round-trip emits canonical form.
+  const sourceOut = mod.render('# title');
+  assert.equal(typeof sourceOut, 'string');
+  assert.ok(sourceOut.includes('title'));
+});
+
+test('parity: render(input) === stringify(parse(input)) for every target', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Heading',
+    examples: [
+      ex('# title').as('Heading')
+        .span('#')
+        .span('first', 'title').ident().css()
+        .structure({ type: 'heading', text: $.first })
+        .stringify('html', tpl`<h1>${$.first}</h1>`)
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { packageName: 'test-parity' });
+  const dir = mkdtempSync(join(tmpdir(), 'parser2-parity-'));
+  const file = join(dir, 'parser.ts');
+  writeFileSync(file, code);
+  const mod = await import(pathToFileURL(file).href) as {
+    parse: (input: string) => unknown;
+    stringify: (s: unknown, opts?: { target?: string }) => string;
+    render: (input: string, opts?: { target?: string }) => string;
+  };
+  for (const target of ['source', 'html']) {
+    assert.equal(
+      mod.render('# title', { target }),
+      mod.stringify(mod.parse('# title'), { target }),
+      `parity at target ${target}`,
+    );
+  }
+});

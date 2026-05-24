@@ -228,6 +228,13 @@ function emitSharedPrefixDispatch(
   // verify all are accounted for. An alt may contribute multiple keys to
   // oneOfGroups (one per value in its oneOf), so just track membership.
   const oneOfRoutedIdx = new Set<number>();
+  // classGroups buckets indexes whose discriminator is a class without
+  // .oneOf — multiple alts with the same class predicate (e.g. ident) form
+  // a single sub-bucket that recurses through emitDispatchBody. This is what
+  // unlocks markdown's `[` prefix (5 alts: 3 share `[ident]`, 2 share `[^`)
+  // — without this, the dispatcher gives up and falls back to a 4-deep
+  // linear speculation chain that dominated the parse profile (70% of time).
+  const classGroups = new Map<string, number[]>();
   let kind: 'literal' | 'oneOf' | null = null;
   let fallbackIdx = -1;
   for (const idx of indexes) {
@@ -254,12 +261,20 @@ function emitSharedPrefixDispatch(
     const oneOf = d.refinements.find((r) => r.name === 'oneOf');
     const values = oneOf?.args?.[0];
     if (!Array.isArray(values) || values.some((v) => typeof v !== 'string')) {
-      // Class without .oneOf — fallback (only one allowed).
-      if (fallbackIdx >= 0) return null;
-      fallbackIdx = idx;
+      // Class without .oneOf — group by class predicate so multiple alts can
+      // coexist with literal branches. The class predicate forms a single
+      // sub-bucket; recursion re-derives prefixLen and discriminates deeper.
+      // Mixing oneOf with class-without-oneOf is not supported (the inline
+      // ident-extraction path needs sole ownership of the dispatcher tail).
+      if (kind === 'oneOf') return null;
+      const predKey = classStartPredicateForPeek(d);
+      if (predKey === 'false') return null;
+      let bucket = classGroups.get(predKey);
+      if (!bucket) { bucket = []; classGroups.set(predKey, bucket); }
+      bucket.push(idx);
       continue;
     }
-    if (kind === 'literal') return null;
+    if (kind === 'literal' || classGroups.size > 0) return null;
     kind = 'oneOf';
     const lowered = (values as readonly string[]).map((v) => v.toLowerCase());
     for (const v of lowered) {
@@ -269,12 +284,28 @@ function emitSharedPrefixDispatch(
     }
     oneOfRoutedIdx.add(idx);
   }
+  // Promote pure-class-bucket case to a synthetic 'literal' kind so the
+  // existing emit path can drive it. The branches loop emits class
+  // predicates alongside (or instead of) literal startsWith checks.
+  if (kind === null && classGroups.size > 0) kind = 'literal';
   if (kind === null) return null;
-  if (kind === 'literal' && literalGroups.size === 0) return null;
+  if (kind === 'literal' && literalGroups.size === 0 && classGroups.size === 0) return null;
   if (kind === 'oneOf' && oneOfRoutedIdx.size === 0) return null;
   const literalCount = [...literalGroups.values()].reduce((s, g) => s + g.length, 0);
-  if (kind === 'literal' && literalCount + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+  const classCount = [...classGroups.values()].reduce((s, g) => s + g.length, 0);
+  if (kind === 'literal' && literalCount + classCount + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
   if (kind === 'oneOf' && oneOfRoutedIdx.size + (fallbackIdx >= 0 ? 1 : 0) !== indexes.length) return null;
+  // Safety: a literal whose first byte falls inside one of the class
+  // predicates would silently steal that byte from the class branch.
+  // Bail out so we don't generate wrong dispatch.
+  if (kind === 'literal' && classGroups.size > 0) {
+    for (const literal of literalGroups.keys()) {
+      const firstByte = literal.charCodeAt(0);
+      for (const predKey of classGroups.keys()) {
+        if (classPredicateAcceptsByte(predKey, firstByte)) return null;
+      }
+    }
+  }
 
   const peekScan = emitPeekScanForSpans(productions[indexes[0]!]!.spans.slice(0, prefixLen));
   if (peekScan === null) return null;
@@ -303,6 +334,24 @@ while (__peek < __len) {
         body = `__peek = state.off;\n${sub}`;
       }
       branches.push(`if (${peekLiteralExpr(literal)}) {
+${indent(body, 1)}
+}`);
+    }
+    // Class-without-oneOf branches: each predicate gets one branch whose
+    // body is the recursive dispatch over the bucket's alts. Order doesn't
+    // matter because predicates are disjoint with literals (verified above)
+    // and disjoint with each other (different predicate keys → different
+    // byte ranges in practice).
+    for (const [predKey, subIndexes] of classGroups) {
+      let body: string;
+      if (subIndexes.length === 1) {
+        body = `return ${fnName}__alt${subIndexes[0]}(state);`;
+      } else {
+        const sub = emitDispatchBody(subIndexes, productions, fnName, ctx);
+        if (sub === null) return null;
+        body = `__peek = state.off;\n${sub}`;
+      }
+      branches.push(`if (${predKey}) {
 ${indent(body, 1)}
 }`);
     }
@@ -611,6 +660,34 @@ function emitSpeculationChain(indexes: ReadonlyArray<number>, fnName: string): s
   return `state.off = __peek;
 ${speculative}
 return ${fnName}__alt${last}(state);`;
+}
+
+// Returns true when the literal's first byte falls inside the byte set
+// accepted by `predKey` (the string emitted by classStartPredicateForPeek).
+// Used as a safety check in emitSharedPrefixDispatch so a literal branch
+// doesn't silently shadow a class-without-oneOf branch.
+function classPredicateAcceptsByte(predKey: string, byte: number): boolean {
+  // ident-start (CSS/HTML): A-Z / a-z / _ / $ / 0x80+
+  if (predKey.includes('isCssIdentStart')) {
+    const c = byte;
+    if ((c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A) || c === 0x5F || c === 0x24 || c >= 0x80) return true;
+    if (predKey.includes('0x5c') && c === 0x5C) return true;
+    return false;
+  }
+  if (predKey.includes('isJsIdentStart')) {
+    const c = byte;
+    return (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A) || c === 0x5F || c === 0x24 || c >= 0x80;
+  }
+  if (predKey.includes('isDigit')) return byte >= 0x30 && byte <= 0x39;
+  if (predKey.includes('isHexDigit')) {
+    return (byte >= 0x30 && byte <= 0x39) || (byte >= 0x41 && byte <= 0x46) || (byte >= 0x61 && byte <= 0x66);
+  }
+  if (predKey.includes('=== 0x22 || ') && predKey.includes('=== 0x27')) {
+    return byte === 0x22 || byte === 0x27;
+  }
+  if (predKey.includes('=== 0x2f')) return byte === 0x2F; // comment / regexp start
+  // Unknown predicate shape — conservative: assume it might accept.
+  return true;
 }
 
 // Like classStartPredicate from scan-class, but uses __peek for offset

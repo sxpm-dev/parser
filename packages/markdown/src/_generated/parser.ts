@@ -309,7 +309,6 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -317,15 +316,19 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -375,7 +378,6 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -383,15 +385,19 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -441,7 +447,6 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -449,15 +454,19 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -507,7 +516,6 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -515,15 +523,19 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -573,7 +585,6 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -581,15 +592,19 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -639,7 +654,6 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -647,15 +661,19 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -698,7 +716,6 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -706,15 +723,19 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -765,7 +786,6 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -773,15 +793,19 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -917,7 +941,6 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -925,15 +948,19 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -983,7 +1010,6 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -991,15 +1017,19 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1049,7 +1079,6 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1057,15 +1086,19 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1115,7 +1148,6 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1123,15 +1155,19 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1181,7 +1217,6 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1189,15 +1224,19 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1274,7 +1313,6 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1282,15 +1320,19 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1340,7 +1382,6 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1348,15 +1389,19 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1480,7 +1525,6 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1488,15 +1532,19 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1554,7 +1602,6 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1562,15 +1609,19 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1628,7 +1679,6 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1636,15 +1686,19 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 42 && __input.startsWith("**", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1702,7 +1756,6 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1710,15 +1763,19 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 42) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1776,7 +1833,6 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1784,15 +1840,19 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1850,7 +1910,6 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1858,15 +1917,19 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 96) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1924,7 +1987,6 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1932,15 +1994,19 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -1980,7 +2046,6 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1988,15 +2053,19 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2054,7 +2123,6 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2062,15 +2130,19 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2102,7 +2174,6 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2110,15 +2181,19 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2184,7 +2259,6 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2192,15 +2266,19 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2240,7 +2318,6 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2248,15 +2325,19 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2322,7 +2403,6 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2330,15 +2410,19 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2370,7 +2454,6 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2378,15 +2461,19 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2684,7 +2771,6 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2692,15 +2778,19 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2732,7 +2822,6 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2740,15 +2829,19 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2806,7 +2899,6 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2814,15 +2906,19 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2862,7 +2958,6 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2870,15 +2965,19 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2928,7 +3027,6 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2936,15 +3034,19 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2984,7 +3086,6 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2992,15 +3093,19 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -3050,7 +3155,6 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3058,15 +3162,19 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -3219,7 +3327,6 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3227,15 +3334,19 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 62) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -3749,7 +3860,6 @@ function parseMarkdownParagraph(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3757,15 +3867,20 @@ function parseMarkdownParagraph(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
+    let __c2 = -1;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -3844,7 +3959,6 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3852,15 +3966,19 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -3899,7 +4017,6 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3907,15 +4024,19 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -3954,7 +4075,6 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3962,15 +4082,19 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4009,7 +4133,6 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4017,15 +4140,19 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4064,7 +4191,6 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4072,15 +4198,19 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4119,7 +4249,6 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4127,15 +4256,19 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4168,7 +4301,6 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4176,15 +4308,19 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4224,7 +4360,6 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4232,15 +4367,19 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4346,7 +4485,6 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4354,15 +4492,19 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4401,7 +4543,6 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4409,15 +4550,19 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4456,7 +4601,6 @@ function parseMarkdownLeafFast__alt13(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4464,15 +4608,19 @@ function parseMarkdownLeafFast__alt13(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4511,7 +4659,6 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4519,15 +4666,19 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4566,7 +4717,6 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4574,15 +4724,19 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4647,7 +4801,6 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4655,15 +4808,19 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4702,7 +4859,6 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4710,15 +4866,19 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -4830,7 +4990,6 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4838,15 +4997,19 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       body = '';
     } else {
@@ -4892,7 +5055,6 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4900,15 +5062,19 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       body = '';
     } else {
@@ -4954,7 +5120,6 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4962,15 +5127,19 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 42 && __input.startsWith("**", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -5016,7 +5185,6 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5024,15 +5192,19 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 42) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -5078,7 +5250,6 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5086,15 +5257,19 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -5140,7 +5315,6 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5148,15 +5322,19 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 96) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -5202,7 +5380,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5210,15 +5387,19 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       label = '';
     } else {
@@ -5251,7 +5432,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5259,15 +5439,19 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -5313,7 +5497,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5321,15 +5504,19 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       label = '';
     } else {
@@ -5355,7 +5542,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5363,15 +5549,19 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -5424,7 +5614,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5432,15 +5621,19 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       alt = '';
     } else {
@@ -5473,7 +5666,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5481,15 +5673,19 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -5542,7 +5738,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5550,15 +5745,19 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       alt = '';
     } else {
@@ -5584,7 +5783,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5592,15 +5790,19 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -5856,7 +6058,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5864,15 +6065,19 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       first = '';
     } else {
@@ -5898,7 +6103,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5906,15 +6110,19 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       second = '';
     } else {
@@ -5960,7 +6168,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5968,15 +6175,19 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -6009,7 +6220,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6017,15 +6227,19 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -6064,7 +6278,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6072,15 +6285,19 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -6113,7 +6330,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6121,15 +6337,19 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -6168,7 +6388,6 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6176,15 +6395,19 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -6311,7 +6534,6 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6319,15 +6541,19 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 62) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -6831,7 +7057,6 @@ function parseMarkdownParagraphFast(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6839,15 +7064,20 @@ function parseMarkdownParagraphFast(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
+    let __c2 = -1;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -6921,7 +7151,6 @@ function validateMarkdownLeaf__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6929,15 +7158,19 @@ function validateMarkdownLeaf__alt0(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -6976,7 +7209,6 @@ function validateMarkdownLeaf__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -6984,15 +7216,19 @@ function validateMarkdownLeaf__alt1(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7031,7 +7267,6 @@ function validateMarkdownLeaf__alt2(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7039,15 +7274,19 @@ function validateMarkdownLeaf__alt2(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7086,7 +7325,6 @@ function validateMarkdownLeaf__alt3(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7094,15 +7332,19 @@ function validateMarkdownLeaf__alt3(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7141,7 +7383,6 @@ function validateMarkdownLeaf__alt4(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7149,15 +7390,19 @@ function validateMarkdownLeaf__alt4(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7196,7 +7441,6 @@ function validateMarkdownLeaf__alt5(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7204,15 +7448,19 @@ function validateMarkdownLeaf__alt5(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7245,7 +7493,6 @@ function validateMarkdownLeaf__alt6(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7253,15 +7500,19 @@ function validateMarkdownLeaf__alt6(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7301,7 +7552,6 @@ function validateMarkdownLeaf__alt7(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7309,15 +7559,19 @@ function validateMarkdownLeaf__alt7(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7423,7 +7677,6 @@ function validateMarkdownLeaf__alt11(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7431,15 +7684,19 @@ function validateMarkdownLeaf__alt11(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7478,7 +7735,6 @@ function validateMarkdownLeaf__alt12(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7486,15 +7742,19 @@ function validateMarkdownLeaf__alt12(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7533,7 +7793,6 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7541,15 +7800,19 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7588,7 +7851,6 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7596,15 +7858,19 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7643,7 +7909,6 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7651,15 +7916,19 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7724,7 +7993,6 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7732,15 +8000,19 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7779,7 +8051,6 @@ function validateMarkdownLeaf__alt17(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7787,15 +8058,19 @@ function validateMarkdownLeaf__alt17(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -7907,7 +8182,6 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7915,15 +8189,19 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       body = '';
     } else {
@@ -7969,7 +8247,6 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7977,15 +8254,19 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 96 && __input.startsWith("```", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       body = '';
     } else {
@@ -8031,7 +8312,6 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8039,15 +8319,19 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 42 && __input.startsWith("**", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -8093,7 +8377,6 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8101,15 +8384,19 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 42) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -8155,7 +8442,6 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8163,15 +8449,19 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -8217,7 +8507,6 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8225,15 +8514,19 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 96) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -8279,7 +8572,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8287,15 +8579,19 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       label = '';
     } else {
@@ -8328,7 +8624,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8336,15 +8631,19 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -8390,7 +8689,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8398,15 +8696,19 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       label = '';
     } else {
@@ -8432,7 +8734,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8440,15 +8741,19 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -8501,7 +8806,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8509,15 +8813,19 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       alt = '';
     } else {
@@ -8550,7 +8858,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8558,15 +8865,19 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 41) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -8619,7 +8930,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8627,15 +8937,19 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       alt = '';
     } else {
@@ -8661,7 +8975,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8669,15 +8982,19 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -8933,7 +9250,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8941,15 +9257,19 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       first = '';
     } else {
@@ -8975,7 +9295,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -8983,15 +9302,19 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 124) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       second = '';
     } else {
@@ -9037,7 +9360,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9045,15 +9367,19 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -9086,7 +9412,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9094,15 +9419,19 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -9141,7 +9470,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9149,15 +9477,19 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -9190,7 +9522,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9198,15 +9529,19 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 10) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {
@@ -9245,7 +9580,6 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9253,15 +9587,19 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 93) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       id = '';
     } else {
@@ -9388,7 +9726,6 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9396,15 +9733,19 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
       if (__c === 62) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       url = '';
     } else {
@@ -9908,7 +10249,6 @@ function validateMarkdownParagraph(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -9916,15 +10256,20 @@ function validateMarkdownParagraph(state: State): unknown {
       break;
     }
     const __startOff = __off;
-    let __lastNonWs = __off;
+    let __c2 = -1;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
       __off++;
     }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       text = '';
     } else {

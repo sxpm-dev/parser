@@ -1047,7 +1047,6 @@ function parseArnResourceFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __kind_s = __off;
   let kind;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
@@ -1116,7 +1115,6 @@ function parseArnResourceFast__alt0(state: State): unknown {
       }
     }
   kind = __input.slice(__kind_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1124,7 +1122,6 @@ function parseArnResourceFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1198,7 +1195,6 @@ function parseArnResourceFast__alt0(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1217,7 +1213,6 @@ function parseArnResourceFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __kind_s = __off;
   let kind;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
@@ -1286,7 +1281,6 @@ function parseArnResourceFast__alt1(state: State): unknown {
       }
     }
   kind = __input.slice(__kind_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1294,7 +1288,6 @@ function parseArnResourceFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1368,7 +1361,6 @@ function parseArnResourceFast__alt1(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1387,7 +1379,6 @@ function parseArnResourceFast__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -1456,7 +1447,6 @@ function parseArnResourceFast__alt2(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1502,10 +1492,8 @@ function parseArnFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("arn", __off))) { state.off = __off; throw new SyntaxError("expected " + "arn" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1513,7 +1501,6 @@ function parseArnFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1587,7 +1574,6 @@ function parseArnFast(state: State): unknown {
       }
     }
   partition = __input.slice(__partition_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1595,7 +1581,6 @@ function parseArnFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1669,7 +1654,6 @@ function parseArnFast(state: State): unknown {
       }
     }
   service = __input.slice(__service_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1677,7 +1661,6 @@ function parseArnFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1751,7 +1734,6 @@ function parseArnFast(state: State): unknown {
       }
     }
   region = __input.slice(__region_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1759,7 +1741,6 @@ function parseArnFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1786,7 +1767,6 @@ function parseArnFast(state: State): unknown {
       }
     }
   account = __input.slice(__account_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1794,7 +1774,6 @@ function parseArnFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1803,7 +1782,6 @@ function parseArnFast(state: State): unknown {
   state.off = __off;
   const resource = parseArnResourceFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1822,7 +1800,6 @@ function validateArnResource__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __kind_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
@@ -1891,7 +1868,6 @@ function validateArnResource__alt0(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1899,7 +1875,6 @@ function validateArnResource__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1973,7 +1948,6 @@ function validateArnResource__alt0(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1992,7 +1966,6 @@ function validateArnResource__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __kind_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __kind_s);
@@ -2061,7 +2034,6 @@ function validateArnResource__alt1(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2069,7 +2041,6 @@ function validateArnResource__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2143,7 +2114,6 @@ function validateArnResource__alt1(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2162,7 +2132,6 @@ function validateArnResource__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -2231,7 +2200,6 @@ function validateArnResource__alt2(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2277,10 +2245,8 @@ function validateArn(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("arn", __off))) { state.off = __off; throw new SyntaxError("expected " + "arn" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2288,7 +2254,6 @@ function validateArn(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2362,7 +2327,6 @@ function validateArn(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2370,7 +2334,6 @@ function validateArn(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2444,7 +2407,6 @@ function validateArn(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2452,7 +2414,6 @@ function validateArn(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2526,7 +2487,6 @@ function validateArn(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2534,7 +2494,6 @@ function validateArn(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2561,7 +2520,6 @@ function validateArn(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2569,7 +2527,6 @@ function validateArn(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2578,7 +2535,6 @@ function validateArn(state: State): unknown {
   state.off = __off;
   validateArnResource(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }

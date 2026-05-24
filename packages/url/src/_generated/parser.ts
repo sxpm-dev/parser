@@ -1109,10 +1109,10 @@ function parseUrl(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 47) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 47) {
     return parseUrl__alt0(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     return parseUrl__alt1(state);
   }
   throw new SyntaxError('no production matched at position ' + __peek);
@@ -1127,7 +1127,6 @@ function parsePathSegmentFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
@@ -1196,7 +1195,6 @@ function parsePathSegmentFast(state: State): unknown {
       }
     }
   value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1215,7 +1213,6 @@ function parseHostFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -1284,7 +1281,6 @@ function parseHostFast__alt0(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1292,7 +1288,6 @@ function parseHostFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1366,7 +1361,6 @@ function parseHostFast__alt0(state: State): unknown {
       }
     }
   tld = __input.slice(__tld_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1385,7 +1379,6 @@ function parseHostFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -1454,7 +1447,6 @@ function parseHostFast__alt1(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1462,7 +1454,6 @@ function parseHostFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1489,7 +1480,6 @@ function parseHostFast__alt1(state: State): unknown {
       }
     }
   port = __input.slice(__port_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1535,7 +1525,6 @@ function parseQueryPairFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __key_s = __off;
   let key;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __key_s);
@@ -1604,7 +1593,6 @@ function parseQueryPairFast(state: State): unknown {
       }
     }
   key = __input.slice(__key_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1612,7 +1600,6 @@ function parseQueryPairFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1686,7 +1673,6 @@ function parseQueryPairFast(state: State): unknown {
       }
     }
   value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1705,7 +1691,6 @@ function parseQueryFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
 
   const pairs: unknown[] = [];
   while (true) {
@@ -1726,7 +1711,6 @@ function parseQueryFast(state: State): unknown {
     if (__off === __before) break;
   }
   if (pairs.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 QueryPair"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1745,10 +1729,8 @@ function parseUrlFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1757,7 +1739,6 @@ function parseUrlFast__alt0(state: State): unknown {
   state.off = __off;
   const s1 = parsePathSegmentFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1765,7 +1746,6 @@ function parseUrlFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1774,7 +1754,6 @@ function parseUrlFast__alt0(state: State): unknown {
   state.off = __off;
   const s2 = parsePathSegmentFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1782,7 +1761,6 @@ function parseUrlFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 63)) { state.off = __off; throw new SyntaxError("expected " + "?" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1791,7 +1769,6 @@ function parseUrlFast__alt0(state: State): unknown {
   state.off = __off;
   const query = parseQueryFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1810,7 +1787,6 @@ function parseUrlFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __protocol_s = __off;
   let protocol;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __protocol_s);
@@ -1879,7 +1855,6 @@ function parseUrlFast__alt1(state: State): unknown {
       }
     }
   protocol = __input.slice(__protocol_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1887,7 +1862,6 @@ function parseUrlFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1895,7 +1869,6 @@ function parseUrlFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1903,7 +1876,6 @@ function parseUrlFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1912,7 +1884,6 @@ function parseUrlFast__alt1(state: State): unknown {
   state.off = __off;
   const host = parseHostFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1920,7 +1891,6 @@ function parseUrlFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1929,7 +1899,6 @@ function parseUrlFast__alt1(state: State): unknown {
   state.off = __off;
   const s1 = parsePathSegmentFast(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1949,10 +1918,10 @@ function parseUrlFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 47) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 47) {
     return parseUrlFast__alt0(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     return parseUrlFast__alt1(state);
   }
   throw new SyntaxError('no production matched at position ' + __peek);
@@ -1967,7 +1936,6 @@ function validatePathSegment(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
@@ -2036,7 +2004,6 @@ function validatePathSegment(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2055,7 +2022,6 @@ function validateHost__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -2124,7 +2090,6 @@ function validateHost__alt0(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2132,7 +2097,6 @@ function validateHost__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2206,7 +2170,6 @@ function validateHost__alt0(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2225,7 +2188,6 @@ function validateHost__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -2294,7 +2256,6 @@ function validateHost__alt1(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2302,7 +2263,6 @@ function validateHost__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2329,7 +2289,6 @@ function validateHost__alt1(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2375,7 +2334,6 @@ function validateQueryPair(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __key_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __key_s);
@@ -2444,7 +2402,6 @@ function validateQueryPair(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2452,7 +2409,6 @@ function validateQueryPair(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2526,7 +2482,6 @@ function validateQueryPair(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2545,7 +2500,6 @@ function validateQuery(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let __count_pairs = 0;
   while (!(__off >= __len)) {
     while (__off < __len) {
@@ -2575,7 +2529,6 @@ function validateQuery(state: State): unknown {
   } }
   }
   if (__count_pairs < 1) { state.off = __off; throw new SyntaxError("expected at least 1 QueryPair"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2594,10 +2547,8 @@ function validateUrl__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2606,7 +2557,6 @@ function validateUrl__alt0(state: State): unknown {
   state.off = __off;
   validatePathSegment(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2614,7 +2564,6 @@ function validateUrl__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2623,7 +2572,6 @@ function validateUrl__alt0(state: State): unknown {
   state.off = __off;
   validatePathSegment(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2631,7 +2579,6 @@ function validateUrl__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 63)) { state.off = __off; throw new SyntaxError("expected " + "?" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2640,7 +2587,6 @@ function validateUrl__alt0(state: State): unknown {
   state.off = __off;
   validateQuery(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2659,7 +2605,6 @@ function validateUrl__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __protocol_s = __off;
 
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __protocol_s);
@@ -2728,7 +2673,6 @@ function validateUrl__alt1(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2736,7 +2680,6 @@ function validateUrl__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2744,7 +2687,6 @@ function validateUrl__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2752,7 +2694,6 @@ function validateUrl__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2761,7 +2702,6 @@ function validateUrl__alt1(state: State): unknown {
   state.off = __off;
   validateHost(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2769,7 +2709,6 @@ function validateUrl__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2778,7 +2717,6 @@ function validateUrl__alt1(state: State): unknown {
   state.off = __off;
   validatePathSegment(state);
   __off = state.off;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2798,10 +2736,10 @@ function validateUrl(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 47) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 47) {
     return validateUrl__alt0(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     return validateUrl__alt1(state);
   }
   throw new SyntaxError('no production matched at position ' + __peek);

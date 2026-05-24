@@ -558,7 +558,6 @@ function parseComment(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -581,11 +580,11 @@ function parseComment(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2496,7 +2495,6 @@ function parseAttribute__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2519,11 +2517,11 @@ function parseAttribute__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -2601,7 +2599,6 @@ function parseAttribute__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -2624,11 +2621,11 @@ function parseAttribute__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -3087,7 +3084,6 @@ function parseCommentFast(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -3110,11 +3106,11 @@ function parseCommentFast(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       data = '';
     } else {
@@ -4797,7 +4793,6 @@ function parseAttributeFast__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4820,11 +4815,11 @@ function parseAttributeFast__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       value = '';
     } else {
@@ -4888,7 +4883,6 @@ function parseAttributeFast__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -4911,11 +4905,11 @@ function parseAttributeFast__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       value = '';
     } else {
@@ -5352,7 +5346,6 @@ function validateComment(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -5375,11 +5368,11 @@ function validateComment(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       data = '';
     } else {
@@ -7152,7 +7145,6 @@ function validateAttribute__alt0(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7175,11 +7167,11 @@ function validateAttribute__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       value = '';
     } else {
@@ -7243,7 +7235,6 @@ function validateAttribute__alt1(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -7266,11 +7257,11 @@ function validateAttribute__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       value = '';
     } else {

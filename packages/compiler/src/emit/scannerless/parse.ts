@@ -2250,6 +2250,10 @@ function emitUntilSpan(
   // backend's behavior where the tokenizer pre-classifies these and the
   // until-loop skips them by token).
   const stopExpr = emitStopExpr(until.stops);
+  // emitStopExpr may bucket multi-char stops by their second byte using a
+  // `__c2` local. Declare it once per loop so the comma-expression in the
+  // stop check can assign it without a redundant `let` on every iteration.
+  const stopNeedsC2 = stopExprNeedsSecondByte(until.stops);
   // When balanced=false the `__depth` counter is never incremented, so the
   // `__depth === 0 && ...` guard at the top of every loop iteration is dead
   // weight. Track it so we can elide both the variable and the guard for
@@ -2377,6 +2381,16 @@ function emitUntilSpan(
       }
     }${escapeArm}` : `${urlRawSkip}${escapeArm}`;
   const commentsDecl = hasComments ? '\n  const __comments: [number, number][] = [];' : '';
+  // When the loop body has no branches that mutate `__lastNonWs` mid-scan
+  // (no string skip, no balanced-bracket arm, no comment recording, no
+  // escape arm — all of which write a position past the current char),
+  // the per-iteration `if (!isAsciiWs(__c)) __lastNonWs = __off + 1` write
+  // is redundant: the same trim boundary can be recovered with one backward
+  // scan from `__off` after the loop terminates. For long, mostly-non-ws
+  // captures (markdown paragraph runs ~thousands of chars between stops),
+  // dropping that write per char is the dominant cost in the inner loop.
+  // tracksDepth implies balanced, so the depth guard is also dropped.
+  const useBackwardTrim = !hasComments && !until.balanced && !ctx.tokens.has('string');
   const trimEndExpr = '__lastNonWs';
   const v = span.name ? jsIdent(span.name) : '__captured';
   // When the schema declares comments, build the captured slice by
@@ -2425,29 +2439,45 @@ function emitUntilSpan(
   const stateWriteFilled = writeCaptureState
     ? `state.__lastCaptureStart = __startOff;\n    state.__lastCaptureEnd = ${trimEndExpr};\n    `
     : '';
+  const leadingCommentDecl = hasComments ? '\n  let __lastLeadingCommentEnd = -1;' : '';
+  const emptyAnchorExpr = hasComments
+    ? '__lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff'
+    : '__preWsOff';
+  const trimTrackInLoop = useBackwardTrim
+    ? ''
+    : '\n    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;';
+  const trimInitDecl = useBackwardTrim
+    ? ''
+    : '\n  let __lastNonWs = __off;';
+  const trimBackwardScan = useBackwardTrim
+    ? `
+  let __lastNonWs = __off;
+  while (__lastNonWs > __startOff) {
+    const __tc = __input.charCodeAt(__lastNonWs - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __lastNonWs--;
+  }`
+    : '';
   const scanCode = `{
   // __preWsOff captures the offset at entry — used (with leading-comment
   // tracking) to rewind __lastCaptureStart/End when the until captures
   // nothing. Anchor = end of the last leading comment if any, else
   // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-  const __preWsOff = __off;
-  let __lastLeadingCommentEnd = -1;
+  const __preWsOff = __off;${leadingCommentDecl}
   // Skip leading whitespace and comments from the capture's view.
   while (__off < __len) {
     const __c = __input.charCodeAt(__off);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }${leadingCommentSkip}
     break;
   }
-  const __startOff = __off;
-  let __lastNonWs = __off;${tracksDepth ? '\n  let __depth = 0;' : ''}${commentsDecl}
+  const __startOff = __off;${trimInitDecl}${tracksDepth ? '\n  let __depth = 0;' : ''}${stopNeedsC2 ? '\n  let __c2 = -1;' : ''}${commentsDecl}
   while (__off < __len) {
     const __c = __input.charCodeAt(__off);
-    if (${tracksDepth ? `__depth === 0 && (${stopExpr})` : stopExpr}) break;${balancedBlock}${stringSkip}${commentSkip}
-    if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+    if (${tracksDepth ? `__depth === 0 && (${stopExpr})` : stopExpr}) break;${balancedBlock}${stringSkip}${commentSkip}${trimTrackInLoop}
     __off++;
-  }
+  }${trimBackwardScan}
   if (__lastNonWs === __startOff) {
-    const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+    const __emptyAnchor = ${emptyAnchorExpr};
     ${stateWriteEmpty}__off = __emptyAnchor;
     ${v === '__captured' ? '' : `${v} = '';`}
   } else {
@@ -2492,21 +2522,70 @@ function emitStopExpr(stops: readonly string[]): string {
   const checks: string[] = [];
   for (const [first, group] of byFirstByte) {
     const single = group.some((stop) => stop.length === 1);
-    const multiChecks = group
+    const multis = group
       .filter((stop) => stop.length > 1)
-      .sort((a, b) => b.length - a.length)
-      .map((stop) => `__input.startsWith(${jsString(stop)}, __off)`);
+      .sort((a, b) => b.length - a.length);
+    const multiChecks = multis.map((stop) => `__input.startsWith(${jsString(stop)}, __off)`);
 
     if (single) {
       checks.push(`__c === ${first}`);
-    } else if (multiChecks.length === 1) {
-      checks.push(`(__c === ${first} && ${multiChecks[0]})`);
-    } else if (multiChecks.length > 1) {
-      checks.push(`(__c === ${first} && (${multiChecks.join(' || ')}))`);
+      continue;
     }
+    if (multiChecks.length === 1) {
+      checks.push(`(__c === ${first} && ${multiChecks[0]})`);
+      continue;
+    }
+    if (multiChecks.length === 0) continue;
+    // Multi-char-only group: when 4+ stops share a first byte, bucket by
+    // second byte too. Common in line-block grammars where many block
+    // delimiters share a leading newline. Saves N-1 startsWith calls per
+    // matching outer-byte hit by routing to the only candidate group.
+    if (multis.length >= 4) {
+      const bySecond = new Map<number, string[]>();
+      for (const stop of multis) {
+        const sb = stop.charCodeAt(1);
+        const group2 = bySecond.get(sb);
+        if (group2) group2.push(stop);
+        else bySecond.set(sb, [stop]);
+      }
+      const subChecks: string[] = [];
+      for (const [second, sub] of bySecond) {
+        sub.sort((a, b) => b.length - a.length);
+        if (sub.length === 1 && sub[0]!.length === 2) {
+          subChecks.push(`__c2 === ${second}`);
+        } else {
+          const sw = sub.map((s) => `__input.startsWith(${jsString(s)}, __off)`).join(' || ');
+          subChecks.push(`(__c2 === ${second} && (${sw}))`);
+        }
+      }
+      // `__c2` is read with a length-aware fallback so a stop at the very
+      // end of input still terminates the scan correctly. -1 is a sentinel
+      // that never matches any real char code.
+      checks.push(`(__c === ${first} && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), (${subChecks.join(' || ')})))`);
+      continue;
+    }
+    checks.push(`(__c === ${first} && (${multiChecks.join(' || ')}))`);
   }
 
   return checks.join(' || ') || 'false';
+}
+
+function stopExprNeedsSecondByte(stops: readonly string[]): boolean {
+  const byFirstByte = new Map<number, string[]>();
+  for (const stop of stops) {
+    if (stop.length === 0) continue;
+    const first = stop.charCodeAt(0);
+    const group = byFirstByte.get(first);
+    if (group) group.push(stop);
+    else byFirstByte.set(first, [stop]);
+  }
+  for (const group of byFirstByte.values()) {
+    const single = group.some((stop) => stop.length === 1);
+    if (single) continue;
+    const multis = group.filter((s) => s.length > 1);
+    if (multis.length >= 4) return true;
+  }
+  return false;
 }
 
 function emitRawUntilSpan(

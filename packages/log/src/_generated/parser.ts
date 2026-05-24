@@ -265,7 +265,6 @@ function parseLogEntry(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -329,11 +328,11 @@ function parseLogEntry(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -447,7 +446,6 @@ function parseLogEntry(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -511,11 +509,11 @@ function parseLogEntry(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
+      const __emptyAnchor = __preWsOff;
       state.__lastCaptureStart = __emptyAnchor;
       state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
@@ -636,7 +634,6 @@ function parseLogEntryFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let ip = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -644,7 +641,6 @@ function parseLogEntryFast(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -708,18 +704,14 @@ function parseLogEntryFast(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       ip = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -728,7 +720,6 @@ function parseLogEntryFast(state: State): unknown {
     ip = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -736,7 +727,6 @@ function parseLogEntryFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -810,7 +800,6 @@ function parseLogEntryFast(state: State): unknown {
       }
     }
   user = __input.slice(__user_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -818,7 +807,6 @@ function parseLogEntryFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let date = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -826,7 +814,6 @@ function parseLogEntryFast(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -890,18 +877,14 @@ function parseLogEntryFast(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       date = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -910,7 +893,6 @@ function parseLogEntryFast(state: State): unknown {
     date = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -918,7 +900,6 @@ function parseLogEntryFast(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -939,7 +920,6 @@ function parseLogEntryFast(state: State): unknown {
       }
     }
   request = __input.slice(__request_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -966,7 +946,6 @@ function parseLogEntryFast(state: State): unknown {
       }
     }
   status = __input.slice(__status_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -993,7 +972,6 @@ function parseLogEntryFast(state: State): unknown {
       }
     }
   size = __input.slice(__size_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1012,7 +990,6 @@ function validateLogEntry(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let ip = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -1020,7 +997,6 @@ function validateLogEntry(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1084,18 +1060,14 @@ function validateLogEntry(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       ip = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -1104,7 +1076,6 @@ function validateLogEntry(state: State): unknown {
     ip = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1112,7 +1083,6 @@ function validateLogEntry(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1186,7 +1156,6 @@ function validateLogEntry(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1194,7 +1163,6 @@ function validateLogEntry(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let date = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -1202,7 +1170,6 @@ function validateLogEntry(state: State): unknown {
     // nothing. Anchor = end of the last leading comment if any, else
     // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
     const __preWsOff = __off;
-    let __lastLeadingCommentEnd = -1;
     // Skip leading whitespace and comments from the capture's view.
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
@@ -1266,18 +1233,14 @@ function validateLogEntry(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
+      const __emptyAnchor = __preWsOff;
       __off = __emptyAnchor;
       date = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -1286,7 +1249,6 @@ function validateLogEntry(state: State): unknown {
     date = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1294,7 +1256,6 @@ function validateLogEntry(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1315,7 +1276,6 @@ function validateLogEntry(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1342,7 +1302,6 @@ function validateLogEntry(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1369,7 +1328,6 @@ function validateLogEntry(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }

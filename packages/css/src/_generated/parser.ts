@@ -379,7 +379,7 @@ function parseDeclaration__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -521,7 +521,7 @@ function parseDeclaration__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -780,7 +780,7 @@ function parseDeclaration__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -922,7 +922,7 @@ function parseDeclaration__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -1092,7 +1092,7 @@ function parseRule(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -1382,7 +1382,7 @@ function parseAtRule__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -1675,7 +1675,7 @@ function parseAtRule__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -1920,7 +1920,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -2060,7 +2060,7 @@ function parseDeclarationFast__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -2313,7 +2313,7 @@ function parseDeclarationFast__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -2453,7 +2453,7 @@ function parseDeclarationFast__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -2616,7 +2616,7 @@ function parseRuleFast(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -2880,7 +2880,7 @@ function parseAtRuleFast__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -3150,7 +3150,7 @@ function parseAtRuleFast__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -3379,7 +3379,7 @@ function validateDeclaration__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -3519,7 +3519,7 @@ function validateDeclaration__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -3772,7 +3772,7 @@ function validateDeclaration__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -3912,7 +3912,7 @@ function validateDeclaration__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -4075,7 +4075,7 @@ function validateRule(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -4348,7 +4348,7 @@ function validateAtRule__alt0(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
@@ -4627,7 +4627,7 @@ function validateAtRule__alt1(state: State): unknown {
         __off += 2;
         continue;
       }
-      if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {

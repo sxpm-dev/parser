@@ -555,7 +555,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __o1_s = __off;
   let o1;
   if (!(isHexDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected hex at position " + __o1_s);
@@ -563,7 +562,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o1 = __input.slice(__o1_s, __off);
   if (!(o1.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o1_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -571,7 +569,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -584,7 +581,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o2 = __input.slice(__o2_s, __off);
   if (!(o2.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o2_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -592,7 +588,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -605,7 +600,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o3 = __input.slice(__o3_s, __off);
   if (!(o3.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o3_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -613,7 +607,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -626,7 +619,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o4 = __input.slice(__o4_s, __off);
   if (!(o4.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o4_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -634,7 +626,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -647,7 +638,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o5 = __input.slice(__o5_s, __off);
   if (!(o5.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o5_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -655,7 +645,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -668,7 +657,6 @@ function parseMacAddressFast__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o6 = __input.slice(__o6_s, __off);
   if (!(o6.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o6_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -687,7 +675,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __o1_s = __off;
   let o1;
   if (!(isHexDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected hex at position " + __o1_s);
@@ -695,7 +682,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o1 = __input.slice(__o1_s, __off);
   if (!(o1.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o1_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -703,7 +689,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -716,7 +701,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o2 = __input.slice(__o2_s, __off);
   if (!(o2.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o2_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -724,7 +708,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -737,7 +720,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o3 = __input.slice(__o3_s, __off);
   if (!(o3.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o3_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -745,7 +727,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -758,7 +739,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o4 = __input.slice(__o4_s, __off);
   if (!(o4.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o4_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -766,7 +746,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -779,7 +758,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o5 = __input.slice(__o5_s, __off);
   if (!(o5.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o5_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -787,7 +765,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -800,7 +777,6 @@ function parseMacAddressFast__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
   o6 = __input.slice(__o6_s, __off);
   if (!(o6.length === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o6_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -846,7 +822,6 @@ function validateMacAddress__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __o1_s = __off;
 
   if (!(isHexDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected hex at position " + __o1_s);
@@ -854,7 +829,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o1_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o1_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -862,7 +836,6 @@ function validateMacAddress__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -875,7 +848,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o2_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o2_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -883,7 +855,6 @@ function validateMacAddress__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -896,7 +867,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o3_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o3_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -904,7 +874,6 @@ function validateMacAddress__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -917,7 +886,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o4_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o4_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -925,7 +893,6 @@ function validateMacAddress__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -938,7 +905,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o5_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o5_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -946,7 +912,6 @@ function validateMacAddress__alt0(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -959,7 +924,6 @@ function validateMacAddress__alt0(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o6_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o6_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -978,7 +942,6 @@ function validateMacAddress__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __o1_s = __off;
 
   if (!(isHexDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected hex at position " + __o1_s);
@@ -986,7 +949,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o1_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o1_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -994,7 +956,6 @@ function validateMacAddress__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1007,7 +968,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o2_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o2_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1015,7 +975,6 @@ function validateMacAddress__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1028,7 +987,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o3_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o3_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1036,7 +994,6 @@ function validateMacAddress__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1049,7 +1006,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o4_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o4_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1057,7 +1013,6 @@ function validateMacAddress__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1070,7 +1025,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o5_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o5_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1078,7 +1032,6 @@ function validateMacAddress__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1091,7 +1044,6 @@ function validateMacAddress__alt1(state: State): unknown {
     while (__off < __len && isHexDigit(__input.charCodeAt(__off))) __off++;
 
   if (!((__off - __o6_s) === 2)) { state.off = __off; throw new SyntaxError("expected length 2 at position " + __o6_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }

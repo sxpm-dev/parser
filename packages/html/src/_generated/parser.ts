@@ -10914,6 +10914,82 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state: 
   return validateTextNode(state);
 }
 
+function stringify_HtmlDocument_source(s: any): string {
+  return __renderSlot_source(s["childNodes"]);
+}
+
+function stringify_Doctype_source(s: any): string {
+  if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "<!" + "" + " " + __renderSlot_source(s["name"]) + ">";
+  if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "<!" + "" + " " + __renderSlot_source(s["name"]);
+  throw new Error("stringify: no production matches structure shape for node Doctype (target source)");
+}
+
+function stringify_Comment_source(s: any): string {
+  return "<!--" + __renderSlot_source(s["data"]) + "-->";
+}
+
+function stringify_HtmlElement_source(s: any): string {
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"][0]["value"]) + "</" + "" + ">";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + " />";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + "/>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</li>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</dt>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</tr>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</td>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</p>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</option>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</html>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</head>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</tbody>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</thead>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</tfoot>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</body>";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "<" + __renderSlot_source(s["nodeName"]) + __renderSlot_source(s["attrs"]) + ">" + __renderSlot_source(s["childNodes"]) + "</" + "" + ">";
+  throw new Error("stringify: no production matches structure shape for node HtmlElement (target source)");
+}
+
+function stringify_TextNode_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+function stringify_Attribute_source(s: any): string {
+  if (true) return __renderSlot_source(s["name"]) + "=\"" + __renderSlot_source(s["value"]) + "\"";
+  if (true) return __renderSlot_source(s["name"]) + "='" + __renderSlot_source(s["value"]) + "'";
+  if (true) return __renderSlot_source(s["name"]) + "=" + __renderSlot_source(s["value"]);
+  if (s["value"] === "") return __renderSlot_source(s["name"]);
+  throw new Error("stringify: no production matches structure shape for node Attribute (target source)");
+}
+
+export function stringify(s: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? "source";
+  if (target === "source") {
+    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+
+    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
+  }
+  throw new Error("stringify: unknown target '" + target + "'");
+}
+
+function __renderSlot_source(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    return out;
+  }
+  return stringify(v, { target: "source" });
+}
+
+export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
+  const target = options?.target ?? "source";
+  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
+  return stringify(parsed, { target });
+}
+
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
@@ -10972,6 +11048,3 @@ export function validate(input: string, options?: ParseOptions): void {
   exportName: 'validate',
 };
 
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}

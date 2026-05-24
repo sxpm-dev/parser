@@ -1379,6 +1379,39 @@ function validateLogEntry(state: State): unknown {
   return;
 }
 
+function stringify_LogEntry_source(s: any): string {
+  return __renderSlot_source(s["ip"]) + " - " + __renderSlot_source(s["user"]) + " [" + __renderSlot_source(s["date"]) + "] " + __renderSlot_source(s["request"]) + " " + __renderSlot_source(s["status"]) + " " + __renderSlot_source(s["size"]);
+}
+
+export function stringify(s: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? "source";
+  if (target === "source") {
+    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+    if (s.type === "log-entry") return stringify_LogEntry_source(s);
+    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
+  }
+  throw new Error("stringify: unknown target '" + target + "'");
+}
+
+function __renderSlot_source(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    return out;
+  }
+  return stringify(v, { target: "source" });
+}
+
+export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
+  const target = options?.target ?? "source";
+  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
+  return stringify(parsed, { target });
+}
+
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
@@ -1437,6 +1470,3 @@ export function validate(input: string, options?: ParseOptions): void {
   exportName: 'validate',
 };
 
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}

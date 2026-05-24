@@ -6352,6 +6352,63 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function stringify_Comment_source(s: any): string {
+  return __renderSlot_source(s["text"]);
+}
+
+function stringify_Declaration_source(s: any): string {
+  if (s["type"] === "decl" && s["important"] === true) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + " !" + "" + ";";
+  if (s["type"] === "decl" && s["important"] === undefined) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + ";";
+  throw new Error("stringify: no production matches structure shape for node Declaration (target source)");
+}
+
+function stringify_Rule_source(s: any): string {
+  return __renderSlot_source(s["selector"]) + " " + "{" + " " + __renderSlot_source(s["nodes"]) + " " + "}";
+}
+
+function stringify_AtRule_source(s: any): string {
+  if (s["type"] === "atrule" && s["nodes"] !== undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + " " + "{" + " " + __renderSlot_source(s["nodes"]) + " " + "}";
+  if (s["type"] === "atrule" && s["nodes"] === undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + (";" == null ? "" : "" + ";");
+  throw new Error("stringify: no production matches structure shape for node AtRule (target source)");
+}
+
+function stringify_Stylesheet_source(s: any): string {
+  return __renderSlot_source(s["nodes"]);
+}
+
+export function stringify(s: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? "source";
+  if (target === "source") {
+    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+    if (s.type === "comment") return stringify_Comment_source(s);
+    if (s.type === "decl") return stringify_Declaration_source(s);
+    if (s.type === "rule") return stringify_Rule_source(s);
+    if (s.type === "atrule") return stringify_AtRule_source(s);
+    if (s.type === "root") return stringify_Stylesheet_source(s);
+    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
+  }
+  throw new Error("stringify: unknown target '" + target + "'");
+}
+
+function __renderSlot_source(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    return out;
+  }
+  return stringify(v, { target: "source" });
+}
+
+export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
+  const target = options?.target ?? "source";
+  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
+  return stringify(parsed, { target });
+}
+
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (mode === 'fast') {
@@ -6499,6 +6556,3 @@ function findPropertyValueOffset(input: string, prop: string, value: string): nu
   return pos;
 }
 
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}

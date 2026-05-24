@@ -4319,6 +4319,88 @@ function __roleDispatch_validate_ColorKeyword_HashColor_RgbColorFunction_ColorFu
   throw new SyntaxError('no role matched at position ' + __off);
 }
 
+function stringify_ColorKeyword_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+function stringify_HashColor_source(s: any): string {
+  return "#" + __renderSlot_source(s["value"]);
+}
+
+function stringify_RgbColorFunction_source(s: any): string {
+  return __renderSlot_source(s["name"]) + "(" + "255" + " )";
+}
+
+function stringify_ColorFunction_source(s: any): string {
+  if (s["type"] === "color-function") return __renderSlot_source(s["name"]) + "(" + "60%" + " )";
+  if (s["type"] === "color-function") return __renderSlot_source(s["name"]) + "(" + "display-p3" + " )";
+  throw new Error("stringify: no production matches structure shape for node ColorFunction (target source)");
+}
+
+function stringify_NumericColorFunctionToken_source(s: any): string {
+  if (s["type"] === "percentage") return __renderSlot_source(s["value"]) + "%";
+  if (s["type"] === "number") return __renderSlot_source(s["value"]);
+  if (s["type"] === "separator" && s["value"] === "/") return "/";
+  if (s["type"] === "separator" && s["value"] === ",") return ",";
+  throw new Error("stringify: no production matches structure shape for node NumericColorFunctionToken (target source)");
+}
+
+function stringify_ColorFunctionToken_source(s: any): string {
+  if (s["type"] === "percentage") return __renderSlot_source(s["value"]) + "%";
+  if (s["type"] === "number") return __renderSlot_source(s["value"]);
+  if (s["type"] === "ident") return __renderSlot_source(s["value"]);
+  if (s["type"] === "string") return __renderSlot_source(s["value"]);
+  if (s["type"] === "separator" && s["value"] === "/") return "/";
+  if (s["type"] === "separator" && s["value"] === ",") return ",";
+  throw new Error("stringify: no production matches structure shape for node ColorFunctionToken (target source)");
+}
+
+function stringify_VarFunction_source(s: any): string {
+  return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + ")";
+}
+
+function stringify_CssColor_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+export function stringify(s: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? "source";
+  if (target === "source") {
+    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+    if (s.type === "color-keyword") return stringify_ColorKeyword_source(s);
+    if (s.type === "hash-color") return stringify_HashColor_source(s);
+    if (s.type === "color-function") return stringify_RgbColorFunction_source(s);
+    if (s.type === "percentage") return stringify_NumericColorFunctionToken_source(s);
+    if (s.type === "number") return stringify_NumericColorFunctionToken_source(s);
+    if (s.type === "separator") return stringify_NumericColorFunctionToken_source(s);
+    if (s.type === "ident") return stringify_ColorFunctionToken_source(s);
+    if (s.type === "string") return stringify_ColorFunctionToken_source(s);
+    if (s.type === "var-function") return stringify_VarFunction_source(s);
+    if (s.type === "css-color") return stringify_CssColor_source(s);
+    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
+  }
+  throw new Error("stringify: unknown target '" + target + "'");
+}
+
+function __renderSlot_source(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    return out;
+  }
+  return stringify(v, { target: "source" });
+}
+
+export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
+  const target = options?.target ?? "source";
+  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
+  return stringify(parsed, { target });
+}
+
 export function parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
@@ -4377,6 +4459,3 @@ export function validate(input: string, options?: ParseOptions): void {
   exportName: 'validate',
 };
 
-export function stringify(_value: unknown): string {
-  throw new Error('stringify: not yet implemented for this schema slice');
-}

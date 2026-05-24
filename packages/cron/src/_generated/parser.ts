@@ -323,10 +323,10 @@ function parseCron(state: State): unknown {
 }
 
 function stringify_CronField_source(s: any): string {
-  if (s.type === "wildcard") return "*";
-  if (s.type === "step") return "*/" + __renderSlot_source(s["step"]);
-  if (s.type === "value") return __renderSlot_source(s["value"]);
-  if (s.type === "range") return __renderSlot_source(s["start"]) + "-" + __renderSlot_source(s["end"]);
+  if (s["type"] === "wildcard" && s["step"] === undefined && s["value"] === undefined && s["start"] === undefined && s["end"] === undefined) return "*";
+  if (s["type"] === "step" && s["step"] !== undefined && s["value"] === undefined && s["start"] === undefined && s["end"] === undefined) return "*/" + __renderSlot_source(s["step"]);
+  if (s["type"] === "value" && s["value"] !== undefined && s["step"] === undefined && s["start"] === undefined && s["end"] === undefined) return __renderSlot_source(s["value"]);
+  if (s["type"] === "range" && s["start"] !== undefined && s["end"] !== undefined && s["step"] === undefined && s["value"] === undefined) return __renderSlot_source(s["start"]) + "-" + __renderSlot_source(s["end"]);
   throw new Error("stringify: no production matches structure shape for node CronField (target source)");
 }
 

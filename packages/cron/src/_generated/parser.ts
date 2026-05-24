@@ -322,16 +322,35 @@ function parseCron(state: State): unknown {
   return { type: "cron", minute: minute, hour: hour, dayOfMonth: dayOfMonth, month: month, dayOfWeek: dayOfWeek, command: command };
 }
 
+function stringify_CronField_wildcard_source(s: any): string {
+  return "*";
+}
+
+function stringify_CronField_step_source(s: any): string {
+  return "*/" + __renderSlot_source(s["step"]);
+}
+
+function stringify_CronField_value_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+function stringify_CronField_range_source(s: any): string {
+  return __renderSlot_source(s["start"]) + "-" + __renderSlot_source(s["end"]);
+}
+
 function stringify_CronField_source(s: any): string {
-  if (s["type"] === "wildcard" && s["step"] === undefined && s["value"] === undefined && s["start"] === undefined && s["end"] === undefined) return "*";
-  if (s["type"] === "step" && s["step"] !== undefined && s["value"] === undefined && s["start"] === undefined && s["end"] === undefined) return "*/" + __renderSlot_source(s["step"]);
-  if (s["type"] === "value" && s["value"] !== undefined && s["step"] === undefined && s["start"] === undefined && s["end"] === undefined) return __renderSlot_source(s["value"]);
-  if (s["type"] === "range" && s["start"] !== undefined && s["end"] !== undefined && s["step"] === undefined && s["value"] === undefined) return __renderSlot_source(s["start"]) + "-" + __renderSlot_source(s["end"]);
+  switch (s.type) {
+    case "wildcard": return stringify_CronField_wildcard_source(s);
+    case "step": return stringify_CronField_step_source(s);
+    case "value": return stringify_CronField_value_source(s);
+    case "range": return stringify_CronField_range_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node CronField (target source)");
 }
 
 function stringify_CommandWord_source(s: any): string {
-  return __renderSlot_source(s);
+  if (true) return __renderSlot_source(s);
+  throw new Error("stringify: no production matches structure shape for node CommandWord (target source)");
 }
 
 function stringify_Command_source(s: any): string {
@@ -342,32 +361,38 @@ function stringify_Cron_source(s: any): string {
   return __renderSlot_source(s["minute"]) + " " + __renderSlot_source(s["hour"]) + " " + __renderSlot_source(s["dayOfMonth"]) + " " + __renderSlot_source(s["month"]) + " " + __renderSlot_source(s["dayOfWeek"]) + (s["command"] == null ? "" : " " + __renderSlot_source(s["command"]));
 }
 
+function __dispatchStringify_source(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "wildcard": return stringify_CronField_wildcard_source(s);
+    case "step": return stringify_CronField_step_source(s);
+    case "value": return stringify_CronField_value_source(s);
+    case "range": return stringify_CronField_range_source(s);
+    case undefined: return stringify_CommandWord_source(s);
+    case "command": return stringify_Command_source(s);
+    case "cron": return stringify_Cron_source(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
-  if (target === "source") {
-    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-    if (s.type === "wildcard") return stringify_CronField_source(s);
-    if (s.type === "step") return stringify_CronField_source(s);
-    if (s.type === "value") return stringify_CronField_source(s);
-    if (s.type === "range") return stringify_CronField_source(s);
-    if (s.type === "command") return stringify_Command_source(s);
-    if (s.type === "cron") return stringify_Cron_source(s);
-    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
-  }
+  if (target === "source") return __dispatchStringify_source(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
 }
 
 function __renderSlot_source(v: any): string {
   if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
+  const t = typeof v;
+  if (t === "string") return v;
+  if (t === "number") return String(v);
+  if (t === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) {
     let out = "";
     for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
     return out;
   }
-  return stringify(v, { target: "source" });
+  return __dispatchStringify_source(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

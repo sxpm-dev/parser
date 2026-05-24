@@ -2181,10 +2181,24 @@ function validateProtoFile(state: State): unknown {
   return;
 }
 
+function stringify_Declaration_syntax_source(s: any): string {
+  return "syntax = " + __renderSlot_source(s["value"]) + ";";
+}
+
+function stringify_Declaration_package_source(s: any): string {
+  return "package " + __renderSlot_source(s["name"][0]) + "." + __renderSlot_source(s["name"][1]) + ";";
+}
+
+function stringify_Declaration_message_source(s: any): string {
+  return "message " + __renderSlot_source(s["name"]) + " { " + __renderSlot_source(s["fields"]) + " }";
+}
+
 function stringify_Declaration_source(s: any): string {
-  if (s["type"] === "syntax" && s["value"] !== undefined && s["name"] === undefined && s["fields"] === undefined) return "syntax = " + __renderSlot_source(s["value"]) + ";";
-  if (s["type"] === "package" && s["name"] !== undefined && s["value"] === undefined && s["fields"] === undefined) return "package " + __renderSlot_source(s["name"][0]) + "." + __renderSlot_source(s["name"][1]) + ";";
-  if (s["type"] === "message" && s["name"] !== undefined && s["fields"] !== undefined && s["value"] === undefined) return "message " + __renderSlot_source(s["name"]) + " { " + __renderSlot_source(s["fields"]) + " }";
+  switch (s.type) {
+    case "syntax": return stringify_Declaration_syntax_source(s);
+    case "package": return stringify_Declaration_package_source(s);
+    case "message": return stringify_Declaration_message_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node Declaration (target source)");
 }
 
@@ -2196,31 +2210,36 @@ function stringify_ProtoFile_source(s: any): string {
   return __renderSlot_source(s["declarations"]);
 }
 
+function __dispatchStringify_source(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "syntax": return stringify_Declaration_syntax_source(s);
+    case "package": return stringify_Declaration_package_source(s);
+    case "message": return stringify_Declaration_message_source(s);
+    case "field": return stringify_Field_source(s);
+    case "proto-file": return stringify_ProtoFile_source(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
-  if (target === "source") {
-    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-    if (s.type === "syntax") return stringify_Declaration_source(s);
-    if (s.type === "package") return stringify_Declaration_source(s);
-    if (s.type === "message") return stringify_Declaration_source(s);
-    if (s.type === "field") return stringify_Field_source(s);
-    if (s.type === "proto-file") return stringify_ProtoFile_source(s);
-    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
-  }
+  if (target === "source") return __dispatchStringify_source(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
 }
 
 function __renderSlot_source(v: any): string {
   if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
+  const t = typeof v;
+  if (t === "string") return v;
+  if (t === "number") return String(v);
+  if (t === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) {
     let out = "";
     for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
     return out;
   }
-  return stringify(v, { target: "source" });
+  return __dispatchStringify_source(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

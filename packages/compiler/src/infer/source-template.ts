@@ -46,7 +46,7 @@ export function attachSourceTemplates(
 
 type Piece =
   | { readonly kind: 'literal'; readonly text: string }
-  | { readonly kind: 'slot'; readonly ref: string };
+  | { readonly kind: 'slot'; readonly ref: string; readonly optional: boolean };
 
 function synthesize(production: Production, whitespace: WhitespacePolicy): StringifyTemplate {
   const input = production.source.input;
@@ -55,6 +55,13 @@ function synthesize(production: Production, whitespace: WhitespacePolicy): Strin
 
   for (const span of production.spans) {
     const startOffset = findSpanStart(input, span, cursor);
+    // For optional-absent spans (text not found in this example), emit
+    // neither separator nor slot — at render time the captured value would
+    // be null and the slot helper already returns "".
+    if (startOffset === null) {
+      const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+      if (isOptional) continue;
+    }
     const sepText = startOffset === null ? '' : input.slice(cursor, startOffset);
     if (sepText.length > 0) {
       pieces.push({ kind: 'literal', text: canonicalSeparator(sepText, whitespace) });
@@ -67,14 +74,15 @@ function synthesize(production: Production, whitespace: WhitespacePolicy): Strin
 }
 
 function contributionOf(span: ResolvedSpan): Piece {
+  const optional = span.modifiers.some((m) => m.kind === 'optional');
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('source-template: recursive span without name');
-    return { kind: 'slot', ref: span.name };
+    return { kind: 'slot', ref: span.name, optional };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new CompilerError('source-template: until-span without name');
-    return { kind: 'slot', ref: span.name };
+    return { kind: 'slot', ref: span.name, optional };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
@@ -82,9 +90,9 @@ function contributionOf(span: ResolvedSpan): Piece {
         `source-template: classed span without name (class '${span.class}')`,
       );
     }
-    return { kind: 'slot', ref: span.name };
+    return { kind: 'slot', ref: span.name, optional };
   }
-  if (span.name) return { kind: 'slot', ref: span.name };
+  if (span.name) return { kind: 'slot', ref: span.name, optional };
   if (!span.text) throw new CompilerError('source-template: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
 }
@@ -104,12 +112,14 @@ function findSpanStart(input: string, span: ResolvedSpan, cursor: number): numbe
 
 function foldIntoTemplate(pieces: ReadonlyArray<Piece>): StringifyTemplate {
   const parts: string[] = [''];
-  const slots: { kind: 'capture'; ref: string }[] = [];
+  const slots: { kind: 'capture'; ref: string; optional?: boolean }[] = [];
   for (const p of pieces) {
     if (p.kind === 'literal') {
       parts[parts.length - 1] += p.text;
     } else {
-      slots.push({ kind: 'capture', ref: p.ref });
+      const slot: { kind: 'capture'; ref: string; optional?: boolean } = { kind: 'capture', ref: p.ref };
+      if (p.optional) slot.optional = true;
+      slots.push(slot);
       parts.push('');
     }
   }

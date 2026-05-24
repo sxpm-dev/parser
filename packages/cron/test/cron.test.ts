@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { parse, render, stringify, validate } from '../src/index.ts';
 
 test('cron parses wildcard, step, value, and range fields', () => {
   assert.deepEqual(parse('*/5 * * * *'), {
@@ -52,4 +52,22 @@ test('cron rejects malformed field syntax', () => {
   assert.throws(() => validate('*/ * * * *'), SyntaxError);
   assert.throws(() => validate('1- * * * *'), SyntaxError);
   assert.throws(() => validate('* * * * @daily'), SyntaxError);
+});
+
+test('cron render(input) round-trips to source for canonical inputs', () => {
+  const cases = ['* * * * *', '0 0 * * *', '*/5 * * * *', '0 1-3 * * *'];
+  for (const input of cases) {
+    assert.equal(render(input), input, input);
+  }
+});
+
+test('cron stringify(parse(input)) === input for canonical inputs', () => {
+  const input = '* * * * *';
+  assert.equal(stringify(parse(input)), input);
+});
+
+test('cron render === stringify ∘ parse parity', () => {
+  for (const input of ['* * * * *', '0 0 * * *', '*/5 * * * *']) {
+    assert.equal(render(input), stringify(parse(input)), input);
+  }
 });

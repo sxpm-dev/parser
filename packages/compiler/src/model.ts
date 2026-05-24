@@ -27,7 +27,17 @@ export type ResolvedSpan = {
 export type StringifyTemplate = {
   readonly target: string;
   readonly parts: ReadonlyArray<string>;
-  readonly slots: ReadonlyArray<{ readonly kind: 'capture'; readonly ref: string }>;
+  readonly slots: ReadonlyArray<StringifyTemplateSlot>;
+};
+
+export type StringifyTemplateSlot = {
+  readonly kind: 'capture';
+  readonly ref: string;
+  // Set by infer/source-template.ts when the underlying span has .optional().
+  // At emit time, the preceding separator part collapses to "" when the
+  // runtime value is null/undefined. Not settable from the public `tpl` DSL;
+  // author templates always have optional === undefined.
+  readonly optional?: boolean;
 };
 
 export type Production = {

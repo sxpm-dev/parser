@@ -166,7 +166,7 @@ export default defineSchema({
     ex('###### Tiny heading')
       .as('MarkdownLeaf')
       .span('######')
-      .span('text', 'Tiny heading').until(HEADING_LINE_STOPS)
+      .span('text', 'Tiny heading').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 6, text: $.text })
       .stringify('html', tpl`<h6>${$.text}</h6>`)
       .build(),
@@ -174,7 +174,7 @@ export default defineSchema({
     ex('##### Small section')
       .as('MarkdownLeaf')
       .span('#####')
-      .span('text', 'Small section').until(HEADING_LINE_STOPS)
+      .span('text', 'Small section').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 5, text: $.text })
       .stringify('html', tpl`<h5>${$.text}</h5>`)
       .build(),
@@ -182,7 +182,7 @@ export default defineSchema({
     ex('#### Deep section')
       .as('MarkdownLeaf')
       .span('####')
-      .span('text', 'Deep section').until(HEADING_LINE_STOPS)
+      .span('text', 'Deep section').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 4, text: $.text })
       .stringify('html', tpl`<h4>${$.text}</h4>`)
       .build(),
@@ -190,7 +190,7 @@ export default defineSchema({
     ex('### API reference')
       .as('MarkdownLeaf')
       .span('###')
-      .span('text', 'API reference').until(HEADING_LINE_STOPS)
+      .span('text', 'API reference').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 3, text: $.text })
       .stringify('html', tpl`<h3>${$.text}</h3>`)
       .build(),
@@ -198,7 +198,7 @@ export default defineSchema({
     ex('## Installation guide')
       .as('MarkdownLeaf')
       .span('##')
-      .span('text', 'Installation guide').until(HEADING_LINE_STOPS)
+      .span('text', 'Installation guide').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 2, text: $.text })
       .stringify('html', tpl`<h2>${$.text}</h2>`)
       .build(),
@@ -206,7 +206,7 @@ export default defineSchema({
     ex('# Release notes')
       .as('MarkdownLeaf')
       .span('#')
-      .span('text', 'Release notes').until(HEADING_LINE_STOPS)
+      .span('text', 'Release notes').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'heading', depth: 1, text: $.text })
       .stringify('html', tpl`<h1>${$.text}</h1>`)
       .build(),
@@ -218,7 +218,7 @@ export default defineSchema({
     // follows the text Paragraph picks up.
     ex('Setext heading\n===')
       .as('MarkdownLeaf')
-      .span('text', 'Setext heading').until(HEADING_LINE_STOPS)
+      .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
       .span('===')
       .structure({ type: 'heading', depth: 1, text: $.text, style: 'setext' })
       .stringify('html', tpl`<h1>${$.text}</h1>`)
@@ -226,7 +226,7 @@ export default defineSchema({
 
     ex('Setext heading\n---')
       .as('MarkdownLeaf')
-      .span('text', 'Setext heading').until(HEADING_LINE_STOPS)
+      .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
       .span('---')
       .structure({ type: 'heading', depth: 2, text: $.text, style: 'setext' })
       .stringify('html', tpl`<h2>${$.text}</h2>`)
@@ -264,7 +264,7 @@ export default defineSchema({
     ex('- [x] completed task')
       .as('MarkdownLeaf')
       .span('- [x]')
-      .span('text', 'completed task').until(HEADING_LINE_STOPS)
+      .span('text', 'completed task').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'task-list-item', checked: true, marker: 'x', text: $.text })
       .stringify('html', tpl`<li><input type="checkbox" checked>${$.text}</li>`)
       .build(),
@@ -272,7 +272,7 @@ export default defineSchema({
     ex('- [ ] pending task')
       .as('MarkdownLeaf')
       .span('- [ ]')
-      .span('text', 'pending task').until(HEADING_LINE_STOPS)
+      .span('text', 'pending task').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'task-list-item', checked: false, text: $.text })
       .stringify('html', tpl`<li><input type="checkbox">${$.text}</li>`)
       .build(),
@@ -283,7 +283,7 @@ export default defineSchema({
     ex('- first item')
       .as('MarkdownLeaf')
       .span('- ')
-      .span('text', 'first item').until(HEADING_LINE_STOPS)
+      .span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'list-item', ordered: false, text: $.text })
       .stringify('html', tpl`<li>${$.text}</li>`)
       .build(),
@@ -291,7 +291,7 @@ export default defineSchema({
     ex('+ alternate marker')
       .as('MarkdownLeaf')
       .span('+ ')
-      .span('text', 'alternate marker').until(HEADING_LINE_STOPS)
+      .span('text', 'alternate marker').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'list-item', ordered: false, marker: '+', text: $.text })
       .stringify('html', tpl`<li>${$.text}</li>`)
       .build(),
@@ -299,7 +299,7 @@ export default defineSchema({
     ex('* star marker')
       .as('MarkdownLeaf')
       .span('* ')
-      .span('text', 'star marker').until(HEADING_LINE_STOPS)
+      .span('text', 'star marker').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'list-item', ordered: false, marker: '*', text: $.text })
       .stringify('html', tpl`<li>${$.text}</li>`)
       .build(),
@@ -310,7 +310,7 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('index', '1').number().int()
       .span('.')
-      .span('text', 'ordered item').until(HEADING_LINE_STOPS)
+      .span('text', 'ordered item').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'list-item', ordered: true, index: $.index, text: $.text })
       .stringify('html', tpl`<li>${$.text}</li>`)
       .build(),
@@ -319,7 +319,7 @@ export default defineSchema({
     ex('> quoted text')
       .as('MarkdownLeaf')
       .span('>')
-      .span('text', 'quoted text').until(HEADING_LINE_STOPS)
+      .span('text', 'quoted text').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'blockquote', text: $.text })
       .stringify('html', tpl`<blockquote>${$.text}</blockquote>`)
       .build(),
@@ -363,7 +363,7 @@ export default defineSchema({
     ex('**bold**')
       .as('MarkdownLeaf')
       .span('**')
-      .span('text', 'bold').until('**')
+      .span('text', 'bold').until('**', { balanced: false })
       .span('**')
       .structure({ type: 'bold', text: $.text })
       .stringify('html', tpl`<strong>${$.text}</strong>`)
@@ -372,7 +372,7 @@ export default defineSchema({
     ex('*italic*')
       .as('MarkdownLeaf')
       .span('*')
-      .span('text', 'italic').until('*')
+      .span('text', 'italic').until('*', { balanced: false })
       .span('*')
       .structure({ type: 'italic', text: $.text })
       .stringify('html', tpl`<em>${$.text}</em>`)
@@ -381,7 +381,7 @@ export default defineSchema({
     ex('~~removed~~')
       .as('MarkdownLeaf')
       .span('~~')
-      .span('text', 'removed').until('~~')
+      .span('text', 'removed').until('~~', { balanced: false })
       .span('~~')
       .structure({ type: 'strikethrough', text: $.text })
       .stringify('html', tpl`<s>${$.text}</s>`)
@@ -390,23 +390,23 @@ export default defineSchema({
     ex('`code`')
       .as('MarkdownLeaf')
       .span('`')
-      .span('text', 'code').until('`')
+      .span('text', 'code').until('`', { balanced: false })
       .span('`')
       .structure({ type: 'inline-code', text: $.text })
       .stringify('html', tpl`<code>${$.text}</code>`)
       .build(),
 
     // ---- Links and images ------------------------------------------------
-    // The link-label captures via `.until(']')`; the URL slice captures
-    // via `.until(')')`. We render the URL verbatim — the test fixtures
+    // The link-label captures via `.until(']', { balanced: false })`; the URL slice captures
+    // via `.until(')', { balanced: false })`. We render the URL verbatim — the test fixtures
     // exercise `https://example.com`-style URLs which don't need encoding.
     ex('[docs](https://example.com)')
       .as('MarkdownLeaf')
       .span('[')
-      .span('label', 'docs').until(']')
+      .span('label', 'docs').until(']', { balanced: false })
       .span(']')
       .span('(')
-      .span('url', 'https://example.com').until(')')
+      .span('url', 'https://example.com').until(')', { balanced: false })
       .span(')')
       .structure({ type: 'link', label: $.label, url: $.url })
       .stringify('html', tpl`<a href="${$.url}">${$.label}</a>`)
@@ -415,9 +415,9 @@ export default defineSchema({
     ex('[docs][id]')
       .as('MarkdownLeaf')
       .span('[')
-      .span('label', 'docs').until(']')
+      .span('label', 'docs').until(']', { balanced: false })
       .span('][')
-      .span('id', 'id').until(']')
+      .span('id', 'id').until(']', { balanced: false })
       .span(']')
       .structure({ type: 'reference-link', label: $.label, id: $.id })
       .stringify('html', tpl`<a href="#${$.id}">${$.label}</a>`)
@@ -427,10 +427,10 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('!')
       .span('[')
-      .span('alt', 'diagram').until(']')
+      .span('alt', 'diagram').until(']', { balanced: false })
       .span(']')
       .span('(')
-      .span('url', 'https://example.com/diagram.png').until(')')
+      .span('url', 'https://example.com/diagram.png').until(')', { balanced: false })
       .span(')')
       .structure({ type: 'image', alt: $.alt, url: $.url })
       .stringify('html', tpl`<img src="${$.url}" alt="${$.alt}">`)
@@ -440,9 +440,9 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('!')
       .span('[')
-      .span('alt', 'diagram').until(']')
+      .span('alt', 'diagram').until(']', { balanced: false })
       .span('][')
-      .span('id', 'image-id').until(']')
+      .span('id', 'image-id').until(']', { balanced: false })
       .span(']')
       .structure({ type: 'reference-image', alt: $.alt, id: $.id })
       .stringify('html', tpl`<img src="#${$.id}" alt="${$.alt}">`)
@@ -461,7 +461,7 @@ export default defineSchema({
     // ---- Table rows ------------------------------------------------------
     // A delimiter row matches `| --- | --- |` etc. — the `|---` punctuator
     // routes it before the generic table-row production tries its
-    // `.until('|')` cell capture. The delimiter row is recognized
+    // `.until('|', { balanced: false })` cell capture. The delimiter row is recognized
     // structurally; we don't bother computing the alignment vector from
     // the source — every cell defaults to 'default'.
     ex('| --- | --- |')
@@ -491,9 +491,9 @@ export default defineSchema({
     ex('| name | value |')
       .as('MarkdownLeaf')
       .span('|')
-      .span('first', 'name').until('|')
+      .span('first', 'name').until('|', { balanced: false })
       .span('|')
-      .span('second', 'value').until('|')
+      .span('second', 'value').until('|', { balanced: false })
       .span('|')
       .structure({ type: 'table-row', cells: [$.first, $.second] })
       .stringify('html', tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`)
@@ -505,10 +505,10 @@ export default defineSchema({
     ex('[id]: https://example.com')
       .as('MarkdownLeaf')
       .span('[')
-      .span('id', 'id').until(']')
+      .span('id', 'id').until(']', { balanced: false })
       .span(']')
       .span(':')
-      .span('url', 'https://example.com').until(HEADING_LINE_STOPS)
+      .span('url', 'https://example.com').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'definition', id: $.id, url: $.url })
       .stringify('html', tpl``)
       .build(),
@@ -519,10 +519,10 @@ export default defineSchema({
     ex('[^1]: footnote text')
       .as('MarkdownLeaf')
       .span('[^')
-      .span('id', '1').until(']')
+      .span('id', '1').until(']', { balanced: false })
       .span(']')
       .span(':')
-      .span('text', 'footnote text').until(HEADING_LINE_STOPS)
+      .span('text', 'footnote text').until(HEADING_LINE_STOPS, { balanced: false })
       .structure({ type: 'footnote-definition', id: $.id, text: $.text })
       .stringify('html', tpl`<div class="footnote" id="fn${$.id}">${$.text}</div>`)
       .build(),
@@ -531,7 +531,7 @@ export default defineSchema({
     ex('[^1]')
       .as('MarkdownLeaf')
       .span('[^')
-      .span('id', '1').until(']')
+      .span('id', '1').until(']', { balanced: false })
       .span(']')
       .structure({ type: 'footnote-reference', id: $.id })
       .stringify('html', tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`)
@@ -564,13 +564,13 @@ export default defineSchema({
     // ---- Autolink --------------------------------------------------------
     // Listed AFTER the HTML block so the dispatcher tries the longer
     // tag-shaped match first. The angle-bracketed URL captures via
-    // `.until('>')` — when the content has a tag name that's NOT in
+    // `.until('>', { balanced: false })` — when the content has a tag name that's NOT in
     // HTML_BLOCK_TAGS (like `https`), the HTML block production fails and
     // autolink picks up via the dispatcher's fallback path.
     ex('<https://example.com>')
       .as('MarkdownLeaf')
       .span('<')
-      .span('url', 'https://example.com').until('>')
+      .span('url', 'https://example.com').until('>', { balanced: false })
       .span('>')
       .structure({ type: 'autolink', url: $.url })
       .stringify('html', tpl`<a href="${$.url}">${$.url}</a>`)
@@ -592,7 +592,7 @@ export default defineSchema({
     // fallthrough path (firstTokenForRole returns null for until spans).
     ex('Plain paragraph')
       .as('MarkdownParagraph')
-      .span('text', 'Plain paragraph').until(PARAGRAPH_STOPS)
+      .span('text', 'Plain paragraph').until(PARAGRAPH_STOPS, { balanced: false })
       .structure({ type: 'paragraph', text: $.text })
       .stringify('html', tpl`<p>${$.text}</p>`)
       .build(),

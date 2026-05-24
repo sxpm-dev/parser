@@ -87,12 +87,22 @@ ${indent(body, 1)}
   // productions can't be distinguished by peek-scan.
   const lookaheadDispatch = emitLookaheadDispatch(info, fnName, ctx);
   if (lookaheadDispatch !== null) {
-    // Lookahead dispatch commits via byte-prefix peek — alts only run
-    // once we're sure they match. Standalone (hard-fail) alts are fine
-    // here: any throw from inside is a genuine error on input that
-    // matched the dispatch prefix but failed deeper.
+    // Lookahead dispatch commits via byte-prefix peek — most alts run
+    // only once we're sure they match (hard-fail OK). EXCEPTION:
+    // productions whose first span has no byte-level signature (until /
+    // rawUntil / repeats) live in the dispatcher's unbounded fallback
+    // group and get tried via speculation against EVERY line that didn't
+    // match a byte prefix. Emit these as softFail (return null on prefix
+    // mismatch) so the dispatcher's null check beats a try/catch — the
+    // throw/unwind dominated profiles for markdown paragraphs (every
+    // non-prefix line speculatively tried setext h1/h2 and threw).
     const altFns = info.productions.map((production, i) => {
-      const body = emitProductionBody(production, ctx);
+      const span0 = production.spans[0];
+      const isUnbounded = span0 ? isUnboundedFirstSpan(span0) : false;
+      const inlineSpec: InlineFromDispatcher | undefined = isUnbounded
+        ? { skipSpans: 0, preboundValues: new Map(), softFail: true }
+        : undefined;
+      const body = emitProductionBody(production, ctx, inlineSpec);
       return `function ${fnName}__alt${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -261,12 +271,30 @@ function emitSharedPrefixDispatch(
     const oneOf = d.refinements.find((r) => r.name === 'oneOf');
     const values = oneOf?.args?.[0];
     if (!Array.isArray(values) || values.some((v) => typeof v !== 'string')) {
-      // Class without .oneOf — group by class predicate so multiple alts can
-      // coexist with literal branches. The class predicate forms a single
-      // sub-bucket; recursion re-derives prefixLen and discriminates deeper.
-      // Mixing oneOf with class-without-oneOf is not supported (the inline
-      // ident-extraction path needs sole ownership of the dispatcher tail).
-      if (kind === 'oneOf') return null;
+      // Class without .oneOf. Two cases:
+      //   (a) kind is already 'oneOf' and this alt's class predicate is
+      //       compatible with the oneOf discriminator — treat as the
+      //       fallback (any ident that doesn't match a oneOf value).
+      //       HTML's regular-element alt15 (`.ident().html()` with no
+      //       oneOf) follows this shape and was previously falling back
+      //       to a 16-deep speculation chain.
+      //   (b) Otherwise, group by class predicate for multi-alt class
+      //       dispatch (markdown's `[ident]` vs `[^` etc.).
+      if (kind === 'oneOf') {
+        // Verify the discriminator's class+non-oneOf refinements match —
+        // otherwise the shared ident scan in the dispatcher would parse
+        // a different class than this alt expects.
+        const refAlt0 = productions[indexes[0]!]!.spans[prefixLen]!;
+        const sameClass = d.class === refAlt0.class;
+        const aRefs = d.refinements.filter((r) => r.name !== 'oneOf').map((r) => JSON.stringify(r)).sort();
+        const bRefs = refAlt0.refinements.filter((r) => r.name !== 'oneOf').map((r) => JSON.stringify(r)).sort();
+        const sameRefs = aRefs.length === bRefs.length && aRefs.every((r, i) => r === bRefs[i]);
+        if (sameClass && sameRefs && fallbackIdx < 0) {
+          fallbackIdx = idx;
+          continue;
+        }
+        return null;
+      }
       const predKey = classStartPredicateForPeek(d);
       if (predKey === 'false') return null;
       let bucket = classGroups.get(predKey);
@@ -589,9 +617,17 @@ function emitGroupedFirstSpanDispatch(
     indexes: number[];
   };
   const groups: Group[] = [];
+  // Productions with no byte-level signature (until/rawUntil/repeats first
+  // span). Collected and tried last via speculation — they were previously
+  // killing the entire grouped-first-span dispatch.
+  const unboundedIndexes: number[] = [];
   for (const idx of indexes) {
     const span0 = productions[idx]!.spans[0];
     if (!span0) return null;
+    if (isUnboundedFirstSpan(span0)) {
+      unboundedIndexes.push(idx);
+      continue;
+    }
     const { check, literal } = firstBytePredicateOf(span0);
     if (check === null) return null;
     let group = groups.find((g) => g.check === check);
@@ -601,7 +637,7 @@ function emitGroupedFirstSpanDispatch(
     }
     group.indexes.push(idx);
   }
-  if (groups.length < 2) return null;
+  if (groups.length + (unboundedIndexes.length > 0 ? 1 : 0) < 2) return null;
   // Sort: literal groups first (by length desc) so multi-char literals
   // win over their single-char prefixes; class predicates last.
   groups.sort((a, b) => {
@@ -629,20 +665,101 @@ while (__peek < __len) {
   if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
   break;
 }`;
-  const branches = groupBodies.map(({ check, body }, i) => {
-    const open = i === 0 ? 'if' : 'else if';
-    return `${open} (${check}) {
-${indent(body, 1)}
-}`;
-  }).join('\n');
+  // Fallback tail: productions whose first span has no fixed byte
+  // signature (until/rawUntil/repeats). These alts are emitted in
+  // softFail mode by emitNodeFunction, so the speculation chain uses
+  // direct null checks instead of trySpeculate's try/catch.
+  let fallbackTail: string;
+  if (unboundedIndexes.length === 0) {
+    fallbackTail = `throw new SyntaxError('no production matched at position ' + __peek);`;
+  } else if (unboundedIndexes.length === 1) {
+    fallbackTail = `return ${fnName}__alt${unboundedIndexes[0]}(state);`;
+  } else {
+    fallbackTail = emitSpeculationChain(unboundedIndexes, fnName, /* softFailAlts */ true);
+  }
+  // Two-level dispatch: bucket groups by their first-byte (when literal)
+  // so the generated dispatcher does ONE charCodeAt + N startsWith for
+  // sibling literals (`#`/`##`/`###`/...), instead of N independent
+  // startsWith calls each scanning the input from scratch. For paragraph-
+  // heavy markdown this skips ~11 startsWith calls per leaf in favour of
+  // a single byte check.
+  type ByteBucket = { byte: number; bodies: Array<{ check: string; body: string; literal: string; }>; };
+  const byByte = new Map<number, ByteBucket>();
+  const classBodies: Array<{ check: string; body: string }> = [];
+  for (const { check, body } of groupBodies) {
+    // Match the literal text out of `groupBodies`. We kept the `check`
+    // string verbatim; recover the literal from the matching group entry.
+    const grp = groups.find((g) => g.check === check);
+    const literal = grp?.literal;
+    if (literal && literal.length > 0) {
+      const code = literal.charCodeAt(0);
+      let bucket = byByte.get(code);
+      if (!bucket) { bucket = { byte: code, bodies: [] }; byByte.set(code, bucket); }
+      bucket.bodies.push({ check, body, literal });
+    } else {
+      classBodies.push({ check, body });
+    }
+  }
+  // Emit byte buckets first (most efficient — single charCodeAt + branch).
+  // Within each bucket, sort by literal length desc so longer wins.
+  // Use a unique outer-byte variable name (__byte0) so nested peek-scan
+  // blocks that redeclare `__c` don't collide.
+  const bucketBranches: string[] = [];
+  for (const bucket of byByte.values()) {
+    bucket.bodies.sort((a, b) => b.literal.length - a.literal.length);
+    let inner: string;
+    if (bucket.bodies.length === 1) {
+      const { check, body, literal } = bucket.bodies[0]!;
+      if (literal.length === 1) {
+        inner = body;
+      } else {
+        inner = `if (${check}) {\n${indent(body, 1)}\n}`;
+      }
+    } else {
+      const lines: string[] = [];
+      for (let i = 0; i < bucket.bodies.length; i++) {
+        const { check, body, literal } = bucket.bodies[i]!;
+        const open = i === 0 ? 'if' : 'else if';
+        // Single-byte literal at the end of the chain — already implied by
+        // the outer byte match, no need for an explicit check.
+        if (literal.length === 1 && i === bucket.bodies.length - 1) {
+          lines.push(i === 0 ? body : `else {\n${indent(body, 1)}\n}`);
+        } else {
+          lines.push(`${open} (${check}) {\n${indent(body, 1)}\n}`);
+        }
+      }
+      inner = lines.join('\n');
+    }
+    bucketBranches.push(`if (__byte0 === ${bucket.byte}) {\n${indent(inner, 1)}\n}`);
+  }
+  const classBranches = classBodies.map(({ check, body }) =>
+    `if (${check}) {\n${indent(body, 1)}\n}`,
+  );
+  const allBranches = [...bucketBranches, ...classBranches];
+  // Single hoisted byte load reused by every bucket header. Nested blocks
+  // are free to declare their own `__c` because we don't share the name.
+  const headerLoad = byByte.size > 0
+    ? '  const __byte0 = __input.charCodeAt(__peek);\n'
+    : '';
+  const branches = allBranches.join(' else ');
   return `${wsSkip}
-${branches}
-throw new SyntaxError('no production matched at position ' + __peek);`;
+${headerLoad}${branches}
+${fallbackTail}`;
 }
 
 // Return the byte-level predicate for the first span. For literal spans
 // this is a startsWith check; for class spans, the class start predicate.
 function firstBytePredicateOf(span: ResolvedSpan): { check: string | null; literal?: string } {
+  // until / rawUntil / repeats spans have no fixed first byte — their
+  // capture starts at the current offset and runs until a stop marker, so
+  // the `.span(name, exampleValue)` example text is NOT a discriminator.
+  // Without this guard, markdown's setext heading production
+  // (`.span('text', 'Setext heading').until('\n')`) generated a wasted
+  // `startsWith("Setext heading")` check at the top of the leaf dispatcher
+  // that ran (and missed) on every paragraph and list item.
+  if (findModifier(span.modifiers, 'until')) return { check: null };
+  if (findModifier(span.modifiers, 'rawUntil')) return { check: null };
+  if (findModifier(span.modifiers, 'repeats')) return { check: null };
   if (span.class === 'literal' && span.text) {
     return { check: peekLiteralExpr(span.text), literal: span.text };
   }
@@ -650,9 +767,39 @@ function firstBytePredicateOf(span: ResolvedSpan): { check: string | null; liter
   return { check: classStartPredicateForPeek(span), literal: undefined };
 }
 
-function emitSpeculationChain(indexes: ReadonlyArray<number>, fnName: string): string {
+// Like firstBytePredicateOf, but also distinguishes the "this span has no
+// fixed first byte — treat as fallback" case. Productions that match this
+// shape get bucketed together and tried last via speculation, instead of
+// causing the dispatcher to give up.
+function isUnboundedFirstSpan(span: ResolvedSpan): boolean {
+  if (findModifier(span.modifiers, 'until')) return true;
+  if (findModifier(span.modifiers, 'rawUntil')) return true;
+  if (findModifier(span.modifiers, 'repeats')) return true;
+  return false;
+}
+
+function emitSpeculationChain(indexes: ReadonlyArray<number>, fnName: string, softFailAlts: boolean = false): string {
   // Sync state.off before any speculation: __peek is local, but
-  // trySpeculate operates on state.off.
+  // trySpeculate operates on state.off. When all alts are emitted in
+  // softFail mode (return null on failure rather than throwing), skip
+  // trySpeculate's try/catch entirely — a plain null check is much
+  // cheaper. Markdown's setext heading speculation, which runs against
+  // every paragraph line, took 40% of parse time via the throw/unwind
+  // path; the direct null path turns that into a branch.
+  if (softFailAlts) {
+    // All alts are softFail (return null on no-match). Chain them with
+    // null checks, then throw at the end so the role dispatcher can fall
+    // through to the next role (matches the throw-based contract of
+    // tryRoles). Without the trailing throw, a chain that exhausts every
+    // softFail alt would return null, which tryRoles treats as a real
+    // value — breaking sibling-role fallback.
+    const guarded = indexes.map((i) =>
+      `{ state.off = __peek; const r = ${fnName}__alt${i}(state); if (r !== null) return r; }`,
+    ).join('\n');
+    return `${guarded}
+state.off = __peek;
+throw new SyntaxError('no production matched at position ' + __peek);`;
+  }
   const speculative = indexes.slice(0, -1).map((i) =>
     `{ const r = trySpeculate(state, ${fnName}__alt${i}); if (r !== null) return r; }`,
   ).join('\n');
@@ -1013,17 +1160,40 @@ let __off = state.off;`);
     // on parseComment seeing '/*' at __off to match the comment production.
     // If we skipped comments here, parseComment would skip its own content.
     lines.push(inlineSkipWs());
-    if (needsNodeRange) {
-      lines.push(`const __startOff = __off;`);
-    }
+  }
+  if (needsNodeRange && (inline?.skipSpans ?? 0) === 0) {
+    // __startOff anchors source.start.offset for the produced node. Always
+    // emit when the body is a standalone function (no skipSpans means we
+    // start from the body's first span, so __off here equals production start).
+    // When skipSpans > 0 the dispatcher has already advanced — but
+    // canExtractBody guards against that combination with raws (see
+    // emitSharedPrefixDispatch), so we never reach this path with both
+    // needsNodeRange and skipSpans>0.
+    lines.push(`const __startOff = __off;`);
   }
   // Track the position right after the last consumed byte. Distinct from
   // __off, which after the final span may sit at an unconsumed stop char
   // (e.g. until ended at the stop and the following optional didn't take
-  // it) or past trailing ws (between-span skipWs). Always declared so
-  // optional literal fallback can use it for span_start/end when the
-  // literal didn't match. Mirrors tokenized state.ends[state.pos - 1].
-  lines.push(`let __consumedEnd = __off;`);
+  // it) or past trailing ws (between-span skipWs). Needed when:
+  //   1. raws mode — feeds __endOff for makeSource.
+  //   2. Production has an optional literal span — its fallback rewinds
+  //      __off to __consumedEnd when the literal doesn't match.
+  // We compute this conservatively: scan the spans for any optional
+  // literal (after skipSpans). If neither condition holds, omit the
+  // variable entirely to avoid dead writes in tight per-element loops.
+  const needsConsumedEnd = needsNodeRange || spans.some((s, i) => {
+    if (i < skipSpans) return false;
+    if (!hasModifier(s.modifiers, 'optional')) return false;
+    // Until/rawUntil spans use a different fallback path (state.off rewind);
+    // only literal optional spans consume __consumedEnd. Other span kinds
+    // (recursive, classed) don't emit the `__off = __consumedEnd` fallback.
+    if (findModifier(s.modifiers, 'until') !== undefined) return false;
+    if (findModifier(s.modifiers, 'rawUntil') !== undefined) return false;
+    return s.class === 'literal';
+  });
+  if (needsConsumedEnd) {
+    lines.push(`let __consumedEnd = __off;`);
+  }
 
   for (let i = 0; i < spans.length; i++) {
     if (i < skipSpans) continue;
@@ -1071,21 +1241,23 @@ let __off = state.off;`);
       // that covers ANY of the alternative literals, not just the canonical
       // `next.text`. Otherwise input like `<br />` runs the attrs loop until
       // parseAttribute throws on `/`.
-      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, inline.lastSpanLiteralAlternatives));
+      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, inline.lastSpanLiteralAlternatives, needsConsumedEnd));
     } else {
-      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx));
+      lines.push(emitSpan(span, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, undefined, needsConsumedEnd));
     }
-    if (isUntil || isRawUntil) {
-      lines.push(`__consumedEnd = state.__lastCaptureEnd;`);
-    } else if (isRepeats && span.name && needsNodeRange) {
-      // For a repeats span, __consumedEnd anchors on __prevEnd_<listVar>
-      // (end of the last consumed child), not __off — which may have
-      // advanced past trailing seps/ws via the body loop's sep-skip.
-      lines.push(`__consumedEnd = __prevEnd_${jsIdent(span.name)};`);
-    } else if (savedVar) {
-      lines.push(`if (__off > ${savedVar}) __consumedEnd = __off;`);
-    } else {
-      lines.push(`__consumedEnd = __off;`);
+    if (needsConsumedEnd) {
+      if (isUntil || isRawUntil) {
+        lines.push(`__consumedEnd = state.__lastCaptureEnd;`);
+      } else if (isRepeats && span.name && needsNodeRange) {
+        // For a repeats span, __consumedEnd anchors on __prevEnd_<listVar>
+        // (end of the last consumed child), not __off — which may have
+        // advanced past trailing seps/ws via the body loop's sep-skip.
+        lines.push(`__consumedEnd = __prevEnd_${jsIdent(span.name)};`);
+      } else if (savedVar) {
+        lines.push(`if (__off > ${savedVar}) __consumedEnd = __off;`);
+      } else {
+        lines.push(`__consumedEnd = __off;`);
+      }
     }
     // Between-span ws skip — but skip this for adjacent-to-repeats so the
     // repeats span's startOff anchors at the end of the previous literal
@@ -1190,6 +1362,7 @@ function emitSpan(
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
   nextStopAlternatives?: ReadonlyArray<string>,
+  bodyTracksCaptureState: boolean = true,
 ): string {
   const optional = hasModifier(span.modifiers, 'optional');
   const repeats = findModifier(span.modifiers, 'repeats');
@@ -1198,10 +1371,10 @@ function emitSpan(
   const noWhitespaceAfter = hasModifier(span.modifiers, 'noWhitespaceAfter');
 
   if (rawUntil) {
-    return emitRawUntilSpan(span, rawUntil, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+    return emitRawUntilSpan(span, rawUntil, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, bodyTracksCaptureState);
   }
   if (until) {
-    return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx);
+    return emitUntilSpan(span, until, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, bodyTracksCaptureState);
   }
   if (repeats) {
     return emitRepeatedSpan(span, repeats, next, valueExpr, presenceExpr, startOffExpr, endOffExpr, offsetRefs, ctx, nextStopAlternatives);
@@ -2054,6 +2227,7 @@ function emitUntilSpan(
   endOffExpr: Map<string, string>,
   offsetRefs: ReadonlySet<string>,
   ctx: Ctx,
+  bodyTracksCaptureState: boolean = true,
 ): string {
   // Char-based scan to the earliest unbalanced stop. Tracks bracket depth
   // when balanced=true. Skips past string/comment ranges as opaque units
@@ -2068,6 +2242,11 @@ function emitUntilSpan(
     return `__input.startsWith(${jsString(stop)}, __off)`;
   });
   const stopExpr = stopChecks.join(' || ');
+  // When balanced=false the `__depth` counter is never incremented, so the
+  // `__depth === 0 && ...` guard at the top of every loop iteration is dead
+  // weight. Track it so we can elide both the variable and the guard for
+  // unbounded scans (markdown's hot paragraph and setext scans).
+  const tracksDepth = until.balanced;
   const balancedBlock = until.balanced ? `
     if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
     if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
@@ -2128,9 +2307,17 @@ function emitUntilSpan(
   // and brackets not recognized inside). Mirrors the CSS ident
   // tokenizer's url() branch — keeps unterminated `/*` inside url() from
   // matching a far-away `*/` across statement boundaries.
-  const urlRawSkip = ctx.cssIdent ? `
-    if (__depth === 0
-      && (__c === 0x75 || __c === 0x55)
+  // When balanced=false there's no depth tracking, so the url-raw skip's
+  // `__depth === 0` guard is always-true and can be elided. Furthermore,
+  // a `balanced: false` capture is semantically "flat" — the schema author
+  // signaled the scan has no nesting structure, so the CSS-specific
+  // url(...) raw-mode (which exists to treat `url(/* not-a-comment */)` as
+  // opaque) doesn't apply. Same for the per-iteration comment skip below.
+  // This was the biggest cost in markdown's setext speculation: every
+  // paragraph paid for url() detection and depth tracking that couldn't fire.
+  const urlRawDepthGuard = tracksDepth ? '__depth === 0\n      && ' : '';
+  const urlRawSkip = ctx.cssIdent && until.balanced ? `
+    if (${urlRawDepthGuard}(__c === 0x75 || __c === 0x55)
       && __off + 3 < __len
       && (__input.charCodeAt(__off + 1) | 32) === 0x72
       && (__input.charCodeAt(__off + 2) | 32) === 0x6c
@@ -2161,7 +2348,17 @@ function emitUntilSpan(
   // already consumes `url(...)` opaquely, so any `/*` here is at a real
   // comment start and we scan to the first `*/`. Unterminated comments
   // (no `*/` until EOF) fall through to the regular byte path.
-  const commentSkip = hasComments ? `${urlRawSkip}
+  // The backslash-as-escape arm is CSS escape semantics (`\;` is literal
+  // `;`, etc.). It's only meaningful inside a balanced/nested capture —
+  // for a flat `balanced: false` scan the schema author signaled no
+  // escape interpretation, so we skip the branch too.
+  const escapeArm = until.balanced ? `
+    if (__c === 0x5c && __off + 1 < __len) {
+      __lastNonWs = __off + 2;
+      __off += 2;
+      continue;
+    }` : '';
+  const commentSkip = hasComments && until.balanced ? `${urlRawSkip}
     if (__c === 0x2f && __off + 1 < __len && __input.charCodeAt(__off + 1) === 0x2a) {
       let __ce = __off + 2;
       while (__ce < __len && !(__input.charCodeAt(__ce) === 0x2a && __ce + 1 < __len && __input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
@@ -2170,17 +2367,7 @@ function emitUntilSpan(
         __off = __ce + 2;
         continue;
       }
-    }
-    if (__c === 0x5c && __off + 1 < __len) {
-      __lastNonWs = __off + 2;
-      __off += 2;
-      continue;
-    }` : `${urlRawSkip}
-    if (__c === 0x5c && __off + 1 < __len) {
-      __lastNonWs = __off + 2;
-      __off += 2;
-      continue;
-    }`;
+    }${escapeArm}` : `${urlRawSkip}${escapeArm}`;
   const commentsDecl = hasComments ? '\n  const __comments: [number, number][] = [];' : '';
   const trimEndExpr = '__lastNonWs';
   const v = span.name ? jsIdent(span.name) : '__captured';
@@ -2212,6 +2399,24 @@ function emitUntilSpan(
   }`
       : `
   ${v} = __input.slice(__startOff, ${trimEndExpr});`;
+  // Dead-write elimination: state.__lastCaptureStart/End is read by
+  //   1. the body's __consumedEnd tracking (raws and optional-literal fallback)
+  //   2. needsOffsets for source range fields on the captured value
+  //   3. refinement checks that need an error position (haveValue=true uses
+  //      it only inside the SyntaxError message)
+  // When none of these consumers exist for this span, the writes are pure
+  // overhead — skip them. Hot paths: HTML attribute values, comment data,
+  // markdown inline text — each runs once per node, so dropping two prop
+  // writes per call saves measurable allocation/store churn.
+  const needsOffsets = span.name ? offsetRefs.has(span.name) : false;
+  const hasRefinements = span.refinements.length > 0;
+  const writeCaptureState = bodyTracksCaptureState || needsOffsets || hasRefinements;
+  const stateWriteEmpty = writeCaptureState
+    ? 'state.__lastCaptureStart = __emptyAnchor;\n    state.__lastCaptureEnd = __emptyAnchor;\n    '
+    : '';
+  const stateWriteFilled = writeCaptureState
+    ? `state.__lastCaptureStart = __startOff;\n    state.__lastCaptureEnd = ${trimEndExpr};\n    `
+    : '';
   const scanCode = `{
   // __preWsOff captures the offset at entry — used (with leading-comment
   // tracking) to rewind __lastCaptureStart/End when the until captures
@@ -2226,24 +2431,19 @@ function emitUntilSpan(
     break;
   }
   const __startOff = __off;
-  let __lastNonWs = __off;
-  let __depth = 0;${commentsDecl}
+  let __lastNonWs = __off;${tracksDepth ? '\n  let __depth = 0;' : ''}${commentsDecl}
   while (__off < __len) {
     const __c = __input.charCodeAt(__off);
-    if (__depth === 0 && (${stopExpr})) break;${balancedBlock}${stringSkip}${commentSkip}
+    if (${tracksDepth ? `__depth === 0 && (${stopExpr})` : stopExpr}) break;${balancedBlock}${stringSkip}${commentSkip}
     if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
     __off++;
   }
   if (__lastNonWs === __startOff) {
     const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-    state.__lastCaptureStart = __emptyAnchor;
-    state.__lastCaptureEnd = __emptyAnchor;
-    __off = __emptyAnchor;
+    ${stateWriteEmpty}__off = __emptyAnchor;
     ${v === '__captured' ? '' : `${v} = '';`}
   } else {
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = ${trimEndExpr};
-    // Rewind __off to the trim boundary so trailing whitespace and
+    ${stateWriteFilled}// Rewind __off to the trim boundary so trailing whitespace and
     // trailing comments (which were consumed during the scan) remain
     // available for the parent's next iteration. Matches tokenized's
     // captureUntil which rewinds state.pos past trailing comment tokens.
@@ -2255,7 +2455,6 @@ function emitUntilSpan(
     : '';
 
   if (span.name) {
-    const needsOffsets = offsetRefs.has(span.name);
     valueExpr.set(span.name, v);
     presenceExpr.set(span.name, `(${v}.length > 0)`);
     if (needsOffsets) {
@@ -2281,14 +2480,17 @@ function emitRawUntilSpan(
   endOffExpr: Map<string, string>,
   offsetRefs: ReadonlySet<string>,
   _ctx: Ctx,
+  bodyTracksCaptureState: boolean = true,
 ): string {
   const stops = rawUntil.stops;
   const ci = rawUntil.caseInsensitive;
   const v = span.name ? jsIdent(span.name) : '__rawCaptured';
-  const scanCode = emitRawUntilScan(v, stops, ci);
+  const needsOffsets = span.name ? offsetRefs.has(span.name) : false;
+  const hasRefinements = span.refinements.length > 0;
+  const writeCaptureState = bodyTracksCaptureState || needsOffsets || hasRefinements;
+  const scanCode = emitRawUntilScan(v, stops, ci, writeCaptureState);
 
   if (span.name) {
-    const needsOffsets = offsetRefs.has(span.name);
     valueExpr.set(span.name, v);
     presenceExpr.set(span.name, `(${v}.length > 0)`);
     if (needsOffsets) {
@@ -2304,7 +2506,7 @@ ${scanCode}${offsetDecls}`;
   return scanCode;
 }
 
-function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseInsensitive: boolean): string {
+function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseInsensitive: boolean, writeCaptureState: boolean = true): string {
   const singleCharStops = stops.filter((s) => s.length === 1);
   const multiCharStops = stops.filter((s) => s.length >= 2);
 
@@ -2312,10 +2514,13 @@ function emitRawUntilScan(varName: string, stops: ReadonlyArray<string>, caseIns
   // per byte. The previous emit ran one full pass per stop, which on HTML's
   // unquoted-attr value (6 single-char + 1 multi-char stop) did 7x the
   // work per attribute and dominated bench profiles at 22%.
-  const setOff = `  __off = __earliest;
-  state.__lastCaptureStart = __startOff;
+  const captureWrite = writeCaptureState
+    ? `state.__lastCaptureStart = __startOff;
   state.__lastCaptureEnd = __earliest;
-  ${varName === '__rawCaptured' ? '' : `${varName} = __input.slice(__startOff, __earliest);`}
+  `
+    : '';
+  const setOff = `  __off = __earliest;
+  ${captureWrite}${varName === '__rawCaptured' ? '' : `${varName} = __input.slice(__startOff, __earliest);`}
 }`;
 
   if (stops.length === 0) {

@@ -289,6 +289,7 @@ function parseDeclaration__alt0(state: State): unknown {
   const __len = __input.length;
   let __off = state.off;
   const __softStart = state.off;
+  const __startOff = __off;
   let __consumedEnd = __off;
   let prop = '';
   {
@@ -1206,6 +1207,7 @@ function parseAtRule__alt0(state: State): unknown {
   const __len = __input.length;
   let __off = state.off;
   const __softStart = state.off;
+  const __startOff = __off;
   let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
@@ -1807,7 +1809,6 @@ function parseCommentFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __text_s = __off;
   let text;
   if (!((__input.charCodeAt(__off) === 0x2f && __input.charCodeAt(__off + 1) === 0x2a))) throw new SyntaxError("expected comment at position " + __text_s);
@@ -1816,7 +1817,6 @@ function parseCommentFast(state: State): unknown {
     if (__off < __len) __off += 2;
   text = __input.slice(__text_s, __off);
   const text__interior = commentInterior(text);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2528,7 +2528,6 @@ function parseRuleFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let selector = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -2622,13 +2621,9 @@ function parseRuleFast(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       selector = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -2655,7 +2650,6 @@ function parseRuleFast(state: State): unknown {
     }
   }
   if (selector.endsWith(":")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ':'"); }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2670,7 +2664,6 @@ function parseRuleFast(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
   __off += 1;
   const lbrace = "{";
-  __consumedEnd = __off;
 
   const nodes: unknown[] = [];
   while (true) {
@@ -2690,7 +2683,6 @@ function parseRuleFast(state: State): unknown {
     nodes.push(__child);
     if (__off === __before) break;
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2705,7 +2697,6 @@ function parseRuleFast(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
   __off += 1;
   const rbrace = "}";
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2720,10 +2711,8 @@ function parseAtRuleFast__alt0(state: State): unknown {
   const __len = __input.length;
   let __off = state.off;
   const __softStart = state.off;
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2803,7 +2792,6 @@ function parseAtRuleFast__alt0(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   let params = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -2897,13 +2885,9 @@ function parseAtRuleFast__alt0(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       params = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -2929,7 +2913,6 @@ function parseAtRuleFast__alt0(state: State): unknown {
     }
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2944,7 +2927,6 @@ function parseAtRuleFast__alt0(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 123)) { { state.off = __softStart; return null; } }
   __off += 1;
   const lbrace = "{";
-  __consumedEnd = __off;
 
   const nodes: unknown[] = [];
   while (true) {
@@ -2964,7 +2946,6 @@ function parseAtRuleFast__alt0(state: State): unknown {
     nodes.push(__child);
     if (__off === __before) break;
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2979,7 +2960,6 @@ function parseAtRuleFast__alt0(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 125)) { { state.off = __softStart; return null; } }
   __off += 1;
   const rbrace = "}";
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3251,7 +3231,6 @@ function parseStylesheetFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
 
   const nodes: unknown[] = [];
   while (true) {
@@ -3271,7 +3250,6 @@ function parseStylesheetFast(state: State): unknown {
     nodes.push(__child);
     if (__off === __before) break;
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3290,7 +3268,6 @@ function validateComment(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __text_s = __off;
 
   if (!((__input.charCodeAt(__off) === 0x2f && __input.charCodeAt(__off + 1) === 0x2a))) throw new SyntaxError("expected comment at position " + __text_s);
@@ -3299,7 +3276,6 @@ function validateComment(state: State): unknown {
     if (__off < __len) __off += 2;
 
   const text__interior = commentInterior(text);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4011,7 +3987,6 @@ function validateRule(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let selector = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -4105,13 +4080,9 @@ function validateRule(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       selector = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -4138,7 +4109,6 @@ function validateRule(state: State): unknown {
     }
   }
   if (selector.endsWith(":")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ':'"); }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4153,7 +4123,6 @@ function validateRule(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 123)) { state.off = __off; throw new SyntaxError("expected " + "{" + " at position " + __off); }
   __off += 1;
   const lbrace = "{";
-  __consumedEnd = __off;
   let __count_nodes = 0;
   while (!(__input.charCodeAt(__off) === 125)) {
     while (__off < __len) {
@@ -4182,7 +4151,6 @@ function validateRule(state: State): unknown {
     break;
   } }
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4197,7 +4165,6 @@ function validateRule(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 125)) { state.off = __off; throw new SyntaxError("expected " + "}" + " at position " + __off); }
   __off += 1;
   const rbrace = "}";
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4212,10 +4179,8 @@ function validateAtRule__alt0(state: State): unknown {
   const __len = __input.length;
   let __off = state.off;
   const __softStart = state.off;
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 64)) { { state.off = __softStart; return null; } }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4295,7 +4260,6 @@ function validateAtRule__alt0(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   let params = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -4389,13 +4353,9 @@ function validateAtRule__alt0(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       params = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -4421,7 +4381,6 @@ function validateAtRule__alt0(state: State): unknown {
     }
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4436,7 +4395,6 @@ function validateAtRule__alt0(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 123)) { { state.off = __softStart; return null; } }
   __off += 1;
   const lbrace = "{";
-  __consumedEnd = __off;
   let __count_nodes = 0;
   while (!(__input.charCodeAt(__off) === 125)) {
     while (__off < __len) {
@@ -4465,7 +4423,6 @@ function validateAtRule__alt0(state: State): unknown {
     break;
   } }
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4480,7 +4437,6 @@ function validateAtRule__alt0(state: State): unknown {
   if (!(__input.charCodeAt(__off) === 125)) { { state.off = __softStart; return null; } }
   __off += 1;
   const rbrace = "}";
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4752,7 +4708,6 @@ function validateStylesheet(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let __count_nodes = 0;
   while (!(__off >= __len)) {
     while (__off < __len) {
@@ -4781,7 +4736,6 @@ function validateStylesheet(state: State): unknown {
     break;
   } }
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }

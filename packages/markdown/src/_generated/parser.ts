@@ -318,48 +318,9 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -423,48 +384,9 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -528,48 +450,9 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -633,48 +516,9 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -738,48 +582,9 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -843,48 +648,9 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -922,11 +688,7 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   const __startOff = __off;
   let __consumedEnd = __off;
   let text = '';
@@ -945,48 +707,9 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1013,7 +736,7 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("===", __off))) { state.off = __off; throw new SyntaxError("expected " + "===" + " at position " + __off); }
+  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
   __consumedEnd = __off;
   const __endOff = __consumedEnd;
@@ -1032,11 +755,7 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
+  const __softStart = state.off;
   const __startOff = __off;
   let __consumedEnd = __off;
   let text = '';
@@ -1055,48 +774,9 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1123,7 +803,7 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
   __consumedEnd = __off;
   const __endOff = __consumedEnd;
@@ -1246,48 +926,9 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1351,48 +992,9 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1456,48 +1058,9 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1561,48 +1124,9 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1666,48 +1190,9 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1798,48 +1283,9 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1903,48 +1349,9 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2082,43 +1489,9 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2190,43 +1563,9 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2298,48 +1637,9 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("**", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("**", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2411,48 +1711,9 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 42)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 42) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2524,48 +1785,9 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("~~", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("~~", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2637,48 +1859,9 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 96)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 96) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2750,48 +1933,9 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2845,48 +1989,9 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -2958,48 +2063,9 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3045,48 +2111,9 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3166,48 +2193,9 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3261,48 +2249,9 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3382,48 +2331,9 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3469,48 +2379,9 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3822,48 +2693,9 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3909,48 +2741,9 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4022,48 +2815,9 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4117,48 +2871,9 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4222,48 +2937,9 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4317,48 +2993,9 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4422,48 +3059,9 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4630,48 +3228,9 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 62)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 62) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4723,94 +3282,95 @@ function parseMarkdownLeaf(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.startsWith("Setext heading", __peek)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt6); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt7(state);
-  }
-  else if (__input.startsWith("######", __peek)) {
-    return parseMarkdownLeaf__alt0(state);
-  }
-  else if (__input.startsWith("#####", __peek)) {
-    return parseMarkdownLeaf__alt1(state);
-  }
-  else if (__input.startsWith("- [x]", __peek)) {
-    return parseMarkdownLeaf__alt11(state);
-  }
-  else if (__input.startsWith("- [ ]", __peek)) {
-    return parseMarkdownLeaf__alt12(state);
-  }
-  else if (__input.startsWith("####", __peek)) {
-    return parseMarkdownLeaf__alt2(state);
-  }
-  else if (__input.startsWith("```\n", __peek)) {
-    return parseMarkdownLeaf__alt19(state);
-  }
-  else if (__input.startsWith("###", __peek)) {
-    return parseMarkdownLeaf__alt3(state);
-  }
-  else if (__input.startsWith("---", __peek)) {
-    return parseMarkdownLeaf__alt8(state);
-  }
-  else if (__input.startsWith("***", __peek)) {
-    return parseMarkdownLeaf__alt9(state);
-  }
-  else if (__input.startsWith("___", __peek)) {
-    return parseMarkdownLeaf__alt10(state);
-  }
-  else if (__input.startsWith("```", __peek)) {
-    return parseMarkdownLeaf__alt18(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-    return parseMarkdownLeaf__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeaf__alt13(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeaf__alt14(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeaf__alt15(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-    return parseMarkdownLeaf__alt20(state);
-  }
-  else if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-    return parseMarkdownLeaf__alt22(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt33); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt34(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35) {
-    return parseMarkdownLeaf__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 62) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 35) {
+    if (__input.startsWith("######", __peek)) {
+      return parseMarkdownLeaf__alt0(state);
+    }
+    else if (__input.startsWith("#####", __peek)) {
+      return parseMarkdownLeaf__alt1(state);
+    }
+    else if (__input.startsWith("####", __peek)) {
+      return parseMarkdownLeaf__alt2(state);
+    }
+    else if (__input.startsWith("###", __peek)) {
+      return parseMarkdownLeaf__alt3(state);
+    }
+    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
+      return parseMarkdownLeaf__alt4(state);
+    }
+    else {
+      return parseMarkdownLeaf__alt5(state);
+    }
+  } else if (__byte0 === 45) {
+    if (__input.startsWith("- [x]", __peek)) {
+      return parseMarkdownLeaf__alt11(state);
+    }
+    else if (__input.startsWith("- [ ]", __peek)) {
+      return parseMarkdownLeaf__alt12(state);
+    }
+    else if (__input.startsWith("---", __peek)) {
+      return parseMarkdownLeaf__alt8(state);
+    }
+    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeaf__alt13(state);
+    }
+  } else if (__byte0 === 96) {
+    if (__input.startsWith("```\n", __peek)) {
+      return parseMarkdownLeaf__alt19(state);
+    }
+    else if (__input.startsWith("```", __peek)) {
+      return parseMarkdownLeaf__alt18(state);
+    }
+    else {
+      return parseMarkdownLeaf__alt23(state);
+    }
+  } else if (__byte0 === 42) {
+    if (__input.startsWith("***", __peek)) {
+      return parseMarkdownLeaf__alt9(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeaf__alt15(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
+      return parseMarkdownLeaf__alt20(state);
+    }
+    else {
+      return parseMarkdownLeaf__alt21(state);
+    }
+  } else if (__byte0 === 95) {
+    if (__input.startsWith("___", __peek)) {
+      return parseMarkdownLeaf__alt10(state);
+    }
+  } else if (__byte0 === 43) {
+    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeaf__alt14(state);
+    }
+  } else if (__byte0 === 126) {
+    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
+      return parseMarkdownLeaf__alt22(state);
+    }
+  } else if (__byte0 === 91) {
+    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
+      state.off = __peek;
+      { const r = trySpeculate(state, parseMarkdownLeaf__alt33); if (r !== null) return r; }
+      return parseMarkdownLeaf__alt34(state);
+    }
+    else {
+      state.off = __peek;
+      { const r = trySpeculate(state, parseMarkdownLeaf__alt24); if (r !== null) return r; }
+      { const r = trySpeculate(state, parseMarkdownLeaf__alt25); if (r !== null) return r; }
+      return parseMarkdownLeaf__alt32(state);
+    }
+  } else if (__byte0 === 62) {
     return parseMarkdownLeaf__alt17(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
-    return parseMarkdownLeaf__alt21(state);
-  }
-  else if (__input.charCodeAt(__peek) === 96) {
-    return parseMarkdownLeaf__alt23(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt24); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt25); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt32(state);
-  }
-  else if (__input.charCodeAt(__peek) === 33) {
+  } else if (__byte0 === 33) {
     state.off = __peek;
     { const r = trySpeculate(state, parseMarkdownLeaf__alt26); if (r !== null) return r; }
     return parseMarkdownLeaf__alt27(state);
-  }
-  else if (__input.charCodeAt(__peek) === 38) {
+  } else if (__byte0 === 38) {
     return parseMarkdownLeaf__alt28(state);
-  }
-  else if (__input.charCodeAt(__peek) === 124) {
+  } else if (__byte0 === 124) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -4831,8 +3391,7 @@ function parseMarkdownLeaf(state: State): unknown {
       return parseMarkdownLeaf__alt30(state);
     }
     return parseMarkdownLeaf__alt31(state);
-  }
-  else if (__input.charCodeAt(__peek) === 60) {
+  } else if (__byte0 === 60) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -5163,10 +3722,12 @@ function parseMarkdownLeaf(state: State): unknown {
     }
       return parseMarkdownLeaf__alt36(state);
     }
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     return parseMarkdownLeaf__alt16(state);
   }
+  { state.off = __peek; const r = parseMarkdownLeaf__alt6(state); if (r !== null) return r; }
+  { state.off = __peek; const r = parseMarkdownLeaf__alt7(state); if (r !== null) return r; }
+  state.off = __peek;
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -5197,48 +3758,9 @@ function parseMarkdownParagraph(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -5281,7 +3803,6 @@ function parseMarkdownDocumentFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
 
   const children: unknown[] = [];
   while (true) {
@@ -5296,7 +3817,6 @@ function parseMarkdownDocumentFast(state: State): unknown {
     children.push(__child);
     if (__off === __before) break;
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5315,10 +3835,8 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("######", __off))) { state.off = __off; throw new SyntaxError("expected " + "######" + " at position " + __off); }
   __off += 6;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5335,60 +3853,17 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5397,7 +3872,6 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5416,10 +3890,8 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("#####", __off))) { state.off = __off; throw new SyntaxError("expected " + "#####" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5436,60 +3908,17 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5498,7 +3927,6 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5517,10 +3945,8 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("####", __off))) { state.off = __off; throw new SyntaxError("expected " + "####" + " at position " + __off); }
   __off += 4;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5537,60 +3963,17 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5599,7 +3982,6 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5618,10 +4000,8 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("###", __off))) { state.off = __off; throw new SyntaxError("expected " + "###" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5638,60 +4018,17 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5700,7 +4037,6 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5719,10 +4055,8 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 35 && __input.charCodeAt(__off + 1) === 35)) { state.off = __off; throw new SyntaxError("expected " + "##" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5739,60 +4073,17 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5801,7 +4092,6 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5820,10 +4110,8 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5840,60 +4128,17 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -5902,7 +4147,6 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -5916,12 +4160,7 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
+  const __softStart = state.off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -5938,60 +4177,17 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6000,15 +4196,13 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("===", __off))) { state.off = __off; throw new SyntaxError("expected " + "===" + " at position " + __off); }
+  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6022,12 +4216,7 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
+  const __softStart = state.off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6044,60 +4233,17 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6106,15 +4252,13 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6133,10 +4277,8 @@ function parseMarkdownLeafFast__alt8(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6155,10 +4297,8 @@ function parseMarkdownLeafFast__alt9(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6177,10 +4317,8 @@ function parseMarkdownLeafFast__alt10(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6199,10 +4337,8 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("- [x]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [x]" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6219,60 +4355,17 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6281,7 +4374,6 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6300,10 +4392,8 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("- [ ]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [ ]" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6320,60 +4410,17 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6382,7 +4429,6 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6401,10 +4447,8 @@ function parseMarkdownLeafFast__alt13(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6421,60 +4465,17 @@ function parseMarkdownLeafFast__alt13(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6483,7 +4484,6 @@ function parseMarkdownLeafFast__alt13(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6502,10 +4502,8 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6522,60 +4520,17 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6584,7 +4539,6 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6603,10 +4557,8 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6623,60 +4575,17 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6685,7 +4594,6 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6704,7 +4612,6 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __index_s = __off;
   let index;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __index_s);
@@ -6726,7 +4633,6 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
       }
     }
   index = __input.slice(__index_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6734,7 +4640,6 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6751,60 +4656,17 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6813,7 +4675,6 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6832,10 +4693,8 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -6852,60 +4711,17 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -6914,7 +4730,6 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -6933,10 +4748,8 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7010,7 +4823,6 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
       }
     }
   lang = __input.slice(__lang_s, __off);
-  __consumedEnd = __off;
   let body = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7027,55 +4839,17 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       body = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7084,7 +4858,6 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     body = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7092,7 +4865,6 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
   }
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7111,10 +4883,8 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("```\n", __off))) { state.off = __off; throw new SyntaxError("expected " + "```\n" + " at position " + __off); }
   __off += 4;
-  __consumedEnd = __off;
   let body = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7131,55 +4901,17 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       body = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7188,7 +4920,6 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     body = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7196,7 +4927,6 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
   }
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7215,10 +4945,8 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7235,60 +4963,17 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("**", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("**", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7297,7 +4982,6 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7305,7 +4989,6 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7324,10 +5007,8 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7344,60 +5025,17 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 42)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 42) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7406,7 +5044,6 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7414,7 +5051,6 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7433,10 +5069,8 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7453,60 +5087,17 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("~~", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("~~", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7515,7 +5106,6 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7523,7 +5113,6 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7542,10 +5131,8 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7562,60 +5149,17 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 96)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 96) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7624,7 +5168,6 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7632,7 +5175,6 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7651,10 +5193,8 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let label = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7671,60 +5211,17 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       label = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7733,7 +5230,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     label = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7741,7 +5237,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7749,7 +5244,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7766,60 +5260,17 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7828,7 +5279,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7836,7 +5286,6 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7855,10 +5304,8 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let label = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7875,60 +5322,17 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       label = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -7937,7 +5341,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     label = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -7945,7 +5348,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -7962,60 +5364,17 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8024,7 +5383,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8032,7 +5390,6 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8051,10 +5408,8 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8062,7 +5417,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let alt = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8079,60 +5433,17 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       alt = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8141,7 +5452,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     alt = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8149,7 +5459,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8157,7 +5466,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8174,60 +5482,17 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8236,7 +5501,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8244,7 +5508,6 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8263,10 +5526,8 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8274,7 +5535,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let alt = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8291,60 +5551,17 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       alt = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8353,7 +5570,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     alt = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8361,7 +5577,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8378,60 +5593,17 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8440,7 +5612,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8448,7 +5619,6 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8467,10 +5637,8 @@ function parseMarkdownLeafFast__alt28(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 38)) { state.off = __off; throw new SyntaxError("expected " + "&" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8544,7 +5712,6 @@ function parseMarkdownLeafFast__alt28(state: State): unknown {
       }
     }
   name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8552,7 +5719,6 @@ function parseMarkdownLeafFast__alt28(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 59)) { state.off = __off; throw new SyntaxError("expected " + ";" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8571,10 +5737,8 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8582,7 +5746,6 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8590,7 +5753,6 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8598,7 +5760,6 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8606,7 +5767,6 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8625,10 +5785,8 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8636,7 +5794,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8644,7 +5801,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8652,7 +5808,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8660,7 +5815,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8668,7 +5822,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8676,7 +5829,6 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8695,10 +5847,8 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let first = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8715,60 +5865,17 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       first = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8777,7 +5884,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     first = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8785,7 +5891,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let second = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8802,60 +5907,17 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       second = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8864,7 +5926,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     second = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8872,7 +5933,6 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8891,10 +5951,8 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -8911,60 +5969,17 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -8973,7 +5988,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8981,7 +5995,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -8989,7 +6002,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -9006,60 +6018,17 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -9068,7 +6037,6 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9087,10 +6055,8 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -9107,60 +6073,17 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -9169,7 +6092,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9177,7 +6099,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9185,7 +6106,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -9202,60 +6122,17 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -9264,7 +6141,6 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9283,10 +6159,8 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -9303,60 +6177,17 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -9365,7 +6196,6 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9373,7 +6203,6 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9392,10 +6221,8 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9409,7 +6236,6 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
   tag = __input.slice(__tag_s, __off);
   const __tag_lc = tag.toLowerCase();
   if (!(__tag_lc === "div" || __tag_lc === "span" || __tag_lc === "p" || __tag_lc === "pre" || __tag_lc === "code" || __tag_lc === "blockquote" || __tag_lc === "a" || __tag_lc === "img" || __tag_lc === "br" || __tag_lc === "hr" || __tag_lc === "ul" || __tag_lc === "ol" || __tag_lc === "li" || __tag_lc === "dl" || __tag_lc === "dt" || __tag_lc === "dd" || __tag_lc === "table" || __tag_lc === "thead" || __tag_lc === "tbody" || __tag_lc === "tfoot" || __tag_lc === "tr" || __tag_lc === "td" || __tag_lc === "th" || __tag_lc === "caption" || __tag_lc === "figure" || __tag_lc === "figcaption" || __tag_lc === "section" || __tag_lc === "article" || __tag_lc === "header" || __tag_lc === "footer" || __tag_lc === "nav" || __tag_lc === "aside" || __tag_lc === "main" || __tag_lc === "address" || __tag_lc === "details" || __tag_lc === "summary" || __tag_lc === "h1" || __tag_lc === "h2" || __tag_lc === "h3" || __tag_lc === "h4" || __tag_lc === "h5" || __tag_lc === "h6" || __tag_lc === "em" || __tag_lc === "strong" || __tag_lc === "i" || __tag_lc === "b" || __tag_lc === "u" || __tag_lc === "s" || __tag_lc === "small" || __tag_lc === "sub" || __tag_lc === "sup" || __tag_lc === "kbd" || __tag_lc === "var" || __tag_lc === "samp" || __tag_lc === "cite" || __tag_lc === "q" || __tag_lc === "dfn" || __tag_lc === "abbr" || __tag_lc === "time" || __tag_lc === "mark" || __tag_lc === "ruby" || __tag_lc === "rt" || __tag_lc === "rp" || __tag_lc === "bdi" || __tag_lc === "bdo" || __tag_lc === "wbr" || __tag_lc === "form" || __tag_lc === "input" || __tag_lc === "button" || __tag_lc === "select" || __tag_lc === "option" || __tag_lc === "optgroup" || __tag_lc === "textarea" || __tag_lc === "label" || __tag_lc === "fieldset" || __tag_lc === "legend" || __tag_lc === "datalist" || __tag_lc === "output" || __tag_lc === "progress" || __tag_lc === "meter" || __tag_lc === "video" || __tag_lc === "audio" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "canvas" || __tag_lc === "svg" || __tag_lc === "math" || __tag_lc === "iframe" || __tag_lc === "embed" || __tag_lc === "object" || __tag_lc === "param" || __tag_lc === "picture" || __tag_lc === "script" || __tag_lc === "style" || __tag_lc === "noscript" || __tag_lc === "template" || __tag_lc === "html" || __tag_lc === "head" || __tag_lc === "body" || __tag_lc === "title" || __tag_lc === "meta" || __tag_lc === "link" || __tag_lc === "base")) { state.off = __off; throw new SyntaxError("expected one of div, span, p, pre, code, blockquote, a, img, br, hr, ul, ol, li, dl, dt, dd, table, thead, tbody, tfoot, tr, td, th, caption, figure, figcaption, section, article, header, footer, nav, aside, main, address, details, summary, h1, h2, h3, h4, h5, h6, em, strong, i, b, u, s, small, sub, sup, kbd, var, samp, cite, q, dfn, abbr, time, mark, ruby, rt, rp, bdi, bdo, wbr, form, input, button, select, option, optgroup, textarea, label, fieldset, legend, datalist, output, progress, meter, video, audio, source, track, canvas, svg, math, iframe, embed, object, param, picture, script, style, noscript, template, html, head, body, title, meta, link, base at position " + __tag_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9417,7 +6243,6 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9432,11 +6257,8 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
       if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
     body = __input.slice(__startOff, __earliest);
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9444,7 +6266,6 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9456,7 +6277,6 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   closingTag = __input.slice(__closingTag_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9464,7 +6284,6 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9483,10 +6302,8 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -9503,60 +6320,17 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 62)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 62) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -9565,7 +6339,6 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9573,7 +6346,6 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -9593,94 +6365,95 @@ function parseMarkdownLeafFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.startsWith("Setext heading", __peek)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt6); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt7(state);
-  }
-  else if (__input.startsWith("######", __peek)) {
-    return parseMarkdownLeafFast__alt0(state);
-  }
-  else if (__input.startsWith("#####", __peek)) {
-    return parseMarkdownLeafFast__alt1(state);
-  }
-  else if (__input.startsWith("- [x]", __peek)) {
-    return parseMarkdownLeafFast__alt11(state);
-  }
-  else if (__input.startsWith("- [ ]", __peek)) {
-    return parseMarkdownLeafFast__alt12(state);
-  }
-  else if (__input.startsWith("####", __peek)) {
-    return parseMarkdownLeafFast__alt2(state);
-  }
-  else if (__input.startsWith("```\n", __peek)) {
-    return parseMarkdownLeafFast__alt19(state);
-  }
-  else if (__input.startsWith("###", __peek)) {
-    return parseMarkdownLeafFast__alt3(state);
-  }
-  else if (__input.startsWith("---", __peek)) {
-    return parseMarkdownLeafFast__alt8(state);
-  }
-  else if (__input.startsWith("***", __peek)) {
-    return parseMarkdownLeafFast__alt9(state);
-  }
-  else if (__input.startsWith("___", __peek)) {
-    return parseMarkdownLeafFast__alt10(state);
-  }
-  else if (__input.startsWith("```", __peek)) {
-    return parseMarkdownLeafFast__alt18(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-    return parseMarkdownLeafFast__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeafFast__alt13(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeafFast__alt14(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-    return parseMarkdownLeafFast__alt15(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-    return parseMarkdownLeafFast__alt20(state);
-  }
-  else if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-    return parseMarkdownLeafFast__alt22(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt33); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt34(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35) {
-    return parseMarkdownLeafFast__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 62) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 35) {
+    if (__input.startsWith("######", __peek)) {
+      return parseMarkdownLeafFast__alt0(state);
+    }
+    else if (__input.startsWith("#####", __peek)) {
+      return parseMarkdownLeafFast__alt1(state);
+    }
+    else if (__input.startsWith("####", __peek)) {
+      return parseMarkdownLeafFast__alt2(state);
+    }
+    else if (__input.startsWith("###", __peek)) {
+      return parseMarkdownLeafFast__alt3(state);
+    }
+    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
+      return parseMarkdownLeafFast__alt4(state);
+    }
+    else {
+      return parseMarkdownLeafFast__alt5(state);
+    }
+  } else if (__byte0 === 45) {
+    if (__input.startsWith("- [x]", __peek)) {
+      return parseMarkdownLeafFast__alt11(state);
+    }
+    else if (__input.startsWith("- [ ]", __peek)) {
+      return parseMarkdownLeafFast__alt12(state);
+    }
+    else if (__input.startsWith("---", __peek)) {
+      return parseMarkdownLeafFast__alt8(state);
+    }
+    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeafFast__alt13(state);
+    }
+  } else if (__byte0 === 96) {
+    if (__input.startsWith("```\n", __peek)) {
+      return parseMarkdownLeafFast__alt19(state);
+    }
+    else if (__input.startsWith("```", __peek)) {
+      return parseMarkdownLeafFast__alt18(state);
+    }
+    else {
+      return parseMarkdownLeafFast__alt23(state);
+    }
+  } else if (__byte0 === 42) {
+    if (__input.startsWith("***", __peek)) {
+      return parseMarkdownLeafFast__alt9(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeafFast__alt15(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
+      return parseMarkdownLeafFast__alt20(state);
+    }
+    else {
+      return parseMarkdownLeafFast__alt21(state);
+    }
+  } else if (__byte0 === 95) {
+    if (__input.startsWith("___", __peek)) {
+      return parseMarkdownLeafFast__alt10(state);
+    }
+  } else if (__byte0 === 43) {
+    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
+      return parseMarkdownLeafFast__alt14(state);
+    }
+  } else if (__byte0 === 126) {
+    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
+      return parseMarkdownLeafFast__alt22(state);
+    }
+  } else if (__byte0 === 91) {
+    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
+      state.off = __peek;
+      { const r = trySpeculate(state, parseMarkdownLeafFast__alt33); if (r !== null) return r; }
+      return parseMarkdownLeafFast__alt34(state);
+    }
+    else {
+      state.off = __peek;
+      { const r = trySpeculate(state, parseMarkdownLeafFast__alt24); if (r !== null) return r; }
+      { const r = trySpeculate(state, parseMarkdownLeafFast__alt25); if (r !== null) return r; }
+      return parseMarkdownLeafFast__alt32(state);
+    }
+  } else if (__byte0 === 62) {
     return parseMarkdownLeafFast__alt17(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
-    return parseMarkdownLeafFast__alt21(state);
-  }
-  else if (__input.charCodeAt(__peek) === 96) {
-    return parseMarkdownLeafFast__alt23(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt24); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt25); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt32(state);
-  }
-  else if (__input.charCodeAt(__peek) === 33) {
+  } else if (__byte0 === 33) {
     state.off = __peek;
     { const r = trySpeculate(state, parseMarkdownLeafFast__alt26); if (r !== null) return r; }
     return parseMarkdownLeafFast__alt27(state);
-  }
-  else if (__input.charCodeAt(__peek) === 38) {
+  } else if (__byte0 === 38) {
     return parseMarkdownLeafFast__alt28(state);
-  }
-  else if (__input.charCodeAt(__peek) === 124) {
+  } else if (__byte0 === 124) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -9701,8 +6474,7 @@ function parseMarkdownLeafFast(state: State): unknown {
       return parseMarkdownLeafFast__alt30(state);
     }
     return parseMarkdownLeafFast__alt31(state);
-  }
-  else if (__input.charCodeAt(__peek) === 60) {
+  } else if (__byte0 === 60) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -10034,10 +6806,12 @@ function parseMarkdownLeafFast(state: State): unknown {
     }
       return parseMarkdownLeafFast__alt36(state);
     }
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     return parseMarkdownLeafFast__alt16(state);
   }
+  { state.off = __peek; const r = parseMarkdownLeafFast__alt6(state); if (r !== null) return r; }
+  { state.off = __peek; const r = parseMarkdownLeafFast__alt7(state); if (r !== null) return r; }
+  state.off = __peek;
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -10050,7 +6824,6 @@ function parseMarkdownParagraphFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10067,60 +6840,17 @@ function parseMarkdownParagraphFast(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10129,7 +6859,6 @@ function parseMarkdownParagraphFast(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10148,7 +6877,6 @@ function validateMarkdownDocument(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let __count_children = 0;
   while (!(__off >= __len)) {
     while (__off < __len) {
@@ -10166,7 +6894,6 @@ function validateMarkdownDocument(state: State): unknown {
     break;
   }
   }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10185,10 +6912,8 @@ function validateMarkdownLeaf__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("######", __off))) { state.off = __off; throw new SyntaxError("expected " + "######" + " at position " + __off); }
   __off += 6;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10205,60 +6930,17 @@ function validateMarkdownLeaf__alt0(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10267,7 +6949,6 @@ function validateMarkdownLeaf__alt0(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10286,10 +6967,8 @@ function validateMarkdownLeaf__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("#####", __off))) { state.off = __off; throw new SyntaxError("expected " + "#####" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10306,60 +6985,17 @@ function validateMarkdownLeaf__alt1(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10368,7 +7004,6 @@ function validateMarkdownLeaf__alt1(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10387,10 +7022,8 @@ function validateMarkdownLeaf__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("####", __off))) { state.off = __off; throw new SyntaxError("expected " + "####" + " at position " + __off); }
   __off += 4;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10407,60 +7040,17 @@ function validateMarkdownLeaf__alt2(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10469,7 +7059,6 @@ function validateMarkdownLeaf__alt2(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10488,10 +7077,8 @@ function validateMarkdownLeaf__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("###", __off))) { state.off = __off; throw new SyntaxError("expected " + "###" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10508,60 +7095,17 @@ function validateMarkdownLeaf__alt3(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10570,7 +7114,6 @@ function validateMarkdownLeaf__alt3(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10589,10 +7132,8 @@ function validateMarkdownLeaf__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 35 && __input.charCodeAt(__off + 1) === 35)) { state.off = __off; throw new SyntaxError("expected " + "##" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10609,60 +7150,17 @@ function validateMarkdownLeaf__alt4(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10671,7 +7169,6 @@ function validateMarkdownLeaf__alt4(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10690,10 +7187,8 @@ function validateMarkdownLeaf__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10710,60 +7205,17 @@ function validateMarkdownLeaf__alt5(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10772,7 +7224,6 @@ function validateMarkdownLeaf__alt5(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10786,12 +7237,7 @@ function validateMarkdownLeaf__alt6(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
+  const __softStart = state.off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10808,60 +7254,17 @@ function validateMarkdownLeaf__alt6(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10870,15 +7273,13 @@ function validateMarkdownLeaf__alt6(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("===", __off))) { state.off = __off; throw new SyntaxError("expected " + "===" + " at position " + __off); }
+  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -10892,12 +7293,7 @@ function validateMarkdownLeaf__alt7(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
+  const __softStart = state.off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -10914,60 +7310,17 @@ function validateMarkdownLeaf__alt7(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -10976,15 +7329,13 @@ function validateMarkdownLeaf__alt7(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11003,10 +7354,8 @@ function validateMarkdownLeaf__alt8(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11025,10 +7374,8 @@ function validateMarkdownLeaf__alt9(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11047,10 +7394,8 @@ function validateMarkdownLeaf__alt10(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11069,10 +7414,8 @@ function validateMarkdownLeaf__alt11(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("- [x]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [x]" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11089,60 +7432,17 @@ function validateMarkdownLeaf__alt11(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11151,7 +7451,6 @@ function validateMarkdownLeaf__alt11(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11170,10 +7469,8 @@ function validateMarkdownLeaf__alt12(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("- [ ]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [ ]" + " at position " + __off); }
   __off += 5;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11190,60 +7487,17 @@ function validateMarkdownLeaf__alt12(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11252,7 +7506,6 @@ function validateMarkdownLeaf__alt12(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11271,10 +7524,8 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11291,60 +7542,17 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11353,7 +7561,6 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11372,10 +7579,8 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11392,60 +7597,17 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11454,7 +7616,6 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11473,10 +7634,8 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11493,60 +7652,17 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11555,7 +7671,6 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11574,7 +7689,6 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __index_s = __off;
 
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __index_s);
@@ -11596,7 +7710,6 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11604,7 +7717,6 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11621,60 +7733,17 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11683,7 +7752,6 @@ function validateMarkdownLeaf__alt16(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11702,10 +7770,8 @@ function validateMarkdownLeaf__alt17(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11722,60 +7788,17 @@ function validateMarkdownLeaf__alt17(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11784,7 +7807,6 @@ function validateMarkdownLeaf__alt17(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11803,10 +7825,8 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11880,7 +7900,6 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   let body = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -11897,55 +7916,17 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       body = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -11954,7 +7935,6 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
     body = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11962,7 +7942,6 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
   }
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -11981,10 +7960,8 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.startsWith("```\n", __off))) { state.off = __off; throw new SyntaxError("expected " + "```\n" + " at position " + __off); }
   __off += 4;
-  __consumedEnd = __off;
   let body = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12001,55 +7978,17 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("```", __off))) break;
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("```", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       body = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12058,7 +7997,6 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
     body = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12066,7 +8004,6 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
   }
   if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12085,10 +8022,8 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12105,60 +8040,17 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("**", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("**", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12167,7 +8059,6 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12175,7 +8066,6 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12194,10 +8084,8 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12214,60 +8102,17 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 42)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 42) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12276,7 +8121,6 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12284,7 +8128,6 @@ function validateMarkdownLeaf__alt21(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12303,10 +8146,8 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12323,60 +8164,17 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("~~", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("~~", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12385,7 +8183,6 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12393,7 +8190,6 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12412,10 +8208,8 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12432,60 +8226,17 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 96)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 96) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12494,7 +8245,6 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12502,7 +8252,6 @@ function validateMarkdownLeaf__alt23(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12521,10 +8270,8 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let label = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12541,60 +8288,17 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       label = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12603,7 +8307,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     label = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12611,7 +8314,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12619,7 +8321,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12636,60 +8337,17 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12698,7 +8356,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12706,7 +8363,6 @@ function validateMarkdownLeaf__alt24(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12725,10 +8381,8 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let label = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12745,60 +8399,17 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       label = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12807,7 +8418,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     label = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12815,7 +8425,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12832,60 +8441,17 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -12894,7 +8460,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12902,7 +8467,6 @@ function validateMarkdownLeaf__alt25(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12921,10 +8485,8 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -12932,7 +8494,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let alt = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -12949,60 +8510,17 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       alt = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13011,7 +8529,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     alt = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13019,7 +8536,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13027,7 +8543,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13044,60 +8559,17 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 41) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13106,7 +8578,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13114,7 +8585,6 @@ function validateMarkdownLeaf__alt26(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13133,10 +8603,8 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13144,7 +8612,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let alt = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13161,60 +8628,17 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       alt = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13223,7 +8647,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     alt = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13231,7 +8654,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13248,60 +8670,17 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13310,7 +8689,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13318,7 +8696,6 @@ function validateMarkdownLeaf__alt27(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13337,10 +8714,8 @@ function validateMarkdownLeaf__alt28(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 38)) { state.off = __off; throw new SyntaxError("expected " + "&" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13414,7 +8789,6 @@ function validateMarkdownLeaf__alt28(state: State): unknown {
       }
     }
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13422,7 +8796,6 @@ function validateMarkdownLeaf__alt28(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 59)) { state.off = __off; throw new SyntaxError("expected " + ";" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13441,10 +8814,8 @@ function validateMarkdownLeaf__alt29(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13452,7 +8823,6 @@ function validateMarkdownLeaf__alt29(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13460,7 +8830,6 @@ function validateMarkdownLeaf__alt29(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13468,7 +8837,6 @@ function validateMarkdownLeaf__alt29(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13476,7 +8844,6 @@ function validateMarkdownLeaf__alt29(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13495,10 +8862,8 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13506,7 +8871,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13514,7 +8878,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13522,7 +8885,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13530,7 +8892,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13538,7 +8899,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13546,7 +8906,6 @@ function validateMarkdownLeaf__alt30(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13565,10 +8924,8 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let first = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13585,60 +8942,17 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       first = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13647,7 +8961,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     first = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13655,7 +8968,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let second = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13672,60 +8984,17 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 124)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 124) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       second = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13734,7 +9003,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
     second = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13742,7 +9010,6 @@ function validateMarkdownLeaf__alt31(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13761,10 +9028,8 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13781,60 +9046,17 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13843,7 +9065,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13851,7 +9072,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13859,7 +9079,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13876,60 +9095,17 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -13938,7 +9114,6 @@ function validateMarkdownLeaf__alt32(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -13957,10 +9132,8 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -13977,60 +9150,17 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -14039,7 +9169,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14047,7 +9176,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14055,7 +9183,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -14072,60 +9199,17 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 10)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 10) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -14134,7 +9218,6 @@ function validateMarkdownLeaf__alt33(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14153,10 +9236,8 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   let id = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -14173,60 +9254,17 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 93)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 93) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       id = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -14235,7 +9273,6 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
     id = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14243,7 +9280,6 @@ function validateMarkdownLeaf__alt34(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14262,10 +9298,8 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14279,7 +9313,6 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
   tag = __input.slice(__tag_s, __off);
   const __tag_lc = tag.toLowerCase();
   if (!(__tag_lc === "div" || __tag_lc === "span" || __tag_lc === "p" || __tag_lc === "pre" || __tag_lc === "code" || __tag_lc === "blockquote" || __tag_lc === "a" || __tag_lc === "img" || __tag_lc === "br" || __tag_lc === "hr" || __tag_lc === "ul" || __tag_lc === "ol" || __tag_lc === "li" || __tag_lc === "dl" || __tag_lc === "dt" || __tag_lc === "dd" || __tag_lc === "table" || __tag_lc === "thead" || __tag_lc === "tbody" || __tag_lc === "tfoot" || __tag_lc === "tr" || __tag_lc === "td" || __tag_lc === "th" || __tag_lc === "caption" || __tag_lc === "figure" || __tag_lc === "figcaption" || __tag_lc === "section" || __tag_lc === "article" || __tag_lc === "header" || __tag_lc === "footer" || __tag_lc === "nav" || __tag_lc === "aside" || __tag_lc === "main" || __tag_lc === "address" || __tag_lc === "details" || __tag_lc === "summary" || __tag_lc === "h1" || __tag_lc === "h2" || __tag_lc === "h3" || __tag_lc === "h4" || __tag_lc === "h5" || __tag_lc === "h6" || __tag_lc === "em" || __tag_lc === "strong" || __tag_lc === "i" || __tag_lc === "b" || __tag_lc === "u" || __tag_lc === "s" || __tag_lc === "small" || __tag_lc === "sub" || __tag_lc === "sup" || __tag_lc === "kbd" || __tag_lc === "var" || __tag_lc === "samp" || __tag_lc === "cite" || __tag_lc === "q" || __tag_lc === "dfn" || __tag_lc === "abbr" || __tag_lc === "time" || __tag_lc === "mark" || __tag_lc === "ruby" || __tag_lc === "rt" || __tag_lc === "rp" || __tag_lc === "bdi" || __tag_lc === "bdo" || __tag_lc === "wbr" || __tag_lc === "form" || __tag_lc === "input" || __tag_lc === "button" || __tag_lc === "select" || __tag_lc === "option" || __tag_lc === "optgroup" || __tag_lc === "textarea" || __tag_lc === "label" || __tag_lc === "fieldset" || __tag_lc === "legend" || __tag_lc === "datalist" || __tag_lc === "output" || __tag_lc === "progress" || __tag_lc === "meter" || __tag_lc === "video" || __tag_lc === "audio" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "canvas" || __tag_lc === "svg" || __tag_lc === "math" || __tag_lc === "iframe" || __tag_lc === "embed" || __tag_lc === "object" || __tag_lc === "param" || __tag_lc === "picture" || __tag_lc === "script" || __tag_lc === "style" || __tag_lc === "noscript" || __tag_lc === "template" || __tag_lc === "html" || __tag_lc === "head" || __tag_lc === "body" || __tag_lc === "title" || __tag_lc === "meta" || __tag_lc === "link" || __tag_lc === "base")) { state.off = __off; throw new SyntaxError("expected one of div, span, p, pre, code, blockquote, a, img, br, hr, ul, ol, li, dl, dt, dd, table, thead, tbody, tfoot, tr, td, th, caption, figure, figcaption, section, article, header, footer, nav, aside, main, address, details, summary, h1, h2, h3, h4, h5, h6, em, strong, i, b, u, s, small, sub, sup, kbd, var, samp, cite, q, dfn, abbr, time, mark, ruby, rt, rp, bdi, bdo, wbr, form, input, button, select, option, optgroup, textarea, label, fieldset, legend, datalist, output, progress, meter, video, audio, source, track, canvas, svg, math, iframe, embed, object, param, picture, script, style, noscript, template, html, head, body, title, meta, link, base at position " + __tag_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14287,7 +9320,6 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14302,11 +9334,8 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
       if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
     body = __input.slice(__startOff, __earliest);
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14314,7 +9343,6 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14326,7 +9354,6 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14334,7 +9361,6 @@ function validateMarkdownLeaf__alt35(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14353,10 +9379,8 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let url = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -14373,60 +9397,17 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 62)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__c === 62) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       url = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -14435,7 +9416,6 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
     url = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14443,7 +9423,6 @@ function validateMarkdownLeaf__alt36(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -14463,94 +9442,95 @@ function validateMarkdownLeaf(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.startsWith("Setext heading", __peek)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt6); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt7(state);
-  }
-  else if (__input.startsWith("######", __peek)) {
-    return validateMarkdownLeaf__alt0(state);
-  }
-  else if (__input.startsWith("#####", __peek)) {
-    return validateMarkdownLeaf__alt1(state);
-  }
-  else if (__input.startsWith("- [x]", __peek)) {
-    return validateMarkdownLeaf__alt11(state);
-  }
-  else if (__input.startsWith("- [ ]", __peek)) {
-    return validateMarkdownLeaf__alt12(state);
-  }
-  else if (__input.startsWith("####", __peek)) {
-    return validateMarkdownLeaf__alt2(state);
-  }
-  else if (__input.startsWith("```\n", __peek)) {
-    return validateMarkdownLeaf__alt19(state);
-  }
-  else if (__input.startsWith("###", __peek)) {
-    return validateMarkdownLeaf__alt3(state);
-  }
-  else if (__input.startsWith("---", __peek)) {
-    return validateMarkdownLeaf__alt8(state);
-  }
-  else if (__input.startsWith("***", __peek)) {
-    return validateMarkdownLeaf__alt9(state);
-  }
-  else if (__input.startsWith("___", __peek)) {
-    return validateMarkdownLeaf__alt10(state);
-  }
-  else if (__input.startsWith("```", __peek)) {
-    return validateMarkdownLeaf__alt18(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-    return validateMarkdownLeaf__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-    return validateMarkdownLeaf__alt13(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-    return validateMarkdownLeaf__alt14(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-    return validateMarkdownLeaf__alt15(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-    return validateMarkdownLeaf__alt20(state);
-  }
-  else if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-    return validateMarkdownLeaf__alt22(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-    state.off = __peek;
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt33); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt34(state);
-  }
-  else if (__input.charCodeAt(__peek) === 35) {
-    return validateMarkdownLeaf__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 62) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 35) {
+    if (__input.startsWith("######", __peek)) {
+      return validateMarkdownLeaf__alt0(state);
+    }
+    else if (__input.startsWith("#####", __peek)) {
+      return validateMarkdownLeaf__alt1(state);
+    }
+    else if (__input.startsWith("####", __peek)) {
+      return validateMarkdownLeaf__alt2(state);
+    }
+    else if (__input.startsWith("###", __peek)) {
+      return validateMarkdownLeaf__alt3(state);
+    }
+    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
+      return validateMarkdownLeaf__alt4(state);
+    }
+    else {
+      return validateMarkdownLeaf__alt5(state);
+    }
+  } else if (__byte0 === 45) {
+    if (__input.startsWith("- [x]", __peek)) {
+      return validateMarkdownLeaf__alt11(state);
+    }
+    else if (__input.startsWith("- [ ]", __peek)) {
+      return validateMarkdownLeaf__alt12(state);
+    }
+    else if (__input.startsWith("---", __peek)) {
+      return validateMarkdownLeaf__alt8(state);
+    }
+    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
+      return validateMarkdownLeaf__alt13(state);
+    }
+  } else if (__byte0 === 96) {
+    if (__input.startsWith("```\n", __peek)) {
+      return validateMarkdownLeaf__alt19(state);
+    }
+    else if (__input.startsWith("```", __peek)) {
+      return validateMarkdownLeaf__alt18(state);
+    }
+    else {
+      return validateMarkdownLeaf__alt23(state);
+    }
+  } else if (__byte0 === 42) {
+    if (__input.startsWith("***", __peek)) {
+      return validateMarkdownLeaf__alt9(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
+      return validateMarkdownLeaf__alt15(state);
+    }
+    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
+      return validateMarkdownLeaf__alt20(state);
+    }
+    else {
+      return validateMarkdownLeaf__alt21(state);
+    }
+  } else if (__byte0 === 95) {
+    if (__input.startsWith("___", __peek)) {
+      return validateMarkdownLeaf__alt10(state);
+    }
+  } else if (__byte0 === 43) {
+    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
+      return validateMarkdownLeaf__alt14(state);
+    }
+  } else if (__byte0 === 126) {
+    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
+      return validateMarkdownLeaf__alt22(state);
+    }
+  } else if (__byte0 === 91) {
+    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
+      state.off = __peek;
+      { const r = trySpeculate(state, validateMarkdownLeaf__alt33); if (r !== null) return r; }
+      return validateMarkdownLeaf__alt34(state);
+    }
+    else {
+      state.off = __peek;
+      { const r = trySpeculate(state, validateMarkdownLeaf__alt24); if (r !== null) return r; }
+      { const r = trySpeculate(state, validateMarkdownLeaf__alt25); if (r !== null) return r; }
+      return validateMarkdownLeaf__alt32(state);
+    }
+  } else if (__byte0 === 62) {
     return validateMarkdownLeaf__alt17(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
-    return validateMarkdownLeaf__alt21(state);
-  }
-  else if (__input.charCodeAt(__peek) === 96) {
-    return validateMarkdownLeaf__alt23(state);
-  }
-  else if (__input.charCodeAt(__peek) === 91) {
-    state.off = __peek;
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt24); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt25); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt32(state);
-  }
-  else if (__input.charCodeAt(__peek) === 33) {
+  } else if (__byte0 === 33) {
     state.off = __peek;
     { const r = trySpeculate(state, validateMarkdownLeaf__alt26); if (r !== null) return r; }
     return validateMarkdownLeaf__alt27(state);
-  }
-  else if (__input.charCodeAt(__peek) === 38) {
+  } else if (__byte0 === 38) {
     return validateMarkdownLeaf__alt28(state);
-  }
-  else if (__input.charCodeAt(__peek) === 124) {
+  } else if (__byte0 === 124) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -14571,8 +9551,7 @@ function validateMarkdownLeaf(state: State): unknown {
       return validateMarkdownLeaf__alt30(state);
     }
     return validateMarkdownLeaf__alt31(state);
-  }
-  else if (__input.charCodeAt(__peek) === 60) {
+  } else if (__byte0 === 60) {
       while (__peek < __len) {
         const __c = __input.charCodeAt(__peek);
         if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
@@ -14904,10 +9883,12 @@ function validateMarkdownLeaf(state: State): unknown {
     }
       return validateMarkdownLeaf__alt36(state);
     }
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     return validateMarkdownLeaf__alt16(state);
   }
+  { state.off = __peek; const r = validateMarkdownLeaf__alt6(state); if (r !== null) return r; }
+  { state.off = __peek; const r = validateMarkdownLeaf__alt7(state); if (r !== null) return r; }
+  state.off = __peek;
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
@@ -14920,7 +9901,6 @@ function validateMarkdownParagraph(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let text = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -14937,60 +9917,17 @@ function validateMarkdownParagraph(state: State): unknown {
     }
     const __startOff = __off;
     let __lastNonWs = __off;
-    let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
+      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       text = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -14999,7 +9936,6 @@ function validateMarkdownParagraph(state: State): unknown {
     text = __input.slice(__startOff, __lastNonWs);
     }
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15013,7 +9949,6 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  let __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15021,7 +9956,6 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15036,11 +9970,8 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
       if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
     body = __input.slice(__startOff, __earliest);
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15048,7 +9979,6 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
   }
   if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15060,7 +9990,6 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
   closingTag = __input.slice(__closingTag_s, __off);
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15068,7 +9997,6 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15082,7 +10010,6 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
-  let __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15090,7 +10017,6 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15105,11 +10031,8 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
       if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
     __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
     body = __input.slice(__startOff, __earliest);
   }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15117,7 +10040,6 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
   }
   if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
   __off += 2;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15129,7 +10051,6 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
     __off++;
     while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
 
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -15137,7 +10058,6 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
   }
   if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }

@@ -1098,18 +1098,17 @@ function parseLengthPercentageItem(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItem__alt1); if (r !== null) return r; }
     return parseLengthPercentageItem__alt3(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItem__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthPercentageItem__alt2); if (r !== null) return r; }
     return parseLengthPercentageItem__alt4(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItem__alt5); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthPercentageItem__alt6); if (r !== null) return r; }
@@ -1481,22 +1480,18 @@ function parseLengthFunctionToken(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     return parseLengthFunctionToken__alt3(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43) {
+  } else if (__byte0 === 43) {
     return parseLengthFunctionToken__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
+  } else if (__byte0 === 42) {
     return parseLengthFunctionToken__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 47) {
+  } else if (__byte0 === 47) {
     return parseLengthFunctionToken__alt6(state);
-  }
-  else if (__input.charCodeAt(__peek) === 44) {
+  } else if (__byte0 === 44) {
     return parseLengthFunctionToken__alt7(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthFunctionToken__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthFunctionToken__alt1); if (r !== null) return r; }
@@ -1557,7 +1552,6 @@ function parseLengthPercentageItemFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -1580,7 +1574,6 @@ function parseLengthPercentageItemFast__alt0(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1656,7 +1649,6 @@ function parseLengthPercentageItemFast__alt0(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1675,10 +1667,8 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1706,7 +1696,6 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1782,7 +1771,6 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1801,7 +1789,6 @@ function parseLengthPercentageItemFast__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -1824,7 +1811,6 @@ function parseLengthPercentageItemFast__alt2(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1832,7 +1818,6 @@ function parseLengthPercentageItemFast__alt2(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1851,10 +1836,8 @@ function parseLengthPercentageItemFast__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1882,7 +1865,6 @@ function parseLengthPercentageItemFast__alt3(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1890,7 +1872,6 @@ function parseLengthPercentageItemFast__alt3(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1909,7 +1890,6 @@ function parseLengthPercentageItemFast__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -1933,7 +1913,6 @@ function parseLengthPercentageItemFast__alt4(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "0")) { state.off = __off; throw new SyntaxError("expected one of 0 at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -1952,7 +1931,6 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -2023,7 +2001,6 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
   name = __input.slice(__name_s, __off);
   const __name_lc = name.toLowerCase();
   if (!(__name_lc === "calc" || __name_lc === "clamp" || __name_lc === "max" || __name_lc === "min")) { state.off = __off; throw new SyntaxError("expected one of calc, clamp, max, min at position " + __name_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2031,7 +2008,6 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
 
   const args: unknown[] = [];
   while (true) {
@@ -2047,7 +2023,6 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
     if (__off === __before) break;
   }
   if (args.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 LengthFunctionToken"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2055,7 +2030,6 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2074,7 +2048,6 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -2145,7 +2118,6 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
   name = __input.slice(__name_s, __off);
   const __name_lc = name.toLowerCase();
   if (!(__name_lc === "var")) { state.off = __off; throw new SyntaxError("expected one of var at position " + __name_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2153,7 +2125,6 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let args = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -2230,13 +2201,9 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       args = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -2246,7 +2213,6 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
     }
   }
   if (args.endsWith(",")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ','"); }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2254,7 +2220,6 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2273,7 +2238,6 @@ function parseLengthPercentageItemFast__alt7(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
@@ -2344,7 +2308,6 @@ function parseLengthPercentageItemFast__alt7(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "auto" || __value_lc === "fit-content" || __value_lc === "max-content" || __value_lc === "min-content")) { state.off = __off; throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2364,18 +2327,17 @@ function parseLengthPercentageItemFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItemFast__alt1); if (r !== null) return r; }
     return parseLengthPercentageItemFast__alt3(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItemFast__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthPercentageItemFast__alt2); if (r !== null) return r; }
     return parseLengthPercentageItemFast__alt4(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthPercentageItemFast__alt5); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthPercentageItemFast__alt6); if (r !== null) return r; }
@@ -2393,7 +2355,6 @@ function parseLengthFunctionTokenFast__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -2416,7 +2377,6 @@ function parseLengthFunctionTokenFast__alt0(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2492,7 +2452,6 @@ function parseLengthFunctionTokenFast__alt0(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2511,7 +2470,6 @@ function parseLengthFunctionTokenFast__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -2534,7 +2492,6 @@ function parseLengthFunctionTokenFast__alt1(state: State): unknown {
     }
   value = __input.slice(__value_s, __off);
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2542,7 +2499,6 @@ function parseLengthFunctionTokenFast__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2561,7 +2517,6 @@ function parseLengthFunctionTokenFast__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -2585,7 +2540,6 @@ function parseLengthFunctionTokenFast__alt2(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "0")) { state.off = __off; throw new SyntaxError("expected one of 0 at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2604,10 +2558,8 @@ function parseLengthFunctionTokenFast__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2626,10 +2578,8 @@ function parseLengthFunctionTokenFast__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 43)) { state.off = __off; throw new SyntaxError("expected " + "+" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2648,10 +2598,8 @@ function parseLengthFunctionTokenFast__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2670,10 +2618,8 @@ function parseLengthFunctionTokenFast__alt6(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2692,10 +2638,8 @@ function parseLengthFunctionTokenFast__alt7(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2715,22 +2659,18 @@ function parseLengthFunctionTokenFast(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     return parseLengthFunctionTokenFast__alt3(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43) {
+  } else if (__byte0 === 43) {
     return parseLengthFunctionTokenFast__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
+  } else if (__byte0 === 42) {
     return parseLengthFunctionTokenFast__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 47) {
+  } else if (__byte0 === 47) {
     return parseLengthFunctionTokenFast__alt6(state);
-  }
-  else if (__input.charCodeAt(__peek) === 44) {
+  } else if (__byte0 === 44) {
     return parseLengthFunctionTokenFast__alt7(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, parseLengthFunctionTokenFast__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, parseLengthFunctionTokenFast__alt1); if (r !== null) return r; }
@@ -2748,7 +2688,6 @@ function parseCssLengthPercentageFast(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
 
   const items: unknown[] = [];
   while (true) {
@@ -2765,7 +2704,6 @@ function parseCssLengthPercentageFast(state: State): unknown {
   }
   if (items.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 LengthPercentageItem"); }
   if (items.length > 4) { state.off = __off; throw new SyntaxError("expected at most 4 LengthPercentageItem"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2784,7 +2722,6 @@ function validateLengthPercentageItem__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
 
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -2807,7 +2744,6 @@ function validateLengthPercentageItem__alt0(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2883,7 +2819,6 @@ function validateLengthPercentageItem__alt0(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2902,10 +2837,8 @@ function validateLengthPercentageItem__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -2933,7 +2866,6 @@ function validateLengthPercentageItem__alt1(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3009,7 +2941,6 @@ function validateLengthPercentageItem__alt1(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3028,7 +2959,6 @@ function validateLengthPercentageItem__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
 
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -3051,7 +2981,6 @@ function validateLengthPercentageItem__alt2(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3059,7 +2988,6 @@ function validateLengthPercentageItem__alt2(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3078,10 +3006,8 @@ function validateLengthPercentageItem__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3109,7 +3035,6 @@ function validateLengthPercentageItem__alt3(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3117,7 +3042,6 @@ function validateLengthPercentageItem__alt3(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3136,7 +3060,6 @@ function validateLengthPercentageItem__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -3160,7 +3083,6 @@ function validateLengthPercentageItem__alt4(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "0")) { state.off = __off; throw new SyntaxError("expected one of 0 at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3179,7 +3101,6 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -3250,7 +3171,6 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
   name = __input.slice(__name_s, __off);
   const __name_lc = name.toLowerCase();
   if (!(__name_lc === "calc" || __name_lc === "clamp" || __name_lc === "max" || __name_lc === "min")) { state.off = __off; throw new SyntaxError("expected one of calc, clamp, max, min at position " + __name_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3258,7 +3178,6 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let __count_args = 0;
   while (!(__input.charCodeAt(__off) === 41)) {
     while (__off < __len) {
@@ -3277,7 +3196,6 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
   }
   }
   if (__count_args < 1) { state.off = __off; throw new SyntaxError("expected at least 1 LengthFunctionToken"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3285,7 +3203,6 @@ function validateLengthPercentageItem__alt5(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3304,7 +3221,6 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __name_s = __off;
   let name;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
@@ -3375,7 +3291,6 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
   name = __input.slice(__name_s, __off);
   const __name_lc = name.toLowerCase();
   if (!(__name_lc === "var")) { state.off = __off; throw new SyntaxError("expected one of var at position " + __name_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3383,7 +3298,6 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   let args = '';
   {
     // __preWsOff captures the offset at entry — used (with leading-comment
@@ -3460,13 +3374,9 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
     }
     if (__lastNonWs === __startOff) {
       const __emptyAnchor = __lastLeadingCommentEnd >= 0 ? __lastLeadingCommentEnd : __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
       __off = __emptyAnchor;
       args = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
       // Rewind __off to the trim boundary so trailing whitespace and
       // trailing comments (which were consumed during the scan) remain
       // available for the parent's next iteration. Matches tokenized's
@@ -3476,7 +3386,6 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
     }
   }
   if (args.endsWith(",")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ','"); }
-  __consumedEnd = state.__lastCaptureEnd;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3484,7 +3393,6 @@ function validateLengthPercentageItem__alt6(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3503,7 +3411,6 @@ function validateLengthPercentageItem__alt7(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
@@ -3574,7 +3481,6 @@ function validateLengthPercentageItem__alt7(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "auto" || __value_lc === "fit-content" || __value_lc === "max-content" || __value_lc === "min-content")) { state.off = __off; throw new SyntaxError("expected one of auto, fit-content, max-content, min-content at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3594,18 +3500,17 @@ function validateLengthPercentageItem(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     state.off = __peek;
     { const r = trySpeculate(state, validateLengthPercentageItem__alt1); if (r !== null) return r; }
     return validateLengthPercentageItem__alt3(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, validateLengthPercentageItem__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, validateLengthPercentageItem__alt2); if (r !== null) return r; }
     return validateLengthPercentageItem__alt4(state);
-  }
-  else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
+  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
     state.off = __peek;
     { const r = trySpeculate(state, validateLengthPercentageItem__alt5); if (r !== null) return r; }
     { const r = trySpeculate(state, validateLengthPercentageItem__alt6); if (r !== null) return r; }
@@ -3623,7 +3528,6 @@ function validateLengthFunctionToken__alt0(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
 
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -3646,7 +3550,6 @@ function validateLengthFunctionToken__alt0(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3722,7 +3625,6 @@ function validateLengthFunctionToken__alt0(state: State): unknown {
   unit = __input.slice(__unit_s, __off);
   const __unit_lc = unit.toLowerCase();
   if (!(__unit_lc === "cap" || __unit_lc === "ch" || __unit_lc === "cm" || __unit_lc === "dvh" || __unit_lc === "dvw" || __unit_lc === "em" || __unit_lc === "ex" || __unit_lc === "ic" || __unit_lc === "in" || __unit_lc === "lh" || __unit_lc === "lvh" || __unit_lc === "lvw" || __unit_lc === "mm" || __unit_lc === "pc" || __unit_lc === "pt" || __unit_lc === "px" || __unit_lc === "q" || __unit_lc === "rem" || __unit_lc === "rlh" || __unit_lc === "svh" || __unit_lc === "svw" || __unit_lc === "vb" || __unit_lc === "vh" || __unit_lc === "vi" || __unit_lc === "vmax" || __unit_lc === "vmin" || __unit_lc === "vw")) { state.off = __off; throw new SyntaxError("expected one of cap, ch, cm, dvh, dvw, em, ex, ic, in, lh, lvh, lvw, mm, pc, pt, px, q, rem, rlh, svh, svw, vb, vh, vi, vmax, vmin, vw at position " + __unit_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3741,7 +3643,6 @@ function validateLengthFunctionToken__alt1(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
 
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -3764,7 +3665,6 @@ function validateLengthFunctionToken__alt1(state: State): unknown {
     }
 
   if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3772,7 +3672,6 @@ function validateLengthFunctionToken__alt1(state: State): unknown {
   }
   if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3791,7 +3690,6 @@ function validateLengthFunctionToken__alt2(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   const __value_s = __off;
   let value;
   if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
@@ -3815,7 +3713,6 @@ function validateLengthFunctionToken__alt2(state: State): unknown {
   value = __input.slice(__value_s, __off);
   const __value_lc = value.toLowerCase();
   if (!(__value_lc === "0")) { state.off = __off; throw new SyntaxError("expected one of 0 at position " + __value_s); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3834,10 +3731,8 @@ function validateLengthFunctionToken__alt3(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 45)) { state.off = __off; throw new SyntaxError("expected " + "-" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3856,10 +3751,8 @@ function validateLengthFunctionToken__alt4(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 43)) { state.off = __off; throw new SyntaxError("expected " + "+" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3878,10 +3771,8 @@ function validateLengthFunctionToken__alt5(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3900,10 +3791,8 @@ function validateLengthFunctionToken__alt6(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3922,10 +3811,8 @@ function validateLengthFunctionToken__alt7(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
   __off += 1;
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -3945,22 +3832,18 @@ function validateLengthFunctionToken(state: State): unknown {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
     break;
   }
-  if (__input.charCodeAt(__peek) === 45) {
+    const __byte0 = __input.charCodeAt(__peek);
+  if (__byte0 === 45) {
     return validateLengthFunctionToken__alt3(state);
-  }
-  else if (__input.charCodeAt(__peek) === 43) {
+  } else if (__byte0 === 43) {
     return validateLengthFunctionToken__alt4(state);
-  }
-  else if (__input.charCodeAt(__peek) === 42) {
+  } else if (__byte0 === 42) {
     return validateLengthFunctionToken__alt5(state);
-  }
-  else if (__input.charCodeAt(__peek) === 47) {
+  } else if (__byte0 === 47) {
     return validateLengthFunctionToken__alt6(state);
-  }
-  else if (__input.charCodeAt(__peek) === 44) {
+  } else if (__byte0 === 44) {
     return validateLengthFunctionToken__alt7(state);
-  }
-  else if (isDigit(__input.charCodeAt(__peek))) {
+  } else if (isDigit(__input.charCodeAt(__peek))) {
     state.off = __peek;
     { const r = trySpeculate(state, validateLengthFunctionToken__alt0); if (r !== null) return r; }
     { const r = trySpeculate(state, validateLengthFunctionToken__alt1); if (r !== null) return r; }
@@ -3978,7 +3861,6 @@ function validateCssLengthPercentage(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  let __consumedEnd = __off;
   let __count_items = 0;
   while (!(__off >= __len)) {
     while (__off < __len) {
@@ -3998,7 +3880,6 @@ function validateCssLengthPercentage(state: State): unknown {
   }
   if (__count_items < 1) { state.off = __off; throw new SyntaxError("expected at least 1 LengthPercentageItem"); }
   if (__count_items > 4) { state.off = __off; throw new SyntaxError("expected at most 4 LengthPercentageItem"); }
-  __consumedEnd = __off;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
@@ -4008,27 +3889,78 @@ function validateCssLengthPercentage(state: State): unknown {
   return;
 }
 
+function stringify_LengthPercentageItem_dimension_source(s: any): string {
+  if (true) return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
+  if (s["value"] === "-10") return "-" + "" + __renderSlot_source(s["unit"]);
+  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source, type dimension)");
+}
+
+function stringify_LengthPercentageItem_percentage_source(s: any): string {
+  if (true) return __renderSlot_source(s["value"]) + "%";
+  if (s["value"] === "-50") return "-" + "" + "%";
+  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source, type percentage)");
+}
+
+function stringify_LengthPercentageItem_zero_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+function stringify_LengthPercentageItem_length_function_source(s: any): string {
+  return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + " )";
+}
+
+function stringify_LengthPercentageItem_var_function_source(s: any): string {
+  return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + ")";
+}
+
+function stringify_LengthPercentageItem_length_keyword_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
 function stringify_LengthPercentageItem_source(s: any): string {
-  if (s["type"] === "dimension" && s["value"] !== undefined && s["unit"] !== undefined && s["name"] === undefined && s["args"] === undefined) return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
-  if (s["type"] === "dimension" && s["value"] === "-10" && s["unit"] !== undefined && s["name"] === undefined && s["args"] === undefined) return "-" + "" + __renderSlot_source(s["unit"]);
-  if (s["type"] === "percentage" && s["value"] !== undefined && s["unit"] === undefined && s["name"] === undefined && s["args"] === undefined) return __renderSlot_source(s["value"]) + "%";
-  if (s["type"] === "percentage" && s["value"] === "-50" && s["unit"] === undefined && s["name"] === undefined && s["args"] === undefined) return "-" + "" + "%";
-  if (s["type"] === "zero" && s["value"] !== undefined && s["unit"] === undefined && s["name"] === undefined && s["args"] === undefined) return __renderSlot_source(s["value"]);
-  if (s["type"] === "length-function" && s["name"] !== undefined && s["args"] !== undefined && s["value"] === undefined && s["unit"] === undefined) return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + " )";
-  if (s["type"] === "var-function" && s["name"] !== undefined && s["args"] !== undefined && s["value"] === undefined && s["unit"] === undefined) return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + ")";
-  if (s["type"] === "length-keyword" && s["value"] !== undefined && s["unit"] === undefined && s["name"] === undefined && s["args"] === undefined) return __renderSlot_source(s["value"]);
+  switch (s.type) {
+    case "dimension": return stringify_LengthPercentageItem_dimension_source(s);
+    case "percentage": return stringify_LengthPercentageItem_percentage_source(s);
+    case "zero": return stringify_LengthPercentageItem_zero_source(s);
+    case "length-function": return stringify_LengthPercentageItem_length_function_source(s);
+    case "var-function": return stringify_LengthPercentageItem_var_function_source(s);
+    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source)");
 }
 
+function stringify_LengthFunctionToken_dimension_source(s: any): string {
+  return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
+}
+
+function stringify_LengthFunctionToken_percentage_source(s: any): string {
+  return __renderSlot_source(s["value"]) + "%";
+}
+
+function stringify_LengthFunctionToken_zero_source(s: any): string {
+  return __renderSlot_source(s["value"]);
+}
+
+function stringify_LengthFunctionToken_operator_source(s: any): string {
+  if (s["value"] === "-") return "-";
+  if (s["value"] === "+") return "+";
+  if (s["value"] === "*") return "*";
+  if (s["value"] === "/") return "/";
+  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target source, type operator)");
+}
+
+function stringify_LengthFunctionToken_separator_source(s: any): string {
+  return ",";
+}
+
 function stringify_LengthFunctionToken_source(s: any): string {
-  if (s["type"] === "dimension" && s["unit"] !== undefined) return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
-  if (s["type"] === "percentage" && s["unit"] === undefined) return __renderSlot_source(s["value"]) + "%";
-  if (s["type"] === "zero" && s["unit"] === undefined) return __renderSlot_source(s["value"]);
-  if (s["type"] === "operator" && s["value"] === "-" && s["unit"] === undefined) return "-";
-  if (s["type"] === "operator" && s["value"] === "+" && s["unit"] === undefined) return "+";
-  if (s["type"] === "operator" && s["value"] === "*" && s["unit"] === undefined) return "*";
-  if (s["type"] === "operator" && s["value"] === "/" && s["unit"] === undefined) return "/";
-  if (s["type"] === "separator" && s["value"] === "," && s["unit"] === undefined) return ",";
+  switch (s.type) {
+    case "dimension": return stringify_LengthFunctionToken_dimension_source(s);
+    case "percentage": return stringify_LengthFunctionToken_percentage_source(s);
+    case "zero": return stringify_LengthFunctionToken_zero_source(s);
+    case "operator": return stringify_LengthFunctionToken_operator_source(s);
+    case "separator": return stringify_LengthFunctionToken_separator_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target source)");
 }
 
@@ -4036,35 +3968,40 @@ function stringify_CssLengthPercentage_source(s: any): string {
   return __renderSlot_source(s["items"]);
 }
 
+function __dispatchStringify_source(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "dimension": return stringify_LengthFunctionToken_dimension_source(s);
+    case "percentage": return stringify_LengthFunctionToken_percentage_source(s);
+    case "zero": return stringify_LengthFunctionToken_zero_source(s);
+    case "length-function": return stringify_LengthPercentageItem_length_function_source(s);
+    case "var-function": return stringify_LengthPercentageItem_var_function_source(s);
+    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_source(s);
+    case "operator": return stringify_LengthFunctionToken_operator_source(s);
+    case "separator": return stringify_LengthFunctionToken_separator_source(s);
+    case "css-length-percentage": return stringify_CssLengthPercentage_source(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
-  if (target === "source") {
-    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-    if (s.type === "dimension") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "percentage") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "zero") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "length-function") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "var-function") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "length-keyword") return stringify_LengthPercentageItem_source(s);
-    if (s.type === "operator") return stringify_LengthFunctionToken_source(s);
-    if (s.type === "separator") return stringify_LengthFunctionToken_source(s);
-    if (s.type === "css-length-percentage") return stringify_CssLengthPercentage_source(s);
-    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
-  }
+  if (target === "source") return __dispatchStringify_source(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
 }
 
 function __renderSlot_source(v: any): string {
   if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
+  const t = typeof v;
+  if (t === "string") return v;
+  if (t === "number") return String(v);
+  if (t === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) {
     let out = "";
     for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
     return out;
   }
-  return stringify(v, { target: "source" });
+  return __dispatchStringify_source(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

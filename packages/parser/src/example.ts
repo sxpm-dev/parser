@@ -6,7 +6,9 @@ import type {
   SpanClass,
   SpanDef,
   SpanModifier,
+  StringifyTemplateDef,
   StructureValue,
+  Template,
   TrailingPolicy,
 } from './types.ts';
 
@@ -186,6 +188,9 @@ class SpanBuilder {
   structure(value: StructureValue): ExampleBuilder {
     return this.parent.structure(value);
   }
+  stringify(target: string, template: Template): ExampleBuilder {
+    return this.parent.stringify(target, template);
+  }
   recovers(policy: RecoveryPolicy): ExampleBuilder {
     return this.parent.recovers(policy);
   }
@@ -204,6 +209,7 @@ class ExampleBuilder {
   private spans: MutableSpanDef[] = [];
   private structureValue: StructureValue | undefined;
   private status: ExampleStatus = { kind: 'valid' };
+  private templates: StringifyTemplateDef[] = [];
 
   constructor(private readonly input: string) {}
 
@@ -226,6 +232,11 @@ class ExampleBuilder {
     return this;
   }
 
+  stringify(target: string, template: Template): ExampleBuilder {
+    this.templates.push({ target, template });
+    return this;
+  }
+
   recovers(recovery: RecoveryPolicy): ExampleBuilder {
     this.status = { kind: 'recovered', recovery };
     return this;
@@ -243,6 +254,7 @@ class ExampleBuilder {
       spans: this.spans as ReadonlyArray<SpanDef>,
       structure: this.structureValue,
       status: this.status,
+      stringifyTemplates: this.templates,
     };
   }
 }

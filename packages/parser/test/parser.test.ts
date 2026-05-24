@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { $, defineSchema, ex, isStructureRef } from '../src/index.ts';
+import { $, defineSchema, ex, isStructureRef, tpl } from '../src/index.ts';
 
 test('defineSchema fills defaults', () => {
   const schema = defineSchema({
@@ -157,4 +157,52 @@ test('punctuators accept named object form', () => {
   assert.equal(map.get('.'), 'delim');
   assert.equal(map.get('+'), 'delim');
   assert.equal(map.get('>'), 'delim');
+});
+
+test('ExampleBuilder.stringify attaches a template under the given target', () => {
+  const example = ex('## Installation guide')
+    .as('MarkdownLeaf')
+    .span('##')
+    .span('first', 'Installation').ident().css()
+    .span('second', 'guide').ident().css()
+    .structure({ type: 'heading', depth: 2, text: [$.first, $.second] })
+    .stringify('html', tpl`<h2>${$.first} ${$.second}</h2>`)
+    .build();
+  assert.equal(example.stringifyTemplates.length, 1);
+  assert.equal(example.stringifyTemplates[0]!.target, 'html');
+  assert.deepEqual(example.stringifyTemplates[0]!.template.parts, ['<h2>', ' ', '</h2>']);
+  assert.deepEqual(example.stringifyTemplates[0]!.template.slots, [
+    { kind: 'capture', ref: 'first' },
+    { kind: 'capture', ref: 'second' },
+  ]);
+});
+
+test('stringify chains from inside a span builder', () => {
+  const example = ex('---')
+    .as('MarkdownLeaf')
+    .span('---')
+    .structure({ type: 'thematic-break' })
+    .stringify('html', tpl`<hr>`)
+    .build();
+  assert.equal(example.stringifyTemplates.length, 1);
+});
+
+test('multiple .stringify() calls accumulate (one per target)', () => {
+  const example = ex('# title')
+    .as('MarkdownLeaf')
+    .span('#')
+    .span('first', 'title').ident().css()
+    .structure({ type: 'heading', depth: 1, text: [$.first] })
+    .stringify('html', tpl`<h1>${$.first}</h1>`)
+    .stringify('plain', tpl`${$.first}`)
+    .build();
+  assert.deepEqual(
+    example.stringifyTemplates.map((t) => t.target),
+    ['html', 'plain'],
+  );
+});
+
+test('example without .stringify() still has stringifyTemplates: []', () => {
+  const example = ex('foo').as('Token').span('v', 'foo').ident().structure({ v: $.v }).build();
+  assert.deepEqual(example.stringifyTemplates, []);
 });

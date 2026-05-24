@@ -205,6 +205,30 @@ export type ExampleDef = {
   readonly spans: ReadonlyArray<SpanDef>;
   readonly structure?: StructureValue;
   readonly status: ExampleStatus;
+  readonly stringifyTemplates: ReadonlyArray<StringifyTemplateDef>;
+};
+
+// --- Stringify templates ---------------------------------------------------
+//
+// Authored via the `tpl` tagged-template helper. Plain data: a list of static
+// `parts` interleaved with `slots` that reference span captures by name. The
+// compiler walks this at codegen time and bakes straight-line concat into the
+// generated parser — there is no template interpreter at runtime.
+
+export type TemplateSlot = {
+  readonly kind: 'capture';
+  readonly ref: string;
+};
+
+export type Template = {
+  readonly __tpl: true;
+  readonly parts: ReadonlyArray<string>;
+  readonly slots: ReadonlyArray<TemplateSlot>;
+};
+
+export type StringifyTemplateDef = {
+  readonly target: string;
+  readonly template: Template;
 };
 
 // --- Operators / Punctuators / Schema -------------------------------------

@@ -246,6 +246,13 @@ function createCases(name: PackageName): PerfCase[] {
           input,
           run: (api, markdown) => (api.parse as (input: string) => unknown)(markdown),
         },
+        {
+          name: `render:${kb}KB`,
+          kb,
+          input,
+          run: (api, markdown) =>
+            (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'html' }),
+        },
       ];
     });
   }

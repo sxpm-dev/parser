@@ -158,3 +158,16 @@ test('emitter factors shared recursive repeats before literal branch points', as
     /function parseNodeFast\(state: State\): unknown \{\s*\{ const r = parseNodeFast__alt0\(state\); if \(r !== null\) return r; \}\s*return parseNodeFast__alt1\(state\);/,
   );
 });
+
+test('inferSchema attaches an empty stringifyTemplates array to every production by default', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Atom',
+    examples: [
+      ex('x').as('Atom').span('v', 'x').ident().structure({ type: 'atom', v: $.v }).build(),
+    ],
+  });
+  const inferred = inferSchema(schema);
+  const production = inferred.nodeTypes.get('Atom')!.productions[0]!;
+  assert.ok(Array.isArray(production.stringifyTemplates));
+});

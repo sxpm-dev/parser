@@ -24,6 +24,12 @@ export type ResolvedSpan = {
   readonly recursiveRoles: ReadonlyArray<string>; // resolved against the composition graph
 };
 
+export type StringifyTemplate = {
+  readonly target: string;
+  readonly parts: ReadonlyArray<string>;
+  readonly slots: ReadonlyArray<{ readonly kind: 'capture'; readonly ref: string }>;
+};
+
 export type Production = {
   readonly nodeType: string;
   readonly source: ExampleDef;
@@ -35,6 +41,9 @@ export type Production = {
   // partial-recovery codegen; the first slice treats recovered productions
   // as plain fallback parsers.
   readonly recovery?: RecoveryPolicy;
+  // Filled by infer/templates.ts (author entries) and infer/source-template.ts
+  // (auto-derived 'source' entry). Empty until those passes run.
+  readonly stringifyTemplates: ReadonlyArray<StringifyTemplate>;
 };
 
 export type NodeTypeInfo = {

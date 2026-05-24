@@ -32,6 +32,7 @@ export function buildProductions(
         spans: example.spans.map(toResolvedSpan),
         structure: example.structure as StructureValue,
         recovery: example.status.kind === 'recovered' ? example.status.recovery : undefined,
+        stringifyTemplates: [], // attached by infer/templates.ts and infer/source-template.ts
       };
       const list = productionsByNodeType.get(nodeType) ?? [];
       list.push(production);

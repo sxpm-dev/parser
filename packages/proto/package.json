@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts --scannerless src/schema.ts",
+    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
     "build": "tsc -b",
     "test": "npm run generate && tsx --test test/*.test.ts",
     "bench": "npm run generate && npm run bench:parse && npm run bench:tokenize",

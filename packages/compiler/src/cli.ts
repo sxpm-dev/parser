@@ -16,24 +16,22 @@ import { generateParser } from './index.ts';
 
 const argv = process.argv.slice(2);
 const positional: string[] = [];
-let scannerless = false;
 let v2 = false;
 for (const arg of argv) {
-  if (arg === '--scannerless') { scannerless = true; continue; }
-  if (arg === '--v2') { v2 = true; scannerless = true; continue; }
+  if (arg === '--v2') { v2 = true; continue; }
   positional.push(arg);
 }
 const schemaArg = positional[0];
 if (!schemaArg) {
-  console.error('usage: tsx packages/compiler/src/cli.ts [--scannerless] [--v2] <schema.ts>');
+  console.error('usage: tsx packages/compiler/src/cli.ts [--v2] <schema.ts>');
   process.exit(1);
 }
 
 const schemaPath = isAbsolute(schemaArg) ? schemaArg : resolve(process.cwd(), schemaArg);
 
-await main(schemaPath, scannerless, v2);
+await main(schemaPath, v2);
 
-async function main(path: string, scannerless: boolean, v2: boolean): Promise<void> {
+async function main(path: string, v2: boolean): Promise<void> {
   const module = (await import(pathToFileURL(path).href)) as { default?: unknown; validation?: unknown };
   const schema = module.default;
   if (!isSchema(schema)) {
@@ -41,12 +39,12 @@ async function main(path: string, scannerless: boolean, v2: boolean): Promise<vo
   }
   const validation = isValidation(module.validation) ? module.validation : undefined;
   const packageName = packageNameFromPath(path);
-  const code = generateParser(schema, validation, { packageName, scannerless, v2 });
+  const code = generateParser(schema, validation, { packageName, v2 });
   const outDir = resolve(dirname(path), '_generated');
   const outFile = resolve(outDir, 'parser.ts');
   mkdirSync(outDir, { recursive: true });
   writeFileSync(outFile, code);
-  const tag = v2 ? ' (v2)' : scannerless ? ' (scannerless)' : '';
+  const tag = v2 ? ' (v2)' : '';
   console.log(`generated ${relative(outFile)}${tag}`);
 }
 

@@ -149,6 +149,12 @@ test('emitter factors shared recursive repeats before literal branch points', as
   });
 
   const emitted = generateParser(schema);
-  assert.doesNotMatch(emitted, /trySpeculate\(state, parseNodeFast__alt1\)/);
-  assert.match(emitted, /while \(!\(peekLiteralId\(state, __TYPE_ID_CLOSE\) \|\| peekLiteralId\(state, __TYPE_ID_SELFCLOSE\)\)\)/);
+  // No alt dispatch should fall back to trySpeculate — every alt-bucket here
+  // is statically distinguishable, so the dispatcher uses the soft-fail
+  // null-check pattern instead of throw/catch speculation.
+  assert.doesNotMatch(emitted, /\btrySpeculate\(state,/);
+  assert.match(
+    emitted,
+    /function parseNodeFast\(state: State\): unknown \{\s*\{ const r = parseNodeFast__alt0\(state\); if \(r !== null\) return r; \}\s*return parseNodeFast__alt1\(state\);/,
+  );
 });

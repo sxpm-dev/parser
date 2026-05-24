@@ -30,7 +30,6 @@
     "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts",
     "bench:html:parse": "npm run generate -w @parser2/html && tsx packages/html/bench/parse.ts",
     "bench:markdown:ast": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/ast.ts",
-    "bench:markdown:tokenize": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/tokenize.ts",
     "bench:proto:parse": "npm run generate -w @parser2/proto && tsx packages/proto/bench/parse.ts",
     "bench:proto:tokenize": "npm run generate -w @parser2/proto && tsx packages/proto/bench/tokenize.ts",
     "baseline": "npm run baseline -w @parser2/arn && npm run baseline -w @parser2/cron && npm run baseline -w @parser2/css-color && npm run baseline -w @parser2/css-length-percentage && npm run baseline -w @parser2/css && npm run baseline -w @parser2/html && npm run baseline -w @parser2/log && npm run baseline -w @parser2/mac && npm run baseline -w @parser2/markdown && npm run baseline -w @parser2/proto && npm run baseline -w @parser2/url",

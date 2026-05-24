@@ -13,77 +13,77 @@ const blockCases: Case[] = [
   {
     name: 'paragraph',
     input: 'Plain paragraph',
-    expected: { type: 'paragraph', text: ['Plain', 'paragraph'] },
+    expected: { type: 'paragraph', text: 'Plain paragraph' },
   },
   {
     name: 'atx heading depth 1',
     input: '# Release notes',
-    expected: { type: 'heading', depth: 1, text: ['Release', 'notes'] },
+    expected: { type: 'heading', depth: 1, text: 'Release notes' },
   },
   {
     name: 'atx heading depth 2',
     input: '## Installation guide',
-    expected: { type: 'heading', depth: 2, text: ['Installation', 'guide'] },
+    expected: { type: 'heading', depth: 2, text: 'Installation guide' },
   },
   {
     name: 'atx heading depth 3',
     input: '### API reference',
-    expected: { type: 'heading', depth: 3, text: ['API', 'reference'] },
+    expected: { type: 'heading', depth: 3, text: 'API reference' },
   },
   {
     name: 'atx heading depth 4',
     input: '#### Deep section',
-    expected: { type: 'heading', depth: 4, text: ['Deep', 'section'] },
+    expected: { type: 'heading', depth: 4, text: 'Deep section' },
   },
   {
     name: 'atx heading depth 5',
     input: '##### Small section',
-    expected: { type: 'heading', depth: 5, text: ['Small', 'section'] },
+    expected: { type: 'heading', depth: 5, text: 'Small section' },
   },
   {
     name: 'atx heading depth 6',
     input: '###### Tiny heading',
-    expected: { type: 'heading', depth: 6, text: ['Tiny', 'heading'] },
+    expected: { type: 'heading', depth: 6, text: 'Tiny heading' },
   },
   {
     name: 'setext heading',
     input: 'Setext heading\n---',
-    expected: { type: 'heading', depth: 2, text: ['Setext', 'heading'], style: 'setext' },
+    expected: { type: 'heading', depth: 2, text: 'Setext heading', style: 'setext' },
   },
   {
     name: 'dash unordered list item',
     input: '- first item',
-    expected: { type: 'list-item', ordered: false, text: ['first', 'item'] },
+    expected: { type: 'list-item', ordered: false, text: 'first item' },
   },
   {
     name: 'plus unordered list item',
     input: '+ alternate marker',
-    expected: { type: 'list-item', ordered: false, marker: '+', text: ['alternate', 'marker'] },
+    expected: { type: 'list-item', ordered: false, marker: '+', text: 'alternate marker' },
   },
   {
     name: 'star unordered list item',
     input: '* star marker',
-    expected: { type: 'list-item', ordered: false, marker: '*', text: ['star', 'marker'] },
+    expected: { type: 'list-item', ordered: false, marker: '*', text: 'star marker' },
   },
   {
     name: 'ordered list item',
     input: '1. ordered item',
-    expected: { type: 'list-item', ordered: true, index: '1', text: ['ordered', 'item'] },
+    expected: { type: 'list-item', ordered: true, index: '1', text: 'ordered item' },
   },
   {
     name: 'checked task list item',
     input: '- [x] completed task',
-    expected: { type: 'task-list-item', checked: true, marker: 'x', text: ['completed', 'task'] },
+    expected: { type: 'task-list-item', checked: true, marker: 'x', text: 'completed task' },
   },
   {
     name: 'unchecked task list item',
     input: '- [ ] pending task',
-    expected: { type: 'task-list-item', checked: false, text: ['pending', 'task'] },
+    expected: { type: 'task-list-item', checked: false, text: 'pending task' },
   },
   {
     name: 'blockquote',
     input: '> quoted text',
-    expected: { type: 'blockquote', text: ['quoted', 'text'] },
+    expected: { type: 'blockquote', text: 'quoted text' },
   },
   {
     name: 'dash thematic break',
@@ -128,12 +128,12 @@ const blockCases: Case[] = [
   {
     name: 'link reference definition',
     input: '[id]: https://example.com',
-    expected: { type: 'definition', id: 'id', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'definition', id: 'id', url: 'https://example.com' },
   },
   {
     name: 'footnote definition',
     input: '[^1]: footnote text',
-    expected: { type: 'footnote-definition', id: '1', text: ['footnote', 'text'] },
+    expected: { type: 'footnote-definition', id: '1', text: 'footnote text' },
   },
   {
     name: 'html block',
@@ -166,7 +166,7 @@ const inlineCases: Case[] = [
   {
     name: 'inline link',
     input: '[docs](https://example.com)',
-    expected: { type: 'link', label: 'docs', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'link', label: 'docs', url: 'https://example.com' },
   },
   {
     name: 'reference link',
@@ -184,9 +184,7 @@ const inlineCases: Case[] = [
     expected: {
       type: 'image',
       alt: 'diagram',
-      scheme: 'https',
-      host: ['example', 'com'],
-      path: ['diagram', 'png'],
+      url: 'https://example.com/diagram.png',
     },
   },
   {
@@ -197,7 +195,7 @@ const inlineCases: Case[] = [
   {
     name: 'autolink',
     input: '<https://example.com>',
-    expected: { type: 'autolink', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'autolink', url: 'https://example.com' },
   },
   {
     name: 'entity',
@@ -210,57 +208,57 @@ const realWorldFixtureCases: Case[] = [
   {
     name: 'atx heading depth 1',
     input: '# Release notes',
-    expected: { type: 'heading', depth: 1, text: ['Release', 'notes'] },
+    expected: { type: 'heading', depth: 1, text: 'Release notes' },
   },
   {
     name: 'atx heading depth 2',
     input: '## Installation guide',
-    expected: { type: 'heading', depth: 2, text: ['Installation', 'guide'] },
+    expected: { type: 'heading', depth: 2, text: 'Installation guide' },
   },
   {
     name: 'setext heading',
     input: 'Setext heading\n---',
-    expected: { type: 'heading', depth: 2, text: ['Setext', 'heading'], style: 'setext' },
+    expected: { type: 'heading', depth: 2, text: 'Setext heading', style: 'setext' },
   },
   {
     name: 'paragraph',
     input: 'Plain paragraph',
-    expected: { type: 'paragraph', text: ['Plain', 'paragraph'] },
+    expected: { type: 'paragraph', text: 'Plain paragraph' },
   },
   {
     name: 'dash unordered list item',
     input: '- first item',
-    expected: { type: 'list-item', ordered: false, text: ['first', 'item'] },
+    expected: { type: 'list-item', ordered: false, text: 'first item' },
   },
   {
     name: 'plus unordered list item',
     input: '+ alternate marker',
-    expected: { type: 'list-item', ordered: false, marker: '+', text: ['alternate', 'marker'] },
+    expected: { type: 'list-item', ordered: false, marker: '+', text: 'alternate marker' },
   },
   {
     name: 'star unordered list item',
     input: '* star marker',
-    expected: { type: 'list-item', ordered: false, marker: '*', text: ['star', 'marker'] },
+    expected: { type: 'list-item', ordered: false, marker: '*', text: 'star marker' },
   },
   {
     name: 'ordered list item',
     input: '1. ordered item',
-    expected: { type: 'list-item', ordered: true, index: '1', text: ['ordered', 'item'] },
+    expected: { type: 'list-item', ordered: true, index: '1', text: 'ordered item' },
   },
   {
     name: 'checked task list item',
     input: '- [x] completed task',
-    expected: { type: 'task-list-item', checked: true, marker: 'x', text: ['completed', 'task'] },
+    expected: { type: 'task-list-item', checked: true, marker: 'x', text: 'completed task' },
   },
   {
     name: 'unchecked task list item',
     input: '- [ ] pending task',
-    expected: { type: 'task-list-item', checked: false, text: ['pending', 'task'] },
+    expected: { type: 'task-list-item', checked: false, text: 'pending task' },
   },
   {
     name: 'blockquote',
     input: '> quoted text',
-    expected: { type: 'blockquote', text: ['quoted', 'text'] },
+    expected: { type: 'blockquote', text: 'quoted text' },
   },
   {
     name: 'dash thematic break',
@@ -300,7 +298,7 @@ const realWorldFixtureCases: Case[] = [
   {
     name: 'inline link',
     input: '[docs](https://example.com)',
-    expected: { type: 'link', label: 'docs', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'link', label: 'docs', url: 'https://example.com' },
   },
   {
     name: 'reference link',
@@ -313,9 +311,7 @@ const realWorldFixtureCases: Case[] = [
     expected: {
       type: 'image',
       alt: 'diagram',
-      scheme: 'https',
-      host: ['example', 'com'],
-      path: ['diagram', 'png'],
+      url: 'https://example.com/diagram.png',
     },
   },
   {
@@ -326,7 +322,7 @@ const realWorldFixtureCases: Case[] = [
   {
     name: 'autolink',
     input: '<https://example.com>',
-    expected: { type: 'autolink', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'autolink', url: 'https://example.com' },
   },
   {
     name: 'entity',
@@ -361,12 +357,12 @@ const realWorldFixtureCases: Case[] = [
   {
     name: 'link reference definition',
     input: '[id]: https://example.com',
-    expected: { type: 'definition', id: 'id', scheme: 'https', host: ['example', 'com'] },
+    expected: { type: 'definition', id: 'id', url: 'https://example.com' },
   },
   {
     name: 'footnote definition',
     input: '[^1]: footnote text',
-    expected: { type: 'footnote-definition', id: '1', text: ['footnote', 'text'] },
+    expected: { type: 'footnote-definition', id: '1', text: 'footnote text' },
   },
   {
     name: 'footnote reference',
@@ -381,40 +377,38 @@ const realWorldFixtureCases: Case[] = [
 ];
 
 const releaseNotesFixtureChildren = [
-  { type: 'heading', depth: 1, text: ['Release', 'notes'] },
-  { type: 'paragraph', text: ['Plain', 'paragraph'] },
-  { type: 'heading', depth: 2, text: ['Installation', 'guide'] },
-  { type: 'list-item', ordered: false, text: ['first', 'item'] },
-  { type: 'list-item', ordered: false, marker: '+', text: ['alternate', 'marker'] },
-  { type: 'list-item', ordered: false, marker: '*', text: ['star', 'marker'] },
-  { type: 'list-item', ordered: true, index: '1', text: ['ordered', 'item'] },
-  { type: 'task-list-item', checked: true, marker: 'x', text: ['completed', 'task'] },
-  { type: 'task-list-item', checked: false, text: ['pending', 'task'] },
-  { type: 'blockquote', text: ['quoted', 'text'] },
-  { type: 'heading', depth: 2, text: ['Setext', 'heading'], style: 'setext' },
+  { type: 'heading', depth: 1, text: 'Release notes' },
+  { type: 'paragraph', text: 'Plain paragraph' },
+  { type: 'heading', depth: 2, text: 'Installation guide' },
+  { type: 'list-item', ordered: false, text: 'first item' },
+  { type: 'list-item', ordered: false, marker: '+', text: 'alternate marker' },
+  { type: 'list-item', ordered: false, marker: '*', text: 'star marker' },
+  { type: 'list-item', ordered: true, index: '1', text: 'ordered item' },
+  { type: 'task-list-item', checked: true, marker: 'x', text: 'completed task' },
+  { type: 'task-list-item', checked: false, text: 'pending task' },
+  { type: 'blockquote', text: 'quoted text' },
+  { type: 'heading', depth: 2, text: 'Setext heading', style: 'setext' },
   { type: 'bold', text: 'bold' },
   { type: 'italic', text: 'italic' },
   { type: 'strikethrough', text: 'removed' },
   { type: 'inline-code', text: 'code' },
-  { type: 'link', label: 'docs', scheme: 'https', host: ['example', 'com'] },
+  { type: 'link', label: 'docs', url: 'https://example.com' },
   { type: 'reference-link', label: 'docs', id: 'id' },
   {
     type: 'image',
     alt: 'diagram',
-    scheme: 'https',
-    host: ['example', 'com'],
-    path: ['diagram', 'png'],
+    url: 'https://example.com/diagram.png',
   },
   { type: 'reference-image', alt: 'diagram', id: 'image-id' },
-  { type: 'autolink', scheme: 'https', host: ['example', 'com'] },
+  { type: 'autolink', url: 'https://example.com' },
   { type: 'entity', name: 'amp' },
   { type: 'code-block', lang: 'js', text: 'sample' },
   { type: 'code-block', text: 'plain' },
   { type: 'table-row', cells: ['name', 'value'] },
   { type: 'table-delimiter', align: ['default', 'default'] },
   { type: 'table-delimiter', align: ['left', 'right'] },
-  { type: 'definition', id: 'id', scheme: 'https', host: ['example', 'com'] },
-  { type: 'footnote-definition', id: '1', text: ['footnote', 'text'] },
+  { type: 'definition', id: 'id', url: 'https://example.com' },
+  { type: 'footnote-definition', id: '1', text: 'footnote text' },
   { type: 'footnote-reference', id: '1' },
   { type: 'html', tag: 'div', text: 'html', closingTag: 'div' },
 ];
@@ -436,22 +430,22 @@ test('markdown generalizes supported leaf text and link values', () => {
     {
       name: 'alternate heading words',
       input: '# Different title',
-      expected: { type: 'heading', depth: 1, text: ['Different', 'title'] },
+      expected: { type: 'heading', depth: 1, text: 'Different title' },
     },
     {
       name: 'alternate paragraph words',
       input: 'Plain words',
-      expected: { type: 'paragraph', text: ['Plain', 'words'] },
+      expected: { type: 'paragraph', text: 'Plain words' },
     },
     {
       name: 'alternate ordered index',
       input: '42. release item',
-      expected: { type: 'list-item', ordered: true, index: '42', text: ['release', 'item'] },
+      expected: { type: 'list-item', ordered: true, index: '42', text: 'release item' },
     },
     {
       name: 'alternate inline link host',
       input: '[guide](https://docs.dev)',
-      expected: { type: 'link', label: 'guide', scheme: 'https', host: ['docs', 'dev'] },
+      expected: { type: 'link', label: 'guide', url: 'https://docs.dev' },
     },
     {
       name: 'alternate reference image id',
@@ -496,8 +490,15 @@ test('markdown parses a complete real .md document in source order', () => {
   assert.doesNotThrow(() => validate(fixture));
 });
 
-test('markdown rejects malformed or unsupported syntax', () => {
-  const invalid = [
+test('markdown accepts arbitrary text as paragraph', () => {
+  // The new schema treats any unmatched-by-other-productions text as a
+  // paragraph (the fallback production). This includes inputs the prior
+  // strict schema rejected — `@decorator`, `####### too deep`, `&amp`
+  // without `;`, even an unterminated fenced code block — all now parse
+  // as plain paragraphs whose text preserves the source verbatim.
+  // CommonMark itself takes this "always succeed" stance: any byte
+  // sequence yields some document.
+  const tolerated = [
     '@decorator',
     '#',
     '####### too deep',
@@ -509,8 +510,8 @@ test('markdown rejects malformed or unsupported syntax', () => {
     '&amp',
   ];
 
-  for (const input of invalid) {
-    assert.throws(() => validate(input), SyntaxError, input);
+  for (const input of tolerated) {
+    assert.doesNotThrow(() => validate(input), input);
   }
 });
 

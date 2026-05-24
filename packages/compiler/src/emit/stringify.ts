@@ -32,12 +32,18 @@ export function emitStringify(schema: InferredSchema): string {
   const nodeTypes = [...schema.nodeTypes.values()];
   const targets = collectTargets(nodeTypes);
   const fns: string[] = [];
+  // Map<targetId, Map<typeLiteral, perTypeFnName>> — populated by
+  // emitNodeTargetFn and consumed by emitDispatch so the recursive
+  // dispatcher can route directly to per-(NodeType, typeLiteral, target)
+  // functions, bypassing the per-NodeType switch wrapper.
+  const perTypeDispatch = new Map<string, Map<string, string>>();
+  for (const target of targets) perTypeDispatch.set(jsId(target), new Map());
   for (const info of nodeTypes) {
     for (const target of targets) {
-      fns.push(emitNodeTargetFn(info, target));
+      fns.push(emitNodeTargetFn(info, target, perTypeDispatch.get(jsId(target))!));
     }
   }
-  const dispatch = emitDispatch(schema, targets);
+  const dispatch = emitDispatch(targets, perTypeDispatch);
   return [fns.join('\n\n'), dispatch].join('\n\n');
 }
 
@@ -52,24 +58,112 @@ function collectTargets(nodeTypes: ReadonlyArray<NodeTypeInfo>): ReadonlyArray<s
   return ['source', ...authored];
 }
 
-function emitNodeTargetFn(info: NodeTypeInfo, target: string): string {
+function emitNodeTargetFn(
+  info: NodeTypeInfo,
+  target: string,
+  perTypeOut: Map<string, string>,
+): string {
   const fnName = `stringify_${info.name}_${jsId(target)}`;
   const productions = info.productions;
-  if (productions.length === 1) {
+  // Partition productions by their structure.type literal. Productions sharing
+  // a literal become a per-type function `stringify_<Node>_<typeId>_<target>`;
+  // productions without a literal type fall back to a linear scan inside the
+  // per-NodeType wrapper.
+  //
+  // Two layers fall out of this:
+  //   1) Per-type functions only check fields needed to discriminate same-type
+  //      siblings — for the common case (one production per type), the body
+  //      is a single return.
+  //   2) The recursive dispatcher (__dispatchStringify_<target>) routes
+  //      directly from s.type to the per-type function, bypassing the
+  //      per-NodeType wrapper's switch on s.type.
+  const groups = new Map<string, Production[]>();
+  const noType: Production[] = [];
+  for (const production of productions) {
+    const t = structureTypeLiteral(production);
+    if (t === null) {
+      noType.push(production);
+      continue;
+    }
+    const list = groups.get(t);
+    if (list) list.push(production);
+    else groups.set(t, [production]);
+  }
+
+  const perTypeFns: string[] = [];
+  const wrapperCases: string[] = [];
+  for (const [typeLit, group] of groups) {
+    const typeFnName = `stringify_${info.name}_${jsId(typeLit)}_${jsId(target)}`;
+    perTypeFns.push(emitPerTypeFn(typeFnName, group, target, info.name, typeLit));
+    perTypeOut.set(typeLit, typeFnName);
+    wrapperCases.push(`    case ${jsString(typeLit)}: return ${typeFnName}(s);`);
+  }
+
+  const fallback = noType.length === 0
+    ? ''
+    : noType.map((production) => {
+        const tpl = pickTemplate(production, target);
+        const guard = emitDiscriminator(production, productions, { skipTypeField: false });
+        return `  if (${guard}) return ${emitConcat(tpl, target, production)};`;
+      }).join('\n') + '\n';
+
+  // The per-NodeType wrapper exists for direct callers (e.g. tests that
+  // import a single per-NodeType function). The hot path goes through the
+  // per-target dispatcher and skips this wrapper.
+  let wrapper: string;
+  if (productions.length === 1 && wrapperCases.length === 1 && noType.length === 0) {
     const production = productions[0]!;
+    const tpl = pickTemplate(production, target);
+    wrapper = `function ${fnName}(s: any): string {
+  return ${emitConcat(tpl, target, production)};
+}`;
+  } else {
+    const switchBlock = wrapperCases.length === 0
+      ? ''
+      : `  switch (s.type) {
+${wrapperCases.join('\n')}
+  }
+`;
+    wrapper = `function ${fnName}(s: any): string {
+${switchBlock}${fallback}  throw new Error("stringify: no production matches structure shape for node ${info.name} (target ${target})");
+}`;
+  }
+
+  // Emit per-type fns only when there is more than one production overall
+  // (single-production NodeTypes collapse to a direct wrapper) to avoid
+  // pointless one-liner indirection.
+  const useDedicatedPerTypeFns = productions.length > 1;
+  if (!useDedicatedPerTypeFns) {
+    // For the single-production case the dispatcher should target the
+    // wrapper directly — it's already the optimal one-liner.
+    perTypeOut.set([...groups.keys()][0]!, fnName);
+    return wrapper;
+  }
+  return [...perTypeFns, wrapper].join('\n\n');
+}
+
+function emitPerTypeFn(
+  fnName: string,
+  group: ReadonlyArray<Production>,
+  target: string,
+  nodeName: string,
+  typeLit: string,
+): string {
+  if (group.length === 1) {
+    const production = group[0]!;
     const tpl = pickTemplate(production, target);
     return `function ${fnName}(s: any): string {
   return ${emitConcat(tpl, target, production)};
 }`;
   }
-  const branches = productions.map((production) => {
+  const branches = group.map((production) => {
     const tpl = pickTemplate(production, target);
-    const guard = emitDiscriminator(production, productions);
+    const guard = emitDiscriminator(production, group, { skipTypeField: true });
     return `  if (${guard}) return ${emitConcat(tpl, target, production)};`;
-  });
+  }).join('\n');
   return `function ${fnName}(s: any): string {
-${branches.join('\n')}
-  throw new Error("stringify: no production matches structure shape for node ${info.name} (target ${target})");
+${branches}
+  throw new Error("stringify: no production matches structure shape for node ${nodeName} (target ${target}, type ${typeLit})");
 }`;
 }
 
@@ -173,50 +267,63 @@ function buildLiteralMap(production: Production): ReadonlyMap<string, string> {
   return map;
 }
 
-function emitDispatch(schema: InferredSchema, targets: ReadonlyArray<string>): string {
+function emitDispatch(
+  targets: ReadonlyArray<string>,
+  perTypeDispatch: ReadonlyMap<string, ReadonlyMap<string, string>>,
+): string {
+  // Per-target dispatcher: routes a Structure value to the right per-type
+  // function via a single switch on s.type. This is the hot path — every
+  // recursive child render goes through here (see __renderSlot_<target>
+  // below). Hoisting the switch out of the public stringify() wrapper means
+  // we pay one type-string compare per node instead of also paying a
+  // target-string compare every recursion. Routing to per-type functions
+  // (rather than per-NodeType functions) means we avoid a second switch on
+  // the same s.type inside the per-NodeType wrapper.
+  const perTargetDispatchers = targets.map((target) => {
+    const id = jsId(target);
+    const cases: string[] = [];
+    const typeToFn = perTypeDispatch.get(id);
+    if (typeToFn) {
+      for (const [typeValue, fnName] of typeToFn) {
+        cases.push(`    case ${jsString(typeValue)}: return ${fnName}(s);`);
+      }
+    }
+    return `function __dispatchStringify_${id}(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+${cases.join('\n')}
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='${target}'");
+}`;
+  }).join('\n\n');
+
   const helpers = targets.map((target) => {
     const id = jsId(target);
     return `function __renderSlot_${id}(v: any): string {
   if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
+  const t = typeof v;
+  if (t === "string") return v;
+  if (t === "number") return String(v);
+  if (t === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) {
     let out = "";
     for (let i = 0; i < v.length; i++) out += __renderSlot_${id}(v[i]);
     return out;
   }
-  return stringify(v, { target: ${jsString(target)} });
+  return __dispatchStringify_${id}(v);
 }`;
   }).join('\n\n');
 
-  // Build (typeValue -> nodeName) routing by enumerating every production.
-  // A NodeType with N productions may contribute up to N distinct type
-  // values (cron's CronField: wildcard / step / value / range). The
-  // per-NodeType function does shape branching internally; the dispatcher
-  // routes by type literal.
-  const dispatchByTarget = targets.map((target) => {
-    const branches: string[] = [];
-    const seen = new Set<string>();
-    for (const info of schema.nodeTypes.values()) {
-      for (const production of info.productions) {
-        const typeValue = structureTypeLiteral(production);
-        if (typeValue === null) continue;
-        if (seen.has(typeValue)) continue;
-        seen.add(typeValue);
-        branches.push(`    if (s.type === ${jsString(typeValue)}) return stringify_${info.name}_${jsId(target)}(s);`);
-      }
-    }
-    return `  if (target === ${jsString(target)}) {
-    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-${branches.join('\n')}
-    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
-  }`;
+  const publicBranches = targets.map((target) => {
+    const id = jsId(target);
+    return `  if (target === ${jsString(target)}) return __dispatchStringify_${id}(s as any);`;
   }).join('\n');
 
-  return `export function stringify(s: unknown, options?: { target?: string }): string {
+  return `${perTargetDispatchers}
+
+export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
-${dispatchByTarget}
+${publicBranches}
   throw new Error("stringify: unknown target '" + target + "'");
 }
 
@@ -232,14 +339,23 @@ function structureTypeLiteral(production: Production): string | null {
   return null;
 }
 
-function emitDiscriminator(production: Production, all: ReadonlyArray<Production>): string {
+function emitDiscriminator(
+  production: Production,
+  all: ReadonlyArray<Production>,
+  options: { readonly skipTypeField: boolean } = { skipTypeField: false },
+): string {
   // Build a shape discriminator combining (a) literal-valued field equality
   // checks and (b) presence/absence checks for capture fields whose presence
   // differs across siblings. This uniquely identifies a production among
   // siblings sharing the same `type:` literal, even when discrimination
   // depends on capture-field shape (e.g. code-block with vs. without lang).
+  //
+  // When the caller has already discriminated by `s.type` via an outer
+  // switch, set skipTypeField=true so we don't re-emit `s.type === '...'`
+  // and don't emit presence checks for fields that only differ across
+  // unrelated types.
   const checks: string[] = [];
-  checks.push(...literalFieldChecks(production));
+  checks.push(...literalFieldChecks(production, options.skipTypeField));
 
   // Compute the union of all sibling fields excluding this production's
   // literal fields (already covered above).
@@ -252,6 +368,7 @@ function emitDiscriminator(production: Production, all: ReadonlyArray<Production
   const myLiteralFields = new Set(literalFieldNames(production));
   for (const field of new Set([...myFields, ...allSiblingFields])) {
     if (myLiteralFields.has(field)) continue; // value check already emitted
+    if (options.skipTypeField && field === 'type') continue;
     const inMine = myFields.has(field);
     let presentInAllSiblings = true;
     let absentInAllSiblings = true;
@@ -288,13 +405,14 @@ function literalFieldNames(production: Production): ReadonlyArray<string> {
   return out;
 }
 
-function literalFieldChecks(production: Production): ReadonlyArray<string> {
+function literalFieldChecks(production: Production, skipTypeField: boolean = false): ReadonlyArray<string> {
   const s = production.structure;
   if (!(s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object)))) {
     return [];
   }
   const checks: string[] = [];
   for (const [key, value] of Object.entries(s as Record<string, unknown>)) {
+    if (skipTypeField && key === 'type') continue;
     if (value === null) {
       checks.push(`s[${jsString(key)}] === null`);
     } else if (typeof value === 'string') {

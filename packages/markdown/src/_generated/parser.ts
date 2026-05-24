@@ -1491,7 +1491,7 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1565,7 +1565,7 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1639,7 +1639,7 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("**", __off)) break;
+      if ((__c === 42 && __input.startsWith("**", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -1787,7 +1787,7 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("~~", __off)) break;
+      if ((__c === 126 && __input.startsWith("~~", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -3760,7 +3760,7 @@ function parseMarkdownParagraph(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
+      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4841,7 +4841,7 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4903,7 +4903,7 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -4965,7 +4965,7 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("**", __off)) break;
+      if ((__c === 42 && __input.startsWith("**", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -5089,7 +5089,7 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("~~", __off)) break;
+      if ((__c === 126 && __input.startsWith("~~", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -6842,7 +6842,7 @@ function parseMarkdownParagraphFast(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
+      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -7918,7 +7918,7 @@ function validateMarkdownLeaf__alt18(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -7980,7 +7980,7 @@ function validateMarkdownLeaf__alt19(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("```", __off)) break;
+      if ((__c === 96 && __input.startsWith("```", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -8042,7 +8042,7 @@ function validateMarkdownLeaf__alt20(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("**", __off)) break;
+      if ((__c === 42 && __input.startsWith("**", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -8166,7 +8166,7 @@ function validateMarkdownLeaf__alt22(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("~~", __off)) break;
+      if ((__c === 126 && __input.startsWith("~~", __off))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }
@@ -9919,7 +9919,7 @@ function validateMarkdownParagraph(state: State): unknown {
     let __lastNonWs = __off;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n```", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n[", __off)) break;
+      if ((__c === 10 && (__input.startsWith("\n```", __off) || __input.startsWith("\n---", __off) || __input.startsWith("\n***", __off) || __input.startsWith("\n___", __off) || __input.startsWith("\n===", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off) || __input.startsWith("\n+ ", __off) || __input.startsWith("\n* ", __off) || __input.startsWith("\n\n", __off) || __input.startsWith("\n#", __off) || __input.startsWith("\n>", __off) || __input.startsWith("\n|", __off) || __input.startsWith("\n[", __off)))) break;
       if (!isAsciiWs(__c)) __lastNonWs = __off + 1;
       __off++;
     }

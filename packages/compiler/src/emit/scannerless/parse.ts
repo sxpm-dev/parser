@@ -988,6 +988,21 @@ function peekLiteralExprAt(offsetExpr: string, text: string): string {
   return `__input.startsWith(${jsString(text)}, ${offsetExpr})`;
 }
 
+function excludeLiteralExtensionExprAt(offsetExpr: string, prefix: string, extension: string): string {
+  if (!extension.startsWith(prefix) || extension.length <= prefix.length) {
+    return `!(${peekLiteralExprAt(offsetExpr, extension)})`;
+  }
+  const suffix = extension.slice(prefix.length);
+  if (suffix.length === 1) {
+    return `__input.charCodeAt(${offsetExpr} + ${prefix.length}) !== ${suffix.charCodeAt(0)}`;
+  }
+  const suffixChecks: string[] = [];
+  for (let i = 0; i < suffix.length; i++) {
+    suffixChecks.push(`__input.charCodeAt(${offsetExpr} + ${prefix.length + i}) === ${suffix.charCodeAt(i)}`);
+  }
+  return `!(${suffixChecks.join(' && ')})`;
+}
+
 function sameSpanSignature(a: ResolvedSpan, b: ResolvedSpan): boolean {
   if (a.class !== b.class) return false;
   if (a.class === 'literal' && a.text !== b.text) return false;
@@ -1693,7 +1708,7 @@ function emitRoleLookahead(roles: ReadonlyArray<string>, ctx: Ctx): string | nul
     const earlierCovers = literalRoles.slice(0, i).map((r) => r.text);
     const uncovered = uncoveredLiteralExtensions(text, ctx.literalTexts, earlierCovers);
     for (const ext of uncovered) {
-      check += ` && !(${peekLiteralExprAt('__off', ext)})`;
+      check += ` && ${excludeLiteralExtensionExprAt('__off', text, ext)}`;
     }
     lines.push(`if (${check}) return ${parseFnName(role, ctx.variant)}(state);`);
   }
@@ -2234,14 +2249,7 @@ function emitUntilSpan(
   // when the schema declares those token classes (matches tokenized
   // backend's behavior where the tokenizer pre-classifies these and the
   // until-loop skips them by token).
-  const stops = until.stops;
-  const stopChecks = stops.map((stop) => {
-    if (stop.length === 1) {
-      return `__c === ${stop.charCodeAt(0)}`;
-    }
-    return `__input.startsWith(${jsString(stop)}, __off)`;
-  });
-  const stopExpr = stopChecks.join(' || ');
+  const stopExpr = emitStopExpr(until.stops);
   // When balanced=false the `__depth` counter is never incremented, so the
   // `__depth === 0 && ...` guard at the top of every loop iteration is dead
   // weight. Track it so we can elide both the variable and the guard for
@@ -2469,6 +2477,36 @@ function emitUntilSpan(
 ${scanCode}${rejectCheck}${refinementCheck}${offsetDecls}`;
   }
   return `${scanCode}${rejectCheck}`;
+}
+
+function emitStopExpr(stops: readonly string[]): string {
+  const byFirstByte = new Map<number, string[]>();
+  for (const stop of stops) {
+    if (stop.length === 0) continue;
+    const first = stop.charCodeAt(0);
+    const group = byFirstByte.get(first);
+    if (group) group.push(stop);
+    else byFirstByte.set(first, [stop]);
+  }
+
+  const checks: string[] = [];
+  for (const [first, group] of byFirstByte) {
+    const single = group.some((stop) => stop.length === 1);
+    const multiChecks = group
+      .filter((stop) => stop.length > 1)
+      .sort((a, b) => b.length - a.length)
+      .map((stop) => `__input.startsWith(${jsString(stop)}, __off)`);
+
+    if (single) {
+      checks.push(`__c === ${first}`);
+    } else if (multiChecks.length === 1) {
+      checks.push(`(__c === ${first} && ${multiChecks[0]})`);
+    } else if (multiChecks.length > 1) {
+      checks.push(`(__c === ${first} && (${multiChecks.join(' || ')}))`);
+    }
+  }
+
+  return checks.join(' || ') || 'false';
 }
 
 function emitRawUntilSpan(

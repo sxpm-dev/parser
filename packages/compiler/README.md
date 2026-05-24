@@ -17,6 +17,34 @@ DSL — how to write examples, declare operators, compose schemas — see
 These are non-negotiable. Any change that violates one is rejected at code
 review.
 
+### Zero-Tolerance Reminder
+
+1. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+2. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+3. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+4. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+5. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+6. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+7. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+8. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+9. The parser is ONLY the schema. The parser re-exports the codegen file.
+   The compiler is domainless.
+10. The parser is ONLY the schema. The parser re-exports the codegen file.
+    The compiler is domainless.
+
+Do not add handwritten parser, renderer, validator, scanner, tokenizer, or
+semantic fallback code to a parser package. Performance work belongs in
+generic compiler codegen, inferred from schema data and reusable structural
+patterns.
+
 ### 1. The Compiler Is Domainless
 
 Strict requirement:

@@ -570,7 +570,7 @@ function parseComment(state: State): unknown {
     let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("-->", __off))) break;
+      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
       if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
@@ -3099,7 +3099,7 @@ function parseCommentFast(state: State): unknown {
     let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("-->", __off))) break;
+      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
       if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
@@ -5364,7 +5364,7 @@ function validateComment(state: State): unknown {
     let __depth = 0;
     while (__off < __len) {
       const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__input.startsWith("-->", __off))) break;
+      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
       if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
@@ -7435,7 +7435,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_0(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7452,7 +7452,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_1(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7469,7 +7469,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_2(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7486,7 +7486,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_3(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7503,7 +7503,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_4(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7520,7 +7520,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_5(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7537,7 +7537,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_6(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7554,7 +7554,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_7(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7571,7 +7571,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_8(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7588,7 +7588,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_9(state: State
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7605,7 +7605,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_10(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7622,7 +7622,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_11(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7639,7 +7639,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_12(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7656,7 +7656,7 @@ function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_13(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
   return parseTextNode(state);
 }
 
@@ -7673,7 +7673,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_14(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7690,7 +7690,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_15(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7707,7 +7707,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_16(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7724,7 +7724,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_17(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7741,7 +7741,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_18(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7758,7 +7758,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_19(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7775,7 +7775,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_20(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7792,7 +7792,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_21(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7809,7 +7809,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_22(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7826,7 +7826,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_23(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7843,7 +7843,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_24(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7860,7 +7860,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_25(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7877,7 +7877,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_26(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -7894,7 +7894,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_27(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -8932,7 +8932,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_28(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -8949,7 +8949,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_29(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -8966,7 +8966,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_30(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -8983,7 +8983,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_31(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9000,7 +9000,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_32(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9017,7 +9017,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_33(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9034,7 +9034,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_34(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9051,7 +9051,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_35(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9068,7 +9068,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_36(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9085,7 +9085,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_37(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9102,7 +9102,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_38(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9119,7 +9119,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_39(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9136,7 +9136,7 @@ function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_40(state: Stat
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return parseHtmlElementFast(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
   return parseTextNodeFast(state);
 }
 
@@ -9153,7 +9153,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9170,7 +9170,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_42(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9187,7 +9187,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_43(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9204,7 +9204,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_44(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9221,7 +9221,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_45(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9238,7 +9238,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_46(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9255,7 +9255,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_47(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9272,7 +9272,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_48(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9289,7 +9289,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_49(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9306,7 +9306,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_50(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9323,7 +9323,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_51(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9340,7 +9340,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_52(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9357,7 +9357,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_53(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -9374,7 +9374,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_54(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10496,7 +10496,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_55(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10513,7 +10513,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_56(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10530,7 +10530,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_57(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10547,7 +10547,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_58(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10564,7 +10564,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_59(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10581,7 +10581,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_60(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10598,7 +10598,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_61(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10615,7 +10615,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_62(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10632,7 +10632,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_63(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10649,7 +10649,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_64(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10666,7 +10666,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_65(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10683,7 +10683,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_66(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 
@@ -10700,7 +10700,7 @@ function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state: 
   state.off = __off;
   if (__input.startsWith("<!--", __off)) return validateComment(state);
   if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && !(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) return validateHtmlElement(state);
+  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
   return validateTextNode(state);
 }
 

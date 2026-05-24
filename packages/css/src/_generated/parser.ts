@@ -6356,9 +6356,16 @@ function stringify_Comment_source(s: any): string {
   return __renderSlot_source(s["text"]);
 }
 
+function stringify_Declaration_decl_source(s: any): string {
+  if (s["important"] === true) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + " !" + "" + ";";
+  if (s["important"] === undefined) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + ";";
+  throw new Error("stringify: no production matches structure shape for node Declaration (target source, type decl)");
+}
+
 function stringify_Declaration_source(s: any): string {
-  if (s["type"] === "decl" && s["important"] === true) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + " !" + "" + ";";
-  if (s["type"] === "decl" && s["important"] === undefined) return __renderSlot_source(s["prop"]) + ": " + __renderSlot_source(s["value"]) + ";";
+  switch (s.type) {
+    case "decl": return stringify_Declaration_decl_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node Declaration (target source)");
 }
 
@@ -6366,9 +6373,16 @@ function stringify_Rule_source(s: any): string {
   return __renderSlot_source(s["selector"]) + " " + "{" + " " + __renderSlot_source(s["nodes"]) + " " + "}";
 }
 
+function stringify_AtRule_atrule_source(s: any): string {
+  if (s["nodes"] !== undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + " " + "{" + " " + __renderSlot_source(s["nodes"]) + " " + "}";
+  if (s["nodes"] === undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + (";" == null ? "" : "" + ";");
+  throw new Error("stringify: no production matches structure shape for node AtRule (target source, type atrule)");
+}
+
 function stringify_AtRule_source(s: any): string {
-  if (s["type"] === "atrule" && s["nodes"] !== undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + " " + "{" + " " + __renderSlot_source(s["nodes"]) + " " + "}";
-  if (s["type"] === "atrule" && s["nodes"] === undefined) return "@" + __renderSlot_source(s["name"]) + " " + __renderSlot_source(s["params"]) + (";" == null ? "" : "" + ";");
+  switch (s.type) {
+    case "atrule": return stringify_AtRule_atrule_source(s);
+  }
   throw new Error("stringify: no production matches structure shape for node AtRule (target source)");
 }
 
@@ -6376,31 +6390,36 @@ function stringify_Stylesheet_source(s: any): string {
   return __renderSlot_source(s["nodes"]);
 }
 
+function __dispatchStringify_source(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "comment": return stringify_Comment_source(s);
+    case "decl": return stringify_Declaration_decl_source(s);
+    case "rule": return stringify_Rule_source(s);
+    case "atrule": return stringify_AtRule_atrule_source(s);
+    case "root": return stringify_Stylesheet_source(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
-  if (target === "source") {
-    if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-    if (s.type === "comment") return stringify_Comment_source(s);
-    if (s.type === "decl") return stringify_Declaration_source(s);
-    if (s.type === "rule") return stringify_Rule_source(s);
-    if (s.type === "atrule") return stringify_AtRule_source(s);
-    if (s.type === "root") return stringify_Stylesheet_source(s);
-    throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='" + target + "'");
-  }
+  if (target === "source") return __dispatchStringify_source(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
 }
 
 function __renderSlot_source(v: any): string {
   if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v;
-  if (typeof v === "number") return String(v);
-  if (typeof v === "boolean") return v ? "true" : "false";
+  const t = typeof v;
+  if (t === "string") return v;
+  if (t === "number") return String(v);
+  if (t === "boolean") return v ? "true" : "false";
   if (Array.isArray(v)) {
     let out = "";
     for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
     return out;
   }
-  return stringify(v, { target: "source" });
+  return __dispatchStringify_source(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

@@ -233,7 +233,7 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = parse(input);
+  const captures = __parse(input);
   return fn(captures);
 }`;
 }

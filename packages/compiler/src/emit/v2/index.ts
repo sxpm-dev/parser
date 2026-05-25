@@ -67,7 +67,7 @@ export function parseFnName(nodeType: string): string {
 
 function emitPublicApi(schema: InferredSchema): string {
   const rootFn = parseFnName(schema.rootType);
-  return `export function parse(input: string, options?: ParseOptions): unknown {
+  return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {
     input,

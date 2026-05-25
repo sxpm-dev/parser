@@ -76,7 +76,7 @@ function emitPublicApi(schema: InferredSchema, hasDirectFast: boolean): string {
     : '';
   const validationRuntime = hasValidation ? `\n${emitPropertyValidation(schema)}\n` : '';
 
-  return `export function parse(input: string, options?: ParseOptions): unknown {
+  return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
 ${directFastDispatch}  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

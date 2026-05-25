@@ -144,6 +144,10 @@ test('generateParser emits both public render and public stringify (Phase 4)', a
   assert.match(code, /__build_Heading_0_ast/);
   assert.match(code, /__renderDispatch/);
   assert.match(code, /__inverseDispatch/);
+  // Phase 5: parse() is no longer public — it lives as internal __parse,
+  // called by the generated render/stringify dispatchers.
+  assert.doesNotMatch(code, /export function parse\(/);
+  assert.match(code, /function __parse\(/);
 });
 
 test('render(input, { type: "html" }) returns the templated HTML', async () => {
@@ -354,7 +358,6 @@ test('recovery production interleaved with valid productions: __production keys 
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {
-  parse: (input: string, options?: unknown) => unknown;
   render: (input: string, options?: { type?: string }) => unknown;
 };
 

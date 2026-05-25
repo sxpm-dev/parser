@@ -3,6 +3,7 @@ import { resolveCompositionGraph } from './infer/composition.ts';
 import { buildProductions } from './infer/productions.ts';
 import { resolveRecursiveRoles } from './infer/roles.ts';
 import { attachRenderTargets } from './infer/render-targets.ts';
+import { deriveInverses } from './infer/invert.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
 import { emitScannerlessParser } from './emit/scannerless/index.ts';
@@ -32,6 +33,7 @@ export function inferSchema(
   resolveRecursiveRoles(nodeTypes, root.rootType);
   validate(nodeTypes);
   attachRenderTargets(nodeTypes);
+  deriveInverses(nodeTypes);
   const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
   return {
     packageName: options.packageName ?? 'parser',

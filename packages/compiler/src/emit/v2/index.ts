@@ -9,6 +9,8 @@
 // body — never post-construct mutation.
 
 import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../model.ts';
+import { emitInverse } from '../inverse.ts';
+import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
 import { jsString } from '../strings.ts';
 import { emitDispatcher } from './dispatch.ts';
@@ -22,11 +24,13 @@ export function emitV2Parser(schema: InferredSchema): string {
   for (const info of schema.nodeTypes.values()) {
     nodeFns.push(emitNodeType(info, schema));
   }
-  // Phase 3 ships only the forward path. The public `stringify` returns in
-  // Phase 4 once inverse derivation is in place.
+  // Phase 4: forward render + inverse stringify, sharing the
+  // target-independent `__rebuild_<NodeType>_<idx>` subroutines.
   const render = emitRender(schema);
+  const rebuild = emitRebuild(schema);
+  const inverse = emitInverse(schema);
   const api = emitPublicApi(schema);
-  return [header, runtime, nodeFns.join('\n\n'), render, api].join('\n\n') + '\n';
+  return [header, runtime, nodeFns.join('\n\n'), render, REBUILD_SLOT_RUNTIME, rebuild, inverse, api].join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {

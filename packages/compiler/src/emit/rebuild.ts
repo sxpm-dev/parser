@@ -1,0 +1,194 @@
+// Shared, target-independent source-reconstruction subroutine. One function
+// per production: `__rebuild_<NodeType>_<idx>(captures)` returns the
+// canonical source string for that production given a populated captures
+// object. Every per-target inverse dispatcher hands its recovered captures
+// here.
+//
+// Algorithm (ported from the deleted infer/source-template.ts):
+//
+//   For each span in declaration order:
+//     - Unnamed literal span        → contribute its `text` literal.
+//     - Named literal span          → captures.<name> (its runtime value is
+//                                     the literal text anyway, but reading
+//                                     the capture preserves any author-
+//                                     supplied value carried through).
+//     - Classed span                → captures.<name>.
+//     - Recursive span              → captures.<name>; runtime value is
+//                                     already a rebuilt string because the
+//                                     inverse dispatcher recurses through
+//                                     `__rebuildSlot(value)` before reaching
+//                                     this point.
+//     - .repeats(...) span          → captures.<name>; runtime value is an
+//                                     array of rebuilt children, joined with
+//                                     the empty string (children carry their
+//                                     own separators).
+//     - .until() / .rawUntil() span → captures.<name>.
+//
+//   Optional spans whose text is absent in the example example contribute
+//   nothing at compile time AND emit a runtime guard: if the captured value
+//   is `null`/`undefined`, the slot and its surrounding separator are
+//   suppressed. (Matches the legacy source-template behaviour for optional
+//   absent spans.)
+//
+//   Between adjacent spans: if the example input had whitespace between the
+//   prior cursor and the current span's start offset, emit a single space
+//   literal; otherwise nothing. `'preserve'` whitespace falls back to the
+//   same behaviour until policy lands in codegen.
+
+import {
+  CompilerError,
+  type InferredSchema,
+  type Production,
+  type ResolvedSpan,
+} from '../model.ts';
+import { jsString } from './strings.ts';
+
+export function emitRebuild(schema: InferredSchema): string {
+  const fns: string[] = [];
+  for (const info of schema.nodeTypes.values()) {
+    for (let i = 0; i < info.productions.length; i++) {
+      fns.push(emitOne(info.name, i, info.productions[i]!));
+    }
+  }
+  return fns.join('\n\n');
+}
+
+type Piece =
+  | { readonly kind: 'literal'; readonly text: string }
+  | { readonly kind: 'slot'; readonly ref: string; readonly optional: boolean };
+
+function emitOne(nodeName: string, prodIdx: number, production: Production): string {
+  const pieces = synthesizePieces(production);
+  const expr = piecesToConcat(pieces);
+  return `function ${rebuildFnName(nodeName, prodIdx)}(captures: any): string {
+  return ${expr};
+}`;
+}
+
+function synthesizePieces(production: Production): ReadonlyArray<Piece> {
+  const input = production.source.input;
+  const pieces: Piece[] = [];
+  let cursor = 0;
+  for (const span of production.spans) {
+    const startOffset = findSpanStart(input, span, cursor);
+    if (startOffset === null) {
+      // Absent path: the example doesn't surface this span. Both
+      // `.optional()` and `.repeats({ min: 0 })` permit zero-length
+      // captures; emit a runtime-conditional slot read with empty default
+      // so rebuild stays well-defined when the captured value is null.
+      if (isAbsentAllowed(span)) {
+        pieces.push(contributionOf(span));
+        continue;
+      }
+      // Non-absent-allowed span whose text is not present in the example is
+      // a schema bug already flagged by validate(). Defensive guard:
+      throw new CompilerError(
+        `rebuild: span '${span.name ?? span.text ?? '<unnamed>'}' not found in example '${truncate(input)}'`,
+      );
+    }
+    const sepText = input.slice(cursor, startOffset);
+    if (sepText.length > 0) {
+      pieces.push({ kind: 'literal', text: canonicalSeparator(sepText) });
+    }
+    pieces.push(contributionOf(span));
+    if (span.text) cursor = startOffset + span.text.length;
+  }
+  return pieces;
+}
+
+function contributionOf(span: ResolvedSpan): Piece {
+  // Treat both .optional() and .repeats({ min: 0 }) as absent-allowed: the
+  // captured value may be null and the slot must collapse to "" at runtime.
+  const optional = isAbsentAllowed(span);
+  if (span.recursiveRoles.length > 0) {
+    if (!span.name) throw new CompilerError('rebuild: recursive span without name');
+    return { kind: 'slot', ref: span.name, optional };
+  }
+  const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
+  if (isUntil) {
+    if (!span.name) throw new CompilerError('rebuild: until-span without name');
+    return { kind: 'slot', ref: span.name, optional };
+  }
+  if (span.class !== 'literal') {
+    if (!span.name) {
+      throw new CompilerError(`rebuild: classed span without name (class '${span.class}')`);
+    }
+    return { kind: 'slot', ref: span.name, optional };
+  }
+  if (span.name) return { kind: 'slot', ref: span.name, optional };
+  if (!span.text) throw new CompilerError('rebuild: unnamed literal span without text');
+  return { kind: 'literal', text: span.text };
+}
+
+function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
+  if (pieces.length === 0) return '""';
+  const parts: string[] = [];
+  for (const p of pieces) {
+    if (p.kind === 'literal') {
+      parts.push(jsString(p.text));
+    } else if (p.optional) {
+      // Optional absent: skip the slot AND any single trailing space literal
+      // contributed for the separator (best-effort: the optional span itself
+      // ate the gap if absent in the example, so usually nothing needs
+      // trimming). Runtime: read null/undefined as empty.
+      parts.push(`(captures${memberAccess(p.ref)} ?? "")`);
+    } else {
+      parts.push(`__rebuildSlot(captures${memberAccess(p.ref)})`);
+    }
+  }
+  if (parts.length === 1) return parts[0]!.startsWith('"') ? parts[0]! : `String(${parts[0]})`;
+  return parts.join(' + ');
+}
+
+function isAbsentAllowed(span: ResolvedSpan): boolean {
+  for (const m of span.modifiers) {
+    if (m.kind === 'optional') return true;
+    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
+  }
+  return false;
+}
+
+function findSpanStart(input: string, span: ResolvedSpan, cursor: number): number | null {
+  if (!span.text) return null;
+  const idx = input.indexOf(span.text, cursor);
+  return idx < 0 ? null : idx;
+}
+
+function canonicalSeparator(_separator: string): string {
+  // Any inter-span whitespace collapses to a single space. Matches the
+  // legacy source-template behaviour. The whitespace policy is read at the
+  // schema level; for now both 'standard' and 'preserve' use this rule.
+  return ' ';
+}
+
+function memberAccess(key: string): string {
+  if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) return `.${key}`;
+  return `[${jsString(key)}]`;
+}
+
+function truncate(s: string): string {
+  return s.length <= 40 ? s : `${s.slice(0, 37)}...`;
+}
+
+// Helper used by every rebuild fn to coerce a captures value to a string.
+// Captures referencing recursive children land here already as
+// fully-rebuilt strings (the inverse dispatcher recurses before rebuild
+// runs). Arrays of children are joined with '' — children carry their own
+// separators. Primitives stringify naturally. null/undefined → ''.
+export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __rebuildSlot(v[i]);
+    return out;
+  }
+  return String(v);
+}`;
+
+export function rebuildFnName(nodeName: string, prodIdx: number): string {
+  return `__rebuild_${jsIdent(nodeName)}_${prodIdx}`;
+}
+
+function jsIdent(name: string): string {
+  return name.replace(/[^A-Za-z0-9_$]/g, '_');
+}

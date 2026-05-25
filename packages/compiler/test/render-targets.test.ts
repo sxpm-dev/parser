@@ -120,7 +120,7 @@ test('per-target completeness: every production of a node type must declare the 
 
 // ---------- Emit checks (generateParser) ----------------------------------
 
-test('generateParser does NOT emit public stringify in Phase 3', async () => {
+test('generateParser emits both public render and public stringify (Phase 4)', async () => {
   const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
@@ -134,15 +134,16 @@ test('generateParser does NOT emit public stringify in Phase 3', async () => {
     ],
   });
   const code = generateParser(schema, undefined, { packageName: 'test' });
-  // Phase 4 reintroduces public stringify via inverse derivation. Phase 3
-  // must not export it.
-  assert.doesNotMatch(code, /export function stringify\(/);
-  // The new render emits per-(production, target) builders and a public
-  // render() that dispatches via __production index.
+  // Phase 4 derives an inverse per (production, target) and emits
+  // __invert_<Node>_<idx>_<target> plus a per-target dispatcher and a
+  // public stringify(value, options).
+  assert.match(code, /export function stringify\(/);
+  // The forward render side remains unchanged.
   assert.match(code, /export function render\(/);
   assert.match(code, /__build_Heading_0_html/);
   assert.match(code, /__build_Heading_0_ast/);
   assert.match(code, /__renderDispatch/);
+  assert.match(code, /__inverseDispatch/);
 });
 
 test('render(input, { type: "html" }) returns the templated HTML', async () => {

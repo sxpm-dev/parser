@@ -1,5 +1,7 @@
 import type { InferredSchema } from '../../model.ts';
 import { emitDirectFastPath } from '../direct-fast.ts';
+import { emitInverse } from '../inverse.ts';
+import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
 import { jsString } from '../strings.ts';
 import { emitNodeFunctions, parseFnName, takePendingHelpers } from './parse.ts';
@@ -20,11 +22,16 @@ export function emitScannerlessParser(schema: InferredSchema): string {
   // bypassing the generic production-driven body. Already byte-based, so
   // wiring it into scannerless mode is just dispatch.
   const directFast = emitDirectFastPath(schema);
-  // Phase 3 ships only the forward path. The public `stringify` returns in
-  // Phase 4 once inverse derivation is in place.
+  // Phase 4: emit both the forward render() and the inverse stringify().
+  // The shared `__rebuild_<NodeType>_<idx>` functions are target-independent;
+  // every inverse dispatcher calls them after recovering captures.
   const render = emitRender(schema);
+  const rebuild = emitRebuild(schema);
+  const inverse = emitInverse(schema);
   const api = emitPublicApi(schema, directFast !== null);
-  return [header, runtime, parsers, helpers, directFast, render, api].filter((p) => p !== null && p !== '').join('\n\n') + '\n';
+  return [header, runtime, parsers, helpers, directFast, render, REBUILD_SLOT_RUNTIME, rebuild, inverse, api]
+    .filter((p) => p !== null && p !== '')
+    .join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {

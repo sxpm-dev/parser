@@ -27,13 +27,44 @@ export type ResolvedSpan = {
 // Per-(production, target) IR entry built by infer/render-targets.ts.
 // `body` is whatever the schema author handed to .render(target, body) —
 // either a Template (tpl-tagged literal) or a StructureValue-shaped object
-// tree with $ref leaves. `inverse` is the optional template used to drive
-// the reverse direction (target text → parser input) in Phase 4.
+// tree with $ref leaves. `inverse` is the optional author-supplied template
+// override used to drive the reverse direction (target text → captures).
+// `inverseDerived` is the compile-time derivation produced by Phase 4
+// (`infer/invert.ts`); the inverse emitter walks it to recover captures
+// from a target value before handing them to the shared rebuild subroutine.
 export type RenderTargetIR = {
   readonly target: string;
   readonly body: RenderBody;
   readonly inverse?: import('@parser2/parser').Template;
+  readonly inverseDerived?: InverseIR;
 };
+
+// IR describing how to recover the original capture map from a rendered value
+// for one (production, target) pair. Discriminator mirrors the body shape it
+// was derived from: object bodies invert into per-field reads, arrays into
+// positional reads, scalars into equality assertions, $.name refs into a
+// single capture write, and Template bodies into a literal-segment scanner.
+export type InverseIR =
+  | { readonly kind: 'object'; readonly fields: ReadonlyArray<InverseField> }
+  | { readonly kind: 'array'; readonly elements: ReadonlyArray<InverseIR> }
+  | { readonly kind: 'scalar'; readonly value: string | number | boolean | null }
+  | { readonly kind: 'ref'; readonly capture: string }
+  | {
+      readonly kind: 'template';
+      readonly segments: ReadonlyArray<string>;
+      readonly captures: ReadonlyArray<string>;
+    };
+
+// One named field in an object-body inverse. Literal fields assert equality
+// at runtime (no captures produced). Inverse fields recurse into a nested
+// InverseIR that populates captures from the field's value.
+export type InverseField =
+  | {
+      readonly kind: 'literal';
+      readonly name: string;
+      readonly value: string | number | boolean | null;
+    }
+  | { readonly kind: 'inverse'; readonly name: string; readonly inverse: InverseIR };
 
 export type Production = {
   readonly nodeType: string;

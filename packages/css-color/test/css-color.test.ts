@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
+
+// Note: public `parse()` was removed in Phase 5 of the unified-render-targets
+// refactor. The previous `parse(input)` call is replaced by
+// `render(input, { type: 'ast' })`, which yields the object-shape AST that
+// the schema declares under `.render('ast', { ... })`.
+
+function parseAst(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
 
 test('css color parser returns ASTs for every supported value family', () => {
   const cases = [
@@ -13,20 +22,77 @@ test('css color parser returns ASTs for every supported value family', () => {
       expected: { type: 'css-color', value: { type: 'hash-color', value: '00ff99' } },
     },
     {
+      // Phase 6 css-color migration: rgb / rgba productions now emit the
+      // distinct `rgb-color-function` type literal (previously shared the
+      // generic `color-function` literal with non-RGB color functions) and
+      // also carry the parsed `args` array — required so round-trip
+      // stringify can rebuild the source, and to discriminate per
+      // production inverse.
       input: 'rgb(255 0 0 / 1)',
-      expected: { type: 'css-color', value: { type: 'color-function', name: 'rgb' } },
+      expected: {
+        type: 'css-color',
+        value: {
+          type: 'rgb-color-function',
+          name: 'rgb',
+          args: [
+            { type: 'number', value: '255' },
+            { type: 'number', value: '0' },
+            { type: 'number', value: '0' },
+            { type: 'separator', value: '/' },
+            { type: 'number', value: '1' },
+          ],
+        },
+      },
     },
     {
       input: 'rgba(255, 0, 0)',
-      expected: { type: 'css-color', value: { type: 'color-function', name: 'rgba' } },
+      expected: {
+        type: 'css-color',
+        value: {
+          type: 'rgb-color-function',
+          name: 'rgba',
+          args: [
+            { type: 'number', value: '255' },
+            { type: 'separator', value: ',' },
+            { type: 'number', value: '0' },
+            { type: 'separator', value: ',' },
+            { type: 'number', value: '0' },
+          ],
+        },
+      },
     },
     {
       input: 'oklch(60% 0.2 30)',
-      expected: { type: 'css-color', value: { type: 'color-function', name: 'oklch' } },
+      expected: {
+        type: 'css-color',
+        value: {
+          type: 'color-function',
+          name: 'oklch',
+          args: [
+            { type: 'percentage', value: '60' },
+            { type: 'number', value: '0.2' },
+            { type: 'number', value: '30' },
+          ],
+        },
+      },
     },
     {
+      // The previously-distinct color() production was merged into the single
+      // non-RGB ColorFunction production (it was functionally identical).
       input: 'color(display-p3 1 0 0)',
-      expected: { type: 'css-color', value: { type: 'color-function', name: 'color' } },
+      expected: {
+        type: 'css-color',
+        value: {
+          type: 'color-function',
+          name: 'color',
+          args: [
+            { type: 'ident', value: 'display-p3' },
+            { type: 'number', value: '1' },
+            { type: 'number', value: '0' },
+            { type: 'number', value: '0' },
+          ],
+        },
+      },
     },
     {
       input: 'var(--brand-color, red)',
@@ -38,7 +104,7 @@ test('css color parser returns ASTs for every supported value family', () => {
   ];
 
   for (const { input, expected } of cases) {
-    assert.deepEqual(parse(input), expected, input);
+    assert.deepEqual(parseAst(input), expected, input);
   }
 });
 

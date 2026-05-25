@@ -10,10 +10,11 @@ import type {
   StructureRef,
 } from './types.ts';
 
-// Reference proxy for use inside `.structure({...})`. See individual ref
-// types in types.ts for what each one compiles to. Reserved method names
-// are listed in RESERVED_METHODS — accessing those returns the helper
-// function instead of constructing a SpanValueRef.
+// Reference proxy for use inside `.render(target, body)` bodies (and inside
+// `tpl` template literals). See individual ref types in types.ts for what
+// each one compiles to. Reserved method names are listed in
+// RESERVED_METHODS — accessing those returns the helper function instead of
+// constructing a SpanValueRef.
 
 const RESERVED_METHODS = new Set([
   'gap', 'tail', 'raw', 'endsWith', 'commentLeft', 'commentRight',

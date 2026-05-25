@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { $, defineSchema, ex, isStructureRef, tpl } from '../src/index.ts';
+import type { Template } from '../src/index.ts';
 
 test('defineSchema fills defaults', () => {
   const schema = defineSchema({
@@ -17,7 +18,7 @@ test('defineSchema fills defaults', () => {
 });
 
 test('ex builds a minimal valid example', () => {
-  const example = ex('foo').as('Token').span('name', 'foo').ident().structure({ value: $.name }).build();
+  const example = ex('foo').as('Token').span('name', 'foo').ident().render('ast', { value: $.name }).build();
   assert.equal(example.input, 'foo');
   assert.equal(example.nodeType, 'Token');
   assert.equal(example.spans.length, 1);
@@ -37,7 +38,7 @@ test('span chain accepts class, refinement, and modifier', () => {
     .span(':')
     .span('value', 'red').ident().css()
     .span(';').optional()
-    .structure({ prop: $.prop, value: $.value })
+    .render('ast', { prop: $.prop, value: $.value })
     .build();
   assert.equal(example.spans.length, 4);
   const [prop, colon, value, semi] = example.spans;
@@ -53,7 +54,7 @@ test('span repeats modifier captures options', () => {
   const example = ex('a;b')
     .as('Decls')
     .span('items', 'a;b', 'Item').repeats({ sep: ';', trailing: 'allowed' })
-    .structure({ items: $.items })
+    .render('ast', { items: $.items })
     .build();
   const span = example.spans[0]!;
   const mod = span.modifiers[0]!;
@@ -64,7 +65,7 @@ test('span repeats modifier captures options', () => {
 });
 
 test('recursive span carries single role', () => {
-  const example = ex('a').as('Expr').span('inner', 'a', 'Inner').structure({ inner: $.inner }).build();
+  const example = ex('a').as('Expr').span('inner', 'a', 'Inner').render('ast', { inner: $.inner }).build();
   const span = example.spans[0]!;
   assert.deepEqual(span.recursiveRoles, ['Inner']);
 });
@@ -73,7 +74,7 @@ test('recursive span carries multiple roles', () => {
   const example = ex('x')
     .as('Container')
     .span('child', 'x', ['Rule', 'AtRule'])
-    .structure({ child: $.child })
+    .render('ast', { child: $.child })
     .build();
   const span = example.spans[0]!;
   assert.deepEqual(span.recursiveRoles, ['Rule', 'AtRule']);
@@ -96,7 +97,7 @@ test('recovers marks status', () => {
     .as('Stmt')
     .span('x', 'bad').ident().js()
     .recovers({ syncAt: [';', '}'], drop: 'bad-stmt' })
-    .structure({ recovered: true })
+    .render('ast', { recovered: true })
     .build();
   assert.equal(example.status.kind, 'recovered');
   if (example.status.kind !== 'recovered') throw new Error('unreachable');
@@ -104,10 +105,10 @@ test('recovers marks status', () => {
   assert.equal(example.status.recovery.drop, 'bad-stmt');
 });
 
-test('rejects marks status and omits structure', () => {
+test('rejects marks status and leaves renders empty', () => {
   const example = ex('throw\n1;').as('Statement').rejects().build();
   assert.equal(example.status.kind, 'rejected');
-  assert.equal(example.structure, undefined);
+  assert.deepEqual(example.renders, []);
 });
 
 test('schema composition holds onto used schemas', () => {
@@ -159,50 +160,78 @@ test('punctuators accept named object form', () => {
   assert.equal(map.get('>'), 'delim');
 });
 
-test('ExampleBuilder.stringify attaches a template under the given target', () => {
+test('.render attaches a Template body under the given target', () => {
   const example = ex('## Installation guide')
     .as('MarkdownLeaf')
     .span('##')
     .span('first', 'Installation').ident().css()
     .span('second', 'guide').ident().css()
-    .structure({ type: 'heading', depth: 2, text: [$.first, $.second] })
-    .stringify('html', tpl`<h2>${$.first} ${$.second}</h2>`)
+    .render('ast', { type: 'heading', depth: 2, text: [$.first, $.second] })
+    .render('html', tpl`<h2>${$.first} ${$.second}</h2>`)
     .build();
-  assert.equal(example.stringifyTemplates.length, 1);
-  assert.equal(example.stringifyTemplates[0]!.target, 'html');
-  assert.deepEqual(example.stringifyTemplates[0]!.template.parts, ['<h2>', ' ', '</h2>']);
-  assert.deepEqual(example.stringifyTemplates[0]!.template.slots, [
+  assert.equal(example.renders.length, 2);
+  assert.equal(example.renders[1]!.target, 'html');
+  const body = example.renders[1]!.body as Template;
+  assert.deepEqual(body.parts, ['<h2>', ' ', '</h2>']);
+  assert.deepEqual(body.slots, [
     { kind: 'capture', ref: 'first' },
     { kind: 'capture', ref: 'second' },
   ]);
 });
 
-test('stringify chains from inside a span builder', () => {
+test('.render chains from inside a span builder', () => {
   const example = ex('---')
     .as('MarkdownLeaf')
     .span('---')
-    .structure({ type: 'thematic-break' })
-    .stringify('html', tpl`<hr>`)
+    .render('ast', { type: 'thematic-break' })
+    .render('html', tpl`<hr>`)
     .build();
-  assert.equal(example.stringifyTemplates.length, 1);
+  assert.equal(example.renders.length, 2);
 });
 
-test('multiple .stringify() calls accumulate (one per target)', () => {
+test('multiple .render() calls accumulate (one per target)', () => {
   const example = ex('# title')
     .as('MarkdownLeaf')
     .span('#')
     .span('first', 'title').ident().css()
-    .structure({ type: 'heading', depth: 1, text: [$.first] })
-    .stringify('html', tpl`<h1>${$.first}</h1>`)
-    .stringify('plain', tpl`${$.first}`)
+    .render('ast', { type: 'heading', depth: 1, text: [$.first] })
+    .render('html', tpl`<h1>${$.first}</h1>`)
+    .render('plain', tpl`${$.first}`)
     .build();
   assert.deepEqual(
-    example.stringifyTemplates.map((t) => t.target),
-    ['html', 'plain'],
+    example.renders.map((r) => r.target),
+    ['ast', 'html', 'plain'],
   );
 });
 
-test('example without .stringify() still has stringifyTemplates: []', () => {
-  const example = ex('foo').as('Token').span('v', 'foo').ident().structure({ v: $.v }).build();
-  assert.deepEqual(example.stringifyTemplates, []);
+test('example without .render() still has renders: []', () => {
+  const example = ex('foo').as('Token').span('v', 'foo').ident().build();
+  assert.deepEqual(example.renders, []);
+});
+
+test('.render attaches body and optional inverse to ExampleDef.renders', () => {
+  const e = ex('a')
+    .as('Atom')
+    .span('v', 'a').ident()
+    .render('ast', { type: 'atom', v: $.v })
+    .render('html', tpl`<a>${$.v}</a>`, { inverse: tpl`<a>${$.v}</a>` })
+    .build();
+  assert.equal(e.renders.length, 2);
+  assert.equal(e.renders[0]!.target, 'ast');
+  assert.equal(e.renders[1]!.target, 'html');
+  assert.ok(e.renders[1]!.inverse, 'inverse override carried through');
+});
+
+test('defineSchema accepts optional defaultTarget', () => {
+  const schema = defineSchema({
+    rootType: 'A',
+    defaultTarget: 'ast',
+    examples: [],
+  });
+  assert.equal(schema.defaultTarget, 'ast');
+});
+
+test('defineSchema leaves defaultTarget undefined when not given', () => {
+  const schema = defineSchema({ rootType: 'A', examples: [] });
+  assert.equal(schema.defaultTarget, undefined);
 });

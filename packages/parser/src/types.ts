@@ -91,11 +91,12 @@ export type SpanDef = {
   readonly modifiers: ReadonlyArray<SpanModifier>;
 };
 
-// --- Structure literal -----------------------------------------------------
+// --- Structure refs --------------------------------------------------------
 //
-// Structure literals are plain JSON-ish data with $ref markers in the leaves.
-// At build time the $ proxy produces these markers; the compiler walks the
-// structure and rewrites them into emitted code.
+// Structure refs are the $ref markers produced by the `$` proxy. They appear
+// in render bodies (and inside `tpl` templates as slots). The compiler walks
+// the body, encounters these markers, and rewrites them into capture reads
+// in emitted code.
 
 export type SpanValueRef = {
   readonly __ref: 'span-value';
@@ -178,37 +179,7 @@ export type StructureRef =
   | SpanCommentLeftRef
   | SpanCommentRightRef;
 
-export type StructureValue =
-  | string
-  | number
-  | boolean
-  | null
-  | StructureRef
-  | ReadonlyArray<StructureValue>
-  | { readonly [key: string]: StructureValue };
-
-// --- Examples --------------------------------------------------------------
-
-export type RecoveryPolicy = {
-  readonly syncAt: ReadonlyArray<string>;
-  readonly drop: string;
-};
-
-export type ExampleStatus =
-  | { readonly kind: 'valid' }
-  | { readonly kind: 'recovered'; readonly recovery: RecoveryPolicy }
-  | { readonly kind: 'rejected' };
-
-export type ExampleDef = {
-  readonly input: string;
-  readonly nodeType?: string;
-  readonly spans: ReadonlyArray<SpanDef>;
-  readonly structure?: StructureValue;
-  readonly status: ExampleStatus;
-  readonly stringifyTemplates: ReadonlyArray<StringifyTemplateDef>;
-};
-
-// --- Stringify templates ---------------------------------------------------
+// --- Templates -------------------------------------------------------------
 //
 // Authored via the `tpl` tagged-template helper. Plain data: a list of static
 // `parts` interleaved with `slots` that reference span captures by name. The
@@ -226,9 +197,47 @@ export type Template = {
   readonly slots: ReadonlyArray<TemplateSlot>;
 };
 
-export type StringifyTemplateDef = {
+// --- Render bodies ---------------------------------------------------------
+//
+// A render body is the declared output shape for one (production, target)
+// pair. The compiler walks it structurally: Template → string concat,
+// object → object allocation, array → array allocation, scalar → literal,
+// StructureRef → capture read.
+
+export type RenderBody =
+  | string
+  | number
+  | boolean
+  | null
+  | StructureRef
+  | Template
+  | ReadonlyArray<RenderBody>
+  | { readonly [key: string]: RenderBody };
+
+export type RenderTargetDef = {
   readonly target: string;
-  readonly template: Template;
+  readonly body: RenderBody;
+  readonly inverse?: Template;
+};
+
+// --- Examples --------------------------------------------------------------
+
+export type RecoveryPolicy = {
+  readonly syncAt: ReadonlyArray<string>;
+  readonly drop: string;
+};
+
+export type ExampleStatus =
+  | { readonly kind: 'valid' }
+  | { readonly kind: 'recovered'; readonly recovery: RecoveryPolicy }
+  | { readonly kind: 'rejected' };
+
+export type ExampleDef = {
+  readonly input: string;
+  readonly nodeType?: string;
+  readonly spans: ReadonlyArray<SpanDef>;
+  readonly status: ExampleStatus;
+  readonly renders: ReadonlyArray<RenderTargetDef>;
 };
 
 // --- Operators / Punctuators / Schema -------------------------------------
@@ -267,6 +276,7 @@ export type SchemaDef = {
   readonly tokens: ReadonlyArray<TokenDecl>;
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
+  readonly defaultTarget?: string;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
 
@@ -283,6 +293,7 @@ export type SchemaInput = {
   readonly tokens?: ReadonlyArray<SpanClass | TokenDecl>;
   readonly whitespace?: WhitespacePolicy;
   readonly unknownChars?: UnknownCharPolicy;
+  readonly defaultTarget?: string;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
 

@@ -3,11 +3,11 @@ import type {
   ExampleStatus,
   RecoveryPolicy,
   Refinement,
+  RenderBody,
+  RenderTargetDef,
   SpanClass,
   SpanDef,
   SpanModifier,
-  StringifyTemplateDef,
-  StructureValue,
   Template,
   TrailingPolicy,
 } from './types.ts';
@@ -185,11 +185,12 @@ class SpanBuilder {
 
   span(...args: SpanArgs): SpanBuilder { return this.parent.span(...args); }
   as(nodeType: string): ExampleBuilder { return this.parent.as(nodeType); }
-  structure(value: StructureValue): ExampleBuilder {
-    return this.parent.structure(value);
-  }
-  stringify(target: string, template: Template): ExampleBuilder {
-    return this.parent.stringify(target, template);
+  render(
+    target: string,
+    body: RenderBody,
+    options?: { readonly inverse?: Template },
+  ): ExampleBuilder {
+    return this.parent.render(target, body, options);
   }
   recovers(policy: RecoveryPolicy): ExampleBuilder {
     return this.parent.recovers(policy);
@@ -207,9 +208,8 @@ type SpanArgs =
 class ExampleBuilder {
   private nodeType: string | undefined;
   private spans: MutableSpanDef[] = [];
-  private structureValue: StructureValue | undefined;
   private status: ExampleStatus = { kind: 'valid' };
-  private templates: StringifyTemplateDef[] = [];
+  private renders: RenderTargetDef[] = [];
 
   constructor(private readonly input: string) {}
 
@@ -227,13 +227,15 @@ class ExampleBuilder {
     this.spans.push(span);
   }
 
-  structure(value: StructureValue): ExampleBuilder {
-    this.structureValue = value;
-    return this;
-  }
-
-  stringify(target: string, template: Template): ExampleBuilder {
-    this.templates.push({ target, template });
+  render(
+    target: string,
+    body: RenderBody,
+    options?: { readonly inverse?: Template },
+  ): ExampleBuilder {
+    const entry: RenderTargetDef = options?.inverse
+      ? { target, body, inverse: options.inverse }
+      : { target, body };
+    this.renders.push(entry);
     return this;
   }
 
@@ -252,9 +254,8 @@ class ExampleBuilder {
       input: this.input,
       nodeType: this.nodeType,
       spans: this.spans as ReadonlyArray<SpanDef>,
-      structure: this.structureValue,
       status: this.status,
-      stringifyTemplates: this.templates,
+      renders: this.renders,
     };
   }
 }

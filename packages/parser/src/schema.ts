@@ -16,6 +16,7 @@ export function defineSchema(input: SchemaInput): SchemaDef {
     tokens: normalizeTokens(input.tokens),
     whitespace: input.whitespace ?? 'standard',
     unknownChars: input.unknownChars ?? 'reject',
+    defaultTarget: input.defaultTarget,
     examples: input.examples,
   };
 }

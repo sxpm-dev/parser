@@ -11,7 +11,7 @@
 //     .structure) is touched. Idempotent: re-running on an already-renamed
 //     file is a no-op.
 //
-//   migrate-to-render.ts synth-source <schema.ts>
+//   migrate-to-render.ts synth-source <schema.ts> [--skip-validation]
 //     Loads the (already-renamed) schema via the compiler's public
 //     `inferSchema`, walks each production's spans, derives a canonical
 //     `tpl\`...\`` source template (port of the deleted
@@ -20,9 +20,19 @@
 //     `.build()` on each example block. Skips entirely if ANY production
 //     already declares 'source' (per-target completeness is all-or-nothing).
 //
+//     --skip-validation bypasses deriveInverses / inverse-discrimination
+//     validation during inference. Use this when a schema has discrimination
+//     issues on a different target (e.g. css-color's 'ast' ambiguity) that
+//     still need the 'source' template synthesized — author will resolve
+//     discrimination separately. The synth pass only needs production spans
+//     and existing render targets, which attachRenderTargets alone provides.
+//
 // Insertion uses the example.input string as a discriminator inside the
 // source: find `ex('<input>')`, scan forward to the next `.build()` at the
-// same chain depth, insert the call on the line above. Schemas whose
+// same chain depth, insert the call on the line above. When the same
+// example.input appears in multiple productions, the i-th derived plan
+// is inserted into the i-th `ex('<input>')` occurrence in source order
+// (so per-production templates land in the right chain). Schemas whose
 // example inputs contain backticks would need manual handling — none of
 // the v1 packages do, so we just throw.
 
@@ -32,16 +42,26 @@ import { pathToFileURL } from 'node:url';
 
 async function main(): Promise<void> {
   const cmd = process.argv[2];
-  const fileArg = process.argv[3];
+  const positional: string[] = [];
+  const flags = new Set<string>();
+  for (let i = 3; i < process.argv.length; i++) {
+    const arg = process.argv[i]!;
+    if (arg.startsWith('--')) flags.add(arg);
+    else positional.push(arg);
+  }
+  const fileArg = positional[0];
   if (!cmd || !fileArg) {
-    console.error('usage: migrate-to-render.ts {rename|synth-source} <schema.ts>');
+    console.error('usage: migrate-to-render.ts {rename|synth-source} <schema.ts> [--skip-validation]');
+    console.error('  --skip-validation  synth-source only: bypass deriveInverses / inverse');
+    console.error('                     discrimination validation (use when a non-source target');
+    console.error('                     has ambiguity that blocks normal inference).');
     process.exit(1);
   }
   const file = isAbsolute(fileArg) ? fileArg : resolve(process.cwd(), fileArg);
   if (cmd === 'rename') {
     runRename(file);
   } else if (cmd === 'synth-source') {
-    await runSynthSource(file);
+    await runSynthSource(file, { skipValidation: flags.has('--skip-validation') });
   } else {
     console.error(`unknown subcommand '${cmd}' (expected 'rename' or 'synth-source')`);
     process.exit(1);
@@ -104,21 +124,58 @@ type Production = {
   readonly renders: ReadonlyMap<string, unknown>;
 };
 
-async function runSynthSource(file: string): Promise<void> {
+type SynthOptions = {
+  readonly skipValidation: boolean;
+};
+
+async function runSynthSource(file: string, opts: SynthOptions): Promise<void> {
   // Import the schema module via the compiler so we can walk productions
-  // exactly as the compiler does.
-  const compilerMod = await import(
-    pathToFileURL(resolve(file, '../../../compiler/src/index.ts')).href
-  ) as typeof import('../packages/compiler/src/index.ts');
+  // exactly as the compiler does. When --skip-validation is set we run
+  // a minimal pipeline (composition → productions → roles → validate →
+  // attachRenderTargets) and SKIP deriveInverses, so schemas whose other
+  // targets have discrimination ambiguity can still get a 'source'
+  // template synthesized.
+  const compilerRoot = resolve(file, '../../../compiler/src');
   const schemaMod = await import(pathToFileURL(file).href) as { default?: unknown };
   const schema = schemaMod.default;
   if (!isSchemaDef(schema)) {
     throw new Error(`Schema at ${file} does not default-export a SchemaDef`);
   }
-  const inferred = compilerMod.inferSchema(schema);
+
+  type NodeTypeInfoLike = { readonly name: string; readonly productions: ReadonlyArray<unknown> };
+  let nodeTypes: ReadonlyMap<string, NodeTypeInfoLike>;
+  if (opts.skipValidation) {
+    const composition = await import(pathToFileURL(resolve(compilerRoot, 'infer/composition.ts')).href) as {
+      resolveCompositionGraph: (root: unknown) => ReadonlyArray<unknown>;
+    };
+    const productions = await import(pathToFileURL(resolve(compilerRoot, 'infer/productions.ts')).href) as {
+      buildProductions: (schemas: ReadonlyArray<unknown>) => ReadonlyMap<string, NodeTypeInfoLike>;
+    };
+    const roles = await import(pathToFileURL(resolve(compilerRoot, 'infer/roles.ts')).href) as {
+      resolveRecursiveRoles: (nodeTypes: ReadonlyMap<string, NodeTypeInfoLike>, root: string) => void;
+    };
+    const validateMod = await import(pathToFileURL(resolve(compilerRoot, 'infer/validate.ts')).href) as {
+      validate: (nodeTypes: ReadonlyMap<string, NodeTypeInfoLike>) => void;
+    };
+    const renderTargets = await import(pathToFileURL(resolve(compilerRoot, 'infer/render-targets.ts')).href) as {
+      attachRenderTargets: (nodeTypes: ReadonlyMap<string, NodeTypeInfoLike>) => void;
+    };
+    const schemas = composition.resolveCompositionGraph(schema);
+    nodeTypes = productions.buildProductions(schemas);
+    roles.resolveRecursiveRoles(nodeTypes, (schema as { rootType: string }).rootType);
+    validateMod.validate(nodeTypes);
+    renderTargets.attachRenderTargets(nodeTypes);
+    console.log(`synth-source: --skip-validation set; bypassing deriveInverses for ${file}`);
+  } else {
+    const compilerMod = await import(
+      pathToFileURL(resolve(compilerRoot, 'index.ts')).href
+    ) as typeof import('../packages/compiler/src/index.ts');
+    const inferred = compilerMod.inferSchema(schema);
+    nodeTypes = inferred.nodeTypes as ReadonlyMap<string, NodeTypeInfoLike>;
+  }
 
   // All-or-nothing: if any production already has 'source', skip.
-  for (const info of inferred.nodeTypes.values()) {
+  for (const info of nodeTypes.values()) {
     for (const prod of info.productions) {
       if ((prod as Production).renders.has('source')) {
         console.log(`'source' target already declared on production '${info.name}#?' — skipping synth-source for ${file}`);
@@ -127,16 +184,18 @@ async function runSynthSource(file: string): Promise<void> {
     }
   }
 
-  // Build per-example-input → derived template string.
-  // Multiple examples with the same input would be ambiguous; the compiler
-  // doesn't allow that anyway, but guard defensively.
+  // Build per-production plans in source order. Multiple productions may
+  // share the same example.input (e.g. css-length-percentage uses ex('0')
+  // in several productions). We insert by ordinal match: the i-th plan
+  // with a given input lands in the i-th ex('<input>') occurrence in the
+  // source file.
   type Plan = {
     readonly input: string;
     readonly nodeName: string;
     readonly template: string;
   };
   const plans: Plan[] = [];
-  for (const info of inferred.nodeTypes.values()) {
+  for (const info of nodeTypes.values()) {
     for (const prod of info.productions) {
       const production = prod as Production;
       const pieces = synthesizePieces(production);
@@ -149,32 +208,58 @@ async function runSynthSource(file: string): Promise<void> {
     }
   }
 
-  // Sanity: every example.input must be unique within a single schema.ts.
-  const seen = new Set<string>();
-  for (const p of plans) {
-    if (seen.has(p.input)) {
-      throw new Error(
-        `synth-source: example input '${truncate(p.input)}' appears in multiple productions of ${file}; cannot disambiguate insertion site`,
-      );
-    }
-    seen.add(p.input);
-  }
-
   let src = readFileSync(file, 'utf8');
   let mutations = 0;
+  // Track how many times we've already inserted for each (input, search-cursor)
+  // — equivalent to "consume the i-th occurrence of ex(input)" in source order.
+  // We use a running cursor per input so successive plans for the same input
+  // skip past previously-consumed occurrences.
+  const cursorByInput = new Map<string, number>();
   for (const plan of plans) {
-    const next = insertRenderSourceCall(src, plan.input, plan.template);
-    if (next === null) {
+    const startCursor = cursorByInput.get(plan.input) ?? 0;
+    const exQuoted = findExCallFrom(src, plan.input, startCursor);
+    if (exQuoted === null) {
       throw new Error(
-        `synth-source: could not locate ex(...) for input '${truncate(plan.input)}' in ${file}`,
+        `synth-source: could not locate ex(...) for input '${truncate(plan.input)}' in ${file} (occurrence #${
+          countOccurrencesUpTo(plans, plan)
+        })`,
       );
     }
+    const [, exEnd] = exQuoted;
+    const next = insertRenderSourceCallAt(src, exEnd, plan.template);
+    if (next === null) {
+      throw new Error(
+        `synth-source: could not locate .build() following ex('${truncate(plan.input)}') in ${file}`,
+      );
+    }
+    // The next plan with the same input must start its search AFTER the
+    // just-consumed ex() call. We resolve the source AFTER mutation, but
+    // since the insertion happens at/after the .build() line — i.e. after
+    // the ex() match — `exEnd` still indexes a position strictly before
+    // the next occurrence in the mutated source.
+    cursorByInput.set(plan.input, exEnd);
     src = next;
+    // Re-locate exEnd in the mutated source for the next iteration. The
+    // insertion happens at the .build() line (after exEnd) and shifts all
+    // following content forward; positions at/before exEnd are unaffected,
+    // so cursorByInput stays valid.
     mutations++;
   }
   src = ensureTplImport(src);
   writeFileSync(file, src);
   console.log(`inserted ${mutations} .render('source', tpl-literal) calls into ${file}`);
+}
+
+function countOccurrencesUpTo<T extends { readonly input: string }>(
+  plans: ReadonlyArray<T>,
+  target: T,
+): number {
+  let count = 0;
+  for (const p of plans) {
+    if (p.input === target.input) count++;
+    if (p === target) return count;
+  }
+  return count;
 }
 
 // Ensure `tpl` is imported from '@parser2/parser'. The synthesized
@@ -293,15 +378,11 @@ function canonicalSeparator(_separator: string): string {
 // Source insertion
 // ---------------------------------------------------------------------------
 
-function insertRenderSourceCall(
+function insertRenderSourceCallAt(
   src: string,
-  exampleInput: string,
+  exEnd: number,
   templateLiteral: string,
 ): string | null {
-  // Find the ex('<input>') call. Try both single- and double-quoted forms.
-  const exQuoted = findExCall(src, exampleInput);
-  if (exQuoted === null) return null;
-  const [exStart, exEnd] = exQuoted;
   // Walk forward from exEnd to find the matching `.build()` for this chain.
   // Track paren/brace depth so we don't trip on nested calls. The chain is
   // `ex(...).foo(...).bar(...)`...`.build()` — at depth 0 we look for the
@@ -313,29 +394,28 @@ function insertRenderSourceCall(
   const lineStart = src.lastIndexOf('\n', buildIdx) + 1;
   const indent = src.slice(lineStart, buildIdx).match(/^[ \t]*/)?.[0] ?? '      ';
   const insertion = `${indent}.render('source', ${templateLiteral})\n`;
-  // Suppress unused-variable warning when no slots referenced: the schema
-  // still imports tpl/$, but the synthesized literal might not use $ if
-  // the production is literal-only. Authors can clean up imports manually.
   return src.slice(0, lineStart) + insertion + src.slice(lineStart);
-  // Note: exStart unused (we only needed it to verify there was a real ex()).
-  void exStart;
 }
 
-function findExCall(src: string, input: string): [number, number] | null {
-  // Match ex(<input>). We accept exactly the input string in either quote
-  // style. For inputs containing single OR double quotes, we'd need string
-  // unescaping — for v1 schemas (cron, etc.) inputs are plain ASCII.
+function findExCallFrom(
+  src: string,
+  input: string,
+  fromIndex: number,
+): [number, number] | null {
+  // Match ex(<input>) at-or-after fromIndex. We accept either quote style.
+  // For inputs containing both quote styles or backslashes, fall back to
+  // the JSON-escaped form. The earliest qualifying match wins.
   const candidates: string[] = [];
   if (!input.includes("'") && !input.includes('\\')) candidates.push(`ex('${input}')`);
   if (!input.includes('"') && !input.includes('\\')) candidates.push(`ex("${input}")`);
-  // Fall back: also try the JSON-escaped forms, in case the source uses
-  // escapes we didn't enumerate.
   candidates.push(`ex(${JSON.stringify(input)})`);
+  let best: [number, number] | null = null;
   for (const needle of candidates) {
-    const idx = src.indexOf(needle);
-    if (idx >= 0) return [idx, idx + needle.length];
+    const idx = src.indexOf(needle, fromIndex);
+    if (idx < 0) continue;
+    if (best === null || idx < best[0]) best = [idx, idx + needle.length];
   }
-  return null;
+  return best;
 }
 
 function findMatchingBuild(src: string, fromIdx: number): number {

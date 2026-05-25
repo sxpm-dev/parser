@@ -29,7 +29,7 @@
     "bench:css:direct-profile": "npm run generate && tsx packages/css/bench/direct-profile.ts",
     "bench:css:lazy-materialization": "npm run generate && tsx packages/css/bench/lazy-materialization.ts",
     "bench:css:tokenize": "npm run generate && tsx packages/css/bench/tokenize.ts",
-    "bench:css-json": "npm run generate && tsx packages/css/bench/json.ts",
+    "bench:css:round-trip": "npm run generate && tsx packages/css/bench/round-trip.ts",
     "bench:html:parse": "npm run generate -w @parser2/html && tsx packages/html/bench/parse.ts",
     "bench:markdown:ast": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/ast.ts",
     "bench:proto:parse": "npm run generate -w @parser2/proto && tsx packages/proto/bench/parse.ts",

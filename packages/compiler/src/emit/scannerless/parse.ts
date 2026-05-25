@@ -41,6 +41,17 @@ type Ctx = {
   // first byte but aren't handled by any dispatched role (e.g. `<`
   // for HtmlElement must NOT match `</`).
   readonly literalTexts: ReadonlySet<string>;
+  // Resolves a production to its index in the ORIGINAL node-type info's
+  // productions array. Set by emitNodeFunctionWithRecovery when it
+  // constructs a phantom validInfo (filtered subset) and recurses into
+  // emitNodeFunction: the recursion's `info.productions` is a subset, so
+  // its iteration indices don't match the indices used by the render
+  // dispatcher (which is emitted from the FULL productions array). All
+  // call sites that turn a `Production` into a `prodIdx` for
+  // `emitProductionBody` consult this resolver first. Unset by default
+  // (top-level call): emitNodeFunction falls back to indexing into
+  // `info.productions` directly.
+  readonly prodIndexResolver?: (production: Production) => number;
 };
 
 export function emitNodeFunctions(schema: InferredSchema): string {
@@ -75,8 +86,16 @@ function emitNodeFunction(info: NodeTypeInfo, ctx: Ctx): string {
     return emitNodeFunctionWithRecovery(info, validProductions, recoveryProductions, ctx);
   }
 
+  // Resolve a production to its full-info index — i.e. the index used by
+  // the render dispatcher's switch. Falls back to indexing into the
+  // current `info.productions`; emitNodeFunctionWithRecovery overrides
+  // this via ctx so the phantom validInfo recursion still stamps
+  // captures.__production with the original-info index.
+  const resolveProdIdx = (production: Production): number =>
+    ctx.prodIndexResolver ? ctx.prodIndexResolver(production) : info.productions.indexOf(production);
+
   if (info.productions.length === 1) {
-    const body = emitProductionBody(info.productions[0]!, 0, ctx);
+    const body = emitProductionBody(info.productions[0]!, resolveProdIdx(info.productions[0]!), ctx);
     return `function ${fnName}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -103,7 +122,7 @@ ${indent(body, 1)}
       const inlineSpec: InlineFromDispatcher | undefined = isUnbounded
         ? { skipSpans: 0, preboundValues: new Map(), softFail: true }
         : undefined;
-      const body = emitProductionBody(production, i, ctx, inlineSpec);
+      const body = emitProductionBody(production, resolveProdIdx(production), ctx, inlineSpec);
       return `function ${fnName}__alt${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -119,7 +138,7 @@ ${indent(body, 1)}
   // by then we've ruled out all other alts, so its throws are real.
   const lastIdx = info.productions.length - 1;
   const softAltFns = info.productions.slice(0, -1).map((production, i) => {
-    const body = emitProductionBody(production, i, ctx, {
+    const body = emitProductionBody(production, resolveProdIdx(production), ctx, {
       skipSpans: 0,
       preboundValues: new Map(),
       softFail: true,
@@ -128,7 +147,7 @@ ${indent(body, 1)}
 ${indent(body, 1)}
 }`;
   }).join('\n\n');
-  const lastBody = emitProductionBody(info.productions[lastIdx]!, lastIdx, ctx);
+  const lastBody = emitProductionBody(info.productions[lastIdx]!, resolveProdIdx(info.productions[lastIdx]!), ctx);
   const lastFn = `function ${fnName}__alt${lastIdx}(state: State): unknown {
 ${indent(lastBody, 1)}
 }`;
@@ -427,6 +446,13 @@ ${tail}`;
   // the captured ident slice in.
   const bodyHelpers = new Map<number, string>();
   const bodyHelperName = (idx: number): string => `${fnName}__alt${idx}__body`;
+  // Resolve the alt's index in the ORIGINAL info.productions array (the
+  // one the render dispatcher's switch was emitted from). `idx` here is
+  // the local index into `productions`, which equals the full-info
+  // index for normal nodes but differs for the phantom validInfo used
+  // by emitNodeFunctionWithRecovery (filtered subset).
+  const resolveProdIdx = (production: Production, fallbackIdx: number): number =>
+    ctx.prodIndexResolver ? ctx.prodIndexResolver(production) : fallbackIdx;
   const ensureBodyHelper = (idx: number): string => {
     if (bodyHelpers.has(idx)) return bodyHelperName(idx);
     const name = bodyHelperName(idx);
@@ -434,7 +460,7 @@ ${tail}`;
       skipSpans: prefixLen + 1,
       preboundValues,
     };
-    const altBody = emitProductionBody(productions[idx]!, idx, ctx, inlineSpec);
+    const altBody = emitProductionBody(productions[idx]!, resolveProdIdx(productions[idx]!, idx), ctx, inlineSpec);
     // The discriminator value (e.g. tag string) flows through as a fn arg
     // so the helper itself doesn't allocate; the dispatcher passes the
     // slice it already needed for the oneOf compare.
@@ -500,7 +526,14 @@ ${indent(altBody, 1)}
       preboundValues: preboundValuesArg,
       lastSpanLiteralAlternatives: lastAlts,
     };
-    const mergedBody = emitProductionBody(ref, subIndexes[0]!, ctxArg, inlineSpec);
+    // Resolve `ref`'s prodIdx against the original info via the ctx
+    // resolver (recovery path) — otherwise fall back to its position in
+    // the local productions array. This is the captures.__production
+    // key the render dispatcher's switch is keyed on; the merged body
+    // inherits `ref`'s routing because all alts in the merge share
+    // identical render bodies.
+    const refProdIdx = ctxArg.prodIndexResolver ? ctxArg.prodIndexResolver(ref) : subIndexes[0]!;
+    const mergedBody = emitProductionBody(ref, refProdIdx, ctxArg, inlineSpec);
     const paramName = '__pre_' + (discName ?? 'disc');
     const helper = `function ${name}(state: State, ${paramName}: string): unknown {
 ${indent(mergedBody, 1)}
@@ -1061,7 +1094,14 @@ function emitNodeFunctionWithRecovery(
   // emitNodeFunction pushes onto it (e.g. dispatcher-extracted alt body
   // helpers like `parseHtmlElement__alt5__body` → `parseHtmlElement__valid__alt5__body`).
   const helpersBefore = pendingHelpers.length;
-  const validDispatch = emitNodeFunction(validInfo, { ...ctx }).replace(
+  // Pass a resolver that maps each production back to its index in the
+  // ORIGINAL info.productions, not the filtered validProductions subset.
+  // Otherwise emitNodeFunction would stamp captures.__production with
+  // subset indices and the render dispatcher (emitted from the full
+  // info) would misroute. This bit silently when valid productions
+  // weren't a prefix of info.productions (interleaved with recovery
+  // productions — e.g. packages/html/src/schema.ts's HtmlElement).
+  const validDispatch = emitNodeFunction(validInfo, { ...ctx, prodIndexResolver: nodeProductionIndex }).replace(
     new RegExp(`function ${escapeRegex(fnName)}\\(`, 'g'),
     `function ${validFnName}(`,
   ).replace(

@@ -280,6 +280,77 @@ test('render(input, { type: "bogus" }) throws unknown target', async () => {
   assert.throws(() => mod.render('# title', { type: 'bogus' }), /render: unknown target 'bogus'/);
 });
 
+// ---------- Recovery + interleaved-valid regression -----------------------
+//
+// Regression for the scannerless-emit bug where emitNodeFunctionWithRecovery
+// constructed a phantom validInfo (filtered subset of productions) and
+// recursed into emitNodeFunction. The recursion stamped captures.__production
+// with subset indices (e.g. 0,1) — but the per-target render dispatcher
+// switch was emitted from the FULL info (so it expects 0,2). When valid
+// productions don't form a prefix of info.productions (i.e. valid alts
+// interleave with recovery alts), the dispatcher silently misroutes any
+// valid alt whose full-info index sits past a recovery alt — invoking the
+// wrong builder (or, if the recovery builder's shape happens to be
+// compatible, returning the recovery shape for a valid input).
+//
+// Setup: valid(idx 0), recovery(idx 1), valid(idx 2). Without the fix,
+// the third production gets stamped `<Node>#1` and routes to the
+// recovery builder.
+
+test('recovery production interleaved with valid productions: __production keys preserve full-info indices', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'X',
+    examples: [
+      // index 0: valid — `<a>v</a>`
+      ex('<a>v</a>').as('X')
+        .span('<a>')
+        .span('v', 'v').ident()
+        .span('</a>')
+        .render('ast', { type: 'a', v: $.v })
+        .render('html', tpl`<a>${$.v}</a>`)
+        .build(),
+      // index 1: recovery — `!` followed by raw text up to `;`
+      ex('!bad;').as('X')
+        .span('!')
+        .span('rest', 'bad').rawUntil([';'])
+        .span(';')
+        .recovers({ syncAt: [';'], drop: 'x-bad' })
+        .render('ast', { type: 'bad', rest: $.rest })
+        .render('html', tpl`<!--${$.rest}-->`)
+        .build(),
+      // index 2: valid — `<c>v</c>`. THIS is the indexing risk: the buggy
+      // path would stamp this with `X#1` (the subset index inside the
+      // filtered valid list), routing it to the recovery builder.
+      ex('<c>v</c>').as('X')
+        .span('<c>')
+        .span('v', 'v').ident()
+        .span('</c>')
+        .render('ast', { type: 'c', v: $.v })
+        .render('html', tpl`<c>${$.v}</c>`)
+        .build(),
+    ],
+  });
+  const code = generateParser(schema as Parameters<typeof generateParser>[0], undefined, { packageName: 'recovery-interleave' });
+  // The generated source should reference full-info indices (X#0, X#1, X#2)
+  // and emit builders for each of them. The bug stamped X#1 onto BOTH the
+  // recovery production and the valid `<c>` production — confirm that the
+  // captures payload for the `<c>` production carries X#2, not X#1.
+  assert.match(code, /"X#2"/);
+  assert.match(code, /__build_X_2_ast/);
+  assert.match(code, /__build_X_2_html/);
+  const mod = await loadGenerated(schema, 'recovery-interleave');
+  // Forward-render the valid-at-full-index-2 production through both
+  // targets. Misrouted dispatch would either throw "unknown production
+  // X#3" (the builder doesn't exist) or, worse, silently invoke the
+  // recovery builder and return `{ type: 'bad', rest: 'v' }`.
+  assert.deepEqual(mod.render('<c>v</c>', { type: 'ast' }), { type: 'c', v: 'v' });
+  assert.equal(mod.render('<c>v</c>', { type: 'html' }), '<c>v</c>');
+  // Sanity: the index-0 production still routes correctly.
+  assert.deepEqual(mod.render('<a>v</a>', { type: 'ast' }), { type: 'a', v: 'v' });
+  assert.equal(mod.render('<a>v</a>', { type: 'html' }), '<a>v</a>');
+});
+
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {

@@ -55,7 +55,17 @@ export function emitRebuild(schema: InferredSchema): string {
 
 type Piece =
   | { readonly kind: 'literal'; readonly text: string }
-  | { readonly kind: 'slot'; readonly ref: string; readonly optional: boolean };
+  | {
+      readonly kind: 'slot';
+      readonly ref: string;
+      readonly optional: boolean;
+      // Join separator for repeated children captured as an array. Empty
+      // string when `.repeats({ sep })` is declared (children carry their
+      // own separator suffix); single space when `.repeats()` without `sep`
+      // (whitespace-separated at parse time). Non-repeating slots carry an
+      // empty join separator — the field is unused but type-stable.
+      readonly joinSep: string;
+    };
 
 function emitOne(nodeName: string, prodIdx: number, production: Production): string {
   const pieces = synthesizePieces(production);
@@ -100,24 +110,42 @@ function contributionOf(span: ResolvedSpan): Piece {
   // Treat both .optional() and .repeats({ min: 0 }) as absent-allowed: the
   // captured value may be null and the slot must collapse to "" at runtime.
   const optional = isAbsentAllowed(span);
+  const joinSep = joinSeparatorOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('rebuild: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional };
+    return { kind: 'slot', ref: span.name, optional, joinSep };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new CompilerError('rebuild: until-span without name');
-    return { kind: 'slot', ref: span.name, optional };
+    return { kind: 'slot', ref: span.name, optional, joinSep };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new CompilerError(`rebuild: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional };
+    return { kind: 'slot', ref: span.name, optional, joinSep };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep };
   if (!span.text) throw new CompilerError('rebuild: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
+}
+
+// Fix 3: determine the runtime join separator for a span captured as an
+// array. `.repeats({ sep })` declares an explicit per-child suffix at parse
+// time — children carry their own separator, so rebuild joins with "".
+// `.repeats()` without `sep` relies on the schema-level whitespace policy
+// (typically a single space) between children — rebuild joins with " ".
+// Spans that don't repeat get "" too (unused; arrays only land here for
+// repeats and recursive captures, the latter joined via __rebuildSlot's
+// nested recursion).
+function joinSeparatorOf(span: ResolvedSpan): string {
+  for (const m of span.modifiers) {
+    if (m.kind === 'repeats') {
+      return m.sep === undefined ? ' ' : '';
+    }
+  }
+  return '';
 }
 
 function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
@@ -129,6 +157,8 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       parts.push(jsString(p.text));
       continue;
     }
+    const slotAccess = `captures${memberAccess(p.ref)}`;
+    const slotExpr = `__rebuildSlot(${slotAccess}${p.joinSep ? `, ${jsString(p.joinSep)}` : ''})`;
     if (p.optional) {
       // Fuse the slot with its preceding literal separator (Fix 2 — ports
       // the foldIntoTemplate optional-slot behaviour from the deleted
@@ -136,8 +166,6 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       // we suppress BOTH the slot and the separator; otherwise we emit
       // `<sep> + <slotExpr>` (or, when the captured value is recursive,
       // route through __rebuildSlot for proper coercion).
-      const slotAccess = `captures${memberAccess(p.ref)}`;
-      const slotExpr = `__rebuildSlot(${slotAccess})`;
       // Look back for an immediately-preceding literal piece in the input
       // stream (pieces[i-1]) AND make sure we haven't already consumed it
       // (parts has the same prefix as pieces — easy to check by length).
@@ -156,7 +184,7 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       }
       continue;
     }
-    parts.push(`__rebuildSlot(${`captures${memberAccess(p.ref)}`})`);
+    parts.push(slotExpr);
   }
   if (parts.length === 1) return parts[0]!.startsWith('"') ? parts[0]! : `String(${parts[0]})`;
   return parts.join(' + ');
@@ -195,13 +223,19 @@ function truncate(s: string): string {
 // Helper used by every rebuild fn to coerce a captures value to a string.
 // Captures referencing recursive children land here already as
 // fully-rebuilt strings (the inverse dispatcher recurses before rebuild
-// runs). Arrays of children are joined with '' — children carry their own
-// separators. Primitives stringify naturally. null/undefined → ''.
-export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any): string {
+// runs). Arrays of children are joined with `joinSep` (Fix 3): an empty
+// string when the span uses `.repeats({ sep })` (children carry their own
+// separator suffix) or a single space when `.repeats()` declares no `sep`
+// (whitespace-separated at parse time). Primitives stringify naturally.
+// null/undefined → "".
+export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any, joinSep: string = ""): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
     let out = "";
-    for (let i = 0; i < v.length; i++) out += __rebuildSlot(v[i]);
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
     return out;
   }
   return String(v);

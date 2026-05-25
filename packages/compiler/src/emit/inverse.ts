@@ -482,20 +482,26 @@ function fieldNameSet(ir: Extract<InverseIR, { kind: 'object' }>): Set<string> {
 
 function emitSlotHelper(target: string): string {
   const id = jsIdent(target);
-  // Preserve null/undefined as-is — the per-production rebuild emits an
-  // explicit `captures.<name> == null ? "" : ...` ternary around optional
-  // slots (see Fix 2 in emit/rebuild.ts), so coercing null to "" here would
-  // hide the absent state and leave dangling separators in the output.
-  // Non-null values still funnel through dispatch / array-join / String()
-  // as before.
+  // Returns whatever shape the rebuild expects to read back from captures:
+  //   null/undefined → null (Fix 2: rebuild's optional-slot ternary checks
+  //                          for null; coercing to "" would mask absent
+  //                          state and leave dangling separators).
+  //   string         → string (already source-shaped).
+  //   array          → array of inverted children (Fix 3: rebuild joins
+  //                    repeats arrays with the correct separator via
+  //                    __rebuildSlot(captures.x, " "); flattening here
+  //                    would lose the per-element boundaries).
+  //   object         → dispatch through __dispatchInverse_<target> to
+  //                    recursively rebuild the child into a source string.
+  //   other          → String(v).
   return `function __invertSlot_${id}(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
   if (Array.isArray(v)) {
-    let out = "";
+    const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlot_${id}(v[i]);
-      if (r != null) out += r;
+      if (r != null) out.push(r);
     }
     return out;
   }

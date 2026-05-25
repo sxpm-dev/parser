@@ -299,6 +299,32 @@ test('rebuild: optional trailing span absent collapses both slot and preceding s
   assert.equal(mod.stringify(mod.render('hi', { type: 'ast' }), { type: 'ast' }), 'hi');
 });
 
+// Fix 3: `.repeats()` without an explicit `sep` should join children with a
+// single space at rebuild time (whitespace-separated at parse time —
+// children don't carry their own trailing separator).
+test('rebuild: .repeats() without sep joins children with a single space', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Command',
+    examples: [
+      ex('npm test').as('Command')
+        .span('words', 'npm', 'Word').repeats({ min: 1 })
+        .render('ast', { type: 'command', words: $.words })
+        .build(),
+      ex('npm').as('Word')
+        .span('w', 'npm').ident()
+        .render('ast', $.w)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'fix3-repeats-join');
+  const ast = mod.render('npm test', { type: 'ast' });
+  assert.deepEqual(ast, { type: 'command', words: ['npm', 'test'] });
+  // Round-trip through stringify must preserve the inter-child space.
+  const src = mod.stringify(ast, { type: 'ast' });
+  assert.equal(src, 'npm test');
+});
+
 // ---------- Round-trip via generated parser -------------------------------
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast', async () => {

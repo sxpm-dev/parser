@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'LogEntry',
@@ -23,7 +23,7 @@ export default defineSchema({
       .span('request', '"GET /apache_pb.gif HTTP/1.0"').string().doubleQuoted()
       .span('status', '200').number().int()
       .span('size', '2326').number().int()
-      .structure({
+      .render('ast', {
         type: 'log-entry',
         ip: $.ip,
         ident: '-',
@@ -33,6 +33,7 @@ export default defineSchema({
         status: $.status,
         size: $.size,
       })
+      .render('source', tpl`${$.ip} - ${$.user} [${$.date}] ${$.request} ${$.status} ${$.size}`)
       .build(),
   ],
 });

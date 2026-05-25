@@ -620,9 +620,9 @@ function parseLogEntry(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "log-entry", ip: ip, ident: "-", user: user, date: date, request: request, status: status, size: size };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LogEntry#0", ip: ip, user: user, date: date, request: request, status: status, size: size };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLogEntryFast(state: State): unknown {
@@ -978,7 +978,7 @@ function parseLogEntryFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "log-entry", ip: ip, ident: "-", user: user, date: date, request: request, status: status, size: size };
+  return { __production: "LogEntry#0", ip: ip, user: user, date: date, request: request, status: status, size: size };
 }
 
 function validateLogEntry(state: State): unknown {
@@ -1337,78 +1337,267 @@ function validateLogEntry(state: State): unknown {
   return;
 }
 
-function stringify_LogEntry_source(s: any): string {
-  return __renderSlot_source(s["ip"]) + " - " + __renderSlot_source(s["user"]) + " [" + __renderSlot_source(s["date"]) + "] " + __renderSlot_source(s["request"]) + " " + __renderSlot_source(s["status"]) + " " + __renderSlot_source(s["size"]);
+const __defaultTarget: string | undefined = undefined;
+
+function __build_LogEntry_0_ast(captures: any): any {
+  return { type: "log-entry", ip: __renderSlot_ast(captures.ip), ident: "-", user: __renderSlot_ast(captures.user), date: __renderSlot_ast(captures.date), request: __renderSlot_ast(captures.request), status: __renderSlot_ast(captures.status), size: __renderSlot_ast(captures.size) };
 }
 
-function stringify_LogEntry_json_auto(s: any): string {
-  return "{\"type\":\"log-entry\",\"ip\":" + __renderSlot_json_auto(s["ip"]) + ",\"ident\":\"-\",\"user\":" + __renderSlot_json_auto(s["user"]) + ",\"date\":" + __renderSlot_json_auto(s["date"]) + ",\"request\":" + __renderSlot_json_auto(s["request"]) + ",\"status\":" + __renderSlot_json_auto(s["status"]) + ",\"size\":" + __renderSlot_json_auto(s["size"]) + "}";
+function __build_LogEntry_0_source(captures: any): any {
+  return (__renderSlot_source(captures.ip) ?? "") + " - " + (__renderSlot_source(captures.user) ?? "") + " [" + (__renderSlot_source(captures.date) ?? "") + "] " + (__renderSlot_source(captures.request) ?? "") + " " + (__renderSlot_source(captures.status) ?? "") + " " + (__renderSlot_source(captures.size) ?? "");
 }
 
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "log-entry": return stringify_LogEntry_source(s);
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "log-entry": return stringify_LogEntry_json_auto(s);
+  switch (captures.__production) {
+    case "LogEntry#0": return __build_LogEntry_0_ast(captures);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
+  }
+  switch (captures.__production) {
+    case "LogEntry#0": return __build_LogEntry_0_source(captures);
+  }
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
-}
-
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
     return out;
   }
-  return __dispatchStringify_source(v);
-}
-
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
   }
-  return __dispatchStringify_json_auto(v);
+  return v;
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_LogEntry_0(captures: any): string {
+  return __rebuildSlot(captures.ip) + " " + "-" + " " + __rebuildSlot(captures.user) + " " + "[" + __rebuildSlot(captures.date) + "]" + " " + __rebuildSlot(captures.request) + " " + __rebuildSlot(captures.status) + " " + __rebuildSlot(captures.size);
+}
+
+function __invert_LogEntry_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "log-entry")) {
+    throw new Error("stringify: field \"type\" expected \"log-entry\", got " + JSON.stringify(value.type));
+  }
+  captures.ip = __invertSlotLeaf_ast(value.ip);
+  if (!Object.is(value.ident, "-")) {
+    throw new Error("stringify: field \"ident\" expected \"-\", got " + JSON.stringify(value.ident));
+  }
+  captures.user = __invertSlotLeaf_ast(value.user);
+  captures.date = __invertSlotLeaf_ast(value.date);
+  captures.request = __invertSlotLeaf_ast(value.request);
+  captures.status = __invertSlotLeaf_ast(value.status);
+  captures.size = __invertSlotLeaf_ast(value.size);
+  return __rebuild_LogEntry_0(captures);
+}
+
+function __invert_LogEntry_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(" - ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" - \" after capture ip");
+    }
+    captures.ip = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
+  {
+    const __end = __s.indexOf(" [", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" [\" after capture user");
+    }
+    captures.user = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("] ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"] \" after capture date");
+    }
+    captures.date = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture request");
+    }
+    captures.request = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture status");
+    }
+    captures.status = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.size = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_LogEntry_0(captures);
+}
+
+function __dispatchInverse_LogEntry_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "log-entry") && Object.is(value.ident, "-")) return __invert_LogEntry_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_LogEntry_ast(value);
+}
+
+function __dispatchInverse_LogEntry_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf(" - ") >= 0) return __invert_LogEntry_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_source(value: any): string {
+  return __dispatchInverse_LogEntry_source(value);
+}
+
+function __invertSlotFor_LogEntry_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_LogEntry_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_LogEntry_ast(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_LogEntry_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_LogEntry_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_LogEntry_source(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+  "source": __dispatchInverse_source,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

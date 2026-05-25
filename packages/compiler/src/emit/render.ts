@@ -252,13 +252,15 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
 // Returns the per-array join separator if the span is `.repeats(...)`, or
 // null when the span doesn't repeat. Mirrors the rebuild-side
 // `joinSeparatorOf` in emit/rebuild.ts: `.repeats({ sep })` declares an
-// explicit per-child suffix (children carry their own separator → join with
-// ""), `.repeats()` without `sep` relies on the schema-level whitespace
-// policy (single space) between children → join with " ".
+// explicit inter-child separator that the parser consumed between children
+// — children's rebuilt source carries only their own content (not the
+// separator), so we must re-introduce the declared separator at join time.
+// `.repeats()` without `sep` relies on the schema-level whitespace policy
+// (single space) between children → join with " ".
 function repeatsJoinSeparator(span: ResolvedSpan): string | null {
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      return m.sep === undefined ? ' ' : '';
+      return m.sep === undefined ? ' ' : m.sep;
     }
   }
   return null;

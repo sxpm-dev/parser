@@ -347,6 +347,55 @@ test('forward template: .repeats() slot joins array with declared separator', as
   assert.equal(mod.render('npm test deploy', { type: 'source' }), 'npm test deploy');
 });
 
+test('forward + rebuild: .repeats({sep}) slot joins array with declared separator', async () => {
+  // Regression: prior to this fix, both repeatsJoinSeparator (render.ts)
+  // and joinSeparatorOf (rebuild.ts) returned "" for `.repeats({ sep })`
+  // — wrongly assuming each child carried its own trailing separator.
+  // The parser actually CONSUMES the separator between children, so each
+  // child's synthesized source produces only its own content. Joining
+  // with "" therefore dropped every inter-child separator.
+  //
+  // Schema mirrors url's Query production: `.repeats({ sep: '&', min: 1 })`.
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Query',
+    examples: [
+      ex('q=hello')
+        .as('Pair')
+        .span('key', 'q').ident().css()
+        .span('=')
+        .span('value', 'hello').ident().css()
+        .render('ast', { type: 'pair', key: $.key, value: $.value })
+        .render('source', tpl`${$.key}=${$.value}`)
+        .build(),
+      ex('q=hello&tag=one')
+        .as('Query')
+        .span('pairs', 'q=hello', 'Pair').repeats({ sep: '&', min: 1 })
+        .render('ast', { type: 'query', pairs: $.pairs })
+        .render('source', tpl`${$.pairs}`)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'repeats-sep-join') as GeneratedModule & {
+    stringify: (v: unknown, opts?: { type?: string }) => string;
+  };
+  // Forward: 'source' target must preserve the '&' separator (not drop it).
+  assert.equal(
+    mod.render('q=hello&tag=one', { type: 'source' }),
+    'q=hello&tag=one',
+  );
+  // Round-trip via 'source': render -> stringify -> render must be stable.
+  const src = mod.render('q=hello&tag=one', { type: 'source' });
+  const back = mod.stringify(src, { type: 'source' });
+  assert.equal(back, 'q=hello&tag=one');
+  // Round-trip via 'ast': render -> stringify -> render must produce the
+  // same AST value.
+  const target = 'source' as const;
+  const v1 = mod.render('q=hello&tag=one', { type: target });
+  const v2 = mod.render(mod.stringify(v1, { type: target }), { type: target });
+  assert.deepEqual(v2, v1);
+});
+
 // ---------- Inverse dispatcher dispatches only on root productions (Gap C)
 
 test('inverse dispatch: stringify routes via root productions, not sub-production prefixes', async () => {

@@ -132,17 +132,18 @@ function contributionOf(span: ResolvedSpan): Piece {
 }
 
 // Fix 3: determine the runtime join separator for a span captured as an
-// array. `.repeats({ sep })` declares an explicit per-child suffix at parse
-// time — children carry their own separator, so rebuild joins with "".
-// `.repeats()` without `sep` relies on the schema-level whitespace policy
-// (typically a single space) between children — rebuild joins with " ".
-// Spans that don't repeat get "" too (unused; arrays only land here for
-// repeats and recursive captures, the latter joined via __rebuildSlot's
-// nested recursion).
+// array. `.repeats({ sep })` declares an explicit inter-child separator
+// consumed by the parser between children — each child's rebuilt source
+// only carries its own content, so rebuild must re-introduce the declared
+// separator at join time. `.repeats()` without `sep` relies on the
+// schema-level whitespace policy (typically a single space) between
+// children — rebuild joins with " ". Spans that don't repeat get "" too
+// (unused; arrays only land here for repeats and recursive captures, the
+// latter joined via __rebuildSlot's nested recursion).
 function joinSeparatorOf(span: ResolvedSpan): string {
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      return m.sep === undefined ? ' ' : '';
+      return m.sep === undefined ? ' ' : m.sep;
     }
   }
   return '';

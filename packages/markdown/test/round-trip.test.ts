@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { render, stringify } from '../src/index.ts';
+import { assertRoundTrip } from '@parser2/parser';
+import * as mod from '../src/index.ts';
 
-// Round-trip property test for the markdown schema. Value-stable contract
-// per the spec (Section "Design rules", rule 5):
-//
-//   render(stringify(render(x, T), T), T) === render(x, T)
+// Round-trip property test for the markdown schema. See @parser2/parser's
+// shared assertRoundTrip helper for the value-stable contract (spec
+// Section "Design rules", rule 5).
 //
 // Targets exercised:
 //   - 'ast' — object-shaped target; the inverse dispatcher routes on the
@@ -21,7 +21,7 @@ import { render, stringify } from '../src/index.ts';
 // would need a markdown serializer that knows the html came from a
 // markdown source, not from arbitrary text — out of scope for v1.
 
-const cases = [
+const FIXTURES: ReadonlyArray<string> = [
   '# Release notes',
   '## Installation guide',
   '### API reference',
@@ -48,23 +48,22 @@ const cases = [
   '<div>html</div>',
 ];
 
-for (const target of ['ast', 'source'] as const) {
-  for (const input of cases) {
-    test(`round-trip '${target}' (value-stable): ${JSON.stringify(input).slice(0, 50)}`, () => {
-      const v1 = render(input, { type: target });
-      const src = stringify(v1, { type: target });
-      const v2 = render(src, { type: target });
-      assert.deepEqual(v2, v1);
-    });
-  }
-}
+test("round-trip 'ast' (value-stable)", () => {
+  assertRoundTrip(mod, 'ast', FIXTURES);
+});
+
+test("round-trip 'source' (value-stable)", () => {
+  assertRoundTrip(mod, 'source', FIXTURES);
+});
 
 // 'source' must additionally re-stringify to the same canonical bytes for
 // fixtures already in canonical form. The value-stable loop above already
 // exercises canonical-input round-trip; this extra pass pins the
-// canonical form so we notice if the rebuild algorithm changes.
-for (const input of cases) {
+// canonical form so we notice if the rebuild algorithm changes. Kept
+// in-package because the harness owns value-equality only — byte-equality
+// for the canonical form is a markdown-specific stronger invariant.
+for (const input of FIXTURES) {
   test(`canonical source: ${JSON.stringify(input).slice(0, 50)}`, () => {
-    assert.equal(render(input, { type: 'source' }), input);
+    assert.equal(mod.render(input, { type: 'source' }), input);
   });
 }

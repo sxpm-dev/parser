@@ -1,11 +1,10 @@
-import assert from 'node:assert/strict';
 import test from 'node:test';
-import { render, stringify } from '../src/index.ts';
+import { assertRoundTrip } from '@parser2/parser';
+import * as mod from '../src/index.ts';
 
-// Round-trip property test for the css-color schema. Value-stable contract
-// per the spec (Section "Design rules", rule 5):
-//
-//   render(stringify(render(x, T), T), T) === render(x, T)
+// Round-trip property test for the css-color schema. See @parser2/parser's
+// shared assertRoundTrip helper for the value-stable contract (spec
+// Section "Design rules", rule 5).
 //
 // 'ast' target — value-stable across all fixtures. After Phase 6 the
 // previously-shared `{ type: 'color-function', name }` shape was split
@@ -39,12 +38,6 @@ const FIXTURES: ReadonlyArray<string> = [
   'var(--brand-color, red)',
 ];
 
-for (const fixture of FIXTURES) {
-  test(`round-trip 'ast' target (value-stable): ${fixture}`, () => {
-    const target = 'ast' as const;
-    const v1 = render(fixture, { type: target });
-    const src = stringify(v1, { type: target });
-    const v2 = render(src, { type: target });
-    assert.deepEqual(v2, v1);
-  });
-}
+test("round-trip 'ast' target (value-stable)", () => {
+  assertRoundTrip(mod, 'ast', FIXTURES);
+});

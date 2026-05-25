@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
+
+// Public parse() was removed in Phase 5 of the unified-render-targets
+// refactor. The AST shape that used to be returned by parse() is now
+// reachable via `render(input, { type: 'ast' })`. Wrap once so the rest of
+// the test reads the same as before.
+function parse(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
 
 type Case = {
   readonly name: string;
@@ -118,12 +126,12 @@ const blockCases: Case[] = [
   {
     name: 'table delimiter row',
     input: '| --- | --- |',
-    expected: { type: 'table-delimiter', align: ['default', 'default'] },
+    expected: { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] },
   },
   {
     name: 'aligned table delimiter row',
     input: '|:---|---:|',
-    expected: { type: 'table-delimiter', align: ['left', 'right'] },
+    expected: { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] },
   },
   {
     name: 'link reference definition',
@@ -347,12 +355,12 @@ const realWorldFixtureCases: Case[] = [
   {
     name: 'table delimiter row',
     input: '| --- | --- |',
-    expected: { type: 'table-delimiter', align: ['default', 'default'] },
+    expected: { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] },
   },
   {
     name: 'aligned table delimiter row',
     input: '|:---|---:|',
-    expected: { type: 'table-delimiter', align: ['left', 'right'] },
+    expected: { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] },
   },
   {
     name: 'link reference definition',
@@ -405,8 +413,8 @@ const releaseNotesFixtureChildren = [
   { type: 'code-block', lang: 'js', text: 'sample' },
   { type: 'code-block', text: 'plain' },
   { type: 'table-row', cells: ['name', 'value'] },
-  { type: 'table-delimiter', align: ['default', 'default'] },
-  { type: 'table-delimiter', align: ['left', 'right'] },
+  { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] },
+  { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] },
   { type: 'definition', id: 'id', url: 'https://example.com' },
   { type: 'footnote-definition', id: '1', text: 'footnote text' },
   { type: 'footnote-reference', id: '1' },

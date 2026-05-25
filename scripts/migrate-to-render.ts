@@ -403,11 +403,23 @@ function findExCallFrom(
   fromIndex: number,
 ): [number, number] | null {
   // Match ex(<input>) at-or-after fromIndex. We accept either quote style.
-  // For inputs containing both quote styles or backslashes, fall back to
-  // the JSON-escaped form. The earliest qualifying match wins.
+  // The earliest qualifying match wins.
+  //
+  // Inputs containing chars JS would print as backslash-escapes (\n, \t,
+  // \r, \f, \v, \b) cannot be matched against `ex('${input}')` directly
+  // because the source has the two-character escape form while `input`
+  // carries the single control char. For those inputs we ALSO try the
+  // JS-escaped form against each quote style — schemas may use either
+  // 'single' or "double" quotes; JSON.stringify only emits the double
+  // form, which misses the single-quote case (e.g. markdown's document
+  // example).
+  const escSingle = jsEscape(input, "'");
+  const escDouble = jsEscape(input, '"');
   const candidates: string[] = [];
-  if (!input.includes("'") && !input.includes('\\')) candidates.push(`ex('${input}')`);
-  if (!input.includes('"') && !input.includes('\\')) candidates.push(`ex("${input}")`);
+  if (!input.includes("'") && !input.includes('\\') && !needsJsEscape(input)) candidates.push(`ex('${input}')`);
+  if (!input.includes('"') && !input.includes('\\') && !needsJsEscape(input)) candidates.push(`ex("${input}")`);
+  candidates.push(`ex('${escSingle}')`);
+  candidates.push(`ex("${escDouble}")`);
   candidates.push(`ex(${JSON.stringify(input)})`);
   let best: [number, number] | null = null;
   for (const needle of candidates) {
@@ -416,6 +428,26 @@ function findExCallFrom(
     if (best === null || idx < best[0]) best = [idx, idx + needle.length];
   }
   return best;
+}
+
+function needsJsEscape(input: string): boolean {
+  return /[\n\r\t\f\v\b]/.test(input);
+}
+
+function jsEscape(input: string, quote: string): string {
+  let out = '';
+  for (const ch of input) {
+    if (ch === '\\') out += '\\\\';
+    else if (ch === quote) out += '\\' + quote;
+    else if (ch === '\n') out += '\\n';
+    else if (ch === '\r') out += '\\r';
+    else if (ch === '\t') out += '\\t';
+    else if (ch === '\f') out += '\\f';
+    else if (ch === '\v') out += '\\v';
+    else if (ch === '\b') out += '\\b';
+    else out += ch;
+  }
+  return out;
 }
 
 function findMatchingBuild(src: string, fromIdx: number): number {

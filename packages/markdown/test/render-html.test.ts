@@ -35,7 +35,7 @@ const cases: Case[] = [
   { input: '[docs][id]', html: '<a href="#id">docs</a>' },
   { input: '![diagram](https://example.com/diagram.png)', html: '<img src="https://example.com/diagram.png" alt="diagram">' },
   { input: '![diagram][image-id]', html: '<img src="#image-id" alt="diagram">' },
-  { input: '<https://example.com>', html: '<a href="https://example.com">https://example.com</a>' },
+  { input: '<https://example.com>', html: '<a class="autolink" href="https://example.com">https://example.com</a>' },
   { input: '&amp;', html: '&amp;' },
   { input: '```js\nsample\n```', html: '<pre><code class="lang-js">sample</code></pre>' },
   { input: '```\nplain\n```', html: '<pre><code>plain</code></pre>' },
@@ -50,6 +50,6 @@ const cases: Case[] = [
 
 for (const { input, html } of cases) {
   test(`render html: ${JSON.stringify(input).slice(0, 60)}`, () => {
-    assert.equal(render(input, { target: 'html' }), html);
+    assert.equal(render(input, { type: 'html' }), html);
   });
 }

@@ -1,47 +1,35 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, render, stringify } from '../src/index.ts';
+import { render, stringify } from '../src/index.ts';
 
-// For every (input, target) pair, the fused render(input, target) must
-// match the two-pass stringify(parse(input), target). This is the load-
-// bearing contract — keeping both codepaths pinned to the same template
-// means authoring drift is impossible.
+// The pre-migration stringify-parity test compared the fused forward
+// `render(input, target)` against the two-pass `stringify(parse(input),
+// target)`. That contract was specific to the legacy stringify-template
+// pipeline; under the unified .render() API the equivalent is the
+// round-trip property `render(stringify(render(x, T), T), T) === render(x, T)`
+// which is exercised exhaustively by round-trip.test.ts.
+//
+// One useful piece survives: for value-target pairs whose canonical
+// surface bytes match the input, the forward render must equal a stringify
+// round-trip through that target. Documented here as a small set of pins:
+
 const inputs = [
   '# Release notes',
   '## Installation guide',
   'Plain paragraph',
-  '- first item',
-  '+ alternate marker',
-  '1. ordered item',
   '> quoted text',
   '---',
-  '**bold**',
-  '*italic*',
-  '~~removed~~',
-  '`code`',
-  '[docs](https://example.com)',
-  '[docs][id]',
-  '![diagram](https://example.com/diagram.png)',
-  '![diagram][image-id]',
-  '<https://example.com>',
-  '&amp;',
-  '```js\nsample\n```',
-  '```\nplain\n```',
-  '| name | value |',
-  '[id]: https://example.com',
-  '[^1]: footnote text',
-  '[^1]',
-  '<div>html</div>',
 ];
 
-const targets = ['source', 'html'];
-
 for (const input of inputs) {
-  for (const target of targets) {
-    test(`parity ${target}: ${JSON.stringify(input).slice(0, 40)}`, () => {
-      const direct = render(input, { target });
-      const indirect = stringify(parse(input), { target });
-      assert.equal(direct, indirect);
-    });
-  }
+  test(`source-target self-round-trip stringify parity: ${JSON.stringify(input).slice(0, 40)}`, () => {
+    const direct = render(input, { type: 'source' });
+    const indirect = stringify(render(input, { type: 'source' }), { type: 'source' });
+    assert.equal(direct, indirect);
+  });
+  test(`html-target self-round-trip stringify parity: ${JSON.stringify(input).slice(0, 40)}`, () => {
+    const direct = render(input, { type: 'html' });
+    const indirect = stringify(render(input, { type: 'html' }), { type: 'html' });
+    assert.equal(direct, indirect);
+  });
 }

@@ -283,9 +283,9 @@ function parseMarkdownDocument(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "document", children: children };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownDocument#0", children: children };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt0(state: State): unknown {
@@ -352,9 +352,9 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 6, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#0", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt1(state: State): unknown {
@@ -421,9 +421,9 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 5, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#1", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt2(state: State): unknown {
@@ -490,9 +490,9 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 4, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#2", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt3(state: State): unknown {
@@ -559,9 +559,9 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 3, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#3", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt4(state: State): unknown {
@@ -628,9 +628,9 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 2, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#4", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt5(state: State): unknown {
@@ -697,9 +697,9 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 1, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#5", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt6(state: State): unknown {
@@ -767,9 +767,9 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 1, text: text, style: "setext" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#6", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt7(state: State): unknown {
@@ -837,38 +837,12 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "heading", depth: 2, text: text, style: "setext" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#7", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __struct: Record<string, unknown> = { type: "thematic-break" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
-}
-
-function parseMarkdownLeaf__alt9(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -889,12 +863,12 @@ function parseMarkdownLeaf__alt9(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "thematic-break", marker: "*" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#8" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
-function parseMarkdownLeaf__alt10(state: State): unknown {
+function parseMarkdownLeaf__alt9(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -915,9 +889,35 @@ function parseMarkdownLeaf__alt10(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "thematic-break", marker: "_" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#9" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
+}
+
+function parseMarkdownLeaf__alt10(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  __off += 3;
+  __consumedEnd = __off;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#10" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt11(state: State): unknown {
@@ -984,9 +984,9 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "task-list-item", checked: true, marker: "x", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#11", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt12(state: State): unknown {
@@ -1053,81 +1053,12 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "task-list-item", checked: false, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#12", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __struct: Record<string, unknown> = { type: "list-item", ordered: false, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
-}
-
-function parseMarkdownLeaf__alt14(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -1191,12 +1122,12 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "list-item", ordered: false, marker: "+", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#13", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
-function parseMarkdownLeaf__alt15(state: State): unknown {
+function parseMarkdownLeaf__alt14(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -1260,9 +1191,78 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "list-item", ordered: false, marker: "*", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#14", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
+}
+
+function parseMarkdownLeaf__alt15(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  const __startOff = __off;
+  let __consumedEnd = __off;
+  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
+  __off += 2;
+  __consumedEnd = __off;
+  let text = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      break;
+    }
+    const __startOff = __off;
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 10) break;
+      __off++;
+    }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __preWsOff;
+      state.__lastCaptureStart = __emptyAnchor;
+      state.__lastCaptureEnd = __emptyAnchor;
+      __off = __emptyAnchor;
+      text = '';
+    } else {
+      state.__lastCaptureStart = __startOff;
+      state.__lastCaptureEnd = __lastNonWs;
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    text = __input.slice(__startOff, __lastNonWs);
+    }
+  }
+  __consumedEnd = state.__lastCaptureEnd;
+  const __endOff = __consumedEnd;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#15", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt16(state: State): unknown {
@@ -1356,9 +1356,9 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "list-item", ordered: true, index: index, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#16", index: index, text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt17(state: State): unknown {
@@ -1425,9 +1425,9 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "blockquote", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#17", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt18(state: State): unknown {
@@ -1576,9 +1576,9 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "code-block", lang: lang, text: body };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#18", lang: lang, body: body };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt19(state: State): unknown {
@@ -1653,9 +1653,9 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "code-block", text: body };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#19", body: body };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt20(state: State): unknown {
@@ -1730,9 +1730,9 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "bold", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#20", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt21(state: State): unknown {
@@ -1807,9 +1807,9 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "italic", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#21", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt22(state: State): unknown {
@@ -1884,9 +1884,9 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "strikethrough", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#22", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt23(state: State): unknown {
@@ -1961,9 +1961,9 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "inline-code", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#23", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt24(state: State): unknown {
@@ -2097,9 +2097,9 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "link", label: label, url: url };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#24", label: label, url: url };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt25(state: State): unknown {
@@ -2225,9 +2225,9 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "reference-link", label: label, id: id };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#25", label: label, id: id };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt26(state: State): unknown {
@@ -2369,9 +2369,9 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "image", alt: alt, url: url };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#26", alt: alt, url: url };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt27(state: State): unknown {
@@ -2505,9 +2505,9 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "reference-image", alt: alt, id: id };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#27", alt: alt, id: id };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt28(state: State): unknown {
@@ -2613,9 +2613,9 @@ function parseMarkdownLeaf__alt28(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "entity", name: name };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#28", name: name };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt29(state: State): unknown {
@@ -2671,9 +2671,9 @@ function parseMarkdownLeaf__alt29(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "table-delimiter", align: ["default", "default"] };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#29" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt30(state: State): unknown {
@@ -2745,9 +2745,9 @@ function parseMarkdownLeaf__alt30(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "table-delimiter", align: ["left", "right"] };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#30" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt31(state: State): unknown {
@@ -2873,9 +2873,9 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "table-row", cells: [first, second] };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#31", first: first, second: second };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt32(state: State): unknown {
@@ -3001,9 +3001,9 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "definition", id: id, url: url };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#32", id: id, url: url };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt33(state: State): unknown {
@@ -3129,9 +3129,9 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "footnote-definition", id: id, text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#33", id: id, text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt34(state: State): unknown {
@@ -3206,9 +3206,9 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "footnote-reference", id: id };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#34", id: id };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt35(state: State): unknown {
@@ -3301,9 +3301,9 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "html", tag: tag, text: body, closingTag: closingTag };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf__alt36(state: State): unknown {
@@ -3378,9 +3378,9 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "autolink", url: url };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#36", url: url };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownLeaf(state: State): unknown {
@@ -3421,10 +3421,10 @@ function parseMarkdownLeaf(state: State): unknown {
       return parseMarkdownLeaf__alt12(state);
     }
     else if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeaf__alt8(state);
+      return parseMarkdownLeaf__alt10(state);
     }
     else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt13(state);
+      return parseMarkdownLeaf__alt15(state);
     }
   } else if (__byte0 === 96) {
     if (__input.startsWith("```\n", __peek)) {
@@ -3438,10 +3438,10 @@ function parseMarkdownLeaf(state: State): unknown {
     }
   } else if (__byte0 === 42) {
     if (__input.startsWith("***", __peek)) {
-      return parseMarkdownLeaf__alt9(state);
+      return parseMarkdownLeaf__alt8(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt15(state);
+      return parseMarkdownLeaf__alt14(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
       return parseMarkdownLeaf__alt20(state);
@@ -3451,11 +3451,11 @@ function parseMarkdownLeaf(state: State): unknown {
     }
   } else if (__byte0 === 95) {
     if (__input.startsWith("___", __peek)) {
-      return parseMarkdownLeaf__alt10(state);
+      return parseMarkdownLeaf__alt9(state);
     }
   } else if (__byte0 === 43) {
     if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt14(state);
+      return parseMarkdownLeaf__alt13(state);
     }
   } else if (__byte0 === 126) {
     if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
@@ -3904,9 +3904,9 @@ function parseMarkdownParagraph(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "paragraph", text: text };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MarkdownParagraph#0", text: text };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMarkdownDocumentFast(state: State): unknown {
@@ -3938,7 +3938,7 @@ function parseMarkdownDocumentFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "document", children: children };
+  return { __production: "MarkdownDocument#0", children: children };
 }
 
 function parseMarkdownLeafFast__alt0(state: State): unknown {
@@ -3996,7 +3996,7 @@ function parseMarkdownLeafFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 6, text: text };
+  return { __production: "MarkdownLeaf#0", text: text };
 }
 
 function parseMarkdownLeafFast__alt1(state: State): unknown {
@@ -4054,7 +4054,7 @@ function parseMarkdownLeafFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 5, text: text };
+  return { __production: "MarkdownLeaf#1", text: text };
 }
 
 function parseMarkdownLeafFast__alt2(state: State): unknown {
@@ -4112,7 +4112,7 @@ function parseMarkdownLeafFast__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 4, text: text };
+  return { __production: "MarkdownLeaf#2", text: text };
 }
 
 function parseMarkdownLeafFast__alt3(state: State): unknown {
@@ -4170,7 +4170,7 @@ function parseMarkdownLeafFast__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 3, text: text };
+  return { __production: "MarkdownLeaf#3", text: text };
 }
 
 function parseMarkdownLeafFast__alt4(state: State): unknown {
@@ -4228,7 +4228,7 @@ function parseMarkdownLeafFast__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 2, text: text };
+  return { __production: "MarkdownLeaf#4", text: text };
 }
 
 function parseMarkdownLeafFast__alt5(state: State): unknown {
@@ -4286,7 +4286,7 @@ function parseMarkdownLeafFast__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 1, text: text };
+  return { __production: "MarkdownLeaf#5", text: text };
 }
 
 function parseMarkdownLeafFast__alt6(state: State): unknown {
@@ -4345,7 +4345,7 @@ function parseMarkdownLeafFast__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 1, text: text, style: "setext" };
+  return { __production: "MarkdownLeaf#6", text: text };
 }
 
 function parseMarkdownLeafFast__alt7(state: State): unknown {
@@ -4404,30 +4404,10 @@ function parseMarkdownLeafFast__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "heading", depth: 2, text: text, style: "setext" };
+  return { __production: "MarkdownLeaf#7", text: text };
 }
 
 function parseMarkdownLeafFast__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { type: "thematic-break" };
-}
-
-function parseMarkdownLeafFast__alt9(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -4444,10 +4424,10 @@ function parseMarkdownLeafFast__alt9(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "thematic-break", marker: "*" };
+  return { __production: "MarkdownLeaf#8" };
 }
 
-function parseMarkdownLeafFast__alt10(state: State): unknown {
+function parseMarkdownLeafFast__alt9(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -4464,7 +4444,27 @@ function parseMarkdownLeafFast__alt10(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "thematic-break", marker: "_" };
+  return { __production: "MarkdownLeaf#9" };
+}
+
+function parseMarkdownLeafFast__alt10(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  __off += 3;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { __production: "MarkdownLeaf#10" };
 }
 
 function parseMarkdownLeafFast__alt11(state: State): unknown {
@@ -4522,7 +4522,7 @@ function parseMarkdownLeafFast__alt11(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "task-list-item", checked: true, marker: "x", text: text };
+  return { __production: "MarkdownLeaf#11", text: text };
 }
 
 function parseMarkdownLeafFast__alt12(state: State): unknown {
@@ -4580,68 +4580,10 @@ function parseMarkdownLeafFast__alt12(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "task-list-item", checked: false, text: text };
+  return { __production: "MarkdownLeaf#12", text: text };
 }
 
 function parseMarkdownLeafFast__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { type: "list-item", ordered: false, text: text };
-}
-
-function parseMarkdownLeafFast__alt14(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -4696,10 +4638,10 @@ function parseMarkdownLeafFast__alt14(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "list-item", ordered: false, marker: "+", text: text };
+  return { __production: "MarkdownLeaf#13", text: text };
 }
 
-function parseMarkdownLeafFast__alt15(state: State): unknown {
+function parseMarkdownLeafFast__alt14(state: State): unknown {
   const __input = state.input;
   const __len = __input.length;
   let __off = state.off;
@@ -4754,7 +4696,65 @@ function parseMarkdownLeafFast__alt15(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "list-item", ordered: false, marker: "*", text: text };
+  return { __production: "MarkdownLeaf#14", text: text };
+}
+
+function parseMarkdownLeafFast__alt15(state: State): unknown {
+  const __input = state.input;
+  const __len = __input.length;
+  let __off = state.off;
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
+  __off += 2;
+  let text = '';
+  {
+    // __preWsOff captures the offset at entry — used (with leading-comment
+    // tracking) to rewind __lastCaptureStart/End when the until captures
+    // nothing. Anchor = end of the last leading comment if any, else
+    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
+    const __preWsOff = __off;
+    // Skip leading whitespace and comments from the capture's view.
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+      break;
+    }
+    const __startOff = __off;
+    while (__off < __len) {
+      const __c = __input.charCodeAt(__off);
+      if (__c === 10) break;
+      __off++;
+    }
+    let __lastNonWs = __off;
+    while (__lastNonWs > __startOff) {
+      const __tc = __input.charCodeAt(__lastNonWs - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __lastNonWs--;
+    }
+    if (__lastNonWs === __startOff) {
+      const __emptyAnchor = __preWsOff;
+      __off = __emptyAnchor;
+      text = '';
+    } else {
+      // Rewind __off to the trim boundary so trailing whitespace and
+      // trailing comments (which were consumed during the scan) remain
+      // available for the parent's next iteration. Matches tokenized's
+      // captureUntil which rewinds state.pos past trailing comment tokens.
+      __off = __lastNonWs;
+    text = __input.slice(__startOff, __lastNonWs);
+    }
+  }
+  while (__off < __len) {
+    const __ws_c = __input.charCodeAt(__off);
+    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
+    break;
+  }
+  state.off = __off;
+  return { __production: "MarkdownLeaf#15", text: text };
 }
 
 function parseMarkdownLeafFast__alt16(state: State): unknown {
@@ -4838,7 +4838,7 @@ function parseMarkdownLeafFast__alt16(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "list-item", ordered: true, index: index, text: text };
+  return { __production: "MarkdownLeaf#16", index: index, text: text };
 }
 
 function parseMarkdownLeafFast__alt17(state: State): unknown {
@@ -4896,7 +4896,7 @@ function parseMarkdownLeafFast__alt17(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "blockquote", text: text };
+  return { __production: "MarkdownLeaf#17", text: text };
 }
 
 function parseMarkdownLeafFast__alt18(state: State): unknown {
@@ -5034,7 +5034,7 @@ function parseMarkdownLeafFast__alt18(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "code-block", lang: lang, text: body };
+  return { __production: "MarkdownLeaf#18", lang: lang, body: body };
 }
 
 function parseMarkdownLeafFast__alt19(state: State): unknown {
@@ -5099,7 +5099,7 @@ function parseMarkdownLeafFast__alt19(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "code-block", text: body };
+  return { __production: "MarkdownLeaf#19", body: body };
 }
 
 function parseMarkdownLeafFast__alt20(state: State): unknown {
@@ -5164,7 +5164,7 @@ function parseMarkdownLeafFast__alt20(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "bold", text: text };
+  return { __production: "MarkdownLeaf#20", text: text };
 }
 
 function parseMarkdownLeafFast__alt21(state: State): unknown {
@@ -5229,7 +5229,7 @@ function parseMarkdownLeafFast__alt21(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "italic", text: text };
+  return { __production: "MarkdownLeaf#21", text: text };
 }
 
 function parseMarkdownLeafFast__alt22(state: State): unknown {
@@ -5294,7 +5294,7 @@ function parseMarkdownLeafFast__alt22(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "strikethrough", text: text };
+  return { __production: "MarkdownLeaf#22", text: text };
 }
 
 function parseMarkdownLeafFast__alt23(state: State): unknown {
@@ -5359,7 +5359,7 @@ function parseMarkdownLeafFast__alt23(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "inline-code", text: text };
+  return { __production: "MarkdownLeaf#23", text: text };
 }
 
 function parseMarkdownLeafFast__alt24(state: State): unknown {
@@ -5476,7 +5476,7 @@ function parseMarkdownLeafFast__alt24(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "link", label: label, url: url };
+  return { __production: "MarkdownLeaf#24", label: label, url: url };
 }
 
 function parseMarkdownLeafFast__alt25(state: State): unknown {
@@ -5586,7 +5586,7 @@ function parseMarkdownLeafFast__alt25(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "reference-link", label: label, id: id };
+  return { __production: "MarkdownLeaf#25", label: label, id: id };
 }
 
 function parseMarkdownLeafFast__alt26(state: State): unknown {
@@ -5710,7 +5710,7 @@ function parseMarkdownLeafFast__alt26(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "image", alt: alt, url: url };
+  return { __production: "MarkdownLeaf#26", alt: alt, url: url };
 }
 
 function parseMarkdownLeafFast__alt27(state: State): unknown {
@@ -5827,7 +5827,7 @@ function parseMarkdownLeafFast__alt27(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "reference-image", alt: alt, id: id };
+  return { __production: "MarkdownLeaf#27", alt: alt, id: id };
 }
 
 function parseMarkdownLeafFast__alt28(state: State): unknown {
@@ -5927,7 +5927,7 @@ function parseMarkdownLeafFast__alt28(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "entity", name: name };
+  return { __production: "MarkdownLeaf#28", name: name };
 }
 
 function parseMarkdownLeafFast__alt29(state: State): unknown {
@@ -5975,7 +5975,7 @@ function parseMarkdownLeafFast__alt29(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "table-delimiter", align: ["default", "default"] };
+  return { __production: "MarkdownLeaf#29" };
 }
 
 function parseMarkdownLeafFast__alt30(state: State): unknown {
@@ -6037,7 +6037,7 @@ function parseMarkdownLeafFast__alt30(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "table-delimiter", align: ["left", "right"] };
+  return { __production: "MarkdownLeaf#30" };
 }
 
 function parseMarkdownLeafFast__alt31(state: State): unknown {
@@ -6147,7 +6147,7 @@ function parseMarkdownLeafFast__alt31(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "table-row", cells: [first, second] };
+  return { __production: "MarkdownLeaf#31", first: first, second: second };
 }
 
 function parseMarkdownLeafFast__alt32(state: State): unknown {
@@ -6257,7 +6257,7 @@ function parseMarkdownLeafFast__alt32(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "definition", id: id, url: url };
+  return { __production: "MarkdownLeaf#32", id: id, url: url };
 }
 
 function parseMarkdownLeafFast__alt33(state: State): unknown {
@@ -6367,7 +6367,7 @@ function parseMarkdownLeafFast__alt33(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "footnote-definition", id: id, text: text };
+  return { __production: "MarkdownLeaf#33", id: id, text: text };
 }
 
 function parseMarkdownLeafFast__alt34(state: State): unknown {
@@ -6432,7 +6432,7 @@ function parseMarkdownLeafFast__alt34(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "footnote-reference", id: id };
+  return { __production: "MarkdownLeaf#34", id: id };
 }
 
 function parseMarkdownLeafFast__alt35(state: State): unknown {
@@ -6513,7 +6513,7 @@ function parseMarkdownLeafFast__alt35(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "html", tag: tag, text: body, closingTag: closingTag };
+  return { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
 }
 
 function parseMarkdownLeafFast__alt36(state: State): unknown {
@@ -6578,7 +6578,7 @@ function parseMarkdownLeafFast__alt36(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "autolink", url: url };
+  return { __production: "MarkdownLeaf#36", url: url };
 }
 
 function parseMarkdownLeafFast(state: State): unknown {
@@ -6619,10 +6619,10 @@ function parseMarkdownLeafFast(state: State): unknown {
       return parseMarkdownLeafFast__alt12(state);
     }
     else if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeafFast__alt8(state);
+      return parseMarkdownLeafFast__alt10(state);
     }
     else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt13(state);
+      return parseMarkdownLeafFast__alt15(state);
     }
   } else if (__byte0 === 96) {
     if (__input.startsWith("```\n", __peek)) {
@@ -6636,10 +6636,10 @@ function parseMarkdownLeafFast(state: State): unknown {
     }
   } else if (__byte0 === 42) {
     if (__input.startsWith("***", __peek)) {
-      return parseMarkdownLeafFast__alt9(state);
+      return parseMarkdownLeafFast__alt8(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt15(state);
+      return parseMarkdownLeafFast__alt14(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
       return parseMarkdownLeafFast__alt20(state);
@@ -6649,11 +6649,11 @@ function parseMarkdownLeafFast(state: State): unknown {
     }
   } else if (__byte0 === 95) {
     if (__input.startsWith("___", __peek)) {
-      return parseMarkdownLeafFast__alt10(state);
+      return parseMarkdownLeafFast__alt9(state);
     }
   } else if (__byte0 === 43) {
     if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt14(state);
+      return parseMarkdownLeafFast__alt13(state);
     }
   } else if (__byte0 === 126) {
     if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
@@ -7095,7 +7095,7 @@ function parseMarkdownParagraphFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "paragraph", text: text };
+  return { __production: "MarkdownParagraph#0", text: text };
 }
 
 function validateMarkdownDocument(state: State): unknown {
@@ -7608,7 +7608,7 @@ function validateMarkdownLeaf__alt8(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
+  if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
   __off += 3;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -7628,7 +7628,7 @@ function validateMarkdownLeaf__alt9(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
+  if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
   __off += 3;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -7648,7 +7648,7 @@ function validateMarkdownLeaf__alt10(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
+  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
   __off += 3;
   while (__off < __len) {
     const __ws_c = __input.charCodeAt(__off);
@@ -7784,7 +7784,7 @@ function validateMarkdownLeaf__alt13(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
   __off += 2;
   let text = '';
   {
@@ -7842,7 +7842,7 @@ function validateMarkdownLeaf__alt14(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
   __off += 2;
   let text = '';
   {
@@ -7900,7 +7900,7 @@ function validateMarkdownLeaf__alt15(state: State): unknown {
     if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
     break;
   }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
+  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
   __off += 2;
   let text = '';
   {
@@ -9811,10 +9811,10 @@ function validateMarkdownLeaf(state: State): unknown {
       return validateMarkdownLeaf__alt12(state);
     }
     else if (__input.startsWith("---", __peek)) {
-      return validateMarkdownLeaf__alt8(state);
+      return validateMarkdownLeaf__alt10(state);
     }
     else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt13(state);
+      return validateMarkdownLeaf__alt15(state);
     }
   } else if (__byte0 === 96) {
     if (__input.startsWith("```\n", __peek)) {
@@ -9828,10 +9828,10 @@ function validateMarkdownLeaf(state: State): unknown {
     }
   } else if (__byte0 === 42) {
     if (__input.startsWith("***", __peek)) {
-      return validateMarkdownLeaf__alt9(state);
+      return validateMarkdownLeaf__alt8(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt15(state);
+      return validateMarkdownLeaf__alt14(state);
     }
     else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
       return validateMarkdownLeaf__alt20(state);
@@ -9841,11 +9841,11 @@ function validateMarkdownLeaf(state: State): unknown {
     }
   } else if (__byte0 === 95) {
     if (__input.startsWith("___", __peek)) {
-      return validateMarkdownLeaf__alt10(state);
+      return validateMarkdownLeaf__alt9(state);
     }
   } else if (__byte0 === 43) {
     if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt14(state);
+      return validateMarkdownLeaf__alt13(state);
     }
   } else if (__byte0 === 126) {
     if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
@@ -10348,7 +10348,7 @@ function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): un
     break;
   }
   state.off = __off;
-  return { type: "html", tag: __pre_tag, text: body, closingTag: closingTag };
+  return { __production: "MarkdownLeaf#35", tag: __pre_tag, body: body, closingTag: closingTag };
 }
 
 function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unknown {
@@ -10412,597 +10412,3506 @@ function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unk
   return;
 }
 
-function stringify_MarkdownDocument_source(s: any): string {
-  return __renderSlot_source(s["children"]);
+const __defaultTarget: string | undefined = undefined;
+
+function __build_MarkdownDocument_0_ast(captures: any): any {
+  return { type: "document", children: __renderSlot_ast(captures.children) };
 }
 
-function stringify_MarkdownDocument_html(s: any): string {
-  return __renderSlot_html(s["children"]);
+function __build_MarkdownDocument_0_html(captures: any): any {
+  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_html).join(" ") : (__renderSlot_html(captures.children) ?? ""))));
 }
 
-function stringify_MarkdownDocument_json_auto(s: any): string {
-  return "{\"type\":\"document\",\"children\":" + __renderSlot_json_auto(s["children"]) + "}";
+function __build_MarkdownDocument_0_source(captures: any): any {
+  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))));
 }
 
-function stringify_MarkdownLeaf_heading_source(s: any): string {
-  if (s["depth"] === 6 && s["style"] === undefined) return "###### " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 5 && s["style"] === undefined) return "##### " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 4 && s["style"] === undefined) return "#### " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 3 && s["style"] === undefined) return "### " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 2 && s["style"] === undefined) return "## " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 1 && s["style"] === undefined) return "# " + __renderSlot_source(s["text"]);
-  if (s["depth"] === 1 && s["style"] === "setext") return __renderSlot_source(s["text"]) + " ===";
-  if (s["depth"] === 2 && s["style"] === "setext") return __renderSlot_source(s["text"]) + " ---";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type heading)");
+function __build_MarkdownLeaf_0_ast(captures: any): any {
+  return { type: "heading", depth: 6, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_thematic_break_source(s: any): string {
-  if (s["marker"] === undefined) return "---";
-  if (s["marker"] === "*") return "***";
-  if (s["marker"] === "_") return "___";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type thematic-break)");
+function __build_MarkdownLeaf_0_html(captures: any): any {
+  return "<h6>" + (__renderSlot_html(captures.text) ?? "") + "</h6>";
 }
 
-function stringify_MarkdownLeaf_task_list_item_source(s: any): string {
-  if (s["checked"] === true && s["marker"] === "x") return "- [x] " + __renderSlot_source(s["text"]);
-  if (s["checked"] === false && s["marker"] === undefined) return "- [ ] " + __renderSlot_source(s["text"]);
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type task-list-item)");
+function __build_MarkdownLeaf_0_source(captures: any): any {
+  return "###### " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_list_item_source(s: any): string {
-  if (s["ordered"] === false && s["marker"] === undefined && s["index"] === undefined) return "- " + __renderSlot_source(s["text"]);
-  if (s["ordered"] === false && s["marker"] === "+" && s["index"] === undefined) return "+ " + __renderSlot_source(s["text"]);
-  if (s["ordered"] === false && s["marker"] === "*" && s["index"] === undefined) return "* " + __renderSlot_source(s["text"]);
-  if (s["ordered"] === true && s["index"] !== undefined && s["marker"] === undefined) return __renderSlot_source(s["index"]) + ". " + __renderSlot_source(s["text"]);
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type list-item)");
+function __build_MarkdownLeaf_1_ast(captures: any): any {
+  return { type: "heading", depth: 5, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_blockquote_source(s: any): string {
-  return "> " + __renderSlot_source(s["text"]);
+function __build_MarkdownLeaf_1_html(captures: any): any {
+  return "<h5>" + (__renderSlot_html(captures.text) ?? "") + "</h5>";
 }
 
-function stringify_MarkdownLeaf_code_block_source(s: any): string {
-  if (s["lang"] !== undefined) return "```" + __renderSlot_source(s["lang"]) + " " + __renderSlot_source(s["text"]) + " ```";
-  if (s["lang"] === undefined) return "```\n" + __renderSlot_source(s["text"]) + " ```";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type code-block)");
+function __build_MarkdownLeaf_1_source(captures: any): any {
+  return "##### " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_bold_source(s: any): string {
-  return "**" + __renderSlot_source(s["text"]) + "**";
+function __build_MarkdownLeaf_2_ast(captures: any): any {
+  return { type: "heading", depth: 4, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_italic_source(s: any): string {
-  return "*" + __renderSlot_source(s["text"]) + "*";
+function __build_MarkdownLeaf_2_html(captures: any): any {
+  return "<h4>" + (__renderSlot_html(captures.text) ?? "") + "</h4>";
 }
 
-function stringify_MarkdownLeaf_strikethrough_source(s: any): string {
-  return "~~" + __renderSlot_source(s["text"]) + "~~";
+function __build_MarkdownLeaf_2_source(captures: any): any {
+  return "#### " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_inline_code_source(s: any): string {
-  return "`" + __renderSlot_source(s["text"]) + "`";
+function __build_MarkdownLeaf_3_ast(captures: any): any {
+  return { type: "heading", depth: 3, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_link_source(s: any): string {
-  return "[" + __renderSlot_source(s["label"]) + "](" + __renderSlot_source(s["url"]) + ")";
+function __build_MarkdownLeaf_3_html(captures: any): any {
+  return "<h3>" + (__renderSlot_html(captures.text) ?? "") + "</h3>";
 }
 
-function stringify_MarkdownLeaf_reference_link_source(s: any): string {
-  return "[" + __renderSlot_source(s["label"]) + "][" + __renderSlot_source(s["id"]) + "]";
+function __build_MarkdownLeaf_3_source(captures: any): any {
+  return "### " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_image_source(s: any): string {
-  return "![" + __renderSlot_source(s["alt"]) + "](" + __renderSlot_source(s["url"]) + ")";
+function __build_MarkdownLeaf_4_ast(captures: any): any {
+  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_reference_image_source(s: any): string {
-  return "![" + __renderSlot_source(s["alt"]) + "][" + __renderSlot_source(s["id"]) + "]";
+function __build_MarkdownLeaf_4_html(captures: any): any {
+  return "<h2>" + (__renderSlot_html(captures.text) ?? "") + "</h2>";
 }
 
-function stringify_MarkdownLeaf_entity_source(s: any): string {
-  return "&" + __renderSlot_source(s["name"]) + ";";
+function __build_MarkdownLeaf_4_source(captures: any): any {
+  return "## " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_table_delimiter_source(s: any): string {
-  if (true) return "| --- | --- |";
-  if (true) return "|:---|---:|";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source, type table-delimiter)");
+function __build_MarkdownLeaf_5_ast(captures: any): any {
+  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_table_row_source(s: any): string {
-  return "| " + __renderSlot_source(s["cells"][0]) + " | " + __renderSlot_source(s["cells"][1]) + " |";
+function __build_MarkdownLeaf_5_html(captures: any): any {
+  return "<h1>" + (__renderSlot_html(captures.text) ?? "") + "</h1>";
 }
 
-function stringify_MarkdownLeaf_definition_source(s: any): string {
-  return "[" + __renderSlot_source(s["id"]) + "]: " + __renderSlot_source(s["url"]);
+function __build_MarkdownLeaf_5_source(captures: any): any {
+  return "# " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_footnote_definition_source(s: any): string {
-  return "[^" + __renderSlot_source(s["id"]) + "]: " + __renderSlot_source(s["text"]);
+function __build_MarkdownLeaf_6_ast(captures: any): any {
+  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text), style: "setext" };
 }
 
-function stringify_MarkdownLeaf_footnote_reference_source(s: any): string {
-  return "[^" + __renderSlot_source(s["id"]) + "]";
+function __build_MarkdownLeaf_6_html(captures: any): any {
+  return "<h1>" + (__renderSlot_html(captures.text) ?? "") + "</h1>";
 }
 
-function stringify_MarkdownLeaf_html_source(s: any): string {
-  return "<" + __renderSlot_source(s["tag"]) + ">" + __renderSlot_source(s["text"]) + "</" + __renderSlot_source(s["closingTag"]) + ">";
+function __build_MarkdownLeaf_6_source(captures: any): any {
+  return (__renderSlot_source(captures.text) ?? "") + " ===";
 }
 
-function stringify_MarkdownLeaf_autolink_source(s: any): string {
-  return "<" + __renderSlot_source(s["url"]) + ">";
+function __build_MarkdownLeaf_7_ast(captures: any): any {
+  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text), style: "setext" };
 }
 
-function stringify_MarkdownLeaf_source(s: any): string {
-  switch (s.type) {
-    case "heading": return stringify_MarkdownLeaf_heading_source(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_source(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_source(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_source(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_source(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_source(s);
-    case "bold": return stringify_MarkdownLeaf_bold_source(s);
-    case "italic": return stringify_MarkdownLeaf_italic_source(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_source(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_source(s);
-    case "link": return stringify_MarkdownLeaf_link_source(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_source(s);
-    case "image": return stringify_MarkdownLeaf_image_source(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_source(s);
-    case "entity": return stringify_MarkdownLeaf_entity_source(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_source(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_source(s);
-    case "definition": return stringify_MarkdownLeaf_definition_source(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_source(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_source(s);
-    case "html": return stringify_MarkdownLeaf_html_source(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_source(s);
-  }
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target source)");
+function __build_MarkdownLeaf_7_html(captures: any): any {
+  return "<h2>" + (__renderSlot_html(captures.text) ?? "") + "</h2>";
 }
 
-function stringify_MarkdownLeaf_heading_html(s: any): string {
-  if (s["depth"] === 6 && s["style"] === undefined) return "<h6>" + __renderSlot_html(s["text"]) + "</h6>";
-  if (s["depth"] === 5 && s["style"] === undefined) return "<h5>" + __renderSlot_html(s["text"]) + "</h5>";
-  if (s["depth"] === 4 && s["style"] === undefined) return "<h4>" + __renderSlot_html(s["text"]) + "</h4>";
-  if (s["depth"] === 3 && s["style"] === undefined) return "<h3>" + __renderSlot_html(s["text"]) + "</h3>";
-  if (s["depth"] === 2 && s["style"] === undefined) return "<h2>" + __renderSlot_html(s["text"]) + "</h2>";
-  if (s["depth"] === 1 && s["style"] === undefined) return "<h1>" + __renderSlot_html(s["text"]) + "</h1>";
-  if (s["depth"] === 1 && s["style"] === "setext") return "<h1>" + __renderSlot_html(s["text"]) + "</h1>";
-  if (s["depth"] === 2 && s["style"] === "setext") return "<h2>" + __renderSlot_html(s["text"]) + "</h2>";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type heading)");
+function __build_MarkdownLeaf_7_source(captures: any): any {
+  return (__renderSlot_source(captures.text) ?? "") + " ---";
 }
 
-function stringify_MarkdownLeaf_thematic_break_html(s: any): string {
-  if (s["marker"] === undefined) return "<hr>";
-  if (s["marker"] === "*") return "<hr>";
-  if (s["marker"] === "_") return "<hr>";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type thematic-break)");
+function __build_MarkdownLeaf_8_ast(captures: any): any {
+  return { type: "thematic-break", marker: "*" };
 }
 
-function stringify_MarkdownLeaf_task_list_item_html(s: any): string {
-  if (s["checked"] === true && s["marker"] === "x") return "<li><input type=\"checkbox\" checked>" + __renderSlot_html(s["text"]) + "</li>";
-  if (s["checked"] === false && s["marker"] === undefined) return "<li><input type=\"checkbox\">" + __renderSlot_html(s["text"]) + "</li>";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type task-list-item)");
+function __build_MarkdownLeaf_8_html(captures: any): any {
+  return String("<hr>");
 }
 
-function stringify_MarkdownLeaf_list_item_html(s: any): string {
-  if (s["ordered"] === false && s["marker"] === undefined && s["index"] === undefined) return "<li>" + __renderSlot_html(s["text"]) + "</li>";
-  if (s["ordered"] === false && s["marker"] === "+" && s["index"] === undefined) return "<li>" + __renderSlot_html(s["text"]) + "</li>";
-  if (s["ordered"] === false && s["marker"] === "*" && s["index"] === undefined) return "<li>" + __renderSlot_html(s["text"]) + "</li>";
-  if (s["ordered"] === true && s["index"] !== undefined && s["marker"] === undefined) return "<li>" + __renderSlot_html(s["text"]) + "</li>";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type list-item)");
+function __build_MarkdownLeaf_8_source(captures: any): any {
+  return String("***");
 }
 
-function stringify_MarkdownLeaf_blockquote_html(s: any): string {
-  return "<blockquote>" + __renderSlot_html(s["text"]) + "</blockquote>";
+function __build_MarkdownLeaf_9_ast(captures: any): any {
+  return { type: "thematic-break", marker: "_" };
 }
 
-function stringify_MarkdownLeaf_code_block_html(s: any): string {
-  if (s["lang"] !== undefined) return "<pre><code class=\"lang-" + __renderSlot_html(s["lang"]) + "\">" + __renderSlot_html(s["text"]) + "</code></pre>";
-  if (s["lang"] === undefined) return "<pre><code>" + __renderSlot_html(s["text"]) + "</code></pre>";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type code-block)");
+function __build_MarkdownLeaf_9_html(captures: any): any {
+  return String("<hr>");
 }
 
-function stringify_MarkdownLeaf_bold_html(s: any): string {
-  return "<strong>" + __renderSlot_html(s["text"]) + "</strong>";
+function __build_MarkdownLeaf_9_source(captures: any): any {
+  return String("___");
 }
 
-function stringify_MarkdownLeaf_italic_html(s: any): string {
-  return "<em>" + __renderSlot_html(s["text"]) + "</em>";
+function __build_MarkdownLeaf_10_ast(captures: any): any {
+  return { type: "thematic-break" };
 }
 
-function stringify_MarkdownLeaf_strikethrough_html(s: any): string {
-  return "<s>" + __renderSlot_html(s["text"]) + "</s>";
+function __build_MarkdownLeaf_10_html(captures: any): any {
+  return String("<hr>");
 }
 
-function stringify_MarkdownLeaf_inline_code_html(s: any): string {
-  return "<code>" + __renderSlot_html(s["text"]) + "</code>";
+function __build_MarkdownLeaf_10_source(captures: any): any {
+  return String("---");
 }
 
-function stringify_MarkdownLeaf_link_html(s: any): string {
-  return "<a href=\"" + __renderSlot_html(s["url"]) + "\">" + __renderSlot_html(s["label"]) + "</a>";
+function __build_MarkdownLeaf_11_ast(captures: any): any {
+  return { type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_reference_link_html(s: any): string {
-  return "<a href=\"#" + __renderSlot_html(s["id"]) + "\">" + __renderSlot_html(s["label"]) + "</a>";
+function __build_MarkdownLeaf_11_html(captures: any): any {
+  return "<li><input type=\"checkbox\" checked>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
 }
 
-function stringify_MarkdownLeaf_image_html(s: any): string {
-  return "<img src=\"" + __renderSlot_html(s["url"]) + "\" alt=\"" + __renderSlot_html(s["alt"]) + "\">";
+function __build_MarkdownLeaf_11_source(captures: any): any {
+  return "- [x] " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_reference_image_html(s: any): string {
-  return "<img src=\"#" + __renderSlot_html(s["id"]) + "\" alt=\"" + __renderSlot_html(s["alt"]) + "\">";
+function __build_MarkdownLeaf_12_ast(captures: any): any {
+  return { type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_entity_html(s: any): string {
-  return "&" + __renderSlot_html(s["name"]) + ";";
+function __build_MarkdownLeaf_12_html(captures: any): any {
+  return "<li><input type=\"checkbox\">" + (__renderSlot_html(captures.text) ?? "") + "</li>";
 }
 
-function stringify_MarkdownLeaf_table_delimiter_html(s: any): string {
-  if (true) return "";
-  if (true) return "";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html, type table-delimiter)");
+function __build_MarkdownLeaf_12_source(captures: any): any {
+  return "- [ ] " + (__renderSlot_source(captures.text) ?? "");
 }
 
-function stringify_MarkdownLeaf_table_row_html(s: any): string {
-  return "<tr><td>" + __renderSlot_html(s["cells"][0]) + "</td><td>" + __renderSlot_html(s["cells"][1]) + "</td></tr>";
+function __build_MarkdownLeaf_13_ast(captures: any): any {
+  return { type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text) };
 }
 
-function stringify_MarkdownLeaf_definition_html(s: any): string {
+function __build_MarkdownLeaf_13_html(captures: any): any {
+  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+}
+
+function __build_MarkdownLeaf_13_source(captures: any): any {
+  return "+ " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_14_ast(captures: any): any {
+  return { type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_14_html(captures: any): any {
+  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+}
+
+function __build_MarkdownLeaf_14_source(captures: any): any {
+  return "* " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_15_ast(captures: any): any {
+  return { type: "list-item", ordered: false, text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_15_html(captures: any): any {
+  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+}
+
+function __build_MarkdownLeaf_15_source(captures: any): any {
+  return "- " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_16_ast(captures: any): any {
+  return { type: "list-item", ordered: true, index: __renderSlot_ast(captures.index), text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_16_html(captures: any): any {
+  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+}
+
+function __build_MarkdownLeaf_16_source(captures: any): any {
+  return (__renderSlot_source(captures.index) ?? "") + ". " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_17_ast(captures: any): any {
+  return { type: "blockquote", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_17_html(captures: any): any {
+  return "<blockquote>" + (__renderSlot_html(captures.text) ?? "") + "</blockquote>";
+}
+
+function __build_MarkdownLeaf_17_source(captures: any): any {
+  return "> " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_18_ast(captures: any): any {
+  return { type: "code-block", lang: __renderSlot_ast(captures.lang), text: __renderSlot_ast(captures.body) };
+}
+
+function __build_MarkdownLeaf_18_html(captures: any): any {
+  return "<pre><code class=\"lang-" + (__renderSlot_html(captures.lang) ?? "") + "\">" + (__renderSlot_html(captures.body) ?? "") + "</code></pre>";
+}
+
+function __build_MarkdownLeaf_18_source(captures: any): any {
+  return "```" + (__renderSlot_source(captures.lang) ?? "") + " " + (__renderSlot_source(captures.body) ?? "") + " ```";
+}
+
+function __build_MarkdownLeaf_19_ast(captures: any): any {
+  return { type: "code-block", text: __renderSlot_ast(captures.body) };
+}
+
+function __build_MarkdownLeaf_19_html(captures: any): any {
+  return "<pre><code>" + (__renderSlot_html(captures.body) ?? "") + "</code></pre>";
+}
+
+function __build_MarkdownLeaf_19_source(captures: any): any {
+  return "```\n" + (__renderSlot_source(captures.body) ?? "") + " ```";
+}
+
+function __build_MarkdownLeaf_20_ast(captures: any): any {
+  return { type: "bold", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_20_html(captures: any): any {
+  return "<strong>" + (__renderSlot_html(captures.text) ?? "") + "</strong>";
+}
+
+function __build_MarkdownLeaf_20_source(captures: any): any {
+  return "**" + (__renderSlot_source(captures.text) ?? "") + "**";
+}
+
+function __build_MarkdownLeaf_21_ast(captures: any): any {
+  return { type: "italic", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_21_html(captures: any): any {
+  return "<em>" + (__renderSlot_html(captures.text) ?? "") + "</em>";
+}
+
+function __build_MarkdownLeaf_21_source(captures: any): any {
+  return "*" + (__renderSlot_source(captures.text) ?? "") + "*";
+}
+
+function __build_MarkdownLeaf_22_ast(captures: any): any {
+  return { type: "strikethrough", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_22_html(captures: any): any {
+  return "<s>" + (__renderSlot_html(captures.text) ?? "") + "</s>";
+}
+
+function __build_MarkdownLeaf_22_source(captures: any): any {
+  return "~~" + (__renderSlot_source(captures.text) ?? "") + "~~";
+}
+
+function __build_MarkdownLeaf_23_ast(captures: any): any {
+  return { type: "inline-code", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_23_html(captures: any): any {
+  return "<code>" + (__renderSlot_html(captures.text) ?? "") + "</code>";
+}
+
+function __build_MarkdownLeaf_23_source(captures: any): any {
+  return "`" + (__renderSlot_source(captures.text) ?? "") + "`";
+}
+
+function __build_MarkdownLeaf_24_ast(captures: any): any {
+  return { type: "link", label: __renderSlot_ast(captures.label), url: __renderSlot_ast(captures.url) };
+}
+
+function __build_MarkdownLeaf_24_html(captures: any): any {
+  return "<a href=\"" + (__renderSlot_html(captures.url) ?? "") + "\">" + (__renderSlot_html(captures.label) ?? "") + "</a>";
+}
+
+function __build_MarkdownLeaf_24_source(captures: any): any {
+  return "[" + (__renderSlot_source(captures.label) ?? "") + "](" + (__renderSlot_source(captures.url) ?? "") + ")";
+}
+
+function __build_MarkdownLeaf_25_ast(captures: any): any {
+  return { type: "reference-link", label: __renderSlot_ast(captures.label), id: __renderSlot_ast(captures.id) };
+}
+
+function __build_MarkdownLeaf_25_html(captures: any): any {
+  return "<a href=\"#" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.label) ?? "") + "</a>";
+}
+
+function __build_MarkdownLeaf_25_source(captures: any): any {
+  return "[" + (__renderSlot_source(captures.label) ?? "") + "][" + (__renderSlot_source(captures.id) ?? "") + "]";
+}
+
+function __build_MarkdownLeaf_26_ast(captures: any): any {
+  return { type: "image", alt: __renderSlot_ast(captures.alt), url: __renderSlot_ast(captures.url) };
+}
+
+function __build_MarkdownLeaf_26_html(captures: any): any {
+  return "<img src=\"" + (__renderSlot_html(captures.url) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt) ?? "") + "\">";
+}
+
+function __build_MarkdownLeaf_26_source(captures: any): any {
+  return "![" + (__renderSlot_source(captures.alt) ?? "") + "](" + (__renderSlot_source(captures.url) ?? "") + ")";
+}
+
+function __build_MarkdownLeaf_27_ast(captures: any): any {
+  return { type: "reference-image", alt: __renderSlot_ast(captures.alt), id: __renderSlot_ast(captures.id) };
+}
+
+function __build_MarkdownLeaf_27_html(captures: any): any {
+  return "<img src=\"#" + (__renderSlot_html(captures.id) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt) ?? "") + "\">";
+}
+
+function __build_MarkdownLeaf_27_source(captures: any): any {
+  return "![" + (__renderSlot_source(captures.alt) ?? "") + "][" + (__renderSlot_source(captures.id) ?? "") + "]";
+}
+
+function __build_MarkdownLeaf_28_ast(captures: any): any {
+  return { type: "entity", name: __renderSlot_ast(captures.name) };
+}
+
+function __build_MarkdownLeaf_28_html(captures: any): any {
+  return "&" + (__renderSlot_html(captures.name) ?? "") + ";";
+}
+
+function __build_MarkdownLeaf_28_source(captures: any): any {
+  return "&" + (__renderSlot_source(captures.name) ?? "") + ";";
+}
+
+function __build_MarkdownLeaf_29_ast(captures: any): any {
+  return { type: "table-delimiter", variant: "plain", align: ["default", "default"] };
+}
+
+function __build_MarkdownLeaf_29_html(captures: any): any {
   return "";
 }
 
-function stringify_MarkdownLeaf_footnote_definition_html(s: any): string {
-  return "<div class=\"footnote\" id=\"fn" + __renderSlot_html(s["id"]) + "\">" + __renderSlot_html(s["text"]) + "</div>";
+function __build_MarkdownLeaf_29_source(captures: any): any {
+  return String("| --- | --- |");
 }
 
-function stringify_MarkdownLeaf_footnote_reference_html(s: any): string {
-  return "<sup><a href=\"#fn" + __renderSlot_html(s["id"]) + "\">" + __renderSlot_html(s["id"]) + "</a></sup>";
+function __build_MarkdownLeaf_30_ast(captures: any): any {
+  return { type: "table-delimiter", variant: "aligned", align: ["left", "right"] };
 }
 
-function stringify_MarkdownLeaf_html_html(s: any): string {
-  return "<" + __renderSlot_html(s["tag"]) + ">" + __renderSlot_html(s["text"]) + "</" + __renderSlot_html(s["closingTag"]) + ">";
+function __build_MarkdownLeaf_30_html(captures: any): any {
+  return "";
 }
 
-function stringify_MarkdownLeaf_autolink_html(s: any): string {
-  return "<a href=\"" + __renderSlot_html(s["url"]) + "\">" + __renderSlot_html(s["url"]) + "</a>";
+function __build_MarkdownLeaf_30_source(captures: any): any {
+  return String("|:---|---:|");
 }
 
-function stringify_MarkdownLeaf_html(s: any): string {
-  switch (s.type) {
-    case "heading": return stringify_MarkdownLeaf_heading_html(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_html(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_html(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_html(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_html(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_html(s);
-    case "bold": return stringify_MarkdownLeaf_bold_html(s);
-    case "italic": return stringify_MarkdownLeaf_italic_html(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_html(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_html(s);
-    case "link": return stringify_MarkdownLeaf_link_html(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_html(s);
-    case "image": return stringify_MarkdownLeaf_image_html(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_html(s);
-    case "entity": return stringify_MarkdownLeaf_entity_html(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_html(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_html(s);
-    case "definition": return stringify_MarkdownLeaf_definition_html(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_html(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_html(s);
-    case "html": return stringify_MarkdownLeaf_html_html(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_html(s);
+function __build_MarkdownLeaf_31_ast(captures: any): any {
+  return { type: "table-row", cells: [__renderSlot_ast(captures.first), __renderSlot_ast(captures.second)] };
+}
+
+function __build_MarkdownLeaf_31_html(captures: any): any {
+  return "<tr><td>" + (__renderSlot_html(captures.first) ?? "") + "</td><td>" + (__renderSlot_html(captures.second) ?? "") + "</td></tr>";
+}
+
+function __build_MarkdownLeaf_31_source(captures: any): any {
+  return "| " + (__renderSlot_source(captures.first) ?? "") + " | " + (__renderSlot_source(captures.second) ?? "") + " |";
+}
+
+function __build_MarkdownLeaf_32_ast(captures: any): any {
+  return { type: "definition", id: __renderSlot_ast(captures.id), url: __renderSlot_ast(captures.url) };
+}
+
+function __build_MarkdownLeaf_32_html(captures: any): any {
+  return "";
+}
+
+function __build_MarkdownLeaf_32_source(captures: any): any {
+  return "[" + (__renderSlot_source(captures.id) ?? "") + "]: " + (__renderSlot_source(captures.url) ?? "");
+}
+
+function __build_MarkdownLeaf_33_ast(captures: any): any {
+  return { type: "footnote-definition", id: __renderSlot_ast(captures.id), text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownLeaf_33_html(captures: any): any {
+  return "<div class=\"footnote\" id=\"fn" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.text) ?? "") + "</div>";
+}
+
+function __build_MarkdownLeaf_33_source(captures: any): any {
+  return "[^" + (__renderSlot_source(captures.id) ?? "") + "]: " + (__renderSlot_source(captures.text) ?? "");
+}
+
+function __build_MarkdownLeaf_34_ast(captures: any): any {
+  return { type: "footnote-reference", id: __renderSlot_ast(captures.id) };
+}
+
+function __build_MarkdownLeaf_34_html(captures: any): any {
+  return "<sup><a href=\"#fn" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.id) ?? "") + "</a></sup>";
+}
+
+function __build_MarkdownLeaf_34_source(captures: any): any {
+  return "[^" + (__renderSlot_source(captures.id) ?? "") + "]";
+}
+
+function __build_MarkdownLeaf_35_ast(captures: any): any {
+  return { type: "html", tag: __renderSlot_ast(captures.tag), text: __renderSlot_ast(captures.body), closingTag: __renderSlot_ast(captures.closingTag) };
+}
+
+function __build_MarkdownLeaf_35_html(captures: any): any {
+  return "<" + (__renderSlot_html(captures.tag) ?? "") + ">" + (__renderSlot_html(captures.body) ?? "") + "</" + (__renderSlot_html(captures.closingTag) ?? "") + ">";
+}
+
+function __build_MarkdownLeaf_35_source(captures: any): any {
+  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (__renderSlot_source(captures.body) ?? "") + "</" + (__renderSlot_source(captures.closingTag) ?? "") + ">";
+}
+
+function __build_MarkdownLeaf_36_ast(captures: any): any {
+  return { type: "autolink", url: __renderSlot_ast(captures.url) };
+}
+
+function __build_MarkdownLeaf_36_html(captures: any): any {
+  return "<a class=\"autolink\" href=\"" + (__renderSlot_html(captures.url) ?? "") + "\">" + (__renderSlot_html(captures.url) ?? "") + "</a>";
+}
+
+function __build_MarkdownLeaf_36_source(captures: any): any {
+  return "<" + (__renderSlot_source(captures.url) ?? "") + ">";
+}
+
+function __build_MarkdownParagraph_0_ast(captures: any): any {
+  return { type: "paragraph", text: __renderSlot_ast(captures.text) };
+}
+
+function __build_MarkdownParagraph_0_html(captures: any): any {
+  return "<p>" + (__renderSlot_html(captures.text) ?? "") + "</p>";
+}
+
+function __build_MarkdownParagraph_0_source(captures: any): any {
+  return String((__renderSlot_source(captures.text) ?? ""));
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html)");
-}
-
-function stringify_MarkdownLeaf_heading_json_auto(s: any): string {
-  if (s["depth"] === 6 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":6,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 5 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":5,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 4 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":4,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 3 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":3,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 2 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":2,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 1 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":1,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["depth"] === 1 && s["style"] === "setext") return "{\"type\":\"heading\",\"depth\":1,\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"style\":\"setext\"}";
-  if (s["depth"] === 2 && s["style"] === "setext") return "{\"type\":\"heading\",\"depth\":2,\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"style\":\"setext\"}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type heading)");
-}
-
-function stringify_MarkdownLeaf_thematic_break_json_auto(s: any): string {
-  if (s["marker"] === undefined) return "{\"type\":\"thematic-break\"}";
-  if (s["marker"] === "*") return "{\"type\":\"thematic-break\",\"marker\":\"*\"}";
-  if (s["marker"] === "_") return "{\"type\":\"thematic-break\",\"marker\":\"_\"}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type thematic-break)");
-}
-
-function stringify_MarkdownLeaf_task_list_item_json_auto(s: any): string {
-  if (s["checked"] === true && s["marker"] === "x") return "{\"type\":\"task-list-item\",\"checked\":true,\"marker\":\"x\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["checked"] === false && s["marker"] === undefined) return "{\"type\":\"task-list-item\",\"checked\":false,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type task-list-item)");
-}
-
-function stringify_MarkdownLeaf_list_item_json_auto(s: any): string {
-  if (s["ordered"] === false && s["marker"] === undefined && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["ordered"] === false && s["marker"] === "+" && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"marker\":\"+\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["ordered"] === false && s["marker"] === "*" && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"marker\":\"*\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["ordered"] === true && s["index"] !== undefined && s["marker"] === undefined) return "{\"type\":\"list-item\",\"ordered\":true,\"index\":" + __renderSlot_json_auto(s["index"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type list-item)");
-}
-
-function stringify_MarkdownLeaf_blockquote_json_auto(s: any): string {
-  return "{\"type\":\"blockquote\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_code_block_json_auto(s: any): string {
-  if (s["lang"] !== undefined) return "{\"type\":\"code-block\",\"lang\":" + __renderSlot_json_auto(s["lang"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  if (s["lang"] === undefined) return "{\"type\":\"code-block\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type code-block)");
-}
-
-function stringify_MarkdownLeaf_bold_json_auto(s: any): string {
-  return "{\"type\":\"bold\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_italic_json_auto(s: any): string {
-  return "{\"type\":\"italic\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_strikethrough_json_auto(s: any): string {
-  return "{\"type\":\"strikethrough\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_inline_code_json_auto(s: any): string {
-  return "{\"type\":\"inline-code\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_link_json_auto(s: any): string {
-  return "{\"type\":\"link\",\"label\":" + __renderSlot_json_auto(s["label"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
-}
-
-function stringify_MarkdownLeaf_reference_link_json_auto(s: any): string {
-  return "{\"type\":\"reference-link\",\"label\":" + __renderSlot_json_auto(s["label"]) + ",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
-}
-
-function stringify_MarkdownLeaf_image_json_auto(s: any): string {
-  return "{\"type\":\"image\",\"alt\":" + __renderSlot_json_auto(s["alt"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
-}
-
-function stringify_MarkdownLeaf_reference_image_json_auto(s: any): string {
-  return "{\"type\":\"reference-image\",\"alt\":" + __renderSlot_json_auto(s["alt"]) + ",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
-}
-
-function stringify_MarkdownLeaf_entity_json_auto(s: any): string {
-  return "{\"type\":\"entity\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
-}
-
-function stringify_MarkdownLeaf_table_delimiter_json_auto(s: any): string {
-  if (true) return "{\"type\":\"table-delimiter\",\"align\":[\"default\",\"default\"]}";
-  if (true) return "{\"type\":\"table-delimiter\",\"align\":[\"left\",\"right\"]}";
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type table-delimiter)");
-}
-
-function stringify_MarkdownLeaf_table_row_json_auto(s: any): string {
-  return "{\"type\":\"table-row\",\"cells\":[" + __renderSlot_json_auto(s["cells"][0]) + "," + __renderSlot_json_auto(s["cells"][1]) + "]}";
-}
-
-function stringify_MarkdownLeaf_definition_json_auto(s: any): string {
-  return "{\"type\":\"definition\",\"id\":" + __renderSlot_json_auto(s["id"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
-}
-
-function stringify_MarkdownLeaf_footnote_definition_json_auto(s: any): string {
-  return "{\"type\":\"footnote-definition\",\"id\":" + __renderSlot_json_auto(s["id"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function stringify_MarkdownLeaf_footnote_reference_json_auto(s: any): string {
-  return "{\"type\":\"footnote-reference\",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
-}
-
-function stringify_MarkdownLeaf_html_json_auto(s: any): string {
-  return "{\"type\":\"html\",\"tag\":" + __renderSlot_json_auto(s["tag"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"closingTag\":" + __renderSlot_json_auto(s["closingTag"]) + "}";
-}
-
-function stringify_MarkdownLeaf_autolink_json_auto(s: any): string {
-  return "{\"type\":\"autolink\",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
-}
-
-function stringify_MarkdownLeaf_json_auto(s: any): string {
-  switch (s.type) {
-    case "heading": return stringify_MarkdownLeaf_heading_json_auto(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_json_auto(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_json_auto(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_json_auto(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_json_auto(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_json_auto(s);
-    case "bold": return stringify_MarkdownLeaf_bold_json_auto(s);
-    case "italic": return stringify_MarkdownLeaf_italic_json_auto(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_json_auto(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_json_auto(s);
-    case "link": return stringify_MarkdownLeaf_link_json_auto(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_json_auto(s);
-    case "image": return stringify_MarkdownLeaf_image_json_auto(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_json_auto(s);
-    case "entity": return stringify_MarkdownLeaf_entity_json_auto(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_json_auto(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_json_auto(s);
-    case "definition": return stringify_MarkdownLeaf_definition_json_auto(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_json_auto(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_json_auto(s);
-    case "html": return stringify_MarkdownLeaf_html_json_auto(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_json_auto(s);
+  switch (captures.__production) {
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_ast(captures);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_ast(captures);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_ast(captures);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_ast(captures);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_ast(captures);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_ast(captures);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_ast(captures);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_ast(captures);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_ast(captures);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_ast(captures);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_ast(captures);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_ast(captures);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_ast(captures);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_ast(captures);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_ast(captures);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_ast(captures);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_ast(captures);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_ast(captures);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_ast(captures);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_ast(captures);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_ast(captures);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_ast(captures);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_ast(captures);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_ast(captures);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_ast(captures);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_ast(captures);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_ast(captures);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_ast(captures);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_ast(captures);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_ast(captures);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_ast(captures);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_ast(captures);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_ast(captures);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_ast(captures);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_ast(captures);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_ast(captures);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_ast(captures);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_ast(captures);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_ast(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function stringify_MarkdownParagraph_source(s: any): string {
-  return __renderSlot_source(s["text"]);
-}
-
-function stringify_MarkdownParagraph_html(s: any): string {
-  return "<p>" + __renderSlot_html(s["text"]) + "</p>";
-}
-
-function stringify_MarkdownParagraph_json_auto(s: any): string {
-  return "{\"type\":\"paragraph\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
-}
-
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "document": return stringify_MarkdownDocument_source(s);
-    case "heading": return stringify_MarkdownLeaf_heading_source(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_source(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_source(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_source(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_source(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_source(s);
-    case "bold": return stringify_MarkdownLeaf_bold_source(s);
-    case "italic": return stringify_MarkdownLeaf_italic_source(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_source(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_source(s);
-    case "link": return stringify_MarkdownLeaf_link_source(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_source(s);
-    case "image": return stringify_MarkdownLeaf_image_source(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_source(s);
-    case "entity": return stringify_MarkdownLeaf_entity_source(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_source(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_source(s);
-    case "definition": return stringify_MarkdownLeaf_definition_source(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_source(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_source(s);
-    case "html": return stringify_MarkdownLeaf_html_source(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_source(s);
-    case "paragraph": return stringify_MarkdownParagraph_source(s);
+function __dispatchRender_html(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'html')");
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_html(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "document": return stringify_MarkdownDocument_html(s);
-    case "heading": return stringify_MarkdownLeaf_heading_html(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_html(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_html(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_html(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_html(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_html(s);
-    case "bold": return stringify_MarkdownLeaf_bold_html(s);
-    case "italic": return stringify_MarkdownLeaf_italic_html(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_html(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_html(s);
-    case "link": return stringify_MarkdownLeaf_link_html(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_html(s);
-    case "image": return stringify_MarkdownLeaf_image_html(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_html(s);
-    case "entity": return stringify_MarkdownLeaf_entity_html(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_html(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_html(s);
-    case "definition": return stringify_MarkdownLeaf_definition_html(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_html(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_html(s);
-    case "html": return stringify_MarkdownLeaf_html_html(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_html(s);
-    case "paragraph": return stringify_MarkdownParagraph_html(s);
+  switch (captures.__production) {
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_html(captures);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_html(captures);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_html(captures);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_html(captures);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_html(captures);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_html(captures);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_html(captures);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_html(captures);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_html(captures);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_html(captures);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_html(captures);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_html(captures);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_html(captures);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_html(captures);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_html(captures);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_html(captures);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_html(captures);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_html(captures);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_html(captures);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_html(captures);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_html(captures);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_html(captures);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_html(captures);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_html(captures);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_html(captures);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_html(captures);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_html(captures);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_html(captures);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_html(captures);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_html(captures);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_html(captures);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_html(captures);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_html(captures);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_html(captures);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_html(captures);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_html(captures);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_html(captures);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_html(captures);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_html(captures);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='html'");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'html'");
 }
 
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "document": return stringify_MarkdownDocument_json_auto(s);
-    case "heading": return stringify_MarkdownLeaf_heading_json_auto(s);
-    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_json_auto(s);
-    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_json_auto(s);
-    case "list-item": return stringify_MarkdownLeaf_list_item_json_auto(s);
-    case "blockquote": return stringify_MarkdownLeaf_blockquote_json_auto(s);
-    case "code-block": return stringify_MarkdownLeaf_code_block_json_auto(s);
-    case "bold": return stringify_MarkdownLeaf_bold_json_auto(s);
-    case "italic": return stringify_MarkdownLeaf_italic_json_auto(s);
-    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_json_auto(s);
-    case "inline-code": return stringify_MarkdownLeaf_inline_code_json_auto(s);
-    case "link": return stringify_MarkdownLeaf_link_json_auto(s);
-    case "reference-link": return stringify_MarkdownLeaf_reference_link_json_auto(s);
-    case "image": return stringify_MarkdownLeaf_image_json_auto(s);
-    case "reference-image": return stringify_MarkdownLeaf_reference_image_json_auto(s);
-    case "entity": return stringify_MarkdownLeaf_entity_json_auto(s);
-    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_json_auto(s);
-    case "table-row": return stringify_MarkdownLeaf_table_row_json_auto(s);
-    case "definition": return stringify_MarkdownLeaf_definition_json_auto(s);
-    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_json_auto(s);
-    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_json_auto(s);
-    case "html": return stringify_MarkdownLeaf_html_json_auto(s);
-    case "autolink": return stringify_MarkdownLeaf_autolink_json_auto(s);
-    case "paragraph": return stringify_MarkdownParagraph_json_auto(s);
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  switch (captures.__production) {
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_source(captures);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_source(captures);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_source(captures);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_source(captures);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_source(captures);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_source(captures);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_source(captures);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_source(captures);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_source(captures);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_source(captures);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_source(captures);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_source(captures);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_source(captures);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_source(captures);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_source(captures);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_source(captures);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_source(captures);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_source(captures);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_source(captures);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_source(captures);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_source(captures);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_source(captures);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_source(captures);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_source(captures);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_source(captures);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_source(captures);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_source(captures);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_source(captures);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_source(captures);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_source(captures);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_source(captures);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_source(captures);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_source(captures);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_source(captures);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_source(captures);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_source(captures);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_source(captures);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_source(captures);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_source(captures);
+  }
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "html") return __dispatchStringify_html(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
-}
-
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
-}
-
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
     return out;
   }
-  return __dispatchStringify_source(v);
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
+  }
+  return v;
 }
 
-function __renderSlot_html(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_html(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_html(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_html(v[i]));
     return out;
   }
-  return __dispatchStringify_html(v);
-}
-
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_html(v);
   }
-  return __dispatchStringify_json_auto(v);
+  return v;
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+  "html": (captures: any) => __dispatchRender_html(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_MarkdownDocument_0(captures: any): string {
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+}
+
+function __rebuild_MarkdownLeaf_0(captures: any): string {
+  return "######" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_1(captures: any): string {
+  return "#####" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_2(captures: any): string {
+  return "####" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_3(captures: any): string {
+  return "###" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_4(captures: any): string {
+  return "##" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_5(captures: any): string {
+  return "#" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_6(captures: any): string {
+  return __rebuildSlot(captures.text) + " " + "===";
+}
+
+function __rebuild_MarkdownLeaf_7(captures: any): string {
+  return __rebuildSlot(captures.text) + " " + "---";
+}
+
+function __rebuild_MarkdownLeaf_8(captures: any): string {
+  return "***";
+}
+
+function __rebuild_MarkdownLeaf_9(captures: any): string {
+  return "___";
+}
+
+function __rebuild_MarkdownLeaf_10(captures: any): string {
+  return "---";
+}
+
+function __rebuild_MarkdownLeaf_11(captures: any): string {
+  return "- [x]" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_12(captures: any): string {
+  return "- [ ]" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_13(captures: any): string {
+  return "+ " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_14(captures: any): string {
+  return "* " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_15(captures: any): string {
+  return "- " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_16(captures: any): string {
+  return __rebuildSlot(captures.index) + "." + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_17(captures: any): string {
+  return ">" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_18(captures: any): string {
+  return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " " + "```";
+}
+
+function __rebuild_MarkdownLeaf_19(captures: any): string {
+  return "```\n" + __rebuildSlot(captures.body) + " " + "```";
+}
+
+function __rebuild_MarkdownLeaf_20(captures: any): string {
+  return "**" + __rebuildSlot(captures.text) + "**";
+}
+
+function __rebuild_MarkdownLeaf_21(captures: any): string {
+  return "*" + __rebuildSlot(captures.text) + "*";
+}
+
+function __rebuild_MarkdownLeaf_22(captures: any): string {
+  return "~~" + __rebuildSlot(captures.text) + "~~";
+}
+
+function __rebuild_MarkdownLeaf_23(captures: any): string {
+  return "`" + __rebuildSlot(captures.text) + "`";
+}
+
+function __rebuild_MarkdownLeaf_24(captures: any): string {
+  return "[" + __rebuildSlot(captures.label) + "]" + "(" + __rebuildSlot(captures.url) + ")";
+}
+
+function __rebuild_MarkdownLeaf_25(captures: any): string {
+  return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
+}
+
+function __rebuild_MarkdownLeaf_26(captures: any): string {
+  return "!" + "[" + __rebuildSlot(captures.alt) + "]" + "(" + __rebuildSlot(captures.url) + ")";
+}
+
+function __rebuild_MarkdownLeaf_27(captures: any): string {
+  return "!" + "[" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
+}
+
+function __rebuild_MarkdownLeaf_28(captures: any): string {
+  return "&" + __rebuildSlot(captures.name) + ";";
+}
+
+function __rebuild_MarkdownLeaf_29(captures: any): string {
+  return "|" + " " + "---" + " " + "|" + " " + "---" + " " + "|";
+}
+
+function __rebuild_MarkdownLeaf_30(captures: any): string {
+  return "|" + ":" + "---" + "|" + "---" + ":" + "|";
+}
+
+function __rebuild_MarkdownLeaf_31(captures: any): string {
+  return "|" + " " + __rebuildSlot(captures.first) + " " + "|" + " " + __rebuildSlot(captures.second) + " " + "|";
+}
+
+function __rebuild_MarkdownLeaf_32(captures: any): string {
+  return "[" + __rebuildSlot(captures.id) + "]" + ":" + " " + __rebuildSlot(captures.url);
+}
+
+function __rebuild_MarkdownLeaf_33(captures: any): string {
+  return "[^" + __rebuildSlot(captures.id) + "]" + ":" + " " + __rebuildSlot(captures.text);
+}
+
+function __rebuild_MarkdownLeaf_34(captures: any): string {
+  return "[^" + __rebuildSlot(captures.id) + "]";
+}
+
+function __rebuild_MarkdownLeaf_35(captures: any): string {
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
+}
+
+function __rebuild_MarkdownLeaf_36(captures: any): string {
+  return "<" + __rebuildSlot(captures.url) + ">";
+}
+
+function __rebuild_MarkdownParagraph_0(captures: any): string {
+  return String(__rebuildSlot(captures.text));
+}
+
+function __invert_MarkdownDocument_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "document")) {
+    throw new Error("stringify: field \"type\" expected \"document\", got " + JSON.stringify(value.type));
+  }
+  captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(value.children);
+  return __rebuild_MarkdownDocument_0(captures);
+}
+
+function __invert_MarkdownLeaf_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 6)) {
+    throw new Error("stringify: field \"depth\" expected 6, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_0(captures);
+}
+
+function __invert_MarkdownLeaf_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 5)) {
+    throw new Error("stringify: field \"depth\" expected 5, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_1(captures);
+}
+
+function __invert_MarkdownLeaf_2_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 4)) {
+    throw new Error("stringify: field \"depth\" expected 4, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_2(captures);
+}
+
+function __invert_MarkdownLeaf_3_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 3)) {
+    throw new Error("stringify: field \"depth\" expected 3, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_3(captures);
+}
+
+function __invert_MarkdownLeaf_4_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 2)) {
+    throw new Error("stringify: field \"depth\" expected 2, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_4(captures);
+}
+
+function __invert_MarkdownLeaf_5_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 1)) {
+    throw new Error("stringify: field \"depth\" expected 1, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_5(captures);
+}
+
+function __invert_MarkdownLeaf_6_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 1)) {
+    throw new Error("stringify: field \"depth\" expected 1, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  if (!Object.is(value.style, "setext")) {
+    throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
+  }
+  return __rebuild_MarkdownLeaf_6(captures);
+}
+
+function __invert_MarkdownLeaf_7_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "heading")) {
+    throw new Error("stringify: field \"type\" expected \"heading\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.depth, 2)) {
+    throw new Error("stringify: field \"depth\" expected 2, got " + JSON.stringify(value.depth));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  if (!Object.is(value.style, "setext")) {
+    throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
+  }
+  return __rebuild_MarkdownLeaf_7(captures);
+}
+
+function __invert_MarkdownLeaf_8_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "thematic-break")) {
+    throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.marker, "*")) {
+    throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
+  }
+  return __rebuild_MarkdownLeaf_8(captures);
+}
+
+function __invert_MarkdownLeaf_9_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "thematic-break")) {
+    throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.marker, "_")) {
+    throw new Error("stringify: field \"marker\" expected \"_\", got " + JSON.stringify(value.marker));
+  }
+  return __rebuild_MarkdownLeaf_9(captures);
+}
+
+function __invert_MarkdownLeaf_10_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "thematic-break")) {
+    throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
+  }
+  return __rebuild_MarkdownLeaf_10(captures);
+}
+
+function __invert_MarkdownLeaf_11_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "task-list-item")) {
+    throw new Error("stringify: field \"type\" expected \"task-list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.checked, true)) {
+    throw new Error("stringify: field \"checked\" expected true, got " + JSON.stringify(value.checked));
+  }
+  if (!Object.is(value.marker, "x")) {
+    throw new Error("stringify: field \"marker\" expected \"x\", got " + JSON.stringify(value.marker));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_11(captures);
+}
+
+function __invert_MarkdownLeaf_12_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "task-list-item")) {
+    throw new Error("stringify: field \"type\" expected \"task-list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.checked, false)) {
+    throw new Error("stringify: field \"checked\" expected false, got " + JSON.stringify(value.checked));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_12(captures);
+}
+
+function __invert_MarkdownLeaf_13_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "list-item")) {
+    throw new Error("stringify: field \"type\" expected \"list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.ordered, false)) {
+    throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
+  }
+  if (!Object.is(value.marker, "+")) {
+    throw new Error("stringify: field \"marker\" expected \"+\", got " + JSON.stringify(value.marker));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_13(captures);
+}
+
+function __invert_MarkdownLeaf_14_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "list-item")) {
+    throw new Error("stringify: field \"type\" expected \"list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.ordered, false)) {
+    throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
+  }
+  if (!Object.is(value.marker, "*")) {
+    throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_14(captures);
+}
+
+function __invert_MarkdownLeaf_15_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "list-item")) {
+    throw new Error("stringify: field \"type\" expected \"list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.ordered, false)) {
+    throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_15(captures);
+}
+
+function __invert_MarkdownLeaf_16_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "list-item")) {
+    throw new Error("stringify: field \"type\" expected \"list-item\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.ordered, true)) {
+    throw new Error("stringify: field \"ordered\" expected true, got " + JSON.stringify(value.ordered));
+  }
+  captures.index = __invertSlotLeaf_ast(value.index);
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_16(captures);
+}
+
+function __invert_MarkdownLeaf_17_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "blockquote")) {
+    throw new Error("stringify: field \"type\" expected \"blockquote\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_17(captures);
+}
+
+function __invert_MarkdownLeaf_18_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "code-block")) {
+    throw new Error("stringify: field \"type\" expected \"code-block\", got " + JSON.stringify(value.type));
+  }
+  captures.lang = __invertSlotLeaf_ast(value.lang);
+  captures.body = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_18(captures);
+}
+
+function __invert_MarkdownLeaf_19_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "code-block")) {
+    throw new Error("stringify: field \"type\" expected \"code-block\", got " + JSON.stringify(value.type));
+  }
+  captures.body = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_19(captures);
+}
+
+function __invert_MarkdownLeaf_20_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "bold")) {
+    throw new Error("stringify: field \"type\" expected \"bold\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_20(captures);
+}
+
+function __invert_MarkdownLeaf_21_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "italic")) {
+    throw new Error("stringify: field \"type\" expected \"italic\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_21(captures);
+}
+
+function __invert_MarkdownLeaf_22_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "strikethrough")) {
+    throw new Error("stringify: field \"type\" expected \"strikethrough\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_22(captures);
+}
+
+function __invert_MarkdownLeaf_23_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "inline-code")) {
+    throw new Error("stringify: field \"type\" expected \"inline-code\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_23(captures);
+}
+
+function __invert_MarkdownLeaf_24_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "link")) {
+    throw new Error("stringify: field \"type\" expected \"link\", got " + JSON.stringify(value.type));
+  }
+  captures.label = __invertSlotLeaf_ast(value.label);
+  captures.url = __invertSlotLeaf_ast(value.url);
+  return __rebuild_MarkdownLeaf_24(captures);
+}
+
+function __invert_MarkdownLeaf_25_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "reference-link")) {
+    throw new Error("stringify: field \"type\" expected \"reference-link\", got " + JSON.stringify(value.type));
+  }
+  captures.label = __invertSlotLeaf_ast(value.label);
+  captures.id = __invertSlotLeaf_ast(value.id);
+  return __rebuild_MarkdownLeaf_25(captures);
+}
+
+function __invert_MarkdownLeaf_26_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "image")) {
+    throw new Error("stringify: field \"type\" expected \"image\", got " + JSON.stringify(value.type));
+  }
+  captures.alt = __invertSlotLeaf_ast(value.alt);
+  captures.url = __invertSlotLeaf_ast(value.url);
+  return __rebuild_MarkdownLeaf_26(captures);
+}
+
+function __invert_MarkdownLeaf_27_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "reference-image")) {
+    throw new Error("stringify: field \"type\" expected \"reference-image\", got " + JSON.stringify(value.type));
+  }
+  captures.alt = __invertSlotLeaf_ast(value.alt);
+  captures.id = __invertSlotLeaf_ast(value.id);
+  return __rebuild_MarkdownLeaf_27(captures);
+}
+
+function __invert_MarkdownLeaf_28_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "entity")) {
+    throw new Error("stringify: field \"type\" expected \"entity\", got " + JSON.stringify(value.type));
+  }
+  captures.name = __invertSlotLeaf_ast(value.name);
+  return __rebuild_MarkdownLeaf_28(captures);
+}
+
+function __invert_MarkdownLeaf_29_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "table-delimiter")) {
+    throw new Error("stringify: field \"type\" expected \"table-delimiter\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.variant, "plain")) {
+    throw new Error("stringify: field \"variant\" expected \"plain\", got " + JSON.stringify(value.variant));
+  }
+  if (!Array.isArray(value.align) || value.align.length !== 2) {
+    throw new Error("stringify: expected array of length 2, got " + (Array.isArray(value.align) ? ("length " + value.align.length) : typeof value.align));
+  }
+  if (!Object.is(value.align[0], "default")) {
+    throw new Error("stringify: expected scalar \"default\", got " + JSON.stringify(value.align[0]));
+  }
+  if (!Object.is(value.align[1], "default")) {
+    throw new Error("stringify: expected scalar \"default\", got " + JSON.stringify(value.align[1]));
+  }
+  return __rebuild_MarkdownLeaf_29(captures);
+}
+
+function __invert_MarkdownLeaf_30_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "table-delimiter")) {
+    throw new Error("stringify: field \"type\" expected \"table-delimiter\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.variant, "aligned")) {
+    throw new Error("stringify: field \"variant\" expected \"aligned\", got " + JSON.stringify(value.variant));
+  }
+  if (!Array.isArray(value.align) || value.align.length !== 2) {
+    throw new Error("stringify: expected array of length 2, got " + (Array.isArray(value.align) ? ("length " + value.align.length) : typeof value.align));
+  }
+  if (!Object.is(value.align[0], "left")) {
+    throw new Error("stringify: expected scalar \"left\", got " + JSON.stringify(value.align[0]));
+  }
+  if (!Object.is(value.align[1], "right")) {
+    throw new Error("stringify: expected scalar \"right\", got " + JSON.stringify(value.align[1]));
+  }
+  return __rebuild_MarkdownLeaf_30(captures);
+}
+
+function __invert_MarkdownLeaf_31_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "table-row")) {
+    throw new Error("stringify: field \"type\" expected \"table-row\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.cells) || value.cells.length !== 2) {
+    throw new Error("stringify: expected array of length 2, got " + (Array.isArray(value.cells) ? ("length " + value.cells.length) : typeof value.cells));
+  }
+  captures.first = __invertSlotLeaf_ast(value.cells[0]);
+  captures.second = __invertSlotLeaf_ast(value.cells[1]);
+  return __rebuild_MarkdownLeaf_31(captures);
+}
+
+function __invert_MarkdownLeaf_32_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "definition")) {
+    throw new Error("stringify: field \"type\" expected \"definition\", got " + JSON.stringify(value.type));
+  }
+  captures.id = __invertSlotLeaf_ast(value.id);
+  captures.url = __invertSlotLeaf_ast(value.url);
+  return __rebuild_MarkdownLeaf_32(captures);
+}
+
+function __invert_MarkdownLeaf_33_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "footnote-definition")) {
+    throw new Error("stringify: field \"type\" expected \"footnote-definition\", got " + JSON.stringify(value.type));
+  }
+  captures.id = __invertSlotLeaf_ast(value.id);
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownLeaf_33(captures);
+}
+
+function __invert_MarkdownLeaf_34_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "footnote-reference")) {
+    throw new Error("stringify: field \"type\" expected \"footnote-reference\", got " + JSON.stringify(value.type));
+  }
+  captures.id = __invertSlotLeaf_ast(value.id);
+  return __rebuild_MarkdownLeaf_34(captures);
+}
+
+function __invert_MarkdownLeaf_35_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "html")) {
+    throw new Error("stringify: field \"type\" expected \"html\", got " + JSON.stringify(value.type));
+  }
+  captures.tag = __invertSlotLeaf_ast(value.tag);
+  captures.body = __invertSlotLeaf_ast(value.text);
+  captures.closingTag = __invertSlotLeaf_ast(value.closingTag);
+  return __rebuild_MarkdownLeaf_35(captures);
+}
+
+function __invert_MarkdownLeaf_36_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "autolink")) {
+    throw new Error("stringify: field \"type\" expected \"autolink\", got " + JSON.stringify(value.type));
+  }
+  captures.url = __invertSlotLeaf_ast(value.url);
+  return __rebuild_MarkdownLeaf_36(captures);
+}
+
+function __invert_MarkdownParagraph_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "paragraph")) {
+    throw new Error("stringify: field \"type\" expected \"paragraph\", got " + JSON.stringify(value.type));
+  }
+  captures.text = __invertSlotLeaf_ast(value.text);
+  return __rebuild_MarkdownParagraph_0(captures);
+}
+
+function __invert_MarkdownDocument_0_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__pos >= __s.length) {
+    captures.children = null;
+  } else {
+    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(__s.slice(__pos));
+    __pos = __s.length;
+  }
+  return __rebuild_MarkdownDocument_0(captures);
+}
+
+function __invert_MarkdownLeaf_0_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h6>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h6>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h6>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h6>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_0(captures);
+}
+
+function __invert_MarkdownLeaf_1_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h5>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h5>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h5>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h5>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_1(captures);
+}
+
+function __invert_MarkdownLeaf_2_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h4>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h4>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h4>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h4>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_2(captures);
+}
+
+function __invert_MarkdownLeaf_3_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h3>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h3>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h3>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h3>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_3(captures);
+}
+
+function __invert_MarkdownLeaf_4_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h2>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h2>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h2>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h2>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_4(captures);
+}
+
+function __invert_MarkdownLeaf_5_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h1>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h1>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h1>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h1>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_5(captures);
+}
+
+function __invert_MarkdownLeaf_6_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h1>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h1>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h1>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h1>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_6(captures);
+}
+
+function __invert_MarkdownLeaf_7_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<h2>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<h2>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</h2>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</h2>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_7(captures);
+}
+
+function __invert_MarkdownLeaf_8_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<hr>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<hr>\" in template body");
+  }
+  __pos += 4;
+  return __rebuild_MarkdownLeaf_8(captures);
+}
+
+function __invert_MarkdownLeaf_9_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<hr>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<hr>\" in template body");
+  }
+  __pos += 4;
+  return __rebuild_MarkdownLeaf_9(captures);
+}
+
+function __invert_MarkdownLeaf_10_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<hr>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<hr>\" in template body");
+  }
+  __pos += 4;
+  return __rebuild_MarkdownLeaf_10(captures);
+}
+
+function __invert_MarkdownLeaf_11_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li><input type=\"checkbox\" checked>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li><input type=\\\"checkbox\\\" checked>\" in template body");
+  }
+  __pos += 35;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_11(captures);
+}
+
+function __invert_MarkdownLeaf_12_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li><input type=\"checkbox\">", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li><input type=\\\"checkbox\\\">\" in template body");
+  }
+  __pos += 27;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_12(captures);
+}
+
+function __invert_MarkdownLeaf_13_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_13(captures);
+}
+
+function __invert_MarkdownLeaf_14_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_14(captures);
+}
+
+function __invert_MarkdownLeaf_15_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_15(captures);
+}
+
+function __invert_MarkdownLeaf_16_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<li>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<li>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</li>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</li>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_16(captures);
+}
+
+function __invert_MarkdownLeaf_17_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<blockquote>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<blockquote>\" in template body");
+  }
+  __pos += 12;
+  {
+    const __end = __s.indexOf("</blockquote>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</blockquote>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 13;
+  }
+  return __rebuild_MarkdownLeaf_17(captures);
+}
+
+function __invert_MarkdownLeaf_18_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<pre><code class=\"lang-", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<pre><code class=\\\"lang-\" in template body");
+  }
+  __pos += 23;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture lang");
+    }
+    captures.lang = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</code></pre>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</code></pre>\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 13;
+  }
+  return __rebuild_MarkdownLeaf_18(captures);
+}
+
+function __invert_MarkdownLeaf_19_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<pre><code>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<pre><code>\" in template body");
+  }
+  __pos += 11;
+  {
+    const __end = __s.indexOf("</code></pre>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</code></pre>\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 13;
+  }
+  return __rebuild_MarkdownLeaf_19(captures);
+}
+
+function __invert_MarkdownLeaf_20_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<strong>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<strong>\" in template body");
+  }
+  __pos += 8;
+  {
+    const __end = __s.indexOf("</strong>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</strong>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 9;
+  }
+  return __rebuild_MarkdownLeaf_20(captures);
+}
+
+function __invert_MarkdownLeaf_21_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<em>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<em>\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf("</em>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</em>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 5;
+  }
+  return __rebuild_MarkdownLeaf_21(captures);
+}
+
+function __invert_MarkdownLeaf_22_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<s>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<s>\" in template body");
+  }
+  __pos += 3;
+  {
+    const __end = __s.indexOf("</s>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</s>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_22(captures);
+}
+
+function __invert_MarkdownLeaf_23_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<code>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<code>\" in template body");
+  }
+  __pos += 6;
+  {
+    const __end = __s.indexOf("</code>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</code>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 7;
+  }
+  return __rebuild_MarkdownLeaf_23(captures);
+}
+
+function __invert_MarkdownLeaf_24_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<a href=\"", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<a href=\\\"\" in template body");
+  }
+  __pos += 9;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</a>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</a>\" after capture label");
+    }
+    captures.label = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_24(captures);
+}
+
+function __invert_MarkdownLeaf_25_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<a href=\"#", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<a href=\\\"#\" in template body");
+  }
+  __pos += 10;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</a>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</a>\" after capture label");
+    }
+    captures.label = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_25(captures);
+}
+
+function __invert_MarkdownLeaf_26_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<img src=\"", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<img src=\\\"\" in template body");
+  }
+  __pos += 10;
+  {
+    const __end = __s.indexOf("\" alt=\"", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\" alt=\\\"\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 7;
+  }
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture alt");
+    }
+    captures.alt = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  return __rebuild_MarkdownLeaf_26(captures);
+}
+
+function __invert_MarkdownLeaf_27_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<img src=\"#", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<img src=\\\"#\" in template body");
+  }
+  __pos += 11;
+  {
+    const __end = __s.indexOf("\" alt=\"", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\" alt=\\\"\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 7;
+  }
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture alt");
+    }
+    captures.alt = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  return __rebuild_MarkdownLeaf_27(captures);
+}
+
+function __invert_MarkdownLeaf_28_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("&", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"&\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf(";", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \";\" after capture name");
+    }
+    captures.name = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_28(captures);
+}
+
+function __invert_MarkdownLeaf_29_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  return __rebuild_MarkdownLeaf_29(captures);
+}
+
+function __invert_MarkdownLeaf_30_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  return __rebuild_MarkdownLeaf_30(captures);
+}
+
+function __invert_MarkdownLeaf_31_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<tr><td>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<tr><td>\" in template body");
+  }
+  __pos += 8;
+  {
+    const __end = __s.indexOf("</td><td>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</td><td>\" after capture first");
+    }
+    captures.first = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 9;
+  }
+  {
+    const __end = __s.indexOf("</td></tr>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</td></tr>\" after capture second");
+    }
+    captures.second = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 10;
+  }
+  return __rebuild_MarkdownLeaf_31(captures);
+}
+
+function __invert_MarkdownLeaf_32_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  return __rebuild_MarkdownLeaf_32(captures);
+}
+
+function __invert_MarkdownLeaf_33_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<div class=\"footnote\" id=\"fn", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<div class=\\\"footnote\\\" id=\\\"fn\" in template body");
+  }
+  __pos += 28;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</div>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</div>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 6;
+  }
+  return __rebuild_MarkdownLeaf_33(captures);
+}
+
+function __invert_MarkdownLeaf_34_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<sup><a href=\"#fn", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<sup><a href=\\\"#fn\" in template body");
+  }
+  __pos += 17;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</a></sup>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</a></sup>\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 10;
+  }
+  return __rebuild_MarkdownLeaf_34(captures);
+}
+
+function __invert_MarkdownLeaf_35_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf(">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \">\" after capture tag");
+    }
+    captures.tag = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("</", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf(">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \">\" after capture closingTag");
+    }
+    captures.closingTag = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_35(captures);
+}
+
+function __invert_MarkdownLeaf_36_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<a class=\"autolink\" href=\"", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<a class=\\\"autolink\\\" href=\\\"\" in template body");
+  }
+  __pos += 26;
+  {
+    const __end = __s.indexOf("\">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"\\\">\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("</a>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</a>\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_36(captures);
+}
+
+function __invert_MarkdownParagraph_0_html(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<p>", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<p>\" in template body");
+  }
+  __pos += 3;
+  {
+    const __end = __s.indexOf("</p>", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</p>\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_html(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownParagraph_0(captures);
+}
+
+function __invert_MarkdownDocument_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__pos >= __s.length) {
+    captures.children = null;
+  } else {
+    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(__s.slice(__pos));
+    __pos = __s.length;
+  }
+  return __rebuild_MarkdownDocument_0(captures);
+}
+
+function __invert_MarkdownLeaf_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("###### ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"###### \" in template body");
+  }
+  __pos += 7;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_0(captures);
+}
+
+function __invert_MarkdownLeaf_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("##### ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"##### \" in template body");
+  }
+  __pos += 6;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_1(captures);
+}
+
+function __invert_MarkdownLeaf_2_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("#### ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"#### \" in template body");
+  }
+  __pos += 5;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_2(captures);
+}
+
+function __invert_MarkdownLeaf_3_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("### ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"### \" in template body");
+  }
+  __pos += 4;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_3(captures);
+}
+
+function __invert_MarkdownLeaf_4_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("## ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"## \" in template body");
+  }
+  __pos += 3;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_4(captures);
+}
+
+function __invert_MarkdownLeaf_5_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("# ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"# \" in template body");
+  }
+  __pos += 2;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_5(captures);
+}
+
+function __invert_MarkdownLeaf_6_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(" ===", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" ===\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_6(captures);
+}
+
+function __invert_MarkdownLeaf_7_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(" ---", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" ---\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_7(captures);
+}
+
+function __invert_MarkdownLeaf_8_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("***", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"***\" in template body");
+  }
+  __pos += 3;
+  return __rebuild_MarkdownLeaf_8(captures);
+}
+
+function __invert_MarkdownLeaf_9_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("___", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"___\" in template body");
+  }
+  __pos += 3;
+  return __rebuild_MarkdownLeaf_9(captures);
+}
+
+function __invert_MarkdownLeaf_10_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("---", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"---\" in template body");
+  }
+  __pos += 3;
+  return __rebuild_MarkdownLeaf_10(captures);
+}
+
+function __invert_MarkdownLeaf_11_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("- [x] ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"- [x] \" in template body");
+  }
+  __pos += 6;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_11(captures);
+}
+
+function __invert_MarkdownLeaf_12_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("- [ ] ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"- [ ] \" in template body");
+  }
+  __pos += 6;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_12(captures);
+}
+
+function __invert_MarkdownLeaf_13_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("+ ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"+ \" in template body");
+  }
+  __pos += 2;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_13(captures);
+}
+
+function __invert_MarkdownLeaf_14_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("* ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"* \" in template body");
+  }
+  __pos += 2;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_14(captures);
+}
+
+function __invert_MarkdownLeaf_15_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("- ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"- \" in template body");
+  }
+  __pos += 2;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_15(captures);
+}
+
+function __invert_MarkdownLeaf_16_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(". ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \". \" after capture index");
+    }
+    captures.index = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_16(captures);
+}
+
+function __invert_MarkdownLeaf_17_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("> ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"> \" in template body");
+  }
+  __pos += 2;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_17(captures);
+}
+
+function __invert_MarkdownLeaf_18_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("```", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"```\" in template body");
+  }
+  __pos += 3;
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture lang");
+    }
+    captures.lang = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ```", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" ```\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_18(captures);
+}
+
+function __invert_MarkdownLeaf_19_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("```\n", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"```\\n\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf(" ```", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" ```\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 4;
+  }
+  return __rebuild_MarkdownLeaf_19(captures);
+}
+
+function __invert_MarkdownLeaf_20_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("**", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"**\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("**", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"**\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  return __rebuild_MarkdownLeaf_20(captures);
+}
+
+function __invert_MarkdownLeaf_21_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("*", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"*\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("*", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"*\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_21(captures);
+}
+
+function __invert_MarkdownLeaf_22_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("~~", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"~~\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("~~", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"~~\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  return __rebuild_MarkdownLeaf_22(captures);
+}
+
+function __invert_MarkdownLeaf_23_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("`", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"`\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("`", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"`\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_23(captures);
+}
+
+function __invert_MarkdownLeaf_24_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("[", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"[\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("](", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"](\" after capture label");
+    }
+    captures.label = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf(")", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \")\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_24(captures);
+}
+
+function __invert_MarkdownLeaf_25_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("[", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"[\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("][", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"][\" after capture label");
+    }
+    captures.label = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("]", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"]\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_25(captures);
+}
+
+function __invert_MarkdownLeaf_26_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("![", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"![\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("](", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"](\" after capture alt");
+    }
+    captures.alt = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf(")", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \")\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_26(captures);
+}
+
+function __invert_MarkdownLeaf_27_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("![", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"![\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("][", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"][\" after capture alt");
+    }
+    captures.alt = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf("]", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"]\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_27(captures);
+}
+
+function __invert_MarkdownLeaf_28_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("&", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"&\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf(";", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \";\" after capture name");
+    }
+    captures.name = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_28(captures);
+}
+
+function __invert_MarkdownLeaf_29_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("| --- | --- |", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"| --- | --- |\" in template body");
+  }
+  __pos += 13;
+  return __rebuild_MarkdownLeaf_29(captures);
+}
+
+function __invert_MarkdownLeaf_30_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("|:---|---:|", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"|:---|---:|\" in template body");
+  }
+  __pos += 11;
+  return __rebuild_MarkdownLeaf_30(captures);
+}
+
+function __invert_MarkdownLeaf_31_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("| ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"| \" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf(" | ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" | \" after capture first");
+    }
+    captures.first = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
+  {
+    const __end = __s.indexOf(" |", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" |\" after capture second");
+    }
+    captures.second = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  return __rebuild_MarkdownLeaf_31(captures);
+}
+
+function __invert_MarkdownLeaf_32_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("[", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"[\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("]: ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"]: \" after capture id");
+    }
+    captures.id = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
+  captures.url = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_32(captures);
+}
+
+function __invert_MarkdownLeaf_33_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("[^", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"[^\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("]: ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"]: \" after capture id");
+    }
+    captures.id = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownLeaf_33(captures);
+}
+
+function __invert_MarkdownLeaf_34_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("[^", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"[^\" in template body");
+  }
+  __pos += 2;
+  {
+    const __end = __s.indexOf("]", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"]\" after capture id");
+    }
+    captures.id = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_34(captures);
+}
+
+function __invert_MarkdownLeaf_35_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf(">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \">\" after capture tag");
+    }
+    captures.tag = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("</", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"</\" after capture body");
+    }
+    captures.body = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 2;
+  }
+  {
+    const __end = __s.indexOf(">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \">\" after capture closingTag");
+    }
+    captures.closingTag = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_35(captures);
+}
+
+function __invert_MarkdownLeaf_36_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("<", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"<\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf(">", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \">\" after capture url");
+    }
+    captures.url = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  return __rebuild_MarkdownLeaf_36(captures);
+}
+
+function __invert_MarkdownParagraph_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MarkdownParagraph_0(captures);
+}
+
+function __dispatchInverse_MarkdownDocument_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "document")) return __invert_MarkdownDocument_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownLeaf_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "code-block") && "lang" in value) return __invert_MarkdownLeaf_18_ast(value);
+    if (Object.is(value.type, "code-block") && !("lang" in value)) return __invert_MarkdownLeaf_19_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 6)) return __invert_MarkdownLeaf_0_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 5)) return __invert_MarkdownLeaf_1_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 4)) return __invert_MarkdownLeaf_2_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 3)) return __invert_MarkdownLeaf_3_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 2)) return __invert_MarkdownLeaf_4_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 1)) return __invert_MarkdownLeaf_5_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 1) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_6_ast(value);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 2) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_7_ast(value);
+    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_8_ast(value);
+    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "_")) return __invert_MarkdownLeaf_9_ast(value);
+    if (Object.is(value.type, "thematic-break")) return __invert_MarkdownLeaf_10_ast(value);
+    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, true) && Object.is(value.marker, "x")) return __invert_MarkdownLeaf_11_ast(value);
+    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, false)) return __invert_MarkdownLeaf_12_ast(value);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "+")) return __invert_MarkdownLeaf_13_ast(value);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_14_ast(value);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false)) return __invert_MarkdownLeaf_15_ast(value);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, true)) return __invert_MarkdownLeaf_16_ast(value);
+    if (Object.is(value.type, "blockquote")) return __invert_MarkdownLeaf_17_ast(value);
+    if (Object.is(value.type, "bold")) return __invert_MarkdownLeaf_20_ast(value);
+    if (Object.is(value.type, "italic")) return __invert_MarkdownLeaf_21_ast(value);
+    if (Object.is(value.type, "strikethrough")) return __invert_MarkdownLeaf_22_ast(value);
+    if (Object.is(value.type, "inline-code")) return __invert_MarkdownLeaf_23_ast(value);
+    if (Object.is(value.type, "link")) return __invert_MarkdownLeaf_24_ast(value);
+    if (Object.is(value.type, "reference-link")) return __invert_MarkdownLeaf_25_ast(value);
+    if (Object.is(value.type, "image")) return __invert_MarkdownLeaf_26_ast(value);
+    if (Object.is(value.type, "reference-image")) return __invert_MarkdownLeaf_27_ast(value);
+    if (Object.is(value.type, "entity")) return __invert_MarkdownLeaf_28_ast(value);
+    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "plain")) return __invert_MarkdownLeaf_29_ast(value);
+    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "aligned")) return __invert_MarkdownLeaf_30_ast(value);
+    if (Object.is(value.type, "table-row")) return __invert_MarkdownLeaf_31_ast(value);
+    if (Object.is(value.type, "definition")) return __invert_MarkdownLeaf_32_ast(value);
+    if (Object.is(value.type, "footnote-definition")) return __invert_MarkdownLeaf_33_ast(value);
+    if (Object.is(value.type, "footnote-reference")) return __invert_MarkdownLeaf_34_ast(value);
+    if (Object.is(value.type, "html")) return __invert_MarkdownLeaf_35_ast(value);
+    if (Object.is(value.type, "autolink")) return __invert_MarkdownLeaf_36_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownParagraph_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "paragraph")) return __invert_MarkdownParagraph_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_MarkdownDocument_ast(value);
+}
+
+function __dispatchInverse_MarkdownDocument_html(value: any): string {
+  if (typeof value === "string") {
+    return __invert_MarkdownDocument_0_html(value);
+  }
+  throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownLeaf_html(value: any): string {
+  if (typeof value === "string") {
+    if (value.startsWith("<li><input type=\"checkbox\" checked>")) return __invert_MarkdownLeaf_11_html(value);
+    if (value.startsWith("<div class=\"footnote\" id=\"fn")) return __invert_MarkdownLeaf_33_html(value);
+    if (value.startsWith("<li><input type=\"checkbox\">")) return __invert_MarkdownLeaf_12_html(value);
+    if (value.startsWith("<a class=\"autolink\" href=\"")) return __invert_MarkdownLeaf_36_html(value);
+    if (value.startsWith("<pre><code class=\"lang-")) return __invert_MarkdownLeaf_18_html(value);
+    if (value.startsWith("<sup><a href=\"#fn")) return __invert_MarkdownLeaf_34_html(value);
+    if (value.startsWith("<blockquote>")) return __invert_MarkdownLeaf_17_html(value);
+    if (value.startsWith("<pre><code>")) return __invert_MarkdownLeaf_19_html(value);
+    if (value.startsWith("<img src=\"#")) return __invert_MarkdownLeaf_27_html(value);
+    if (value.startsWith("<a href=\"#")) return __invert_MarkdownLeaf_25_html(value);
+    if (value.startsWith("<img src=\"")) return __invert_MarkdownLeaf_26_html(value);
+    if (value.startsWith("<a href=\"")) return __invert_MarkdownLeaf_24_html(value);
+    if (value.startsWith("<strong>")) return __invert_MarkdownLeaf_20_html(value);
+    if (value.startsWith("<tr><td>")) return __invert_MarkdownLeaf_31_html(value);
+    if (value.startsWith("<code>")) return __invert_MarkdownLeaf_23_html(value);
+    if (value.startsWith("<h6>")) return __invert_MarkdownLeaf_0_html(value);
+    if (value.startsWith("<h5>")) return __invert_MarkdownLeaf_1_html(value);
+    if (value.startsWith("<h4>")) return __invert_MarkdownLeaf_2_html(value);
+    if (value.startsWith("<h3>")) return __invert_MarkdownLeaf_3_html(value);
+    if (value.startsWith("<h2>")) return __invert_MarkdownLeaf_4_html(value);
+    if (value.startsWith("<h1>")) return __invert_MarkdownLeaf_5_html(value);
+    if (value.startsWith("<hr>")) return __invert_MarkdownLeaf_8_html(value);
+    if (value.startsWith("<li>")) return __invert_MarkdownLeaf_13_html(value);
+    if (value.startsWith("<em>")) return __invert_MarkdownLeaf_21_html(value);
+    if (value.startsWith("<s>")) return __invert_MarkdownLeaf_22_html(value);
+    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_html(value);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_html(value);
+    return __invert_MarkdownLeaf_29_html(value);
+  }
+  throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownParagraph_html(value: any): string {
+  if (typeof value === "string") {
+    if (value.startsWith("<p>")) return __invert_MarkdownParagraph_0_html(value);
+  }
+  throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_html(value: any): string {
+  return __dispatchInverse_MarkdownDocument_html(value);
+}
+
+function __dispatchInverse_MarkdownDocument_source(value: any): string {
+  if (typeof value === "string") {
+    return __invert_MarkdownDocument_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownLeaf_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.startsWith("| --- | --- |")) return __invert_MarkdownLeaf_29_source(value);
+    if (value.startsWith("|:---|---:|")) return __invert_MarkdownLeaf_30_source(value);
+    if (value.startsWith("###### ")) return __invert_MarkdownLeaf_0_source(value);
+    if (value.startsWith("##### ")) return __invert_MarkdownLeaf_1_source(value);
+    if (value.startsWith("- [x] ")) return __invert_MarkdownLeaf_11_source(value);
+    if (value.startsWith("- [ ] ")) return __invert_MarkdownLeaf_12_source(value);
+    if (value.startsWith("#### ")) return __invert_MarkdownLeaf_2_source(value);
+    if (value.startsWith("### ")) return __invert_MarkdownLeaf_3_source(value);
+    if (value.indexOf(" ===") >= 0) return __invert_MarkdownLeaf_6_source(value);
+    if (value.indexOf(" ---") >= 0) return __invert_MarkdownLeaf_7_source(value);
+    if (value.startsWith("```\n")) return __invert_MarkdownLeaf_19_source(value);
+    if (value.startsWith("## ")) return __invert_MarkdownLeaf_4_source(value);
+    if (value.startsWith("***")) return __invert_MarkdownLeaf_8_source(value);
+    if (value.startsWith("___")) return __invert_MarkdownLeaf_9_source(value);
+    if (value.startsWith("---")) return __invert_MarkdownLeaf_10_source(value);
+    if (value.startsWith("```")) return __invert_MarkdownLeaf_18_source(value);
+    if (value.startsWith("# ")) return __invert_MarkdownLeaf_5_source(value);
+    if (value.startsWith("+ ")) return __invert_MarkdownLeaf_13_source(value);
+    if (value.startsWith("* ")) return __invert_MarkdownLeaf_14_source(value);
+    if (value.startsWith("- ")) return __invert_MarkdownLeaf_15_source(value);
+    if (value.indexOf(". ") >= 0) return __invert_MarkdownLeaf_16_source(value);
+    if (value.startsWith("> ")) return __invert_MarkdownLeaf_17_source(value);
+    if (value.startsWith("**")) return __invert_MarkdownLeaf_20_source(value);
+    if (value.startsWith("~~")) return __invert_MarkdownLeaf_22_source(value);
+    if (value.startsWith("![")) return __invert_MarkdownLeaf_26_source(value);
+    if (value.startsWith("![")) return __invert_MarkdownLeaf_27_source(value);
+    if (value.startsWith("| ")) return __invert_MarkdownLeaf_31_source(value);
+    if (value.startsWith("[^")) return __invert_MarkdownLeaf_33_source(value);
+    if (value.startsWith("[^")) return __invert_MarkdownLeaf_34_source(value);
+    if (value.startsWith("*")) return __invert_MarkdownLeaf_21_source(value);
+    if (value.startsWith("`")) return __invert_MarkdownLeaf_23_source(value);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_24_source(value);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_25_source(value);
+    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_source(value);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_32_source(value);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_source(value);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_36_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_MarkdownParagraph_source(value: any): string {
+  if (typeof value === "string") {
+    return __invert_MarkdownParagraph_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_source(value: any): string {
+  return __dispatchInverse_MarkdownDocument_source(value);
+}
+
+function __invertSlotFor_MarkdownDocument_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownDocument_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownParagraph_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownParagraph_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_ast(v);
+  return String(v);
+}
+
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") {
+    try { return __dispatchInverse_MarkdownLeaf_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v); } catch (_e) { /* try next role */ }
+    throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
+  }
+  return String(v);
+}
+
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownDocument_html(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownDocument_html(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_html(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownLeaf_html(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownLeaf_html(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_html(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownParagraph_html(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownParagraph_html(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_html(v);
+  return String(v);
+}
+
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") {
+    try { return __dispatchInverse_MarkdownLeaf_html(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v); } catch (_e) { /* try next role */ }
+    throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
+  }
+  return String(v);
+}
+
+function __invertSlotLeaf_html(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_html(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownDocument_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownDocument_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_MarkdownParagraph_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MarkdownParagraph_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_source(v);
+  return String(v);
+}
+
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") {
+    try { return __dispatchInverse_MarkdownLeaf_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v); } catch (_e) { /* try next role */ }
+    throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
+  }
+  return String(v);
+}
+
+function __invertSlotLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+  "html": __dispatchInverse_html,
+  "source": __dispatchInverse_source,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

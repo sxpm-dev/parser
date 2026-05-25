@@ -156,8 +156,9 @@ export default defineSchema({
       // and any byte not in that table routes here.
       .span('children', '# Release notes\nPlain paragraph', ['MarkdownLeaf', 'MarkdownParagraph'])
         .repeats({ min: 0 })
-      .structure({ type: 'document', children: $.children })
-      .stringify('html', tpl`${$.children}`)
+      .render('ast', { type: 'document', children: $.children })
+      .render('html', tpl`${$.children}`)
+      .render('source', tpl`${$.children}`)
       .build(),
 
     // ---- ATX headings ----------------------------------------------------
@@ -167,48 +168,54 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('######')
       .span('text', 'Tiny heading').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 6, text: $.text })
-      .stringify('html', tpl`<h6>${$.text}</h6>`)
+      .render('ast', { type: 'heading', depth: 6, text: $.text })
+      .render('html', tpl`<h6>${$.text}</h6>`)
+      .render('source', tpl`###### ${$.text}`)
       .build(),
 
     ex('##### Small section')
       .as('MarkdownLeaf')
       .span('#####')
       .span('text', 'Small section').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 5, text: $.text })
-      .stringify('html', tpl`<h5>${$.text}</h5>`)
+      .render('ast', { type: 'heading', depth: 5, text: $.text })
+      .render('html', tpl`<h5>${$.text}</h5>`)
+      .render('source', tpl`##### ${$.text}`)
       .build(),
 
     ex('#### Deep section')
       .as('MarkdownLeaf')
       .span('####')
       .span('text', 'Deep section').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 4, text: $.text })
-      .stringify('html', tpl`<h4>${$.text}</h4>`)
+      .render('ast', { type: 'heading', depth: 4, text: $.text })
+      .render('html', tpl`<h4>${$.text}</h4>`)
+      .render('source', tpl`#### ${$.text}`)
       .build(),
 
     ex('### API reference')
       .as('MarkdownLeaf')
       .span('###')
       .span('text', 'API reference').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 3, text: $.text })
-      .stringify('html', tpl`<h3>${$.text}</h3>`)
+      .render('ast', { type: 'heading', depth: 3, text: $.text })
+      .render('html', tpl`<h3>${$.text}</h3>`)
+      .render('source', tpl`### ${$.text}`)
       .build(),
 
     ex('## Installation guide')
       .as('MarkdownLeaf')
       .span('##')
       .span('text', 'Installation guide').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 2, text: $.text })
-      .stringify('html', tpl`<h2>${$.text}</h2>`)
+      .render('ast', { type: 'heading', depth: 2, text: $.text })
+      .render('html', tpl`<h2>${$.text}</h2>`)
+      .render('source', tpl`## ${$.text}`)
       .build(),
 
     ex('# Release notes')
       .as('MarkdownLeaf')
       .span('#')
       .span('text', 'Release notes').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'heading', depth: 1, text: $.text })
-      .stringify('html', tpl`<h1>${$.text}</h1>`)
+      .render('ast', { type: 'heading', depth: 1, text: $.text })
+      .render('html', tpl`<h1>${$.text}</h1>`)
+      .render('source', tpl`# ${$.text}`)
       .build(),
 
     // ---- Setext heading --------------------------------------------------
@@ -220,41 +227,52 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
       .span('===')
-      .structure({ type: 'heading', depth: 1, text: $.text, style: 'setext' })
-      .stringify('html', tpl`<h1>${$.text}</h1>`)
+      .render('ast', { type: 'heading', depth: 1, text: $.text, style: 'setext' })
+      .render('html', tpl`<h1>${$.text}</h1>`)
+      .render('source', tpl`${$.text} ===`)
       .build(),
 
     ex('Setext heading\n---')
       .as('MarkdownLeaf')
       .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
       .span('---')
-      .structure({ type: 'heading', depth: 2, text: $.text, style: 'setext' })
-      .stringify('html', tpl`<h2>${$.text}</h2>`)
+      .render('ast', { type: 'heading', depth: 2, text: $.text, style: 'setext' })
+      .render('html', tpl`<h2>${$.text}</h2>`)
+      .render('source', tpl`${$.text} ---`)
       .build(),
 
     // ---- Thematic breaks -------------------------------------------------
     // Listed BEFORE setext-with-`---` so the dispatcher's byte-prefix path
     // routes a bare `---` line to the break, not setext (which would
     // require a preceding text line we don't have).
-    ex('---')
-      .as('MarkdownLeaf')
-      .span('---')
-      .structure({ type: 'thematic-break' })
-      .stringify('html', tpl`<hr>`)
-      .build(),
-
+    //
+    // ORDER NOTE: more-specific productions (`***` with marker='*', `___`
+    // with marker='_') come BEFORE the catch-all `---` so the inverse AST
+    // dispatcher matches the marker-bearing predicates first. The forward
+    // dispatcher's longest-match peek still routes input bytes correctly
+    // regardless of declaration order.
     ex('***')
       .as('MarkdownLeaf')
       .span('***')
-      .structure({ type: 'thematic-break', marker: '*' })
-      .stringify('html', tpl`<hr>`)
+      .render('ast', { type: 'thematic-break', marker: '*' })
+      .render('html', tpl`<hr>`)
+      .render('source', tpl`***`)
       .build(),
 
     ex('___')
       .as('MarkdownLeaf')
       .span('___')
-      .structure({ type: 'thematic-break', marker: '_' })
-      .stringify('html', tpl`<hr>`)
+      .render('ast', { type: 'thematic-break', marker: '_' })
+      .render('html', tpl`<hr>`)
+      .render('source', tpl`___`)
+      .build(),
+
+    ex('---')
+      .as('MarkdownLeaf')
+      .span('---')
+      .render('ast', { type: 'thematic-break' })
+      .render('html', tpl`<hr>`)
+      .render('source', tpl`---`)
       .build(),
 
     // ---- Task list items -------------------------------------------------
@@ -265,43 +283,52 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('- [x]')
       .span('text', 'completed task').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'task-list-item', checked: true, marker: 'x', text: $.text })
-      .stringify('html', tpl`<li><input type="checkbox" checked>${$.text}</li>`)
+      .render('ast', { type: 'task-list-item', checked: true, marker: 'x', text: $.text })
+      .render('html', tpl`<li><input type="checkbox" checked>${$.text}</li>`)
+      .render('source', tpl`- [x] ${$.text}`)
       .build(),
 
     ex('- [ ] pending task')
       .as('MarkdownLeaf')
       .span('- [ ]')
       .span('text', 'pending task').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'task-list-item', checked: false, text: $.text })
-      .stringify('html', tpl`<li><input type="checkbox">${$.text}</li>`)
+      .render('ast', { type: 'task-list-item', checked: false, text: $.text })
+      .render('html', tpl`<li><input type="checkbox">${$.text}</li>`)
+      .render('source', tpl`- [ ] ${$.text}`)
       .build(),
 
     // ---- Unordered list items --------------------------------------------
     // The `- ` / `+ ` / `* ` punctuators include the required space so
     // they don't collide with the thematic-break or bold/italic prefixes.
-    ex('- first item')
-      .as('MarkdownLeaf')
-      .span('- ')
-      .span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'list-item', ordered: false, text: $.text })
-      .stringify('html', tpl`<li>${$.text}</li>`)
-      .build(),
-
+    //
+    // ORDER NOTE: more-specific marker-bearing productions (`+ ` -> '+',
+    // `* ` -> '*') come BEFORE the catch-all dash form so the inverse AST
+    // dispatcher's predicate-chain matches the marker first.
     ex('+ alternate marker')
       .as('MarkdownLeaf')
       .span('+ ')
       .span('text', 'alternate marker').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'list-item', ordered: false, marker: '+', text: $.text })
-      .stringify('html', tpl`<li>${$.text}</li>`)
+      .render('ast', { type: 'list-item', ordered: false, marker: '+', text: $.text })
+      .render('html', tpl`<li>${$.text}</li>`)
+      .render('source', tpl`+ ${$.text}`)
       .build(),
 
     ex('* star marker')
       .as('MarkdownLeaf')
       .span('* ')
       .span('text', 'star marker').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'list-item', ordered: false, marker: '*', text: $.text })
-      .stringify('html', tpl`<li>${$.text}</li>`)
+      .render('ast', { type: 'list-item', ordered: false, marker: '*', text: $.text })
+      .render('html', tpl`<li>${$.text}</li>`)
+      .render('source', tpl`* ${$.text}`)
+      .build(),
+
+    ex('- first item')
+      .as('MarkdownLeaf')
+      .span('- ')
+      .span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false })
+      .render('ast', { type: 'list-item', ordered: false, text: $.text })
+      .render('html', tpl`<li>${$.text}</li>`)
+      .render('source', tpl`- ${$.text}`)
       .build(),
 
     // ---- Ordered list item -----------------------------------------------
@@ -311,8 +338,9 @@ export default defineSchema({
       .span('index', '1').number().int()
       .span('.')
       .span('text', 'ordered item').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'list-item', ordered: true, index: $.index, text: $.text })
-      .stringify('html', tpl`<li>${$.text}</li>`)
+      .render('ast', { type: 'list-item', ordered: true, index: $.index, text: $.text })
+      .render('html', tpl`<li>${$.text}</li>`)
+      .render('source', tpl`${$.index}. ${$.text}`)
       .build(),
 
     // ---- Block quote -----------------------------------------------------
@@ -320,8 +348,9 @@ export default defineSchema({
       .as('MarkdownLeaf')
       .span('>')
       .span('text', 'quoted text').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'blockquote', text: $.text })
-      .stringify('html', tpl`<blockquote>${$.text}</blockquote>`)
+      .render('ast', { type: 'blockquote', text: $.text })
+      .render('html', tpl`<blockquote>${$.text}</blockquote>`)
+      .render('source', tpl`> ${$.text}`)
       .build(),
 
     // ---- Fenced code block -----------------------------------------------
@@ -342,8 +371,9 @@ export default defineSchema({
       .span('lang', 'js').ident().css()
       .span('body', 'sample').until('```', { balanced: false })
       .span('```')
-      .structure({ type: 'code-block', lang: $.lang, text: $.body })
-      .stringify('html', tpl`<pre><code class="lang-${$.lang}">${$.body}</code></pre>`)
+      .render('ast', { type: 'code-block', lang: $.lang, text: $.body })
+      .render('html', tpl`<pre><code class="lang-${$.lang}">${$.body}</code></pre>`)
+      .render('source', tpl`\`\`\`${$.lang} ${$.body} \`\`\``)
       .build(),
 
     ex('```\nplain\n```')
@@ -351,8 +381,10 @@ export default defineSchema({
       .span('```\n')
       .span('body', 'plain').until('```', { balanced: false })
       .span('```')
-      .structure({ type: 'code-block', text: $.body })
-      .stringify('html', tpl`<pre><code>${$.body}</code></pre>`)
+      .render('ast', { type: 'code-block', text: $.body })
+      .render('html', tpl`<pre><code>${$.body}</code></pre>`)
+      .render('source', tpl`\`\`\`
+${$.body} \`\`\``)
       .build(),
 
     // ---- Inline-styled blocks --------------------------------------------
@@ -365,8 +397,9 @@ export default defineSchema({
       .span('**')
       .span('text', 'bold').until('**', { balanced: false })
       .span('**')
-      .structure({ type: 'bold', text: $.text })
-      .stringify('html', tpl`<strong>${$.text}</strong>`)
+      .render('ast', { type: 'bold', text: $.text })
+      .render('html', tpl`<strong>${$.text}</strong>`)
+      .render('source', tpl`**${$.text}**`)
       .build(),
 
     ex('*italic*')
@@ -374,8 +407,9 @@ export default defineSchema({
       .span('*')
       .span('text', 'italic').until('*', { balanced: false })
       .span('*')
-      .structure({ type: 'italic', text: $.text })
-      .stringify('html', tpl`<em>${$.text}</em>`)
+      .render('ast', { type: 'italic', text: $.text })
+      .render('html', tpl`<em>${$.text}</em>`)
+      .render('source', tpl`*${$.text}*`)
       .build(),
 
     ex('~~removed~~')
@@ -383,8 +417,9 @@ export default defineSchema({
       .span('~~')
       .span('text', 'removed').until('~~', { balanced: false })
       .span('~~')
-      .structure({ type: 'strikethrough', text: $.text })
-      .stringify('html', tpl`<s>${$.text}</s>`)
+      .render('ast', { type: 'strikethrough', text: $.text })
+      .render('html', tpl`<s>${$.text}</s>`)
+      .render('source', tpl`~~${$.text}~~`)
       .build(),
 
     ex('`code`')
@@ -392,8 +427,9 @@ export default defineSchema({
       .span('`')
       .span('text', 'code').until('`', { balanced: false })
       .span('`')
-      .structure({ type: 'inline-code', text: $.text })
-      .stringify('html', tpl`<code>${$.text}</code>`)
+      .render('ast', { type: 'inline-code', text: $.text })
+      .render('html', tpl`<code>${$.text}</code>`)
+      .render('source', tpl`\`${$.text}\``)
       .build(),
 
     // ---- Links and images ------------------------------------------------
@@ -408,8 +444,9 @@ export default defineSchema({
       .span('(')
       .span('url', 'https://example.com').until(')', { balanced: false })
       .span(')')
-      .structure({ type: 'link', label: $.label, url: $.url })
-      .stringify('html', tpl`<a href="${$.url}">${$.label}</a>`)
+      .render('ast', { type: 'link', label: $.label, url: $.url })
+      .render('html', tpl`<a href="${$.url}">${$.label}</a>`)
+      .render('source', tpl`[${$.label}](${$.url})`)
       .build(),
 
     ex('[docs][id]')
@@ -419,8 +456,9 @@ export default defineSchema({
       .span('][')
       .span('id', 'id').until(']', { balanced: false })
       .span(']')
-      .structure({ type: 'reference-link', label: $.label, id: $.id })
-      .stringify('html', tpl`<a href="#${$.id}">${$.label}</a>`)
+      .render('ast', { type: 'reference-link', label: $.label, id: $.id })
+      .render('html', tpl`<a href="#${$.id}">${$.label}</a>`)
+      .render('source', tpl`[${$.label}][${$.id}]`)
       .build(),
 
     ex('![diagram](https://example.com/diagram.png)')
@@ -432,8 +470,9 @@ export default defineSchema({
       .span('(')
       .span('url', 'https://example.com/diagram.png').until(')', { balanced: false })
       .span(')')
-      .structure({ type: 'image', alt: $.alt, url: $.url })
-      .stringify('html', tpl`<img src="${$.url}" alt="${$.alt}">`)
+      .render('ast', { type: 'image', alt: $.alt, url: $.url })
+      .render('html', tpl`<img src="${$.url}" alt="${$.alt}">`)
+      .render('source', tpl`![${$.alt}](${$.url})`)
       .build(),
 
     ex('![diagram][image-id]')
@@ -444,8 +483,9 @@ export default defineSchema({
       .span('][')
       .span('id', 'image-id').until(']', { balanced: false })
       .span(']')
-      .structure({ type: 'reference-image', alt: $.alt, id: $.id })
-      .stringify('html', tpl`<img src="#${$.id}" alt="${$.alt}">`)
+      .render('ast', { type: 'reference-image', alt: $.alt, id: $.id })
+      .render('html', tpl`<img src="#${$.id}" alt="${$.alt}">`)
+      .render('source', tpl`![${$.alt}][${$.id}]`)
       .build(),
 
     // ---- Entity ----------------------------------------------------------
@@ -454,8 +494,9 @@ export default defineSchema({
       .span('&')
       .span('name', 'amp').ident().css()
       .span(';')
-      .structure({ type: 'entity', name: $.name })
-      .stringify('html', tpl`&${$.name};`)
+      .render('ast', { type: 'entity', name: $.name })
+      .render('html', tpl`&${$.name};`)
+      .render('source', tpl`&${$.name};`)
       .build(),
 
     // ---- Table rows ------------------------------------------------------
@@ -471,8 +512,9 @@ export default defineSchema({
       .span('|')
       .span('---')
       .span('|')
-      .structure({ type: 'table-delimiter', align: ['default', 'default'] })
-      .stringify('html', tpl``)
+      .render('ast', { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] })
+      .render('html', tpl``)
+      .render('source', tpl`| --- | --- |`)
       .build(),
 
     ex('|:---|---:|')
@@ -484,8 +526,9 @@ export default defineSchema({
       .span('---')
       .span(':')
       .span('|')
-      .structure({ type: 'table-delimiter', align: ['left', 'right'] })
-      .stringify('html', tpl``)
+      .render('ast', { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] })
+      .render('html', tpl``)
+      .render('source', tpl`|:---|---:|`)
       .build(),
 
     ex('| name | value |')
@@ -495,8 +538,9 @@ export default defineSchema({
       .span('|')
       .span('second', 'value').until('|', { balanced: false })
       .span('|')
-      .structure({ type: 'table-row', cells: [$.first, $.second] })
-      .stringify('html', tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`)
+      .render('ast', { type: 'table-row', cells: [$.first, $.second] })
+      .render('html', tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`)
+      .render('source', tpl`| ${$.first} | ${$.second} |`)
       .build(),
 
     // ---- Link reference definition --------------------------------------
@@ -509,8 +553,9 @@ export default defineSchema({
       .span(']')
       .span(':')
       .span('url', 'https://example.com').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'definition', id: $.id, url: $.url })
-      .stringify('html', tpl``)
+      .render('ast', { type: 'definition', id: $.id, url: $.url })
+      .render('html', tpl``)
+      .render('source', tpl`[${$.id}]: ${$.url}`)
       .build(),
 
     // ---- Footnote definition --------------------------------------------
@@ -523,8 +568,9 @@ export default defineSchema({
       .span(']')
       .span(':')
       .span('text', 'footnote text').until(HEADING_LINE_STOPS, { balanced: false })
-      .structure({ type: 'footnote-definition', id: $.id, text: $.text })
-      .stringify('html', tpl`<div class="footnote" id="fn${$.id}">${$.text}</div>`)
+      .render('ast', { type: 'footnote-definition', id: $.id, text: $.text })
+      .render('html', tpl`<div class="footnote" id="fn${$.id}">${$.text}</div>`)
+      .render('source', tpl`[^${$.id}]: ${$.text}`)
       .build(),
 
     // ---- Footnote reference ---------------------------------------------
@@ -533,8 +579,9 @@ export default defineSchema({
       .span('[^')
       .span('id', '1').until(']', { balanced: false })
       .span(']')
-      .structure({ type: 'footnote-reference', id: $.id })
-      .stringify('html', tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`)
+      .render('ast', { type: 'footnote-reference', id: $.id })
+      .render('html', tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`)
+      .render('source', tpl`[^${$.id}]`)
       .build(),
 
     // ---- HTML block ------------------------------------------------------
@@ -557,8 +604,9 @@ export default defineSchema({
       .span('</')
       .span('closingTag', 'div').ident().html()
       .span('>')
-      .structure({ type: 'html', tag: $.tag, text: $.body, closingTag: $.closingTag })
-      .stringify('html', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
+      .render('ast', { type: 'html', tag: $.tag, text: $.body, closingTag: $.closingTag })
+      .render('html', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
+      .render('source', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
       .build(),
 
     // ---- Autolink --------------------------------------------------------
@@ -572,8 +620,14 @@ export default defineSchema({
       .span('<')
       .span('url', 'https://example.com').until('>', { balanced: false })
       .span('>')
-      .structure({ type: 'autolink', url: $.url })
-      .stringify('html', tpl`<a href="${$.url}">${$.url}</a>`)
+      .render('ast', { type: 'autolink', url: $.url })
+      // The `class="autolink"` literal is also a discriminator: the
+      // explicit link production's template (`<a href="${$.url}">${$.label}</a>`)
+      // shares the same segment shape; the unique `class="autolink"` literal
+      // makes the inverse dispatcher able to tell them apart from the html
+      // alone (precondition 2 in invert.ts).
+      .render('html', tpl`<a class="autolink" href="${$.url}">${$.url}</a>`)
+      .render('source', tpl`<${$.url}>`)
       .build(),
 
     // ---- Paragraph (fallback role) --------------------------------------
@@ -593,8 +647,9 @@ export default defineSchema({
     ex('Plain paragraph')
       .as('MarkdownParagraph')
       .span('text', 'Plain paragraph').until(PARAGRAPH_STOPS, { balanced: false })
-      .structure({ type: 'paragraph', text: $.text })
-      .stringify('html', tpl`<p>${$.text}</p>`)
+      .render('ast', { type: 'paragraph', text: $.text })
+      .render('html', tpl`<p>${$.text}</p>`)
+      .render('source', tpl`${$.text}`)
       .build(),
   ],
 });

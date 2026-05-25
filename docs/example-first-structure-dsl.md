@@ -15,10 +15,15 @@ Three things follow from this pipeline:
   expected output structures are the contract. Everything else (operator
   tables, punctuator tables, recovery policies) is a small set of declarations
   attached to the schema to disambiguate generalization.
-- **`parse()` returns a Structure, not an AST.** AST is *one* shape a Structure
+- **Schemas declare render targets, not a single output shape.** Each example
+  attaches one or more `.render(target, body)` bodies. `'ast'` is the
+  canonical AST target, but a schema can also declare custom targets such
+  as `'source'`, `'html'`, or `'json'`. The runtime exposes
+  `render(input, { type })` to materialize any declared target and
+  `stringify(value, { type })` as its inverse. AST is *one* shape a Structure
   can take. An extractor (`{ hovers: [...] }`), a metrics object, a list of
   spans, a normalized object, or a custom domain shape are all equally valid.
-  The shape is whatever the examples' `.structure({...})` literals describe.
+  The shape is whatever the examples' `.render('ast', {...})` bodies describe.
 - **Schemas describe; the compiler optimizes.** A schema never ships runtime
   parser code. The compiler emits a per-schema, straight-line, hand-tuned
   recursive-descent parser. The schema author writes examples; the compiler
@@ -38,7 +43,7 @@ ex('color: red;')
   .span(':')
   .span('value', 'red').until([';', '}'])
   .span(';').optional()
-  .structure({ type: 'decl', prop: $.prop, value: $.value })
+  .render('ast', { type: 'decl', prop: $.prop, value: $.value })
   .build()
 ```
 
@@ -85,7 +90,7 @@ For the compiler to learn from one example it must know all of:
 | Layer | Purpose |
 |---|---|
 | **Input string** | The concrete syntax being demonstrated. |
-| **Structure literal** | What `parse()` should return for this input. |
+| **Render body(s)** | One or more `.render(target, body)` declarations describing what `render(input, { type: target })` should return for this input. The canonical AST view is `.render('ast', {...})`. |
 | **Span roles** | Which substring becomes which piece of structure, and whether the piece is a terminal (literal), a tokenized atom (class), or a non-terminal (recursive node type). |
 | **Status** | One of: valid, recovered (invalid input with explicit recovery policy + post-recovery structure), or rejected (invalid input that must fail to parse). |
 
@@ -163,9 +168,9 @@ package-name special case.
 
 That means schema declarations must not contain domain-specific generated API
 names such as `parseCssColor`, `validateCssColor`, or property-to-parser maps.
-Generated parser APIs stay generic (`parse`, `validate`, `tokenize`,
-`stringify`). Domain meaning comes from the package/module boundary: a color
-grammar package can export `parse` and `validate`, and callers know it is a
+Generated parser APIs stay generic (`render`, `stringify`, `validate`,
+`tokenize`). Domain meaning comes from the package/module boundary: a color
+grammar package can export `render` and `validate`, and callers know it is a
 color parser because they imported it from the color package.
 
 The exported `validate` for a value grammar package is also schema-driven. For
@@ -302,13 +307,33 @@ Every example is built with a single fluent chain that ends in `.build()`.
 ex(input)                  // 1. the concrete input string
   .as(NodeType)            // 2. declare which node type this example defines
   .span(...)               // 3. zero or more labeled spans (left to right)
-  .structure({ ... })      // 4. the expected output structure
+  .render('ast', { ... })  // 4. one or more render bodies, one per target
   .build()
 ```
 
-`as(NodeType)` may be omitted when the structure literal contains a `type:`
-field that unambiguously identifies the node type (e.g. `.structure({ type:
-'Rule', ... })`). When omitted, the compiler infers the node type from `type:`.
+`as(NodeType)` may be omitted when the `'ast'` render body is an object that
+contains a `type:` field that unambiguously identifies the node type (e.g.
+`.render('ast', { type: 'Rule', ... })`). When omitted, the compiler infers
+the node type from `type:`.
+
+A schema may declare additional targets — e.g. a `'source'` Template that
+reconstructs the original input slice, or a custom `'html'` target:
+
+```ts
+ex('color: red;')
+  .as('Declaration')
+  .span('prop', 'color').until([':', ';', '}'])
+  .span(':')
+  .span('value', 'red').until([';', '}'])
+  .span(';').optional()
+  .render('ast', { type: 'decl', prop: $.prop, value: $.value })
+  .render('source', tpl`${$.prop}:${$.value};`)
+  .build()
+```
+
+`render(input, { type: 'ast' })` returns the object; `render(input, { type:
+'source' })` returns the string. `stringify(value, { type })` is the inverse:
+it takes a value produced by the named target and reconstructs source.
 
 ### Spans
 
@@ -384,14 +409,14 @@ Comments are modeled with the generic `comment` class plus a shape refinement:
 ex('/* hello */')
   .as('Comment')
   .span('text', '/* hello */').comment().block('/*', '*/')
-  .structure({ type: 'comment', text: $.text })
+  .render('ast', { type: 'comment', text: $.text })
   .build()
 
 // Line comment shape
 ex('// hello')
   .as('Comment')
   .span('text', '// hello').comment().line('//')
-  .structure({ type: 'comment', text: $.text })
+  .render('ast', { type: 'comment', text: $.text })
   .build()
 ```
 
@@ -434,13 +459,27 @@ possible internal form via recursive grammar. The tokenizer must still be
 able to scan everything inside (declare any extra classes via the schema's
 `tokens` field).
 
-### Structure literals
+### Render bodies
 
-A structure literal is a plain object that may contain `$` references to span
-captures.
+A render body is the declared output shape for one `(production, target)`
+pair. The compiler walks the body structurally: scalars become literals,
+objects become object allocations, arrays become array allocations,
+`Template`s (built with the `tpl` tagged-template helper) become string
+concatenation, and `$.name` (or any other `$.*` capture ref) becomes a
+capture read.
+
+Five shapes are valid render bodies:
+
+| Body shape | Emitted | Typical target |
+|---|---|---|
+| Scalar (`42`, `true`, `null`, `"x"`) | the JS literal | rare; mostly used inside objects/arrays |
+| `$.name` (bare ref) | the raw captured value | unwrapping a single capture |
+| Object `{ k: v, ... }` (recursively render bodies) | object allocation | `'ast'` and other structured targets |
+| Array `[a, b, ...]` (recursively render bodies) | array allocation | structured targets |
+| `Template` (`tpl\`...${$.x}...\``) | straight-line string concat | string targets (`'source'`, `'html'`, `'json'`) |
 
 ```ts
-.structure({
+.render('ast', {
   type: 'IfStatement',
   test: $.test,
   consequent: $.consequent,
@@ -449,42 +488,49 @@ captures.
 })
 ```
 
-Two forms of reference are supported:
+Two forms of reference are supported in the `$` proxy:
 
 - `$.name` — the captured value (or `null` if the span was optional and
   absent).
 - `$.name.present` — a boolean, `true` iff the named optional span matched.
 
-Structure literals cannot contain arbitrary JavaScript expressions. All
+Render bodies cannot contain arbitrary JavaScript expressions. All
 transformations are expressed through classes and refinements (so the captured
 value already has the right shape and type) or through structural shape
-(positions of `$` references). This keeps structures statically analyzable and
-codegen-friendly.
+(positions of `$` references). This keeps render bodies statically analyzable
+and codegen-friendly.
 
-**`source` is auto-attached.** Every node returned by the generated parser
-carries a `source: { start, end }` field with `{ line, column, offset }`
-sub-positions. Schemas don't need to (and can't) request this in the
-structure literal — it's appended automatically after construction. Convention:
+A schema may declare multiple `.render(target, body)` entries on the same
+example — one per declared target. The compiler emits both a forward builder
+(`render(input, { type: T })`) and an inverse (`stringify(value, { type: T })`)
+for each `(production, target)` pair.
+
+**`source` positions are auto-attached.** Every node returned by an `'ast'`
+render carries a `source: { start, end }` field with `{ line, column, offset }`
+sub-positions. Schemas don't need to (and can't) request this in the render
+body — it's appended automatically after construction. Convention:
 `end.offset` is exclusive (one past the last consumed char), `end.line` and
 `end.column` refer to the last consumed char (inclusive), matching PostCSS.
+Source positions are computed at parse time on the captures-tree and surface
+via `render(input, { type: 'ast' })`.
 
 ### Status: valid, recovered, rejected
 
 A valid example needs no extra marker:
 
 ```ts
-ex('.foo { color: red }').as('Rule').span(...).structure({...}).build()
+ex('.foo { color: red }').as('Rule').span(...).render('ast', {...}).build()
 ```
 
-A recovered example carries `.recovers({ syncAt, drop })` and a structure that
-describes the post-recovery result. Recovery means: the input is malformed,
+A recovered example carries `.recovers({ syncAt, drop })` and a render body
+describing the post-recovery result. Recovery means: the input is malformed,
 the parser skips to a sync point, drops the malformed region, and continues.
 
 ```ts
 ex('.a { color red; font-size: 12px }')
   .as('Rule')
   .recovers({ syncAt: [';', '}'], drop: 'malformed-declaration' })
-  .structure({
+  .render('ast', {
     type: 'Rule',
     selector: '.a',
     declarations: [{ prop: 'font-size', value: '12px' }],
@@ -492,7 +538,7 @@ ex('.a { color red; font-size: 12px }')
   .build()
 ```
 
-A rejected example carries `.rejects()` and no structure. The parser must
+A rejected example carries `.rejects()` and no render body. The parser must
 throw a `SyntaxError` on this input.
 
 ```ts
@@ -517,7 +563,7 @@ ex('@charset "UTF-8";').as('AtRule')
   .span('name', 'charset').ident().css()
   .span('params', '"UTF-8"').until([';', '{', '}'])
   .span(';').optional()
-  .structure({ type: 'atrule', name: $.name, params: $.params })
+  .render('ast', { type: 'atrule', name: $.name, params: $.params })
   .build(),
 
 // Block form
@@ -529,7 +575,7 @@ ex('@media screen { color: red }').as('AtRule')
   .span('nodes', 'color: red', ['Declaration', 'Rule', 'AtRule'])
     .repeats({ sep: ';', trailing: 'allowed' })
   .span('}')
-  .structure({ type: 'atrule', name: $.name, params: $.params, nodes: $.nodes })
+  .render('ast', { type: 'atrule', name: $.name, params: $.params, nodes: $.nodes })
   .build(),
 ```
 
@@ -545,7 +591,7 @@ For example:
 ex('/* x */')
   .as('Comment')
   .span('text', '/* x */').comment().block('/*', '*/')
-  .structure({ type: 'comment', text: $.text })
+  .render('ast', { type: 'comment', text: $.text })
   .build()
 ```
 
@@ -589,18 +635,32 @@ Example: trailing `;` in a CSS rule is **tolerance** (the grammar accepts both
 
 ## Captured values and inferred types
 
-Each schema's exported `parse(input, options?)` is typed by inference from all
-the schema's examples. The generated parser accepts a domain-neutral
-`options.mode`:
+Each schema's exported `render(input, options?)` is typed by inference from
+all the schema's examples. The generated parser accepts a target and a
+domain-neutral mode:
 
-- `fast` (default): omit generated formatting metadata such as `source` and
-  `raws`.
-- `raws`: include source ranges and `raws` fields for callers that need
-  formatting fidelity.
+```ts
+render(input: string, options?: { type?: string; mode?: 'fast' | 'raws' }): unknown
+stringify(value: unknown, options?: { type?: string }): string
+```
 
-- The return type is `Schema['rootType']`'s inferred shape.
-- For each node type, the inferred TypeScript shape is the **union** of all
-  `.structure({...})` shapes from examples that share that `.as(NodeType)`.
+- `options.type` selects a declared render target (e.g. `'ast'`, `'source'`,
+  any custom target). If the schema declares a `defaultTarget`, omitting
+  `type` uses it; otherwise `type` is required.
+- `options.mode` is render-only: `'fast'` (default) omits formatting metadata
+  such as PostCSS-style `raws`; `'raws'` keeps source ranges and `raws` for
+  callers that need formatting fidelity. `source` positions are always
+  attached on `'ast'` nodes.
+
+Inferred shapes per target:
+
+- The return type of `render(input, { type: T })` is the union of all
+  `.render(T, body)` bodies on the schema's examples for the root node type,
+  resolved structurally (Templates → `string`, objects → object shape,
+  arrays → array shape, scalars → that scalar).
+- For each node type, the inferred TypeScript shape of the `'ast'` target is
+  the **union** of all `.render('ast', {...})` shapes from examples that share
+  that `.as(NodeType)`.
 - Span captures are typed by the class/refinement that produced them. Optional
   spans become `T | null` in the captured type.
 - `$.name.present` is always `boolean`.
@@ -670,8 +730,9 @@ const JsScript = defineSchema({
 Properties this gives you:
 
 - The expression schema can be used standalone:
-  `import { parse } from '@parser2/js-expression'` parses
-  `'1 + 4 * r / 2 - (1 + 2)'` directly with no JS-statement baggage.
+  `import { render } from '@parser2/js-expression'` then
+  `render('1 + 4 * r / 2 - (1 + 2)', { type: 'ast' })` directly with no
+  JS-statement baggage.
 - Module and script are separate compiled parsers sharing the bulk of their
   grammar via composition. No `sourceType` runtime arg, no auto-detection
   magic.
@@ -728,7 +789,7 @@ export default defineSchema({
     // Comment
     ex('/* foo */').as('Comment')
       .span('text', '/* foo */').comment()
-      .structure({ type: 'comment', text: $.text }).build(),
+      .render('ast', { type: 'comment', text: $.text }).build(),
 
     // Declaration (consumes its optional trailing `;` so source range includes it)
     ex('color: red;').as('Declaration')
@@ -736,7 +797,7 @@ export default defineSchema({
       .span(':')
       .span('value', 'red').until([';', '}'])
       .span(';').optional()
-      .structure({ type: 'decl', prop: $.prop, value: $.value }).build(),
+      .render('ast', { type: 'decl', prop: $.prop, value: $.value }).build(),
 
     // Rule
     ex('.foo:hover { color: red }').as('Rule')
@@ -745,7 +806,7 @@ export default defineSchema({
       .span('nodes', 'color: red', ['Comment', 'Declaration', 'Rule', 'AtRule'])
         .repeats({ sep: ';', trailing: 'allowed' })
       .span('}')
-      .structure({ type: 'rule', selector: $.selector, nodes: $.nodes }).build(),
+      .render('ast', { type: 'rule', selector: $.selector, nodes: $.nodes }).build(),
 
     // AtRule statement form
     ex('@charset "UTF-8";').as('AtRule')
@@ -753,7 +814,7 @@ export default defineSchema({
       .span('name', 'charset').ident().css()
       .span('params', '"UTF-8"').until([';', '{', '}'])
       .span(';').optional()
-      .structure({ type: 'atrule', name: $.name, params: $.params }).build(),
+      .render('ast', { type: 'atrule', name: $.name, params: $.params }).build(),
 
     // AtRule block form
     ex('@media screen { color: red }').as('AtRule')
@@ -764,7 +825,7 @@ export default defineSchema({
       .span('nodes', 'color: red', ['Comment', 'Declaration', 'Rule', 'AtRule'])
         .repeats({ sep: ';', trailing: 'allowed' })
       .span('}')
-      .structure({
+      .render('ast', {
         type: 'atrule', name: $.name, params: $.params, nodes: $.nodes,
       }).build(),
 
@@ -772,10 +833,14 @@ export default defineSchema({
     ex('.foo { color: red }').as('Stylesheet')
       .span('nodes', '.foo { color: red }', ['Comment', 'Rule', 'AtRule'])
         .repeats({ min: 0 })
-      .structure({ type: 'root', nodes: $.nodes }).build(),
+      .render('ast', { type: 'root', nodes: $.nodes }).build(),
   ],
 })
 ```
+
+Schemas can declare additional targets per production by adding more
+`.render(target, body)` calls (e.g. a `'source'` Template that emits the
+canonical syntax for that production, or a custom `'html'` target).
 
 ## A full JS slice
 
@@ -796,13 +861,13 @@ const JsExpression = defineSchema({
     ex('a')
       .as('Expression')
       .span('name', 'a').ident().js()
-      .structure({ type: 'Identifier', name: $.name })
+      .render('ast', { type: 'Identifier', name: $.name })
       .build(),
 
     ex('42')
       .as('Expression')
       .span('n', '42').number().int()
-      .structure({ type: 'NumericLiteral', value: $.n })
+      .render('ast', { type: 'NumericLiteral', value: $.n })
       .build(),
 
     ex('a + b')
@@ -810,7 +875,7 @@ const JsExpression = defineSchema({
       .span('left', 'a', 'Expression')
       .span('op', '+').operator()
       .span('right', 'b', 'Expression')
-      .structure({
+      .render('ast', {
         type: 'BinaryExpression',
         op: $.op,
         left: $.left,
@@ -826,7 +891,7 @@ const JsExpression = defineSchema({
       .span(')')
       .span('=>')
       .span('body', 'c', 'Expression')
-      .structure({
+      .render('ast', {
         type: 'ArrowFunctionExpression',
         async: $.async.present,
         params: $.params,
@@ -848,7 +913,7 @@ const JsStatement = defineSchema({
       .span('=')
       .span('init', '42', 'Expression')
       .span(';')
-      .structure({
+      .render('ast', {
         type: 'VariableDeclaration',
         kind: 'const',
         id: $.id,
@@ -861,7 +926,7 @@ const JsStatement = defineSchema({
       .span('throw').noLineTerminatorAfter()
       .span('arg', 'err', 'Expression')
       .span(';')
-      .structure({ type: 'ThrowStatement', argument: $.arg })
+      .render('ast', { type: 'ThrowStatement', argument: $.arg })
       .build(),
 
     ex('if (a) {} else {}')
@@ -872,7 +937,7 @@ const JsStatement = defineSchema({
       .span(')')
       .span('consequent', '{}', 'Statement')
       .span('alternate', 'else {}', 'Statement').optional()
-      .structure({
+      .render('ast', {
         type: 'IfStatement',
         test: $.test,
         consequent: $.consequent,
@@ -900,7 +965,7 @@ parser code at codegen time:
   tables are baked into the generated parser as switches.
 - Closed modifier set means the compiler can reason about every grammar
   position statically.
-- The absence of arbitrary JavaScript in structure literals means every
+- The absence of arbitrary JavaScript in render bodies means every
   transformation is statically analyzable.
 
 Anything that would force the compiler to interpret data at runtime (regex

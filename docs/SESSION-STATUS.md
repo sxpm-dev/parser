@@ -64,7 +64,7 @@ investigation. Common gaps:
 
 DSL surface:
 - `defineSchema({ name, rootType, uses, operators, punctuators, tokens, whitespace, examples })`
-- `ex(input).as(NodeType).span(...)+.structure({...}).build()`
+- `ex(input).as(NodeType).span(...)+.render('ast', {...}).build()`
 - Span classes: `literal`, `ident`, `number`, `string`, `hex`, `regex`,
   `template`, `comment`, `whitespace`, `keyword`, `operator`
 - Refinements scoped per class

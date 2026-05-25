@@ -1,0 +1,34 @@
+{
+  "kind": "object",
+  "fields": [
+    {
+      "kind": "literal",
+      "name": "type",
+      "value": "atrule"
+    },
+    {
+      "kind": "inverse",
+      "name": "name",
+      "inverse": {
+        "kind": "ref",
+        "capture": "name"
+      }
+    },
+    {
+      "kind": "inverse",
+      "name": "params",
+      "inverse": {
+        "kind": "ref",
+        "capture": "params"
+      }
+    },
+    {
+      "kind": "inverse",
+      "name": "nodes",
+      "inverse": {
+        "kind": "ref",
+        "capture": "nodes"
+      }
+    }
+  ]
+}

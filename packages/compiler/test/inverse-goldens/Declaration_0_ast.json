@@ -1,0 +1,39 @@
+{
+  "kind": "object",
+  "fields": [
+    {
+      "kind": "literal",
+      "name": "type",
+      "value": "decl"
+    },
+    {
+      "kind": "inverse",
+      "name": "prop",
+      "inverse": {
+        "kind": "ref",
+        "capture": "prop"
+      }
+    },
+    {
+      "kind": "inverse",
+      "name": "value",
+      "inverse": {
+        "kind": "ref",
+        "capture": "value"
+      }
+    },
+    {
+      "kind": "literal",
+      "name": "important",
+      "value": true
+    },
+    {
+      "kind": "inverse",
+      "name": "_important",
+      "inverse": {
+        "kind": "ref",
+        "capture": "important"
+      }
+    }
+  ]
+}

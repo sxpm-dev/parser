@@ -134,6 +134,13 @@ function emitTemplateExpr(template: Template, target: string): string {
   // Each slot routes through __renderSlot_<target> so nested-capture and
   // array-of-children slots collapse to strings (per the target's slot
   // helper). Empty leading/trailing parts are skipped.
+  //
+  // Fix 4: in string-concat contexts (template body fusion), wrap each slot
+  // in `(... ?? "")` so a null/undefined optional capture becomes "" rather
+  // than the string "null"/"undefined". The slot helper itself still
+  // passes null/undefined through for object/array body recursion (where
+  // null is a legitimate property value), so we defensively coalesce at
+  // the concat site.
   const parts = template.parts;
   const slots = template.slots;
   const pieces: string[] = [];
@@ -143,7 +150,7 @@ function emitTemplateExpr(template: Template, target: string): string {
     if (i < slots.length) {
       const slot = slots[i]!;
       const access = `captures${memberAccess(slot.ref)}`;
-      pieces.push(`__renderSlot_${jsIdent(target)}(${access})`);
+      pieces.push(`(__renderSlot_${jsIdent(target)}(${access}) ?? "")`);
     }
   }
   if (pieces.length === 0) return '""';

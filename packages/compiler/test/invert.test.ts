@@ -325,6 +325,36 @@ test('rebuild: .repeats() without sep joins children with a single space', async
   assert.equal(src, 'npm test');
 });
 
+// Fix 4: optional span surfaced inside a Template body should render as ""
+// when the captured value is null, not as the literal string "null" or
+// "undefined".
+test('render template body null-coerces missing optional captures to ""', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Greeting',
+    examples: [
+      ex('hi there').as('Greeting')
+        .span('verb', 'hi').ident()
+        .span(' ').optional()
+        .span('subject', 'there', 'Word').optional()
+        .render('ast', { type: 'greeting', verb: $.verb, subject: $.subject })
+        .render('html', tpl`<g>${$.verb}<s>${$.subject}</s></g>`)
+        .build(),
+      ex('there').as('Word')
+        .span('w', 'there').ident()
+        .render('ast', $.w)
+        .render('html', tpl`${$.w}`)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'fix4-template-null');
+  // With optional subject present: rendered HTML contains the captured text.
+  assert.equal(mod.render('hi there', { type: 'html' }), '<g>hi<s>there</s></g>');
+  // With optional subject absent: rendered HTML must use "" — NOT "null"
+  // or "undefined".
+  assert.equal(mod.render('hi', { type: 'html' }), '<g>hi<s></s></g>');
+});
+
 // ---------- Round-trip via generated parser -------------------------------
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast', async () => {

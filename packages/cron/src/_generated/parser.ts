@@ -96,11 +96,11 @@ function parseCronField__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "wildcard" };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "CronField#0" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "wildcard" };
+  return { __production: "CronField#0" };
 }
 
 function parseCronField__alt1(state: State): unknown {
@@ -124,11 +124,11 @@ function parseCronField__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "step", step: step };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "CronField#1", step: step };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "step", step: step };
+  return { __production: "CronField#1", step: step };
 }
 
 function parseCronField__alt2(state: State): unknown {
@@ -146,11 +146,11 @@ function parseCronField__alt2(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "value", value: value };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "CronField#2", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "value", value: value };
+  return { __production: "CronField#2", value: value };
 }
 
 function parseCronField__alt3(state: State): unknown {
@@ -178,11 +178,11 @@ function parseCronField__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "range", start: start, end: end };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "CronField#3", start: start, end: end };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "range", start: start, end: end };
+  return { __production: "CronField#3", start: start, end: end };
 }
 
 function parseCronField(state: State): unknown {
@@ -218,11 +218,11 @@ function parseCommandWord(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = value;
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "CommandWord#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return value;
+  return { __production: "CommandWord#0", value: value };
 }
 
 function parseCommand(state: State): unknown {
@@ -258,11 +258,11 @@ function parseCommand(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "command", words: words };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "Command#0", words: words };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "command", words: words };
+  return { __production: "Command#0", words: words };
 }
 
 function parseCron(state: State): unknown {
@@ -315,167 +315,254 @@ function parseCron(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __struct: any = { type: "cron", minute: minute, hour: hour, dayOfMonth: dayOfMonth, month: month, dayOfWeek: dayOfWeek, command: command };
-    if (__struct && typeof __struct === 'object' && !Array.isArray(__struct)) __struct.source = makeSource(state, entryOff, off);
-    return __struct;
+    const __captures: any = { __production: "Cron#0", minute: minute, hour: hour, dayOfMonth: dayOfMonth, month: month, dayOfWeek: dayOfWeek, command: command };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  return { type: "cron", minute: minute, hour: hour, dayOfMonth: dayOfMonth, month: month, dayOfWeek: dayOfWeek, command: command };
+  return { __production: "Cron#0", minute: minute, hour: hour, dayOfMonth: dayOfMonth, month: month, dayOfWeek: dayOfWeek, command: command };
 }
 
-function stringify_CronField_wildcard_source(s: any): string {
+const __defaultTarget: string | undefined = undefined;
+
+function __build_CronField_0_ast(captures: any): any {
+  return { type: "wildcard" };
+}
+
+function __build_CronField_1_ast(captures: any): any {
+  return { type: "step", step: __renderSlot_ast(captures.step) };
+}
+
+function __build_CronField_2_ast(captures: any): any {
+  return { type: "value", value: __renderSlot_ast(captures.value) };
+}
+
+function __build_CronField_3_ast(captures: any): any {
+  return { type: "range", start: __renderSlot_ast(captures.start), end: __renderSlot_ast(captures.end) };
+}
+
+function __build_CommandWord_0_ast(captures: any): any {
+  return __renderSlot_ast(captures.value);
+}
+
+function __build_Command_0_ast(captures: any): any {
+  return { type: "command", words: __renderSlot_ast(captures.words) };
+}
+
+function __build_Cron_0_ast(captures: any): any {
+  return { type: "cron", minute: __renderSlot_ast(captures.minute), hour: __renderSlot_ast(captures.hour), dayOfMonth: __renderSlot_ast(captures.dayOfMonth), month: __renderSlot_ast(captures.month), dayOfWeek: __renderSlot_ast(captures.dayOfWeek), command: __renderSlot_ast(captures.command) };
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
+  }
+  switch (captures.__production) {
+    case "CronField#0": return __build_CronField_0_ast(captures);
+    case "CronField#1": return __build_CronField_1_ast(captures);
+    case "CronField#2": return __build_CronField_2_ast(captures);
+    case "CronField#3": return __build_CronField_3_ast(captures);
+    case "CommandWord#0": return __build_CommandWord_0_ast(captures);
+    case "Command#0": return __build_Command_0_ast(captures);
+    case "Cron#0": return __build_Cron_0_ast(captures);
+  }
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
+}
+
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
+  }
+  return v;
+}
+
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) out += __rebuildSlot(v[i]);
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_CronField_0(captures: any): string {
   return "*";
 }
 
-function stringify_CronField_step_source(s: any): string {
-  return "*/" + __renderSlot_source(s["step"]);
+function __rebuild_CronField_1(captures: any): string {
+  return "*" + "/" + __rebuildSlot(captures.step);
 }
 
-function stringify_CronField_value_source(s: any): string {
-  return __renderSlot_source(s["value"]);
+function __rebuild_CronField_2(captures: any): string {
+  return String(__rebuildSlot(captures.value));
 }
 
-function stringify_CronField_range_source(s: any): string {
-  return __renderSlot_source(s["start"]) + "-" + __renderSlot_source(s["end"]);
+function __rebuild_CronField_3(captures: any): string {
+  return __rebuildSlot(captures.start) + "-" + __rebuildSlot(captures.end);
 }
 
-function stringify_CronField_source(s: any): string {
-  switch (s.type) {
-    case "wildcard": return stringify_CronField_wildcard_source(s);
-    case "step": return stringify_CronField_step_source(s);
-    case "value": return stringify_CronField_value_source(s);
-    case "range": return stringify_CronField_range_source(s);
+function __rebuild_CommandWord_0(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
+function __rebuild_Command_0(captures: any): string {
+  return String(__rebuildSlot(captures.words));
+}
+
+function __rebuild_Cron_0(captures: any): string {
+  return __rebuildSlot(captures.minute) + " " + __rebuildSlot(captures.hour) + " " + __rebuildSlot(captures.dayOfMonth) + " " + __rebuildSlot(captures.month) + " " + __rebuildSlot(captures.dayOfWeek) + " " + (captures.command ?? "");
+}
+
+function __invert_CronField_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
   }
-  throw new Error("stringify: no production matches structure shape for node CronField (target source)");
-}
-
-function stringify_CronField_wildcard_json_auto(s: any): string {
-  return "{\"type\":\"wildcard\"}";
-}
-
-function stringify_CronField_step_json_auto(s: any): string {
-  return "{\"type\":\"step\",\"step\":" + __renderSlot_json_auto(s["step"]) + "}";
-}
-
-function stringify_CronField_value_json_auto(s: any): string {
-  return "{\"type\":\"value\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_CronField_range_json_auto(s: any): string {
-  return "{\"type\":\"range\",\"start\":" + __renderSlot_json_auto(s["start"]) + ",\"end\":" + __renderSlot_json_auto(s["end"]) + "}";
-}
-
-function stringify_CronField_json_auto(s: any): string {
-  switch (s.type) {
-    case "wildcard": return stringify_CronField_wildcard_json_auto(s);
-    case "step": return stringify_CronField_step_json_auto(s);
-    case "value": return stringify_CronField_value_json_auto(s);
-    case "range": return stringify_CronField_range_json_auto(s);
+  if (!Object.is(value.type, "wildcard")) {
+    throw new Error("stringify: field \"type\" expected \"wildcard\", got " + JSON.stringify(value.type));
   }
-  throw new Error("stringify: no production matches structure shape for node CronField (target json-auto)");
+  return __rebuild_CronField_0(captures);
 }
 
-function stringify_CommandWord_source(s: any): string {
-  if (true) return __renderSlot_source(s);
-  throw new Error("stringify: no production matches structure shape for node CommandWord (target source)");
-}
-
-function stringify_CommandWord_json_auto(s: any): string {
-  if (true) return __renderSlot_json_auto(s);
-  throw new Error("stringify: no production matches structure shape for node CommandWord (target json-auto)");
-}
-
-function stringify_Command_source(s: any): string {
-  return __renderSlot_source(s["words"]);
-}
-
-function stringify_Command_json_auto(s: any): string {
-  return "{\"type\":\"command\",\"words\":" + __renderSlot_json_auto(s["words"]) + "}";
-}
-
-function stringify_Cron_source(s: any): string {
-  return __renderSlot_source(s["minute"]) + " " + __renderSlot_source(s["hour"]) + " " + __renderSlot_source(s["dayOfMonth"]) + " " + __renderSlot_source(s["month"]) + " " + __renderSlot_source(s["dayOfWeek"]) + (s["command"] == null ? "" : " " + __renderSlot_source(s["command"]));
-}
-
-function stringify_Cron_json_auto(s: any): string {
-  return "{\"type\":\"cron\",\"minute\":" + __renderSlot_json_auto(s["minute"]) + ",\"hour\":" + __renderSlot_json_auto(s["hour"]) + ",\"dayOfMonth\":" + __renderSlot_json_auto(s["dayOfMonth"]) + ",\"month\":" + __renderSlot_json_auto(s["month"]) + ",\"dayOfWeek\":" + __renderSlot_json_auto(s["dayOfWeek"]) + ",\"command\":" + __renderSlot_json_auto(s["command"]) + "}";
-}
-
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "wildcard": return stringify_CronField_wildcard_source(s);
-    case "step": return stringify_CronField_step_source(s);
-    case "value": return stringify_CronField_value_source(s);
-    case "range": return stringify_CronField_range_source(s);
-    case undefined: return stringify_CommandWord_source(s);
-    case "command": return stringify_Command_source(s);
-    case "cron": return stringify_Cron_source(s);
+function __invert_CronField_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "wildcard": return stringify_CronField_wildcard_json_auto(s);
-    case "step": return stringify_CronField_step_json_auto(s);
-    case "value": return stringify_CronField_value_json_auto(s);
-    case "range": return stringify_CronField_range_json_auto(s);
-    case undefined: return stringify_CommandWord_json_auto(s);
-    case "command": return stringify_Command_json_auto(s);
-    case "cron": return stringify_Cron_json_auto(s);
+  if (!Object.is(value.type, "step")) {
+    throw new Error("stringify: field \"type\" expected \"step\", got " + JSON.stringify(value.type));
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  captures.step = __invertSlot_ast(value.step);
+  return __rebuild_CronField_1(captures);
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
+function __invert_CronField_2_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "value")) {
+    throw new Error("stringify: field \"type\" expected \"value\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlot_ast(value.value);
+  return __rebuild_CronField_2(captures);
 }
 
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
+function __invert_CronField_3_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "range")) {
+    throw new Error("stringify: field \"type\" expected \"range\", got " + JSON.stringify(value.type));
+  }
+  captures.start = __invertSlot_ast(value.start);
+  captures.end = __invertSlot_ast(value.end);
+  return __rebuild_CronField_3(captures);
 }
 
-function __renderSlot_source(v: any): string {
+function __invert_CommandWord_0_ast(value: any): string {
+  const captures: any = {};
+  captures.value = __invertSlot_ast(value);
+  return __rebuild_CommandWord_0(captures);
+}
+
+function __invert_Command_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "command")) {
+    throw new Error("stringify: field \"type\" expected \"command\", got " + JSON.stringify(value.type));
+  }
+  captures.words = __invertSlot_ast(value.words);
+  return __rebuild_Command_0(captures);
+}
+
+function __invert_Cron_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "cron")) {
+    throw new Error("stringify: field \"type\" expected \"cron\", got " + JSON.stringify(value.type));
+  }
+  captures.minute = __invertSlot_ast(value.minute);
+  captures.hour = __invertSlot_ast(value.hour);
+  captures.dayOfMonth = __invertSlot_ast(value.dayOfMonth);
+  captures.month = __invertSlot_ast(value.month);
+  captures.dayOfWeek = __invertSlot_ast(value.dayOfWeek);
+  captures.command = __invertSlot_ast(value.command);
+  return __rebuild_Cron_0(captures);
+}
+
+function __dispatchInverse_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "wildcard")) return __invert_CronField_0_ast(value);
+    if (Object.is(value.type, "step")) return __invert_CronField_1_ast(value);
+    if (Object.is(value.type, "value")) return __invert_CronField_2_ast(value);
+    if (Object.is(value.type, "range")) return __invert_CronField_3_ast(value);
+    if (Object.is(value.type, "command")) return __invert_Command_0_ast(value);
+    if (Object.is(value.type, "cron")) return __invert_Cron_0_ast(value);
+  }
+  if (typeof value === "string") {
+    return __invert_CommandWord_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __invertSlot_ast(v: any): string {
   if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+  if (typeof v === "string") return v;
   if (Array.isArray(v)) {
     let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    for (let i = 0; i < v.length; i++) out += __invertSlot_ast(v[i]);
     return out;
   }
-  return __dispatchStringify_source(v);
+  if (typeof v === "object") return __dispatchInverse_ast(v);
+  return String(v);
 }
 
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
   }
-  return __dispatchStringify_json_auto(v);
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
-}
-
-export function parse(input: string, options?: ParseOptions): unknown {
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {
     input,

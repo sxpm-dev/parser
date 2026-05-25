@@ -12,7 +12,7 @@ export default defineSchema({
     ex('*')
       .as('CronField')
       .span('*')
-      .structure({ type: 'wildcard' })
+      .render('ast', { type: 'wildcard' })
       .build(),
 
     ex('*/5')
@@ -20,13 +20,13 @@ export default defineSchema({
       .span('*')
       .span('/')
       .span('step', '5').number().int()
-      .structure({ type: 'step', step: $.step })
+      .render('ast', { type: 'step', step: $.step })
       .build(),
 
     ex('9')
       .as('CronField')
       .span('value', '9').number().int()
-      .structure({ type: 'value', value: $.value })
+      .render('ast', { type: 'value', value: $.value })
       .build(),
 
     ex('1-5')
@@ -34,19 +34,19 @@ export default defineSchema({
       .span('start', '1').number().int()
       .span('-')
       .span('end', '5').number().int()
-      .structure({ type: 'range', start: $.start, end: $.end })
+      .render('ast', { type: 'range', start: $.start, end: $.end })
       .build(),
 
     ex('npm')
       .as('CommandWord')
       .span('value', 'npm').ident().css()
-      .structure($.value)
+      .render('ast', $.value)
       .build(),
 
     ex('npm test')
       .as('Command')
       .span('words', 'npm', 'CommandWord').repeats({ min: 1 })
-      .structure({ type: 'command', words: $.words })
+      .render('ast', { type: 'command', words: $.words })
       .build(),
 
     ex('0 9 7 8 1-5 npm test')
@@ -57,7 +57,7 @@ export default defineSchema({
       .span('month', '8', 'CronField')
       .span('dayOfWeek', '1-5', 'CronField')
       .span('command', 'npm test', 'Command').optional()
-      .structure({
+      .render('ast', {
         type: 'cron',
         minute: $.minute,
         hour: $.hour,

@@ -220,6 +220,7 @@ test('.render attaches body and optional inverse to ExampleDef.renders', () => {
   assert.equal(e.renders[0]!.target, 'ast');
   assert.equal(e.renders[1]!.target, 'html');
   assert.ok(e.renders[1]!.inverse, 'inverse override carried through');
+  assert.equal('inverse' in e.renders[0]!, false, 'ast entry must not have inverse key');
 });
 
 test('defineSchema accepts optional defaultTarget', () => {

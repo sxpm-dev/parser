@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'MacAddress',
@@ -20,7 +20,8 @@ export default defineSchema({
       .span('o5', '4D').hex().lengths([2])
       .span(':')
       .span('o6', '5E').hex().lengths([2])
-      .structure({ type: 'mac-address', octets: [$.o1, $.o2, $.o3, $.o4, $.o5, $.o6], separator: ':' })
+      .render('ast', { type: 'mac-address', octets: [$.o1, $.o2, $.o3, $.o4, $.o5, $.o6], separator: ':' })
+      .render('source', tpl`${$.o1}:${$.o2}:${$.o3}:${$.o4}:${$.o5}:${$.o6}`)
       .build(),
 
     ex('FF-FF-FF-FF-FF-FF')
@@ -36,7 +37,8 @@ export default defineSchema({
       .span('o5', 'FF').hex().lengths([2])
       .span('-')
       .span('o6', 'FF').hex().lengths([2])
-      .structure({ type: 'mac-address', octets: [$.o1, $.o2, $.o3, $.o4, $.o5, $.o6], separator: '-' })
+      .render('ast', { type: 'mac-address', octets: [$.o1, $.o2, $.o3, $.o4, $.o5, $.o6], separator: '-' })
+      .render('source', tpl`${$.o1}-${$.o2}-${$.o3}-${$.o4}-${$.o5}-${$.o6}`)
       .build(),
   ],
 });

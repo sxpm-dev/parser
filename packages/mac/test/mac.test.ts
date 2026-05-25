@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
 
 test('mac parses colon and hyphen separated addresses from schema output', () => {
-  assert.deepEqual(parse('00:1A:2B:3C:4D:5E'), {
+  assert.deepEqual(render('00:1A:2B:3C:4D:5E', { type: 'ast' }), {
     type: 'mac-address',
     octets: ['00', '1A', '2B', '3C', '4D', '5E'],
     separator: ':',
   });
-  assert.deepEqual(parse('DE-AD-BE-EF-CA-FE'), {
+  assert.deepEqual(render('DE-AD-BE-EF-CA-FE', { type: 'ast' }), {
     type: 'mac-address',
     octets: ['DE', 'AD', 'BE', 'EF', 'CA', 'FE'],
     separator: '-',
@@ -16,7 +16,7 @@ test('mac parses colon and hyphen separated addresses from schema output', () =>
 });
 
 test('mac preserves lowercase hex octets', () => {
-  assert.deepEqual(parse('aa:bb:cc:dd:ee:ff'), {
+  assert.deepEqual(render('aa:bb:cc:dd:ee:ff', { type: 'ast' }), {
     type: 'mac-address',
     octets: ['aa', 'bb', 'cc', 'dd', 'ee', 'ff'],
     separator: ':',

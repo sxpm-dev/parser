@@ -378,9 +378,9 @@ function parseMacAddress__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "mac-address", octets: [o1, o2, o3, o4, o5, o6], separator: ":" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MacAddress#0", o1: o1, o2: o2, o3: o3, o4: o4, o5: o5, o6: o6 };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMacAddress__alt1(state: State): unknown {
@@ -514,9 +514,9 @@ function parseMacAddress__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "mac-address", octets: [o1, o2, o3, o4, o5, o6], separator: "-" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "MacAddress#1", o1: o1, o2: o2, o3: o3, o4: o4, o5: o5, o6: o6 };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseMacAddress(state: State): unknown {
@@ -663,7 +663,7 @@ function parseMacAddressFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "mac-address", octets: [o1, o2, o3, o4, o5, o6], separator: ":" };
+  return { __production: "MacAddress#0", o1: o1, o2: o2, o3: o3, o4: o4, o5: o5, o6: o6 };
 }
 
 function parseMacAddressFast__alt1(state: State): unknown {
@@ -783,7 +783,7 @@ function parseMacAddressFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "mac-address", octets: [o1, o2, o3, o4, o5, o6], separator: "-" };
+  return { __production: "MacAddress#1", o1: o1, o2: o2, o3: o3, o4: o4, o5: o5, o6: o6 };
 }
 
 function parseMacAddressFast(state: State): unknown {
@@ -1080,96 +1080,361 @@ function validateMacAddress(state: State): unknown {
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
-function stringify_MacAddress_mac_address_source(s: any): string {
-  if (s["separator"] === ":") return __renderSlot_source(s["octets"][0]) + ":" + __renderSlot_source(s["octets"][1]) + ":" + __renderSlot_source(s["octets"][2]) + ":" + __renderSlot_source(s["octets"][3]) + ":" + __renderSlot_source(s["octets"][4]) + ":" + __renderSlot_source(s["octets"][5]);
-  if (s["separator"] === "-") return __renderSlot_source(s["octets"][0]) + "-" + __renderSlot_source(s["octets"][1]) + "-" + __renderSlot_source(s["octets"][2]) + "-" + __renderSlot_source(s["octets"][3]) + "-" + __renderSlot_source(s["octets"][4]) + "-" + __renderSlot_source(s["octets"][5]);
-  throw new Error("stringify: no production matches structure shape for node MacAddress (target source, type mac-address)");
+const __defaultTarget: string | undefined = undefined;
+
+function __build_MacAddress_0_ast(captures: any): any {
+  return { type: "mac-address", octets: [__renderSlot_ast(captures.o1), __renderSlot_ast(captures.o2), __renderSlot_ast(captures.o3), __renderSlot_ast(captures.o4), __renderSlot_ast(captures.o5), __renderSlot_ast(captures.o6)], separator: ":" };
 }
 
-function stringify_MacAddress_source(s: any): string {
-  switch (s.type) {
-    case "mac-address": return stringify_MacAddress_mac_address_source(s);
+function __build_MacAddress_0_source(captures: any): any {
+  return (__renderSlot_source(captures.o1) ?? "") + ":" + (__renderSlot_source(captures.o2) ?? "") + ":" + (__renderSlot_source(captures.o3) ?? "") + ":" + (__renderSlot_source(captures.o4) ?? "") + ":" + (__renderSlot_source(captures.o5) ?? "") + ":" + (__renderSlot_source(captures.o6) ?? "");
+}
+
+function __build_MacAddress_1_ast(captures: any): any {
+  return { type: "mac-address", octets: [__renderSlot_ast(captures.o1), __renderSlot_ast(captures.o2), __renderSlot_ast(captures.o3), __renderSlot_ast(captures.o4), __renderSlot_ast(captures.o5), __renderSlot_ast(captures.o6)], separator: "-" };
+}
+
+function __build_MacAddress_1_source(captures: any): any {
+  return (__renderSlot_source(captures.o1) ?? "") + "-" + (__renderSlot_source(captures.o2) ?? "") + "-" + (__renderSlot_source(captures.o3) ?? "") + "-" + (__renderSlot_source(captures.o4) ?? "") + "-" + (__renderSlot_source(captures.o5) ?? "") + "-" + (__renderSlot_source(captures.o6) ?? "");
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no production matches structure shape for node MacAddress (target source)");
-}
-
-function stringify_MacAddress_mac_address_json_auto(s: any): string {
-  if (s["separator"] === ":") return "{\"type\":\"mac-address\",\"octets\":[" + __renderSlot_json_auto(s["octets"][0]) + "," + __renderSlot_json_auto(s["octets"][1]) + "," + __renderSlot_json_auto(s["octets"][2]) + "," + __renderSlot_json_auto(s["octets"][3]) + "," + __renderSlot_json_auto(s["octets"][4]) + "," + __renderSlot_json_auto(s["octets"][5]) + "],\"separator\":\":\"}";
-  if (s["separator"] === "-") return "{\"type\":\"mac-address\",\"octets\":[" + __renderSlot_json_auto(s["octets"][0]) + "," + __renderSlot_json_auto(s["octets"][1]) + "," + __renderSlot_json_auto(s["octets"][2]) + "," + __renderSlot_json_auto(s["octets"][3]) + "," + __renderSlot_json_auto(s["octets"][4]) + "," + __renderSlot_json_auto(s["octets"][5]) + "],\"separator\":\"-\"}";
-  throw new Error("stringify: no production matches structure shape for node MacAddress (target json-auto, type mac-address)");
-}
-
-function stringify_MacAddress_json_auto(s: any): string {
-  switch (s.type) {
-    case "mac-address": return stringify_MacAddress_mac_address_json_auto(s);
+  switch (captures.__production) {
+    case "MacAddress#0": return __build_MacAddress_0_ast(captures);
+    case "MacAddress#1": return __build_MacAddress_1_ast(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node MacAddress (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "mac-address": return stringify_MacAddress_mac_address_source(s);
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "mac-address": return stringify_MacAddress_mac_address_json_auto(s);
+  switch (captures.__production) {
+    case "MacAddress#0": return __build_MacAddress_0_source(captures);
+    case "MacAddress#1": return __build_MacAddress_1_source(captures);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
-}
-
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
-}
-
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
     return out;
   }
-  return __dispatchStringify_source(v);
-}
-
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
   }
-  return __dispatchStringify_json_auto(v);
+  return v;
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_MacAddress_0(captures: any): string {
+  return __rebuildSlot(captures.o1) + ":" + __rebuildSlot(captures.o2) + ":" + __rebuildSlot(captures.o3) + ":" + __rebuildSlot(captures.o4) + ":" + __rebuildSlot(captures.o5) + ":" + __rebuildSlot(captures.o6);
+}
+
+function __rebuild_MacAddress_1(captures: any): string {
+  return __rebuildSlot(captures.o1) + "-" + __rebuildSlot(captures.o2) + "-" + __rebuildSlot(captures.o3) + "-" + __rebuildSlot(captures.o4) + "-" + __rebuildSlot(captures.o5) + "-" + __rebuildSlot(captures.o6);
+}
+
+function __invert_MacAddress_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "mac-address")) {
+    throw new Error("stringify: field \"type\" expected \"mac-address\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.octets) || value.octets.length !== 6) {
+    throw new Error("stringify: expected array of length 6, got " + (Array.isArray(value.octets) ? ("length " + value.octets.length) : typeof value.octets));
+  }
+  captures.o1 = __invertSlotLeaf_ast(value.octets[0]);
+  captures.o2 = __invertSlotLeaf_ast(value.octets[1]);
+  captures.o3 = __invertSlotLeaf_ast(value.octets[2]);
+  captures.o4 = __invertSlotLeaf_ast(value.octets[3]);
+  captures.o5 = __invertSlotLeaf_ast(value.octets[4]);
+  captures.o6 = __invertSlotLeaf_ast(value.octets[5]);
+  if (!Object.is(value.separator, ":")) {
+    throw new Error("stringify: field \"separator\" expected \":\", got " + JSON.stringify(value.separator));
+  }
+  return __rebuild_MacAddress_0(captures);
+}
+
+function __invert_MacAddress_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "mac-address")) {
+    throw new Error("stringify: field \"type\" expected \"mac-address\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.octets) || value.octets.length !== 6) {
+    throw new Error("stringify: expected array of length 6, got " + (Array.isArray(value.octets) ? ("length " + value.octets.length) : typeof value.octets));
+  }
+  captures.o1 = __invertSlotLeaf_ast(value.octets[0]);
+  captures.o2 = __invertSlotLeaf_ast(value.octets[1]);
+  captures.o3 = __invertSlotLeaf_ast(value.octets[2]);
+  captures.o4 = __invertSlotLeaf_ast(value.octets[3]);
+  captures.o5 = __invertSlotLeaf_ast(value.octets[4]);
+  captures.o6 = __invertSlotLeaf_ast(value.octets[5]);
+  if (!Object.is(value.separator, "-")) {
+    throw new Error("stringify: field \"separator\" expected \"-\", got " + JSON.stringify(value.separator));
+  }
+  return __rebuild_MacAddress_1(captures);
+}
+
+function __invert_MacAddress_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture o1");
+    }
+    captures.o1 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture o2");
+    }
+    captures.o2 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture o3");
+    }
+    captures.o3 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture o4");
+    }
+    captures.o4 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture o5");
+    }
+    captures.o5 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.o6 = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MacAddress_0(captures);
+}
+
+function __invert_MacAddress_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture o1");
+    }
+    captures.o1 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture o2");
+    }
+    captures.o2 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture o3");
+    }
+    captures.o3 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture o4");
+    }
+    captures.o4 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture o5");
+    }
+    captures.o5 = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.o6 = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_MacAddress_1(captures);
+}
+
+function __dispatchInverse_MacAddress_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "mac-address") && Object.is(value.separator, ":")) return __invert_MacAddress_0_ast(value);
+    if (Object.is(value.type, "mac-address") && Object.is(value.separator, "-")) return __invert_MacAddress_1_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_MacAddress_ast(value);
+}
+
+function __dispatchInverse_MacAddress_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf(":") >= 0) return __invert_MacAddress_0_source(value);
+    if (value.indexOf("-") >= 0) return __invert_MacAddress_1_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_source(value: any): string {
+  return __dispatchInverse_MacAddress_source(value);
+}
+
+function __invertSlotFor_MacAddress_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MacAddress_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MacAddress_ast(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_MacAddress_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_MacAddress_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_MacAddress_source(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+  "source": __dispatchInverse_source,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

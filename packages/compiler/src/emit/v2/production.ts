@@ -16,11 +16,16 @@
 // Failure paths inside the body do `state.pos = entryOff; return null;` and
 // update state.maxOff so the top-level error reports the deepest position.
 
-import { isStructureRef } from '@parser2/parser';
+import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production } from '../../model.ts';
 import { jsString, indent } from '../strings.ts';
 import { collectOffsetRefs, emitStructureExpr, type StructureBindings } from '../structure.ts';
 import { emitSpan, hasModifier, findModifier, type SpanBindings, type SpanContext } from './span.ts';
+
+// Local bridge — Phase 3 deletes when v2 emit moves to per-target builders.
+function structureOf(production: Production): RenderBody {
+  return production.renders.get('ast')?.body ?? null;
+}
 
 export type EmitProductionOptions = {
   readonly fnName: string;
@@ -72,8 +77,8 @@ export function emitProduction(
   //
   // Approach for mode branching: emit both literals; conditionally return.
   // Use the structure.ts helper for both.
-  const fastStructure = emitStructureExpr(production.structure, toStructureBindings(bindings), { omitRaws: true });
-  const rawsStructure = emitStructureExpr(production.structure, toStructureBindings(bindings), {});
+  const fastStructure = emitStructureExpr(structureOf(production), toStructureBindings(bindings), { omitRaws: true });
+  const rawsStructure = emitStructureExpr(structureOf(production), toStructureBindings(bindings), {});
 
   const sourceField = `source: makeSource(state, entryOff, off)`;
 

@@ -1,9 +1,14 @@
-import { isStructureRef, type StructureValue } from '@parser2/parser';
+import { isStructureRef, isTemplate, type RenderBody } from '@parser2/parser';
 import { jsString } from './strings.ts';
 
 // Emits a JS expression that constructs the structure literal, substituting
 // $.name with the corresponding captured local-var expression and
 // $.name.present with a boolean expression provided by the caller.
+//
+// Operates on RenderBody values — the structured-data form (objects, arrays,
+// scalars, $refs). Template bodies (tpl-tagged literals) are NOT structured
+// data; Phase 3 emits them through a separate string-concat path, so this
+// helper throws if it sees one.
 
 export type StructureBindings = {
   // For each named span, the JS expression that evaluates to its captured
@@ -24,13 +29,16 @@ export type StructureEmitOptions = {
 };
 
 export function emitStructureExpr(
-  value: StructureValue,
+  value: RenderBody,
   bindings: StructureBindings,
   options: StructureEmitOptions = {},
 ): string {
   if (value === null) return 'null';
   if (typeof value === 'string') return jsString(value);
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (isTemplate(value)) {
+    throw new Error('emitStructureExpr: cannot emit a Template body as a structure expression');
+  }
   if (isStructureRef(value)) {
     if (value.__ref === 'span-value') {
       const expr = bindings.valueExpr.get(value.name);
@@ -86,20 +94,21 @@ export function emitStructureExpr(
     return `[${items.join(', ')}]`;
   }
   // Object literal
-  const entries = Object.entries(value as Record<string, StructureValue>)
+  const entries = Object.entries(value as Record<string, RenderBody>)
     .filter(([key]) => !(options.omitRaws && key === 'raws'))
     .map(([key, val]) => `${jsObjectKey(key)}: ${emitStructureExpr(val, bindings, options)}`);
   return `{ ${entries.join(', ')} }`;
 }
 
 export function collectOffsetRefs(
-  value: StructureValue,
+  value: RenderBody,
   options: StructureEmitOptions = {},
   refs = new Set<string>(),
 ): ReadonlySet<string> {
   if (value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return refs;
   }
+  if (isTemplate(value)) return refs;
   if (isStructureRef(value)) {
     if (value.__ref === 'span-gap') {
       refs.add(value.from);
@@ -120,7 +129,7 @@ export function collectOffsetRefs(
     for (const item of value) collectOffsetRefs(item, options, refs);
     return refs;
   }
-  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
     if (options.omitRaws && key === 'raws') continue;
     collectOffsetRefs(child, options, refs);
   }

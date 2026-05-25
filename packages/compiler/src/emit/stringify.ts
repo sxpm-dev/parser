@@ -1,11 +1,22 @@
-import { isStructureRef, type StructureValue } from '@parser2/parser';
+import { isStructureRef, type RenderBody } from '@parser2/parser';
 import {
+  derivedStringifyTemplates,
   type InferredSchema,
   type NodeTypeInfo,
   type Production,
   type StringifyTemplate,
 } from '../model.ts';
 import { jsString } from './strings.ts';
+
+// Local helpers that surface the legacy "structure" / "stringifyTemplates"
+// views from the new Production.renders map. Both go away in Phase 3 when
+// emit/stringify.ts is rewritten on top of the renders IR directly.
+function structureOf(production: Production): RenderBody {
+  return production.renders.get('ast')?.body ?? null;
+}
+function templatesOf(production: Production): ReadonlyArray<StringifyTemplate> {
+  return derivedStringifyTemplates(production);
+}
 
 // Emit a stringify implementation for one InferredSchema. Used by both
 // scannerless and v2 emitters via their public-API generators. Output is
@@ -31,6 +42,12 @@ import { jsString } from './strings.ts';
 export function emitStringify(schema: InferredSchema): string {
   const nodeTypes = [...schema.nodeTypes.values()];
   const targets = collectTargets(nodeTypes);
+  // The schema-declared default target wins. When the schema didn't declare
+  // one, fall back to the first target alphabetically so the generated
+  // wrapper still has a deterministic default. If there are no templated
+  // targets at all, leave defaultTarget undefined and the wrapper throws
+  // when the caller doesn't pass one explicitly.
+  const defaultTarget = schema.defaultTarget ?? targets[0];
   const fns: string[] = [];
   // Map<targetId, Map<typeLiteral, perTypeFnName>> — populated by
   // emitNodeTargetFn and consumed by emitDispatch so the recursive
@@ -43,19 +60,23 @@ export function emitStringify(schema: InferredSchema): string {
       fns.push(emitNodeTargetFn(info, target, perTypeDispatch.get(jsId(target))!));
     }
   }
-  const dispatch = emitDispatch(targets, perTypeDispatch);
+  const dispatch = emitDispatch(targets, perTypeDispatch, defaultTarget);
   return [fns.join('\n\n'), dispatch].join('\n\n');
 }
 
 function collectTargets(nodeTypes: ReadonlyArray<NodeTypeInfo>): ReadonlyArray<string> {
+  // Returns every target that has at least one Template body anywhere in the
+  // schema. Phase 2 deleted the auto-derived 'source' and 'json-auto' passes,
+  // so this list is now exactly what authors declared via .render(target, tpl).
+  // Sorted for stable output. Targets whose bodies are all structured data
+  // (rendered through the AST path instead of string concat) are not in here.
   const targets = new Set<string>();
   for (const info of nodeTypes) {
     for (const production of info.productions) {
-      for (const t of production.stringifyTemplates) targets.add(t.target);
+      for (const t of templatesOf(production)) targets.add(t.target);
     }
   }
-  const authored = [...targets].filter((t) => t !== 'source').sort();
-  return ['source', ...authored];
+  return [...targets].sort();
 }
 
 function emitNodeTargetFn(
@@ -168,7 +189,7 @@ ${branches}
 }
 
 function pickTemplate(production: Production, target: string): StringifyTemplate {
-  const found = production.stringifyTemplates.find((t) => t.target === target);
+  const found = templatesOf(production).find((t) => t.target === target);
   if (!found) {
     throw new Error(
       `stringify: production '${production.nodeType}' (example '${production.source.input.slice(0, 40)}') has no template for target '${target}'`,
@@ -233,11 +254,11 @@ function slotValueExpr(
 
 function buildAccessMap(production: Production): ReadonlyMap<string, string> {
   const map = new Map<string, string>();
-  walk(production.structure, 's', map);
+  walk(structureOf(production), 's', map);
   return map;
 }
 
-function walk(value: StructureValue, access: string, out: Map<string, string>): void {
+function walk(value: RenderBody, access: string, out: Map<string, string>): void {
   if (value === null) return;
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return;
   if (isStructureRef(value)) {
@@ -252,7 +273,7 @@ function walk(value: StructureValue, access: string, out: Map<string, string>): 
     }
     return;
   }
-  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
     walk(child, `${access}[${jsString(key)}]`, out);
   }
 }
@@ -270,6 +291,7 @@ function buildLiteralMap(production: Production): ReadonlyMap<string, string> {
 function emitDispatch(
   targets: ReadonlyArray<string>,
   perTypeDispatch: ReadonlyMap<string, ReadonlyMap<string, string>>,
+  defaultTarget: string | undefined,
 ): string {
   // Per-target dispatcher: routes a Structure value to the right per-type
   // function via a single switch on s.type. This is the hot path — every
@@ -391,10 +413,13 @@ function __jsonEscapeInner(s: string): string {
     return `  if (target === ${jsString(target)}) return __dispatchStringify_${id}(s as any);`;
   }).join('\n');
 
+  const defaultExpr = defaultTarget === undefined
+    ? `(() => { throw new Error("stringify: no target supplied and the schema declared no defaultTarget"); })()`
+    : jsString(defaultTarget);
   return `${perTargetDispatchers}
 
 export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
+  const target = options?.target ?? ${defaultExpr};
 ${publicBranches}
   throw new Error("stringify: unknown target '" + target + "'");
 }
@@ -403,7 +428,7 @@ ${helpers}`;
 }
 
 function structureTypeLiteral(production: Production): string | null {
-  const s = production.structure;
+  const s = structureOf(production);
   if (s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object))) {
     const t = (s as Record<string, unknown>).type;
     if (typeof t === 'string') return t;
@@ -461,7 +486,7 @@ function emitDiscriminator(
 }
 
 function literalFieldNames(production: Production): ReadonlyArray<string> {
-  const s = production.structure;
+  const s = structureOf(production);
   if (!(s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object)))) return [];
   const out: string[] = [];
   for (const [key, value] of Object.entries(s as Record<string, unknown>)) {
@@ -478,7 +503,7 @@ function literalFieldNames(production: Production): ReadonlyArray<string> {
 }
 
 function literalFieldChecks(production: Production, skipTypeField: boolean = false): ReadonlyArray<string> {
-  const s = production.structure;
+  const s = structureOf(production);
   if (!(s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object)))) {
     return [];
   }
@@ -498,7 +523,7 @@ function literalFieldChecks(production: Production, skipTypeField: boolean = fal
 }
 
 function structureFieldNames(production: Production): ReadonlyArray<string> {
-  const s = production.structure;
+  const s = structureOf(production);
   if (s && typeof s === 'object' && !Array.isArray(s) && !('__ref' in (s as object))) {
     return Object.keys(s as Record<string, unknown>);
   }

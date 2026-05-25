@@ -2,14 +2,15 @@
 // inference passes and consumed by the emitter. It contains only generic
 // shape — no language-specific knowledge.
 
+import { isTemplate } from '@parser2/parser';
 import type {
   ExampleDef,
   RecoveryPolicy,
   Refinement,
+  RenderBody,
   SpanClass,
   SpanDef,
   SpanModifier,
-  StructureValue,
   UnknownCharPolicy,
   ValidationDef,
   WhitespacePolicy,
@@ -24,12 +25,14 @@ export type ResolvedSpan = {
   readonly recursiveRoles: ReadonlyArray<string>; // resolved against the composition graph
 };
 
+// TODO(Phase 3): delete; transient codegen-internal data used by emit/stringify.ts until that file is rewritten.
 export type StringifyTemplate = {
   readonly target: string;
   readonly parts: ReadonlyArray<string>;
   readonly slots: ReadonlyArray<StringifyTemplateSlot>;
 };
 
+// TODO(Phase 3): delete; transient codegen-internal data used by emit/stringify.ts until that file is rewritten.
 export type StringifyTemplateSlot = {
   readonly kind: 'capture';
   readonly ref: string;
@@ -40,20 +43,31 @@ export type StringifyTemplateSlot = {
   readonly optional?: boolean;
 };
 
+// Per-(production, target) IR entry built by infer/render-targets.ts.
+// `body` is whatever the schema author handed to .render(target, body) —
+// either a Template (tpl-tagged literal) or a StructureValue-shaped object
+// tree with $ref leaves. `inverse` is the optional template used to drive
+// the reverse direction (target text → parser input) in Phase 4.
+export type RenderTargetIR = {
+  readonly target: string;
+  readonly body: RenderBody;
+  readonly inverse?: import('@parser2/parser').Template;
+};
+
 export type Production = {
   readonly nodeType: string;
   readonly source: ExampleDef;
   readonly spans: ReadonlyArray<ResolvedSpan>;
-  readonly structure: StructureValue;
+  // All render targets declared on this production by attachRenderTargets,
+  // keyed by target name. No auto-derived entries are added here — Phase 3
+  // owns per-target codegen and decides what (if anything) to synthesize.
+  readonly renders: ReadonlyMap<string, RenderTargetIR>;
   // Present on productions whose example was marked .recovers({...}). These
   // are not tried in normal dispatch — only when every valid production for
   // the node type has failed. The policy's syncAt is reserved for future
   // partial-recovery codegen; the first slice treats recovered productions
   // as plain fallback parsers.
   readonly recovery?: RecoveryPolicy;
-  // Filled by infer/templates.ts (author entries) and infer/source-template.ts
-  // (auto-derived 'source' entry). Empty until those passes run.
-  readonly stringifyTemplates: ReadonlyArray<StringifyTemplate>;
 };
 
 export type NodeTypeInfo = {
@@ -98,6 +112,11 @@ export type InferredSchema = {
   readonly tokenTypeIds: ReadonlyMap<string, number>;
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
+  // Default render target, propagated from SchemaDef.defaultTarget. The
+  // generated `render(input, opts)` / `stringify(s, opts)` wrappers use this
+  // as the fallback when the caller didn't pass `{ target }`. Phase 3 wires
+  // this into the emitted dispatch table.
+  readonly defaultTarget?: string;
   readonly validation?: ValidationDef;
 };
 
@@ -114,4 +133,31 @@ export class CompilerError extends Error {
     super(message);
     this.name = 'CompilerError';
   }
+}
+
+// --- Transient bridge: derive legacy stringify-template view from renders --
+//
+// Phase 3 deletes this helper along with StringifyTemplate / StringifyTemplateSlot.
+// Until then, emit/stringify.ts continues to consume the legacy shape and
+// pulls it through this bridge instead of reading a Production field directly.
+//
+// The bridge picks every render entry whose body is a Template (i.e. the
+// author handed a `tpl` literal to .render), and reshapes it into
+// { target, parts, slots }. Entries whose body is structured data (the
+// StructureValue-tree forms today's AST) are skipped — emit/stringify.ts
+// doesn't know how to render them. Phase 3's new emit pipeline handles
+// both shapes uniformly.
+export function derivedStringifyTemplates(
+  production: Production,
+): ReadonlyArray<StringifyTemplate> {
+  const out: StringifyTemplate[] = [];
+  for (const entry of production.renders.values()) {
+    if (!isTemplate(entry.body)) continue;
+    out.push({
+      target: entry.target,
+      parts: [...entry.body.parts],
+      slots: entry.body.slots.map((s) => ({ kind: 'capture', ref: s.ref })),
+    });
+  }
+  return out;
 }

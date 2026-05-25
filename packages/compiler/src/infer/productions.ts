@@ -1,16 +1,17 @@
-import type { ExampleDef, SchemaDef, StructureValue } from '@parser2/parser';
-import { isStructureRef } from '@parser2/parser';
+import type { ExampleDef, SchemaDef } from '@parser2/parser';
+import { isStructureRef, isTemplate } from '@parser2/parser';
 import {
   CompilerError,
   type NodeTypeInfo,
   type Production,
   type ResolvedSpan,
+  type RenderTargetIR,
 } from '../model.ts';
 
-// Pass 2 + 3: walk every example, group by .as(NodeType) (or infer from
-// structure.type), build a Production per example with spans carried through
-// as-is. Recursive role names are kept verbatim — pass 3 (resolveRoles)
-// validates them.
+// Pass 2 + 3: walk every example, group by .as(NodeType) (or infer from the
+// 'ast' render body's `type` field), build a Production per example with
+// spans carried through as-is. Recursive role names are kept verbatim —
+// pass 3 (resolveRoles) validates them.
 
 export function buildProductions(
   schemas: ReadonlyArray<SchemaDef>,
@@ -20,19 +21,15 @@ export function buildProductions(
   for (const schema of schemas) {
     for (const example of schema.examples) {
       if (example.status.kind === 'rejected') continue;
-      if (example.structure === undefined) {
-        throw new CompilerError(
-          `Example '${truncate(example.input)}' has no .structure(...) literal`,
-        );
-      }
       const nodeType = inferNodeType(example);
       const production: Production = {
         nodeType,
         source: example,
         spans: example.spans.map(toResolvedSpan),
-        structure: example.structure as StructureValue,
+        // attachRenderTargets fills this in. Start empty so the Production
+        // shape is always well-formed even if the example declared no .render.
+        renders: new Map<string, RenderTargetIR>(),
         recovery: example.status.kind === 'recovered' ? example.status.recovery : undefined,
-        stringifyTemplates: [], // attached by infer/templates.ts and infer/source-template.ts
       };
       const list = productionsByNodeType.get(nodeType) ?? [];
       list.push(production);
@@ -49,12 +46,24 @@ export function buildProductions(
 
 function inferNodeType(example: ExampleDef): string {
   if (example.nodeType) return example.nodeType;
-  if (example.structure && typeof example.structure === 'object' && !Array.isArray(example.structure) && !isStructureRef(example.structure)) {
-    const type = (example.structure as { type?: unknown }).type;
+  // Fallback: if the example declares an 'ast' render whose body is a
+  // structured object (not a Template, not a $ref, not an array) with a
+  // string-valued `type` field, use that as the node type.
+  const astEntry = example.renders.find((r) => r.target === 'ast');
+  const body = astEntry?.body;
+  if (
+    body !== undefined
+    && body !== null
+    && typeof body === 'object'
+    && !Array.isArray(body)
+    && !isTemplate(body)
+    && !isStructureRef(body)
+  ) {
+    const type = (body as { type?: unknown }).type;
     if (typeof type === 'string') return type;
   }
   throw new CompilerError(
-    `Example '${truncate(example.input)}' has no .as(NodeType) and no inferable type from structure`,
+    `Example '${truncate(example.input)}' has no .as(NodeType) and no inferable type from .render('ast', ...) body`,
   );
 }
 

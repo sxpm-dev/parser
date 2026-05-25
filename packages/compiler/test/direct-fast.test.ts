@@ -59,7 +59,7 @@ function makeGenericBlockSchema(prefix: string) {
       ex('/* note */')
         .as('Note')
         .span('text', '/* note */').comment()
-        .structure({ kind: 'note', text: $.text })
+        .render('ast', { kind: 'note', text: $.text })
         .build(),
 
       ex('key = value !flag,')
@@ -70,7 +70,7 @@ function makeGenericBlockSchema(prefix: string) {
         .span('!')
         .span('flag', 'flag').ident().js()
         .span(',').optional()
-        .structure({ kind: 'entry', key: $.key, value: $.value, flagged: true })
+        .render('ast', { kind: 'entry', key: $.key, value: $.value, flagged: true })
         .build(),
 
       ex('key = value,')
@@ -79,7 +79,7 @@ function makeGenericBlockSchema(prefix: string) {
         .span('=')
         .span('value', 'value').until([',', ']'])
         .span(',').optional()
-        .structure({ kind: 'entry', key: $.key, value: $.value })
+        .render('ast', { kind: 'entry', key: $.key, value: $.value })
         .build(),
 
       ex('box [ key = value ]')
@@ -89,7 +89,7 @@ function makeGenericBlockSchema(prefix: string) {
         .span('items', 'key = value', ['Note', 'Directive', 'Block', 'Entry'])
           .repeats({ sep: ',', trailing: 'allowed' })
         .span(']')
-        .structure({ kind: 'block', name: $.name, items: $.items })
+        .render('ast', { kind: 'block', name: $.name, items: $.items })
         .build(),
 
       ex(`${prefix}include file [ key = value ]`)
@@ -101,7 +101,7 @@ function makeGenericBlockSchema(prefix: string) {
         .span('items', 'key = value', ['Note', 'Directive', 'Block', 'Entry'])
           .repeats({ sep: ',', trailing: 'allowed' })
         .span(']')
-        .structure({ kind: 'directive', name: $.name, params: $.params, items: $.items })
+        .render('ast', { kind: 'directive', name: $.name, params: $.params, items: $.items })
         .build(),
 
       ex(`${prefix}include file,`)
@@ -110,14 +110,14 @@ function makeGenericBlockSchema(prefix: string) {
         .span('name', 'include').ident().js()
         .span('params', 'file').until([',', '[', ']'])
         .span(',').optional()
-        .structure({ kind: 'directive', name: $.name, params: $.params })
+        .render('ast', { kind: 'directive', name: $.name, params: $.params })
         .build(),
 
       ex('box [ key = value ]')
         .as('Document')
         .span('items', 'box [ key = value ]', ['Note', 'Directive', 'Block', 'Entry'])
           .repeats({ min: 0, sep: ',', trailing: 'allowed' })
-        .structure({ kind: 'document', items: $.items })
+        .render('ast', { kind: 'document', items: $.items })
         .build(),
     ],
   });
@@ -137,13 +137,13 @@ function makeDelimitedRecordSchema() {
         .span('kind', 'kind').ident().css()
         .span('~')
         .span('name', 'item').ident().css()
-        .structure({ type: 'tail', kind: $.kind, name: $.name, separator: '~' })
+        .render('ast', { type: 'tail', kind: $.kind, name: $.name, separator: '~' })
         .build(),
 
       ex('item')
         .as('Tail')
         .span('name', 'item').ident().css()
-        .structure({ type: 'tail', name: $.name })
+        .render('ast', { type: 'tail', name: $.name })
         .build(),
 
       ex('urn|alpha|123|kind~item')
@@ -155,7 +155,7 @@ function makeDelimitedRecordSchema() {
         .span('account', '123').number().int()
         .span('|')
         .span('tail', 'kind~item', 'Tail')
-        .structure({ type: 'record', service: $.service, account: $.account, tail: $.tail })
+        .render('ast', { type: 'record', service: $.service, account: $.account, tail: $.tail })
         .build(),
     ],
   });
@@ -178,7 +178,7 @@ function makeBareBlockSchema() {
         .span('=')
         .span('value', 'value').until([',', ']'])
         .span(',').optional()
-        .structure({ kind: 'entry', key: $.key, value: $.value })
+        .render('ast', { kind: 'entry', key: $.key, value: $.value })
         .build(),
 
       ex('box [ key = value ]')
@@ -188,14 +188,14 @@ function makeBareBlockSchema() {
         .span('items', 'key = value', ['Block', 'Entry'])
           .repeats({ sep: ',', trailing: 'allowed' })
         .span(']')
-        .structure({ kind: 'block', name: $.name, items: $.items })
+        .render('ast', { kind: 'block', name: $.name, items: $.items })
         .build(),
 
       ex('box [ key = value ]')
         .as('Document')
         .span('items', 'box [ key = value ]', ['Block', 'Entry'])
           .repeats({ min: 0, sep: ',', trailing: 'allowed' })
-        .structure({ kind: 'document', items: $.items })
+        .render('ast', { kind: 'document', items: $.items })
         .build(),
     ],
   });

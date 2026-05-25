@@ -1,7 +1,14 @@
-import { isStructureRef, type StructureValue } from '@parser2/parser';
+import { isStructureRef, type RenderBody } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
 import { emitStructureExpr } from './structure.ts';
 import { jsIdent, jsString } from './strings.ts';
+
+// Local helper: pull the 'ast' render body off a production. Phase 3 rewires
+// this code on top of production.renders directly; until then, this bridge
+// keeps the legacy shape-based fast-path inference compiling unchanged.
+function structureOf(production: Production): RenderBody {
+  return production.renders.get('ast')?.body ?? null;
+}
 
 export function emitDirectFastPath(schema: InferredSchema): string | null {
   const shape = inferNestedBlockFastShape(schema);
@@ -150,8 +157,8 @@ function inferNestedBlockFastShape(schema: InferredSchema): FastShape | null {
   const rootRepeat = rootProduction?.spans.find((span) => findModifier(span, 'repeats') && span.recursiveRoles.length > 0);
   const rootRepeatModifier = rootRepeat ? findModifier(rootRepeat, 'repeats') : undefined;
   if (!rootProduction || !rootRepeat?.name || !rootRepeatModifier?.sep) return null;
-  const root = objectShape(rootProduction.structure);
-  const rootChildrenKey = keyForSpanRef(rootProduction.structure, rootRepeat.name);
+  const root = objectShape(structureOf(rootProduction));
+  const rootChildrenKey = keyForSpanRef(structureOf(rootProduction), rootRepeat.name);
   if (!rootChildrenKey) return null;
 
   let comment: FastShape['comment'] | null = null;
@@ -184,9 +191,9 @@ function inferCommentShape(info: NodeTypeInfo): FastShape['comment'] | null {
   const production = info.productions[0]!;
   const [span] = production.spans;
   if (!span?.name || span.class !== 'comment') return null;
-  const textKey = keyForSpanRef(production.structure, span.name);
+  const textKey = keyForSpanRef(structureOf(production), span.name);
   if (!textKey) return null;
-  return { ...objectShape(production.structure), textKey };
+  return { ...objectShape(structureOf(production)), textKey };
 }
 
 function inferBlockShape(info: NodeTypeInfo): BlockShape | null {
@@ -200,10 +207,10 @@ function inferBlockShape(info: NodeTypeInfo): BlockShape | null {
   const until = first ? findModifier(first, 'until') : undefined;
   if (!first?.name || open?.class !== 'literal' || !open.text || !until?.stops.includes(open.text)) return null;
   if (!repeated?.name || close?.class !== 'literal' || !close.text) return null;
-  const captureKey = keyForSpanRef(production.structure, first.name);
-  const childrenKey = keyForSpanRef(production.structure, repeated.name);
+  const captureKey = keyForSpanRef(structureOf(production), first.name);
+  const childrenKey = keyForSpanRef(structureOf(production), repeated.name);
   if (!captureKey || !childrenKey) return null;
-  return { ...objectShape(production.structure), captureKey, childrenKey, openLiteral: open.text, closeLiteral: close.text };
+  return { ...objectShape(structureOf(production)), captureKey, childrenKey, openLiteral: open.text, closeLiteral: close.text };
 }
 
 function inferPairShape(info: NodeTypeInfo): PairShape | null {
@@ -217,13 +224,13 @@ function inferPairShape(info: NodeTypeInfo): PairShape | null {
   const rightUntil = right ? findModifier(right, 'until') : undefined;
   if (!left?.name || !right?.name || pairLiteral?.class !== 'literal' || !pairLiteral.text) return null;
   if (!leftUntil?.stops.includes(pairLiteral.text) || !rightUntil?.stops.length) return null;
-  const leftKey = keyForSpanRef(first.structure, left.name);
-  const rightKey = keyForSpanRef(first.structure, right.name);
+  const leftKey = keyForSpanRef(structureOf(first), left.name);
+  const rightKey = keyForSpanRef(structureOf(first), right.name);
   if (!leftKey || !rightKey) return null;
   let flagKey: string | null = null;
   let flagLiteral: string | null = null;
   for (const production of productions) {
-    flagKey ??= keyForBooleanLiteral(production.structure, true);
+    flagKey ??= keyForBooleanLiteral(structureOf(production), true);
     const valueSpan = production.spans[2];
     const valueUntil = valueSpan ? findModifier(valueSpan, 'until') : undefined;
     for (let i = 3; i < production.spans.length; i++) {
@@ -233,7 +240,7 @@ function inferPairShape(info: NodeTypeInfo): PairShape | null {
       }
     }
   }
-  return { ...objectShape(first.structure), leftKey, rightKey, flagKey, pairLiteral: pairLiteral.text, flagLiteral };
+  return { ...objectShape(structureOf(first)), leftKey, rightKey, flagKey, pairLiteral: pairLiteral.text, flagLiteral };
 }
 
 function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
@@ -248,11 +255,11 @@ function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
   const repeated = spans.find((span) => span.name && findModifier(span, 'repeats') && span.recursiveRoles.length > 0);
   if (prefix?.class !== 'literal' || !prefix.text || !name?.name || name.class !== 'ident') return null;
   if (!params?.name || !open?.text || !findModifier(params, 'until')?.stops.includes(open.text) || !repeated?.name) return null;
-  const nameKey = keyForSpanRef(blockProduction.structure, name.name);
-  const paramsKey = keyForSpanRef(blockProduction.structure, params.name);
-  const childrenKey = keyForSpanRef(blockProduction.structure, repeated.name);
+  const nameKey = keyForSpanRef(structureOf(blockProduction), name.name);
+  const paramsKey = keyForSpanRef(structureOf(blockProduction), params.name);
+  const childrenKey = keyForSpanRef(structureOf(blockProduction), repeated.name);
   if (!nameKey || !paramsKey || !childrenKey) return null;
-  return { ...objectShape(blockProduction.structure), nameKey, paramsKey, childrenKey, prefixLiteral: prefix.text };
+  return { ...objectShape(structureOf(blockProduction)), nameKey, paramsKey, childrenKey, prefixLiteral: prefix.text };
 }
 
 function inferFastLiterals(
@@ -275,27 +282,27 @@ function inferFastLiterals(
   };
 }
 
-function objectShape(value: StructureValue): ObjectShape {
+function objectShape(value: RenderBody): ObjectShape {
   if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) {
     return { typeKey: null, typeValue: null };
   }
-  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
     if (typeof child === 'string') return { typeKey: key, typeValue: child };
   }
   return { typeKey: null, typeValue: null };
 }
 
-function keyForSpanRef(value: StructureValue, spanName: string): string | null {
+function keyForSpanRef(value: RenderBody, spanName: string): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) return null;
-  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
     if (isStructureRef(child) && child.__ref === 'span-value' && child.name === spanName) return key;
   }
   return null;
 }
 
-function keyForBooleanLiteral(value: StructureValue, flag: boolean): string | null {
+function keyForBooleanLiteral(value: RenderBody, flag: boolean): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) return null;
-  for (const [key, child] of Object.entries(value as Record<string, StructureValue>)) {
+  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
     if (child === flag) return key;
   }
   return null;
@@ -1362,7 +1369,7 @@ function emitDelimitedRecordFastPath(shape: DelimitedRecordShape): string {
   const rootValues = new Map<string, string>();
   for (const field of shape.fields) rootValues.set(field.name, jsIdent(field.name));
   rootValues.set(shape.finalSpan.name, jsIdent(shape.finalSpan.name));
-  const rootStructure = emitStructureExpr(shape.rootProduction.structure, {
+  const rootStructure = emitStructureExpr(structureOf(shape.rootProduction), {
     valueExpr: rootValues,
     presenceExpr: new Map([...rootValues].map(([name, value]) => [name, `(${value}.length > 0)`])),
     startOffExpr: new Map(),
@@ -1408,7 +1415,7 @@ function emitInlineDelimitedVariant(shape: DelimitedVariantShape, targetName: st
       [alternative.first.name, '__first'],
       [alternative.second.name, jsIdent(alternative.second.name)],
     ]);
-    const structure = emitStructureExpr(alternative.production.structure, {
+    const structure = emitStructureExpr(structureOf(alternative.production), {
       valueExpr,
       presenceExpr: new Map([...valueExpr].map(([name, value]) => [name, `(${value}.length > 0)`])),
       startOffExpr: new Map(),
@@ -1425,7 +1432,7 @@ function emitInlineDelimitedVariant(shape: DelimitedVariantShape, targetName: st
   }
 
   const fallback = bare
-    ? `${targetName} = ${emitStructureExpr(bare.production.structure, {
+    ? `${targetName} = ${emitStructureExpr(structureOf(bare.production), {
       valueExpr: new Map([[bare.first.name, '__first']]),
       presenceExpr: new Map([[bare.first.name, '(__first.length > 0)']]),
       startOffExpr: new Map(),

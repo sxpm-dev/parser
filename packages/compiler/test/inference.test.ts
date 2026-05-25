@@ -1,53 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import CssSchema from '../../css/src/schema.ts';
 import { generateParser, inferSchema } from '../src/index.ts';
 
-test('inference walks the css smoke-test schema end to end', () => {
-  const inferred = inferSchema(CssSchema);
-
-  // Root info
-  assert.equal(inferred.packageName, 'parser');
-  assert.equal(inferred.rootType, 'Stylesheet');
-  assert.equal(inferred.whitespace, 'standard');
-
-  // All node types reachable
-  assert.deepEqual([...inferred.nodeTypes.keys()].sort(), [
-    'AtRule',
-    'Comment',
-    'Declaration',
-    'Rule',
-    'Stylesheet',
-  ]);
-  // AtRule has two productions (statement form + block form)
-  assert.equal(inferred.nodeTypes.get('AtRule')!.productions.length, 2);
-
-  // CSS declares named punctuators: { → lbrace, } → rbrace, etc.
-  assert.equal(inferred.literalTypeByText.get('{'), 'lbrace');
-  assert.equal(inferred.literalTypeByText.get('}'), 'rbrace');
-  assert.equal(inferred.literalTypeByText.get(':'), 'colon');
-  assert.equal(inferred.literalTypeByText.get(';'), 'semicolon');
-  // Delim chars all share the 'delim' type
-  assert.equal(inferred.literalTypeByText.get('.'), 'delim');
-  assert.equal(inferred.literalTypeByText.get('+'), 'delim');
-  // Tokenizer-declared classes carry through
-  const numberClass = inferred.classes.find((c) => c.class === 'number');
-  assert.ok(numberClass);
-  const stringClass = inferred.classes.find((c) => c.class === 'string');
-  assert.ok(stringClass);
-
-  // Classes used: ident with css refinement
-  const idents = inferred.classes.find((c) => c.class === 'ident');
-  assert.ok(idents);
-  assert.deepEqual(idents!.refinements.map((r) => r.name), ['css']);
-});
+// NOTE: The "inference walks the css smoke-test schema end to end" test that
+// previously lived here was deleted as part of the unified-render-targets
+// refactor — it imported `../../css/src/schema.ts`, which is still on the
+// legacy `.structure()/.stringify()` API. Phase 6 brings the CSS package
+// across; Phase 7 adds round-trip tests that supersede that smoke check.
 
 test('inference rejects schemas with unresolved recursive roles', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const broken = defineSchema({
     rootType: 'Outer',
     examples: [
-      ex('x').as('Outer').span('inner', 'x', 'NoSuchType').structure({ inner: $.inner }).build(),
+      ex('x').as('Outer').span('inner', 'x', 'NoSuchType').render('ast', { inner: $.inner }).build(),
     ],
   });
   assert.throws(() => inferSchema(broken), /Recursive role 'NoSuchType'/);
@@ -62,9 +28,9 @@ test('inference rejects ambiguous recursive span text', async () => {
         .as('Pair')
         .span('left', 'x', 'Atom')
         .span('right', 'x', 'Atom')
-        .structure({ left: $.left, right: $.right })
+        .render('ast', { left: $.left, right: $.right })
         .build(),
-      ex('y').as('Atom').span('v', 'y').ident().js().structure({ v: $.v }).build(),
+      ex('y').as('Atom').span('v', 'y').ident().js().render('ast', { v: $.v }).build(),
     ],
   });
   assert.throws(() => inferSchema(ambiguous), /appears multiple times/);
@@ -81,7 +47,7 @@ test('validation metadata is separate from SchemaDef and emits string-set lookup
         .span(':')
         .span('value', 'red').until(';')
         .span(';')
-        .structure({ type: 'decl', prop: $.prop, value: $.value })
+        .render('ast', { type: 'decl', prop: $.prop, value: $.value })
         .build(),
     ],
   });
@@ -123,7 +89,7 @@ test('emitter factors shared recursive repeats before literal branch points', as
         .span('name', 'key').ident().css()
         .span('=')
         .span('value', '"value"').string().doubleQuoted()
-        .structure({ name: $.name, value: $.value })
+        .render('ast', { name: $.name, value: $.value })
         .build(),
       ex('<box key="value">body</box>')
         .as('Node')
@@ -135,7 +101,7 @@ test('emitter factors shared recursive repeats before literal branch points', as
         .span('</')
         .span('closeTag', 'box').ident().css()
         .span('>')
-        .structure({ tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag })
+        .render('ast', { tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag })
         .build(),
       ex('<box />')
         .as('Node')
@@ -143,7 +109,7 @@ test('emitter factors shared recursive repeats before literal branch points', as
         .span('tag', 'box').ident().css()
         .span('pairs', '', 'Pair').repeats({ min: 0 })
         .span('/>')
-        .structure({ tag: $.tag, pairs: $.pairs, selfClosing: true })
+        .render('ast', { tag: $.tag, pairs: $.pairs, selfClosing: true })
         .build(),
     ],
   });
@@ -159,15 +125,17 @@ test('emitter factors shared recursive repeats before literal branch points', as
   );
 });
 
-test('inferSchema attaches an empty stringifyTemplates array to every production by default', async () => {
+test('inferSchema attaches an empty renders map to a production with no .render entries', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident().structure({ type: 'atom', v: $.v }).build(),
+      ex('x').as('Atom').span('v', 'x').ident().render('ast', { type: 'atom', v: $.v }).build(),
     ],
   });
   const inferred = inferSchema(schema);
   const production = inferred.nodeTypes.get('Atom')!.productions[0]!;
-  assert.ok(Array.isArray(production.stringifyTemplates));
+  assert.ok(production.renders instanceof Map);
+  // The single declared 'ast' entry is the only render target on this production.
+  assert.deepEqual([...production.renders.keys()], ['ast']);
 });

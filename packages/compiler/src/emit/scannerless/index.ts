@@ -236,8 +236,8 @@ function findPropertyValueOffset(input: string, prop: string, value: string): nu
 function structureTypeForNode(schema: InferredSchema, nodeType: string): string {
   const info = schema.nodeTypes.get(nodeType);
   const production = info?.productions[0];
-  const structure = production?.structure;
-  if (structure && typeof structure === 'object' && !Array.isArray(structure) && !('__ref' in structure)) {
+  const structure = production?.renders.get('ast')?.body;
+  if (structure && typeof structure === 'object' && !Array.isArray(structure) && !('__ref' in (structure as object)) && !('__tpl' in (structure as object))) {
     const typeValue = (structure as Record<string, unknown>).type;
     if (typeof typeValue === 'string') return typeValue;
   }

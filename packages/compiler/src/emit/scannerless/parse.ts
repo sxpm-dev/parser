@@ -12,11 +12,18 @@
 // `__off = state.off` after the call returns. This keeps state.off out of
 // register pressure within a tight per-row body.
 
-import type { SpanModifier } from '@parser2/parser';
+import type { RenderBody, SpanModifier } from '@parser2/parser';
 import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production, type ResolvedSpan } from '../../model.ts';
 import { collectOffsetRefs, emitStructureExpr } from '../structure.ts';
 import { jsIdent, jsString } from '../strings.ts';
 import { emitClassScan, emitClassOffsetVars } from './scan-class.ts';
+
+// Local bridge — Phase 3 deletes when this emitter is rewritten on top of
+// the Production.renders IR directly. Until then we keep reading "the AST
+// structure body" off the 'ast' render entry.
+function structureOf(production: Production): RenderBody {
+  return production.renders.get('ast')?.body ?? null;
+}
 
 type ParseVariant = 'fast' | 'raws' | 'validate';
 
@@ -479,7 +486,7 @@ ${indent(altBody, 1)}
       if (lastAlts.includes(last.text)) return null; // duplicate, weird
       lastAlts.push(last.text);
       // Structures must be identical so we emit one tail.
-      if (JSON.stringify(p.structure) !== JSON.stringify(ref.structure)) return null;
+      if (JSON.stringify(structureOf(p)) !== JSON.stringify(structureOf(ref))) return null;
     }
     const name = `${fnNameArg}__altMerged_${subIndexes.join('_')}__body`;
     const inlineSpec: InlineFromDispatcher = {
@@ -1148,7 +1155,7 @@ function emitProductionBody(production: Production, ctx: Ctx, inline?: InlineFro
   const endOffExpr = new Map<string, string>();
   const spans = production.spans;
   const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
-  const offsetRefs = collectOffsetRefs(production.structure, structureOptions);
+  const offsetRefs = collectOffsetRefs(structureOf(production), structureOptions);
   const needsNodeRange = ctx.variant === 'raws';
   const skipSpans = inline?.skipSpans ?? 0;
 
@@ -1327,7 +1334,7 @@ let __off = state.off;`);
   }
 
   const bindings = { valueExpr, presenceExpr, startOffExpr, endOffExpr };
-  const structure = emitStructureExpr(production.structure, bindings, structureOptions);
+  const structure = emitStructureExpr(structureOf(production), bindings, structureOptions);
   if (ctx.variant === 'fast') {
     lines.push(`return ${structure};`);
     return applySoftFail(lines.join('\n'), inline?.softFail);

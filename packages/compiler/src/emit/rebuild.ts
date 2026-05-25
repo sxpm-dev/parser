@@ -123,18 +123,40 @@ function contributionOf(span: ResolvedSpan): Piece {
 function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
   if (pieces.length === 0) return '""';
   const parts: string[] = [];
-  for (const p of pieces) {
+  for (let i = 0; i < pieces.length; i++) {
+    const p = pieces[i]!;
     if (p.kind === 'literal') {
       parts.push(jsString(p.text));
-    } else if (p.optional) {
-      // Optional absent: skip the slot AND any single trailing space literal
-      // contributed for the separator (best-effort: the optional span itself
-      // ate the gap if absent in the example, so usually nothing needs
-      // trimming). Runtime: read null/undefined as empty.
-      parts.push(`(captures${memberAccess(p.ref)} ?? "")`);
-    } else {
-      parts.push(`__rebuildSlot(captures${memberAccess(p.ref)})`);
+      continue;
     }
+    if (p.optional) {
+      // Fuse the slot with its preceding literal separator (Fix 2 — ports
+      // the foldIntoTemplate optional-slot behaviour from the deleted
+      // infer/source-template.ts). When the captured value is null/undefined
+      // we suppress BOTH the slot and the separator; otherwise we emit
+      // `<sep> + <slotExpr>` (or, when the captured value is recursive,
+      // route through __rebuildSlot for proper coercion).
+      const slotAccess = `captures${memberAccess(p.ref)}`;
+      const slotExpr = `__rebuildSlot(${slotAccess})`;
+      // Look back for an immediately-preceding literal piece in the input
+      // stream (pieces[i-1]) AND make sure we haven't already consumed it
+      // (parts has the same prefix as pieces — easy to check by length).
+      const prevPiece = i > 0 ? pieces[i - 1] : undefined;
+      if (prevPiece && prevPiece.kind === 'literal' && parts.length > 0) {
+        // Drop the just-pushed literal from `parts` and fuse it into the
+        // conditional. Use the slot value (not the rebuilt slot) for the
+        // null test — recursive children may rebuild to "" but still be
+        // present, and we should keep the separator in that case.
+        const sepLiteral = parts.pop()!;
+        parts.push(`(${slotAccess} == null ? "" : ${sepLiteral} + ${slotExpr})`);
+      } else {
+        // No preceding literal to fuse — emit a plain slot read with
+        // null-coalesce so we don't stringify null/undefined as "null".
+        parts.push(`(${slotAccess} == null ? "" : ${slotExpr})`);
+      }
+      continue;
+    }
+    parts.push(`__rebuildSlot(${`captures${memberAccess(p.ref)}`})`);
   }
   if (parts.length === 1) return parts[0]!.startsWith('"') ? parts[0]! : `String(${parts[0]})`;
   return parts.join(' + ');

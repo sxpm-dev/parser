@@ -482,12 +482,21 @@ function fieldNameSet(ir: Extract<InverseIR, { kind: 'object' }>): Set<string> {
 
 function emitSlotHelper(target: string): string {
   const id = jsIdent(target);
-  return `function __invertSlot_${id}(v: any): string {
-  if (v === null || v === undefined) return "";
+  // Preserve null/undefined as-is — the per-production rebuild emits an
+  // explicit `captures.<name> == null ? "" : ...` ternary around optional
+  // slots (see Fix 2 in emit/rebuild.ts), so coercing null to "" here would
+  // hide the absent state and leave dangling separators in the output.
+  // Non-null values still funnel through dispatch / array-join / String()
+  // as before.
+  return `function __invertSlot_${id}(v: any): any {
+  if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
   if (Array.isArray(v)) {
     let out = "";
-    for (let i = 0; i < v.length; i++) out += __invertSlot_${id}(v[i]);
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlot_${id}(v[i]);
+      if (r != null) out += r;
+    }
     return out;
   }
   if (typeof v === "object") return __dispatchInverse_${id}(v);

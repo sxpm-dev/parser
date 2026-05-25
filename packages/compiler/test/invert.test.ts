@@ -273,6 +273,32 @@ test('inverse: cron-like three-template field round-trips via unique-literal dis
   }
 });
 
+// Fix 2: optional spans preceded by a literal separator must be fused with
+// that separator so an absent optional doesn't leave a dangling separator
+// in the rebuilt source.
+test('rebuild: optional trailing span absent collapses both slot and preceding separator', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Greeting',
+    examples: [
+      ex('hi there').as('Greeting')
+        .span('verb', 'hi').ident()
+        .span('subject', 'there', 'Word').optional()
+        .render('ast', { type: 'greeting', verb: $.verb, subject: $.subject })
+        .build(),
+      ex('there').as('Word')
+        .span('w', 'there').ident()
+        .render('ast', $.w)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'fix2-optional-fusion');
+  // With optional subject present: full source rebuilds verbatim.
+  assert.equal(mod.stringify(mod.render('hi there', { type: 'ast' }), { type: 'ast' }), 'hi there');
+  // With optional subject ABSENT: no trailing space should remain.
+  assert.equal(mod.stringify(mod.render('hi', { type: 'ast' }), { type: 'ast' }), 'hi');
+});
+
 // ---------- Round-trip via generated parser -------------------------------
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast', async () => {

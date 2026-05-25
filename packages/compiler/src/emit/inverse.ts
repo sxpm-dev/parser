@@ -356,20 +356,75 @@ function emitDispatcher(target: string, schema: InferredSchema): string {
   }
   if (templates.length > 0) {
     lines.push('if (typeof value === "string") {');
-    // Sort by descending prefix length for longest-match-first dispatch.
-    const sorted = [...templates].sort((a, b) => {
-      const pa = (a.ir as Extract<InverseIR, { kind: 'template' }>).segments[0] ?? '';
-      const pb = (b.ir as Extract<InverseIR, { kind: 'template' }>).segments[0] ?? '';
-      return pb.length - pa.length;
-    });
-    for (const b of sorted) {
-      const ir = b.ir as Extract<InverseIR, { kind: 'template' }>;
-      const prefix = ir.segments[0] ?? '';
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value)`;
-      if (prefix === '') {
+    // Two-stage dispatch (Fix 1):
+    //  1) Branches with a non-empty leading literal prefix dispatch on
+    //     `value.startsWith(<prefix>)`, longest-first.
+    //  2) Branches sharing a leading prefix (empty or otherwise) with one or
+    //     more siblings use a unique embedded literal segment as the
+    //     discriminator — `value.includes(<unique-literal>)`, longest-first.
+    //  3) A branch that has no unique discriminator vs. its siblings becomes
+    //     the fallback (at most one — validateInverseDiscrimination rejected
+    //     the schema if there were two such branches sharing a prefix).
+    type TplBranch = Branch & { readonly ir: Extract<InverseIR, { kind: 'template' }> };
+    const tpls = templates as ReadonlyArray<TplBranch>;
+    type Plan = {
+      readonly branch: TplBranch;
+      readonly check: string | null; // null = fallback (`return <call>;`)
+      readonly priority: number;     // higher = tried earlier
+    };
+    const plans: Plan[] = [];
+    for (const b of tpls) {
+      const prefix = b.ir.segments[0] ?? '';
+      if (prefix.length > 0) {
+        // Prefix-based discriminator. Priority = prefix length.
+        plans.push({
+          branch: b,
+          check: `value.startsWith(${jsString(prefix)})`,
+          priority: prefix.length,
+        });
+        continue;
+      }
+      // Empty leading prefix: search for a unique embedded literal — a
+      // non-empty segment present in our segments but not appearing in any
+      // segment of any sibling with the same (empty) leading prefix.
+      const sameLeadingSiblings = tpls.filter((other) =>
+        other !== b && (other.ir.segments[0] ?? '') === prefix
+      );
+      const ourLiterals = b.ir.segments.filter((s) => s.length > 0);
+      // Pick the longest unique literal so the check is most-specific.
+      let bestLit: string | null = null;
+      for (const lit of ourLiterals) {
+        let foundInSibling = false;
+        for (const sib of sameLeadingSiblings) {
+          for (const sibSeg of sib.ir.segments) {
+            if (sibSeg.includes(lit)) { foundInSibling = true; break; }
+          }
+          if (foundInSibling) break;
+        }
+        if (!foundInSibling) {
+          if (bestLit === null || lit.length > bestLit.length) bestLit = lit;
+        }
+      }
+      if (bestLit !== null) {
+        plans.push({
+          branch: b,
+          check: `value.indexOf(${jsString(bestLit)}) >= 0`,
+          priority: bestLit.length,
+        });
+      } else {
+        // Fallback branch — no discriminator vs. its sibling(s).
+        plans.push({ branch: b, check: null, priority: -1 });
+      }
+    }
+    // Order: discriminating branches first (longest discriminator first),
+    // fallback branches last. Stable across schemas with the same shape.
+    plans.sort((a, b) => b.priority - a.priority);
+    for (const p of plans) {
+      const call = `${inverterName(p.branch.nodeName, p.branch.prodIdx, p.branch.target)}(value)`;
+      if (p.check === null) {
         lines.push(`  return ${call};`);
       } else {
-        lines.push(`  if (value.startsWith(${jsString(prefix)})) return ${call};`);
+        lines.push(`  if (${p.check}) return ${call};`);
       }
     }
     lines.push('}');

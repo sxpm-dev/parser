@@ -190,6 +190,89 @@ test('inverse: indistinguishable productions on object target -> CompilerError',
   assert.throws(() => inferSchema(schema), /indistinguishable productions/);
 });
 
+// Fix 1: template productions can share an empty leading prefix as long as
+// one of them carries a unique embedded literal segment — that segment is a
+// runtime discriminator the inverse dispatcher can match on.
+test('inverse: two templates with shared empty leading prefix but differing embedded literals do NOT collide', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  // Two productions of 'Field': ${$.value} vs ${$.start}-${$.end}. Both
+  // start with a capture (empty leading prefix). The second has an
+  // embedded `-` literal between its two captures — that's the runtime
+  // discriminator.
+  const schema = defineSchema({
+    rootType: 'Field',
+    examples: [
+      ex('5').as('Field').span('value', '5').number().int()
+        .render('ast', { type: 'value', value: $.value })
+        .render('source', tpl`${$.value}`)
+        .build(),
+      ex('1-5').as('Field')
+        .span('start', '1').number().int()
+        .span('-')
+        .span('end', '5').number().int()
+        .render('ast', { type: 'range', start: $.start, end: $.end })
+        .render('source', tpl`${$.start}-${$.end}`)
+        .build(),
+    ],
+  });
+  // Inference should succeed — the `-` literal in the second template
+  // distinguishes the two productions at runtime.
+  assert.doesNotThrow(() => inferSchema(schema));
+});
+
+test('inverse: cron-like three-template field round-trips via unique-literal dispatch', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  // Mimics CronField:
+  //   ${$.value}          (no embedded literals)
+  //   ${$.start}-${$.end} (embedded '-')
+  //   */${$.step}         (leading '*/')
+  //   *                   (all-literal '*')
+  const schema = defineSchema({
+    rootType: 'Field',
+    punctuators: { star: '*', slash: '/', dash: '-' },
+    examples: [
+      ex('*').as('Field').span('*')
+        .render('ast', { type: 'wildcard' })
+        .render('source', tpl`*`)
+        .build(),
+      ex('*/5').as('Field')
+        .span('*').span('/').span('step', '5').number().int()
+        .render('ast', { type: 'step', step: $.step })
+        .render('source', tpl`*/${$.step}`)
+        .build(),
+      ex('9').as('Field')
+        .span('value', '9').number().int()
+        .render('ast', { type: 'value', value: $.value })
+        .render('source', tpl`${$.value}`)
+        .build(),
+      ex('1-5').as('Field')
+        .span('start', '1').number().int()
+        .span('-')
+        .span('end', '5').number().int()
+        .render('ast', { type: 'range', start: $.start, end: $.end })
+        .render('source', tpl`${$.start}-${$.end}`)
+        .build(),
+    ],
+  });
+  assert.doesNotThrow(() => inferSchema(schema));
+  const mod = await loadGenerated(schema, 'fix1-cronlike');
+  // Test forward: render to source preserves the input.
+  for (const input of ['*', '*/5', '9', '1-5']) {
+    const v1 = mod.render(input, { type: 'source' });
+    assert.equal(v1, input);
+  }
+  // Test the inverse round-trip including the AST target so we exercise
+  // the unique-literal dispatch (each AST shape is distinct, so a
+  // misrouted inverse would produce a different AST).
+  for (const input of ['*', '*/5', '9', '1-5']) {
+    const ast1 = mod.render(input, { type: 'ast' });
+    const sourceText = mod.render(input, { type: 'source' });
+    const back = mod.stringify(sourceText, { type: 'source' });
+    const ast2 = mod.render(back, { type: 'ast' });
+    assert.deepEqual(ast2, ast1, `roundtrip for ${input}`);
+  }
+});
+
 // ---------- Round-trip via generated parser -------------------------------
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast', async () => {

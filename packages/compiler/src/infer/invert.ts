@@ -223,14 +223,22 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
       const bt = b as Extract<InverseIR, { kind: 'template' }>;
       const aPrefix = a.segments[0] ?? '';
       const bPrefix = bt.segments[0] ?? '';
+      // 1) Distinct non-empty leading prefixes (or one empty + the other
+      //    non-empty) discriminate trivially.
+      if (aPrefix !== bPrefix) return null;
+      // 2) Same leading prefix (possibly empty). Look for unique embedded
+      //    literal segments — a non-empty segment present in one production
+      //    but not in any segment of the other can be used as a runtime
+      //    discriminator (does the input contain this substring?).
+      const aLiterals = nonEmptySegments(a.segments);
+      const bLiterals = nonEmptySegments(bt.segments);
+      if (hasDiscriminatingLiteral(aLiterals, bLiterals) || hasDiscriminatingLiteral(bLiterals, aLiterals)) {
+        return null;
+      }
       if (aPrefix === '' && bPrefix === '') {
-        return 'both template bodies start with a capture (no leading literal prefix)';
+        return 'both template bodies start with a capture (no leading literal prefix) and no embedded literal segment distinguishes them';
       }
-      if (aPrefix === bPrefix) {
-        return `the same leading literal prefix ${JSON.stringify(aPrefix)}`;
-      }
-      // Distinct non-empty leading prefixes (or one empty + the other unique) discriminate.
-      return null;
+      return `the same leading literal prefix ${JSON.stringify(aPrefix)} and no embedded literal segment distinguishes them`;
     }
     case 'scalar': {
       const bs = b as Extract<InverseIR, { kind: 'scalar' }>;
@@ -252,6 +260,36 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
       return 'array bodies of equal length with no literal discriminator';
     }
   }
+}
+
+// Collects the non-empty literal segments of a template inverse. Used by
+// Fix 1 — when two template productions share a leading prefix (often
+// empty), an embedded literal segment present in only one of them serves
+// as a runtime discriminator (the inverse dispatcher checks
+// `value.includes(<unique-literal>)`).
+function nonEmptySegments(segments: ReadonlyArray<string>): ReadonlyArray<string> {
+  return segments.filter((s) => s.length > 0);
+}
+
+// Does production A have a non-empty literal segment that does not appear
+// as a substring of any of production B's segments? If so, that literal is
+// a discriminator: the inverse dispatcher can branch on
+// `value.includes(<literal>)` to route to A.
+function hasDiscriminatingLiteral(
+  aLiterals: ReadonlyArray<string>,
+  bLiterals: ReadonlyArray<string>,
+): boolean {
+  for (const lit of aLiterals) {
+    let containedInSomeB = false;
+    for (const bLit of bLiterals) {
+      if (bLit.includes(lit)) {
+        containedInSomeB = true;
+        break;
+      }
+    }
+    if (!containedInSomeB) return true;
+  }
+  return false;
 }
 
 function literalFields(ir: Extract<InverseIR, { kind: 'object' }>): Map<string, unknown> {

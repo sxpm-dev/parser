@@ -26,7 +26,7 @@ export type ResolvedSpan = {
 
 // Per-(production, target) IR entry built by infer/render-targets.ts.
 // `body` is whatever the schema author handed to .render(target, body) —
-// either a Template (tpl-tagged literal) or a StructureValue-shaped object
+// either a Template (tpl-tagged literal) or a structured object/array/scalar
 // tree with $ref leaves. `inverse` is the optional author-supplied template
 // override used to drive the reverse direction (target text → captures).
 // `inverseDerived` is the compile-time derivation produced by Phase 4

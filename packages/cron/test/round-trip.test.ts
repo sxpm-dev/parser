@@ -10,30 +10,19 @@ import { render, stringify } from '../src/index.ts';
 // 'ast' target — value-stable across all fixtures (object-shaped target;
 // the inverse dispatcher routes robustly on `.type` field equality).
 //
-// 'source' target — value-stable across a focused fixture set. Two known
-// additional gaps surface on broader fixtures and are tracked as
-// follow-ups (out of scope of the compiler fixes 1-4 that unblocked
-// the source-target compilation):
-//
-//   (a) Forward-template fusion for optional spans. Cron's source
-//       template `${$.minute} ${$.hour} ... ${$.command}` renders an
-//       absent command as a trailing space. The rebuild path fuses
-//       optional slots with preceding separators (Fix 2 in
-//       emit/rebuild.ts); the forward render path does not yet mirror
-//       that fusion, so the intermediate source carries a dangling
-//       space. Fixtures whose AST has command === null are excluded
-//       below to side-step this until forward fusion lands.
-//
-//   (b) Forward-template array-join for .repeats() spans. Cron's
-//       `Command` production captures `words: ['npm', 'test']`;
-//       rendering the source template fuses the array via JS's default
-//       array-to-string coercion (comma-join), yielding `'npm,test'`.
-//       The rebuild path uses joinSep (Fix 3 in emit/rebuild.ts); the
-//       forward path does not yet thread joinSep into __renderSlot_<target>.
-//       Multi-word command fixtures are excluded until forward joinSep
-//       lands.
+// 'source' target — value-stable across the same fixture set after the
+// Gap A/B/C compiler fixes:
+//   - Gap A (forward template fusion of optional-absent slots + inverse
+//     template-scanner tail-optional handling) restored fixtures whose
+//     command span is absent (e.g. '0 0 * * *', '1 2 3 4 5').
+//   - Gap B (forward template joinSep for .repeats arrays) restored
+//     multi-word command fixtures (e.g. '*/5 */2 7 8 1-5 npm test').
+//   - Gap C (inverse dispatcher restricted to root productions) made
+//     the wildcard-only fixture '* * * * *' invertible — its rendered
+//     source previously mis-dispatched through CronField's `*`
+//     production instead of Cron.
 
-const FIXTURES_AST: ReadonlyArray<string> = [
+const FIXTURES: ReadonlyArray<string> = [
   '* * * * *',
   '0 0 * * *',
   '*/5 * * * *',
@@ -43,19 +32,7 @@ const FIXTURES_AST: ReadonlyArray<string> = [
   '0 9 * * 1-5 npm test deploy',
 ];
 
-// Focused 'source' fixture set: every input parses as a Cron with a
-// non-wildcard minute (so the dispatcher's template prefix routing
-// reliably hits the Cron production via its embedded-' ' literal
-// discriminator), and the command span is present (so trailing-space
-// fusion isn't exercised).
-const FIXTURES_SOURCE: ReadonlyArray<string> = [
-  '0 0 * * *',
-  '*/5 * * * *',
-  '0 1-3 * * *',
-  '1 2 3 4 5',
-];
-
-for (const fixture of FIXTURES_AST) {
+for (const fixture of FIXTURES) {
   test(`round-trip 'ast' target (value-stable): ${fixture}`, () => {
     const target = 'ast' as const;
     const v1 = render(fixture, { type: target });
@@ -65,7 +42,7 @@ for (const fixture of FIXTURES_AST) {
   });
 }
 
-for (const fixture of FIXTURES_SOURCE) {
+for (const fixture of FIXTURES) {
   test(`round-trip 'source' target (value-stable): ${fixture}`, () => {
     const target = 'source' as const;
     const v1 = render(fixture, { type: target });

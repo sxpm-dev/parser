@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 const VOID_TAGS = [
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -113,28 +113,35 @@ export default defineSchema({
       .as('HtmlDocument')
       .span('children', '<p>hi</p>', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0 })
-      .structure({
+      .render('ast', {
         nodeName: '#document',
         mode: 'no-quirks',
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`${$.children}`)
       .build(),
 
     // ===== Doctype =================================================
+    // Each production carries a `_kind` literal so the inverse dispatcher
+    // can tell well-formed and recovery shapes apart from the AST alone.
+    // The forward-emitted AST gains this discriminator on the public surface.
     ex('<!DOCTYPE html>')
       .as('Doctype')
       .span('<!')
       .span('keyword', 'DOCTYPE').ident().oneOf(['DOCTYPE'])
       .span('name', 'html').ident().html()
       .span('>')
-      .structure({
+      .render('ast', {
+        _kind: 'doctype',
+        _keyword: $.keyword,
         nodeName: '#documentType',
         name: $.name,
         publicId: '',
         systemId: '',
         parentNode: null,
       })
+      .render('source', tpl`<!${$.keyword} ${$.name}>`)
       .build(),
 
     // Recovery: malformed doctype with no closing `>` (e.g. EOF-truncated
@@ -147,13 +154,16 @@ export default defineSchema({
       .span('<!')
       .span('keyword', 'DOCTYPE').ident().oneOf(['DOCTYPE'])
       .span('name', 'broken').ident().html()
-      .structure({
+      .render('ast', {
+        _kind: 'doctype-incomplete',
+        _keyword: $.keyword,
         nodeName: '#documentType',
         name: $.name,
         publicId: '',
         systemId: '',
         parentNode: null,
       })
+      .render('source', tpl`<!${$.keyword} ${$.name}`)
       .build(),
 
     // ===== Comment =================================================
@@ -167,11 +177,12 @@ export default defineSchema({
       .span('<!--')
       .span('data', ' hello ').until('-->', { trim: false })
       .span('-->')
-      .structure({
+      .render('ast', {
         nodeName: '#comment',
         data: $.data,
         parentNode: null,
       })
+      .render('source', tpl`<!--${$.data}-->`)
       .build(),
 
     // ===== HtmlElement (multi-production) ==========================
@@ -185,18 +196,26 @@ export default defineSchema({
       .span('tag', 'script').ident().html().oneOf(RAW_TEXT_TAGS)
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('>')
-      .span('body', 'js').rawUntil('</')
+      // Span is named `children` (not `body`) so the source template is
+      // structurally identical to the regular-element production. Per spec
+      // rule 5 (value-stable round-trip) the inverse dispatcher accepts
+      // identical-template productions — lowest-index wins. Both forms
+      // produce the same source bytes for compatible inputs.
+      .span('children', 'js').rawUntil('</')
       .span('</')
       .span('closeTag', 'script').ident().html().oneOf(RAW_TEXT_TAGS)
       .span('>')
-      .structure({
+      .render('ast', {
+        _kind: 'element-rawtext',
+        _closeTag: $.closeTag,
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
         attrs: $.attrs,
-        childNodes: [{ nodeName: '#text', value: $.body, parentNode: null }],
+        childNodes: [{ nodeName: '#text', value: $.children, parentNode: null }],
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</${$.closeTag}>`)
       .build(),
 
     // Production 1: void element, no slash. `<br>`, `<meta charset="x">`.
@@ -206,7 +225,8 @@ export default defineSchema({
       .span('tag', 'br').ident().html().oneOf(VOID_TAGS)
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('>')
-      .structure({
+      .render('ast', {
+        _kind: 'element-void',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -214,6 +234,7 @@ export default defineSchema({
         childNodes: [],
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>`)
       .build(),
 
     // Production 2: void element with self-close slash. `<br />`, `<img src="x" />`.
@@ -223,7 +244,8 @@ export default defineSchema({
       .span('tag', 'br').ident().html().oneOf(VOID_TAGS)
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('/>')
-      .structure({
+      .render('ast', {
+        _kind: 'element-void-selfclose',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -231,6 +253,7 @@ export default defineSchema({
         childNodes: [],
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag} />`)
       .build(),
 
     // ----- Recovery productions (tried only when valid productions fail) ----
@@ -252,7 +275,8 @@ export default defineSchema({
       .span('tag', 'custom').ident().html()
       .span('attrs', '', 'Attribute').repeats({ min: 0 })
       .span('/>')
-      .structure({
+      .render('ast', {
+        _kind: 'element-selfclose-recovery',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -260,6 +284,7 @@ export default defineSchema({
         childNodes: [],
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}/>`)
       .build(),
 
     // Implicit-close productions. Tried before the regular element form so
@@ -281,7 +306,8 @@ export default defineSchema({
       // When stopBefore matched a sibling/list-close trigger instead, the
       // close is absent and we skip.
       .span('</li>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-li',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -289,6 +315,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</li>`)
       .build(),
 
     // <dt> / <dd>
@@ -303,7 +330,8 @@ export default defineSchema({
       // Either </dt> or </dd> may close (or neither, for implicit close).
       .span('</dt>').optional()
       .span('</dd>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-dt-dd',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -311,6 +339,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</dt>`)
       .build(),
 
     // <tr>
@@ -323,7 +352,8 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: TR_STOPS })
       .span('</tr>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-tr',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -331,6 +361,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</tr>`)
       .build(),
 
     // <td> / <th>
@@ -344,7 +375,8 @@ export default defineSchema({
         .repeats({ min: 0, stopBefore: TD_TH_STOPS })
       .span('</td>').optional()
       .span('</th>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-td-th',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -352,6 +384,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</td>`)
       .build(),
 
     // <p>
@@ -364,7 +397,8 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: P_STOPS })
       .span('</p>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-p',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -372,6 +406,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</p>`)
       .build(),
 
     // <option> / <optgroup>
@@ -385,7 +420,8 @@ export default defineSchema({
         .repeats({ min: 0, stopBefore: OPTION_STOPS })
       .span('</option>').optional()
       .span('</optgroup>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-option',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -393,6 +429,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</option>`)
       .build(),
 
     // <html> / <head> / <body> — close-tag can be omitted per HTML5.
@@ -405,7 +442,8 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: HTML_STOPS })
       .span('</html>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-html',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -413,6 +451,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</html>`)
       .build(),
 
     ex('<head>x</head>')
@@ -424,7 +463,8 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: HEAD_STOPS })
       .span('</head>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-head',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -432,6 +472,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</head>`)
       .build(),
 
     // <tbody> / <thead> / <tfoot> — implicit closes between table sections.
@@ -444,10 +485,12 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: TBODY_STOPS })
       .span('</tbody>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-tbody',
         nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
         attrs: $.attrs, childNodes: $.children, parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</tbody>`)
       .build(),
 
     ex('<thead>x</thead>')
@@ -459,10 +502,12 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: THEAD_STOPS })
       .span('</thead>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-thead',
         nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
         attrs: $.attrs, childNodes: $.children, parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</thead>`)
       .build(),
 
     ex('<tfoot>x</tfoot>')
@@ -474,10 +519,12 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: TFOOT_STOPS })
       .span('</tfoot>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-tfoot',
         nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
         attrs: $.attrs, childNodes: $.children, parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</tfoot>`)
       .build(),
 
     ex('<body>x</body>')
@@ -489,7 +536,8 @@ export default defineSchema({
       .span('children', 'x', ['Doctype', 'Comment', 'HtmlElement', 'TextNode'])
         .repeats({ min: 0, stopBefore: BODY_STOPS })
       .span('</body>').optional()
-      .structure({
+      .render('ast', {
+        _kind: 'element-body',
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -497,6 +545,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</body>`)
       .build(),
 
     // Production: regular element with children and close tag.
@@ -510,7 +559,9 @@ export default defineSchema({
       .span('</')
       .span('closeTag', 'div').ident().html()
       .span('>')
-      .structure({
+      .render('ast', {
+        _kind: 'element',
+        _closeTag: $.closeTag,
         nodeName: $.tag,
         tagName: $.tag,
         namespaceURI: HTML_NS,
@@ -518,6 +569,7 @@ export default defineSchema({
         childNodes: $.children,
         parentNode: null,
       })
+      .render('source', tpl`<${$.tag}>${$.children}</${$.closeTag}>`)
       .build(),
 
     // ===== TextNode ================================================
@@ -528,14 +580,20 @@ export default defineSchema({
     ex('hello')
       .as('TextNode')
       .span('value', 'hello').rawUntil('<')
-      .structure({
+      .render('ast', {
         nodeName: '#text',
         value: $.value,
         parentNode: null,
       })
+      .render('source', tpl`${$.value}`)
       .build(),
 
     // ===== Attribute (multi-production) ============================
+    // Each value-bearing production carries a `_quote` literal so the
+    // inverse dispatcher routes to the original quoting style. Production 4
+    // (boolean attribute) is already distinguishable via its literal
+    // `value: ''` (the other productions emit `value` as a non-literal capture).
+    //
     // Production 1: double-quoted value. `class="hero"`.
     ex('class="hero"')
       .as('Attribute')
@@ -544,7 +602,8 @@ export default defineSchema({
       .span('"')
       .span('value', 'hero').until('"')
       .span('"')
-      .structure({ name: $.name, value: $.value })
+      .render('ast', { _quote: 'double', name: $.name, value: $.value })
+      .render('source', tpl`${$.name}="${$.value}"`)
       .build(),
 
     // Production 2: single-quoted value. `class='hero'`.
@@ -555,7 +614,8 @@ export default defineSchema({
       .span("'")
       .span('value', 'hero').until("'")
       .span("'")
-      .structure({ name: $.name, value: $.value })
+      .render('ast', { _quote: 'single', name: $.name, value: $.value })
+      .render('source', tpl`${$.name}='${$.value}'`)
       .build(),
 
     // Production 3: unquoted value containing any non-whitespace chars.
@@ -565,14 +625,16 @@ export default defineSchema({
       .span('name', 'class').ident().html()
       .span('=')
       .span('value', 'hero').rawUntil(UNQUOTED_VALUE_STOPS)
-      .structure({ name: $.name, value: $.value })
+      .render('ast', { _quote: 'none', name: $.name, value: $.value })
+      .render('source', tpl`${$.name}=${$.value}`)
       .build(),
 
     // Production 4: boolean (presence-only) attribute. `disabled`.
     ex('disabled')
       .as('Attribute')
       .span('name', 'disabled').ident().html()
-      .structure({ name: $.name, value: '' })
+      .render('ast', { name: $.name, value: '' })
+      .render('source', tpl`${$.name}`)
       .build(),
   ],
 });

@@ -1,11 +1,35 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
 
 const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
+// Public `parse()` was removed in Phase 5 of the unified-render-targets
+// refactor. The AST shape that used to be returned by parse() is now
+// reachable via `render(input, { type: 'ast' })`.
+function parse(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
+
+// After the Phase 6 schema migration, every render('ast', ...) emits a
+// handful of `_`-prefixed fields used by the inverse dispatcher (and to
+// preserve enough info for stringify(ast, 'ast') to rebuild the original
+// source). The legacy assertions did not include these fields; strip them
+// before comparison.
+type NodeLike = Record<string, unknown> & { childNodes?: readonly unknown[]; attrs?: readonly unknown[] };
+function stripKind(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripKind);
+  if (value === null || typeof value !== 'object') return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as NodeLike)) {
+    if (k.startsWith('_')) continue;
+    out[k] = stripKind(v);
+  }
+  return out;
+}
+
 test('html parses repeated top-level element nodes from schema examples', () => {
-  assert.deepEqual(parse('<div>Hello</div><p>World</p>'), {
+  assert.deepEqual(stripKind(parse('<div>Hello</div><p>World</p>')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -31,7 +55,7 @@ test('html parses repeated top-level element nodes from schema examples', () => 
 });
 
 test('html parses attributes and boolean attributes through Attribute node repeats', () => {
-  assert.deepEqual(parse('<section class="hero" disabled>Hello world</section>'), {
+  assert.deepEqual(stripKind(parse('<section class="hero" disabled>Hello world</section>')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -52,7 +76,7 @@ test('html parses attributes and boolean attributes through Attribute node repea
 });
 
 test('html parses doctype and self-closing elements from schema productions', () => {
-  assert.deepEqual(parse('<!doctype html><br />'), {
+  assert.deepEqual(stripKind(parse('<!doctype html><br />')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -77,7 +101,7 @@ test('html parses doctype and self-closing elements from schema productions', ()
 });
 
 test('html parses nested elements and mixed text/element children', () => {
-  assert.deepEqual(parse('<div><span>x</span><em>y</em></div>'), {
+  assert.deepEqual(stripKind(parse('<div><span>x</span><em>y</em></div>')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -112,7 +136,7 @@ test('html parses nested elements and mixed text/element children', () => {
 });
 
 test('html parses void elements without trailing slash', () => {
-  assert.deepEqual(parse('<br><hr><img src="x.png">'), {
+  assert.deepEqual(stripKind(parse('<br><hr><img src="x.png">')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -132,7 +156,7 @@ test('html parses void elements without trailing slash', () => {
 });
 
 test('html parses single-quoted and unquoted ident-shape attribute values', () => {
-  assert.deepEqual(parse(`<a class='hero' lang=en-GB>x</a>`), {
+  assert.deepEqual(stripKind(parse(`<a class='hero' lang=en-GB>x</a>`)), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -159,7 +183,7 @@ test('html parses HTML comments', () => {
   // (the `--` gets absorbed into the ident). Whitespace between body and
   // close (`<!--hi -->`) is required today. Both limitations are tracked in
   // the design-doc parking lot.
-  assert.deepEqual(parse('<!-- hello -->'), {
+  assert.deepEqual(stripKind(parse('<!-- hello -->')), {
     nodeName: '#document',
     mode: 'no-quirks',
     childNodes: [
@@ -249,16 +273,13 @@ test('html parses raw backslash characters in text without escape interpretation
   assert.equal(ast.childNodes[0]?.childNodes[0]?.value, '\\');
 });
 
-test('html supports source locations in raws mode', () => {
-  const ast = parse('<div>Hello</div>', { mode: 'raws' }) as {
-    readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } };
-    readonly childNodes: readonly { readonly source?: { readonly start: { readonly line: number }; readonly end: { readonly line: number } } }[];
-  };
-  assert.deepEqual(ast.source?.start, { line: 1, column: 1, offset: 0 });
-  assert.deepEqual(ast.source?.end, { line: 1, column: 16, offset: 16 });
-  assert.equal(ast.childNodes[0]?.source?.start.line, 1);
-  assert.equal(ast.childNodes[0]?.source?.end.line, 1);
-});
+// NOTE: the previous `parse(input, { mode: 'raws' })` source-location test
+// was removed when the public parse() function went away in Phase 5 of the
+// unified-render-targets refactor. The new render() API renders the matched
+// captures through the per-target template, which does not project source
+// locations into the AST. Re-exposing locations is tracked separately —
+// either via a dedicated `'source-map'` render target or via a runtime
+// option on render().
 
 test('html validates rejected syntax', () => {
   // Truncated attribute (unterminated quoted value) fails.

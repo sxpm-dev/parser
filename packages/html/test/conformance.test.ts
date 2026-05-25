@@ -13,7 +13,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { parseFragment as parse5ParseFragment } from 'parse5';
-import { parse as ourParse } from '../src/index.ts';
+import { render } from '../src/index.ts';
+
+// Public `parse()` was removed in Phase 5 of the unified-render-targets
+// refactor. The AST shape that used to be returned by parse() is now
+// reachable via `render(input, { type: 'ast' })`. Wrap once so the rest of
+// the test reads the same as before.
+function ourParse(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
 
 const FIXTURES_DIR = resolve(
   fileURLToPath(new URL('.', import.meta.url)),

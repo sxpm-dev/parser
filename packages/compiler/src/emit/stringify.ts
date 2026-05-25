@@ -42,12 +42,11 @@ function templatesOf(production: Production): ReadonlyArray<StringifyTemplate> {
 export function emitStringify(schema: InferredSchema): string {
   const nodeTypes = [...schema.nodeTypes.values()];
   const targets = collectTargets(nodeTypes);
-  // The schema-declared default target wins. When the schema didn't declare
-  // one, fall back to the first target alphabetically so the generated
-  // wrapper still has a deterministic default. If there are no templated
-  // targets at all, leave defaultTarget undefined and the wrapper throws
-  // when the caller doesn't pass one explicitly.
-  const defaultTarget = schema.defaultTarget ?? targets[0];
+  // Per-schema explicit default only. When defaultTarget is unset and the
+  // caller doesn't pass options.type, the generated wrapper throws. No
+  // implicit "first target alphabetically" fallback — that would be invisible
+  // magic and contradicts the agreed default-target semantics.
+  const defaultTarget = schema.defaultTarget;
   const fns: string[] = [];
   // Map<targetId, Map<typeLiteral, perTypeFnName>> — populated by
   // emitNodeTargetFn and consumed by emitDispatch so the recursive

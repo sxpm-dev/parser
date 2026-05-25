@@ -1,4 +1,4 @@
-import { isTemplate } from '@parser2/parser';
+import { isStructureRef, isTemplate, type RenderBody, type Template } from '@parser2/parser';
 import {
   CompilerError,
   type NodeTypeInfo,
@@ -31,14 +31,9 @@ export function attachRenderTargets(
             `In node '${info.name}' (example '${truncate(production.source.input)}'): duplicate render target '${entry.target}'`,
           );
         }
-        if (isTemplate(entry.body)) {
-          for (const slot of entry.body.slots) {
-            if (!spanNames.has(slot.ref)) {
-              throw new CompilerError(
-                `In node '${info.name}' (example '${truncate(production.source.input)}'): slot $.${slot.ref} references unknown span (declared spans: ${[...spanNames].sort().join(', ') || '<none>'})`,
-              );
-            }
-          }
+        validateBody(entry.body, spanNames, info.name, production.source.input);
+        if (entry.inverse) {
+          validateTemplateSlots(entry.inverse, spanNames, info.name, production.source.input);
         }
         const ir: RenderTargetIR = entry.inverse
           ? { target: entry.target, body: entry.body, inverse: entry.inverse }
@@ -78,6 +73,56 @@ function enforcePerTargetCompleteness(
       }
     }
   }
+}
+
+function validateBody(
+  body: RenderBody,
+  spanNames: ReadonlySet<string>,
+  nodeName: string,
+  input: string,
+): void {
+  if (body === null) return;
+  const t = typeof body;
+  if (t === 'string' || t === 'number' || t === 'boolean') return;
+  if (isStructureRef(body)) {
+    if (body.__ref === 'span-value' && !spanNames.has(body.name)) {
+      throw new CompilerError(unknownSlotMessage(nodeName, input, body.name, spanNames));
+    }
+    return;
+  }
+  if (isTemplate(body)) {
+    validateTemplateSlots(body, spanNames, nodeName, input);
+    return;
+  }
+  if (Array.isArray(body)) {
+    for (const child of body) validateBody(child, spanNames, nodeName, input);
+    return;
+  }
+  for (const child of Object.values(body as Record<string, RenderBody>)) {
+    validateBody(child, spanNames, nodeName, input);
+  }
+}
+
+function validateTemplateSlots(
+  template: Template,
+  spanNames: ReadonlySet<string>,
+  nodeName: string,
+  input: string,
+): void {
+  for (const slot of template.slots) {
+    if (!spanNames.has(slot.ref)) {
+      throw new CompilerError(unknownSlotMessage(nodeName, input, slot.ref, spanNames));
+    }
+  }
+}
+
+function unknownSlotMessage(
+  nodeName: string,
+  input: string,
+  ref: string,
+  spanNames: ReadonlySet<string>,
+): string {
+  return `In node '${nodeName}' (example '${truncate(input)}'): slot $.${ref} references unknown span (declared spans: ${[...spanNames].sort().join(', ') || '<none>'})`;
 }
 
 function truncate(s: string): string {

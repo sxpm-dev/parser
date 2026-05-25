@@ -64,6 +64,33 @@ test('template slot referencing unknown span is rejected', async () => {
   assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
 });
 
+test('object-body $.name ref to unknown span is rejected', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Atom',
+    examples: [
+      ex('x').as('Atom').span('v', 'x').ident()
+        .render('ast', { type: 'atom', wrong: $.missing })
+        .build(),
+    ],
+  });
+  assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
+});
+
+test('inverse-template slot referencing unknown span is rejected', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Atom',
+    examples: [
+      ex('x').as('Atom').span('v', 'x').ident()
+        .render('ast', { type: 'atom', v: $.v })
+        .render('html', tpl`<a>${$.v}</a>`, { inverse: tpl`<a>${$.missing}</a>` })
+        .build(),
+    ],
+  });
+  assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
+});
+
 test('per-target completeness: every production of a node type must declare the same set of targets', async () => {
   const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
   // Two productions of the same node type — one declares 'html', the other

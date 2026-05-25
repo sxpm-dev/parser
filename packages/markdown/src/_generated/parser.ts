@@ -10420,6 +10420,10 @@ function stringify_MarkdownDocument_html(s: any): string {
   return __renderSlot_html(s["children"]);
 }
 
+function stringify_MarkdownDocument_json_auto(s: any): string {
+  return "{\"type\":\"document\",\"children\":" + __renderSlot_json_auto(s["children"]) + "}";
+}
+
 function stringify_MarkdownLeaf_heading_source(s: any): string {
   if (s["depth"] === 6 && s["style"] === undefined) return "###### " + __renderSlot_source(s["text"]);
   if (s["depth"] === 5 && s["style"] === undefined) return "##### " + __renderSlot_source(s["text"]);
@@ -10694,12 +10698,153 @@ function stringify_MarkdownLeaf_html(s: any): string {
   throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target html)");
 }
 
+function stringify_MarkdownLeaf_heading_json_auto(s: any): string {
+  if (s["depth"] === 6 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":6,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 5 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":5,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 4 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":4,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 3 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":3,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 2 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":2,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 1 && s["style"] === undefined) return "{\"type\":\"heading\",\"depth\":1,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["depth"] === 1 && s["style"] === "setext") return "{\"type\":\"heading\",\"depth\":1,\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"style\":\"setext\"}";
+  if (s["depth"] === 2 && s["style"] === "setext") return "{\"type\":\"heading\",\"depth\":2,\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"style\":\"setext\"}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type heading)");
+}
+
+function stringify_MarkdownLeaf_thematic_break_json_auto(s: any): string {
+  if (s["marker"] === undefined) return "{\"type\":\"thematic-break\"}";
+  if (s["marker"] === "*") return "{\"type\":\"thematic-break\",\"marker\":\"*\"}";
+  if (s["marker"] === "_") return "{\"type\":\"thematic-break\",\"marker\":\"_\"}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type thematic-break)");
+}
+
+function stringify_MarkdownLeaf_task_list_item_json_auto(s: any): string {
+  if (s["checked"] === true && s["marker"] === "x") return "{\"type\":\"task-list-item\",\"checked\":true,\"marker\":\"x\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["checked"] === false && s["marker"] === undefined) return "{\"type\":\"task-list-item\",\"checked\":false,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type task-list-item)");
+}
+
+function stringify_MarkdownLeaf_list_item_json_auto(s: any): string {
+  if (s["ordered"] === false && s["marker"] === undefined && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["ordered"] === false && s["marker"] === "+" && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"marker\":\"+\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["ordered"] === false && s["marker"] === "*" && s["index"] === undefined) return "{\"type\":\"list-item\",\"ordered\":false,\"marker\":\"*\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["ordered"] === true && s["index"] !== undefined && s["marker"] === undefined) return "{\"type\":\"list-item\",\"ordered\":true,\"index\":" + __renderSlot_json_auto(s["index"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type list-item)");
+}
+
+function stringify_MarkdownLeaf_blockquote_json_auto(s: any): string {
+  return "{\"type\":\"blockquote\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_code_block_json_auto(s: any): string {
+  if (s["lang"] !== undefined) return "{\"type\":\"code-block\",\"lang\":" + __renderSlot_json_auto(s["lang"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  if (s["lang"] === undefined) return "{\"type\":\"code-block\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type code-block)");
+}
+
+function stringify_MarkdownLeaf_bold_json_auto(s: any): string {
+  return "{\"type\":\"bold\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_italic_json_auto(s: any): string {
+  return "{\"type\":\"italic\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_strikethrough_json_auto(s: any): string {
+  return "{\"type\":\"strikethrough\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_inline_code_json_auto(s: any): string {
+  return "{\"type\":\"inline-code\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_link_json_auto(s: any): string {
+  return "{\"type\":\"link\",\"label\":" + __renderSlot_json_auto(s["label"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
+}
+
+function stringify_MarkdownLeaf_reference_link_json_auto(s: any): string {
+  return "{\"type\":\"reference-link\",\"label\":" + __renderSlot_json_auto(s["label"]) + ",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
+}
+
+function stringify_MarkdownLeaf_image_json_auto(s: any): string {
+  return "{\"type\":\"image\",\"alt\":" + __renderSlot_json_auto(s["alt"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
+}
+
+function stringify_MarkdownLeaf_reference_image_json_auto(s: any): string {
+  return "{\"type\":\"reference-image\",\"alt\":" + __renderSlot_json_auto(s["alt"]) + ",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
+}
+
+function stringify_MarkdownLeaf_entity_json_auto(s: any): string {
+  return "{\"type\":\"entity\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
+}
+
+function stringify_MarkdownLeaf_table_delimiter_json_auto(s: any): string {
+  if (true) return "{\"type\":\"table-delimiter\",\"align\":[\"default\",\"default\"]}";
+  if (true) return "{\"type\":\"table-delimiter\",\"align\":[\"left\",\"right\"]}";
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto, type table-delimiter)");
+}
+
+function stringify_MarkdownLeaf_table_row_json_auto(s: any): string {
+  return "{\"type\":\"table-row\",\"cells\":[" + __renderSlot_json_auto(s["cells"][0]) + "," + __renderSlot_json_auto(s["cells"][1]) + "]}";
+}
+
+function stringify_MarkdownLeaf_definition_json_auto(s: any): string {
+  return "{\"type\":\"definition\",\"id\":" + __renderSlot_json_auto(s["id"]) + ",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
+}
+
+function stringify_MarkdownLeaf_footnote_definition_json_auto(s: any): string {
+  return "{\"type\":\"footnote-definition\",\"id\":" + __renderSlot_json_auto(s["id"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
+}
+
+function stringify_MarkdownLeaf_footnote_reference_json_auto(s: any): string {
+  return "{\"type\":\"footnote-reference\",\"id\":" + __renderSlot_json_auto(s["id"]) + "}";
+}
+
+function stringify_MarkdownLeaf_html_json_auto(s: any): string {
+  return "{\"type\":\"html\",\"tag\":" + __renderSlot_json_auto(s["tag"]) + ",\"text\":" + __renderSlot_json_auto(s["text"]) + ",\"closingTag\":" + __renderSlot_json_auto(s["closingTag"]) + "}";
+}
+
+function stringify_MarkdownLeaf_autolink_json_auto(s: any): string {
+  return "{\"type\":\"autolink\",\"url\":" + __renderSlot_json_auto(s["url"]) + "}";
+}
+
+function stringify_MarkdownLeaf_json_auto(s: any): string {
+  switch (s.type) {
+    case "heading": return stringify_MarkdownLeaf_heading_json_auto(s);
+    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_json_auto(s);
+    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_json_auto(s);
+    case "list-item": return stringify_MarkdownLeaf_list_item_json_auto(s);
+    case "blockquote": return stringify_MarkdownLeaf_blockquote_json_auto(s);
+    case "code-block": return stringify_MarkdownLeaf_code_block_json_auto(s);
+    case "bold": return stringify_MarkdownLeaf_bold_json_auto(s);
+    case "italic": return stringify_MarkdownLeaf_italic_json_auto(s);
+    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_json_auto(s);
+    case "inline-code": return stringify_MarkdownLeaf_inline_code_json_auto(s);
+    case "link": return stringify_MarkdownLeaf_link_json_auto(s);
+    case "reference-link": return stringify_MarkdownLeaf_reference_link_json_auto(s);
+    case "image": return stringify_MarkdownLeaf_image_json_auto(s);
+    case "reference-image": return stringify_MarkdownLeaf_reference_image_json_auto(s);
+    case "entity": return stringify_MarkdownLeaf_entity_json_auto(s);
+    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_json_auto(s);
+    case "table-row": return stringify_MarkdownLeaf_table_row_json_auto(s);
+    case "definition": return stringify_MarkdownLeaf_definition_json_auto(s);
+    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_json_auto(s);
+    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_json_auto(s);
+    case "html": return stringify_MarkdownLeaf_html_json_auto(s);
+    case "autolink": return stringify_MarkdownLeaf_autolink_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node MarkdownLeaf (target json-auto)");
+}
+
 function stringify_MarkdownParagraph_source(s: any): string {
   return __renderSlot_source(s["text"]);
 }
 
 function stringify_MarkdownParagraph_html(s: any): string {
   return "<p>" + __renderSlot_html(s["text"]) + "</p>";
+}
+
+function stringify_MarkdownParagraph_json_auto(s: any): string {
+  return "{\"type\":\"paragraph\",\"text\":" + __renderSlot_json_auto(s["text"]) + "}";
 }
 
 function __dispatchStringify_source(s: any): string {
@@ -10764,11 +10909,48 @@ function __dispatchStringify_html(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='html'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "document": return stringify_MarkdownDocument_json_auto(s);
+    case "heading": return stringify_MarkdownLeaf_heading_json_auto(s);
+    case "thematic-break": return stringify_MarkdownLeaf_thematic_break_json_auto(s);
+    case "task-list-item": return stringify_MarkdownLeaf_task_list_item_json_auto(s);
+    case "list-item": return stringify_MarkdownLeaf_list_item_json_auto(s);
+    case "blockquote": return stringify_MarkdownLeaf_blockquote_json_auto(s);
+    case "code-block": return stringify_MarkdownLeaf_code_block_json_auto(s);
+    case "bold": return stringify_MarkdownLeaf_bold_json_auto(s);
+    case "italic": return stringify_MarkdownLeaf_italic_json_auto(s);
+    case "strikethrough": return stringify_MarkdownLeaf_strikethrough_json_auto(s);
+    case "inline-code": return stringify_MarkdownLeaf_inline_code_json_auto(s);
+    case "link": return stringify_MarkdownLeaf_link_json_auto(s);
+    case "reference-link": return stringify_MarkdownLeaf_reference_link_json_auto(s);
+    case "image": return stringify_MarkdownLeaf_image_json_auto(s);
+    case "reference-image": return stringify_MarkdownLeaf_reference_image_json_auto(s);
+    case "entity": return stringify_MarkdownLeaf_entity_json_auto(s);
+    case "table-delimiter": return stringify_MarkdownLeaf_table_delimiter_json_auto(s);
+    case "table-row": return stringify_MarkdownLeaf_table_row_json_auto(s);
+    case "definition": return stringify_MarkdownLeaf_definition_json_auto(s);
+    case "footnote-definition": return stringify_MarkdownLeaf_footnote_definition_json_auto(s);
+    case "footnote-reference": return stringify_MarkdownLeaf_footnote_reference_json_auto(s);
+    case "html": return stringify_MarkdownLeaf_html_json_auto(s);
+    case "autolink": return stringify_MarkdownLeaf_autolink_json_auto(s);
+    case "paragraph": return stringify_MarkdownParagraph_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
   if (target === "html") return __dispatchStringify_html(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -10797,6 +10979,21 @@ function __renderSlot_html(v: any): string {
     return out;
   }
   return __dispatchStringify_html(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

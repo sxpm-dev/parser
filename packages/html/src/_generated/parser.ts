@@ -10700,15 +10700,31 @@ function stringify_HtmlDocument_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node HtmlDocument (target source)");
 }
 
+function stringify_HtmlDocument_json_auto(s: any): string {
+  if (s["nodeName"] === "#document" && s["mode"] === "no-quirks" && s["parentNode"] === null) return "{\"nodeName\":\"#document\",\"mode\":\"no-quirks\",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  throw new Error("stringify: no production matches structure shape for node HtmlDocument (target json-auto)");
+}
+
 function stringify_Doctype_source(s: any): string {
   if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "<!" + "" + " " + __renderSlot_source(s["name"]) + ">";
   if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "<!" + "" + " " + __renderSlot_source(s["name"]);
   throw new Error("stringify: no production matches structure shape for node Doctype (target source)");
 }
 
+function stringify_Doctype_json_auto(s: any): string {
+  if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "{\"nodeName\":\"#documentType\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"publicId\":\"\",\"systemId\":\"\",\"parentNode\":null}";
+  if (s["nodeName"] === "#documentType" && s["publicId"] === "" && s["systemId"] === "" && s["parentNode"] === null) return "{\"nodeName\":\"#documentType\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"publicId\":\"\",\"systemId\":\"\",\"parentNode\":null}";
+  throw new Error("stringify: no production matches structure shape for node Doctype (target json-auto)");
+}
+
 function stringify_Comment_source(s: any): string {
   if (s["nodeName"] === "#comment" && s["parentNode"] === null) return "<!--" + __renderSlot_source(s["data"]) + "-->";
   throw new Error("stringify: no production matches structure shape for node Comment (target source)");
+}
+
+function stringify_Comment_json_auto(s: any): string {
+  if (s["nodeName"] === "#comment" && s["parentNode"] === null) return "{\"nodeName\":\"#comment\",\"data\":" + __renderSlot_json_auto(s["data"]) + ",\"parentNode\":null}";
+  throw new Error("stringify: no production matches structure shape for node Comment (target json-auto)");
 }
 
 function stringify_HtmlElement_source(s: any): string {
@@ -10732,9 +10748,35 @@ function stringify_HtmlElement_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node HtmlElement (target source)");
 }
 
+function stringify_HtmlElement_json_auto(s: any): string {
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":[{\"nodeName\":\"#text\",\"value\":" + __renderSlot_json_auto(s["childNodes"][0]["value"]) + ",\"parentNode\":null}],\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":[],\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":[],\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":[],\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  if (s["namespaceURI"] === "http://www.w3.org/1999/xhtml" && s["parentNode"] === null) return "{\"nodeName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"tagName\":" + __renderSlot_json_auto(s["nodeName"]) + ",\"namespaceURI\":\"http://www.w3.org/1999/xhtml\",\"attrs\":" + __renderSlot_json_auto(s["attrs"]) + ",\"childNodes\":" + __renderSlot_json_auto(s["childNodes"]) + ",\"parentNode\":null}";
+  throw new Error("stringify: no production matches structure shape for node HtmlElement (target json-auto)");
+}
+
 function stringify_TextNode_source(s: any): string {
   if (s["nodeName"] === "#text" && s["parentNode"] === null) return __renderSlot_source(s["value"]);
   throw new Error("stringify: no production matches structure shape for node TextNode (target source)");
+}
+
+function stringify_TextNode_json_auto(s: any): string {
+  if (s["nodeName"] === "#text" && s["parentNode"] === null) return "{\"nodeName\":\"#text\",\"value\":" + __renderSlot_json_auto(s["value"]) + ",\"parentNode\":null}";
+  throw new Error("stringify: no production matches structure shape for node TextNode (target json-auto)");
 }
 
 function stringify_Attribute_source(s: any): string {
@@ -10745,6 +10787,14 @@ function stringify_Attribute_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node Attribute (target source)");
 }
 
+function stringify_Attribute_json_auto(s: any): string {
+  if (true) return "{\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+  if (true) return "{\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+  if (true) return "{\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+  if (s["value"] === "") return "{\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"value\":\"\"}";
+  throw new Error("stringify: no production matches structure shape for node Attribute (target json-auto)");
+}
+
 function __dispatchStringify_source(s: any): string {
   if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
   switch (s.type) {
@@ -10753,10 +10803,24 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case undefined: return stringify_TextNode_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -10771,6 +10835,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

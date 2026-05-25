@@ -348,17 +348,56 @@ function stringify_CronField_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node CronField (target source)");
 }
 
+function stringify_CronField_wildcard_json_auto(s: any): string {
+  return "{\"type\":\"wildcard\"}";
+}
+
+function stringify_CronField_step_json_auto(s: any): string {
+  return "{\"type\":\"step\",\"step\":" + __renderSlot_json_auto(s["step"]) + "}";
+}
+
+function stringify_CronField_value_json_auto(s: any): string {
+  return "{\"type\":\"value\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_CronField_range_json_auto(s: any): string {
+  return "{\"type\":\"range\",\"start\":" + __renderSlot_json_auto(s["start"]) + ",\"end\":" + __renderSlot_json_auto(s["end"]) + "}";
+}
+
+function stringify_CronField_json_auto(s: any): string {
+  switch (s.type) {
+    case "wildcard": return stringify_CronField_wildcard_json_auto(s);
+    case "step": return stringify_CronField_step_json_auto(s);
+    case "value": return stringify_CronField_value_json_auto(s);
+    case "range": return stringify_CronField_range_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node CronField (target json-auto)");
+}
+
 function stringify_CommandWord_source(s: any): string {
   if (true) return __renderSlot_source(s);
   throw new Error("stringify: no production matches structure shape for node CommandWord (target source)");
+}
+
+function stringify_CommandWord_json_auto(s: any): string {
+  if (true) return __renderSlot_json_auto(s);
+  throw new Error("stringify: no production matches structure shape for node CommandWord (target json-auto)");
 }
 
 function stringify_Command_source(s: any): string {
   return __renderSlot_source(s["words"]);
 }
 
+function stringify_Command_json_auto(s: any): string {
+  return "{\"type\":\"command\",\"words\":" + __renderSlot_json_auto(s["words"]) + "}";
+}
+
 function stringify_Cron_source(s: any): string {
   return __renderSlot_source(s["minute"]) + " " + __renderSlot_source(s["hour"]) + " " + __renderSlot_source(s["dayOfMonth"]) + " " + __renderSlot_source(s["month"]) + " " + __renderSlot_source(s["dayOfWeek"]) + (s["command"] == null ? "" : " " + __renderSlot_source(s["command"]));
+}
+
+function stringify_Cron_json_auto(s: any): string {
+  return "{\"type\":\"cron\",\"minute\":" + __renderSlot_json_auto(s["minute"]) + ",\"hour\":" + __renderSlot_json_auto(s["hour"]) + ",\"dayOfMonth\":" + __renderSlot_json_auto(s["dayOfMonth"]) + ",\"month\":" + __renderSlot_json_auto(s["month"]) + ",\"dayOfWeek\":" + __renderSlot_json_auto(s["dayOfWeek"]) + ",\"command\":" + __renderSlot_json_auto(s["command"]) + "}";
 }
 
 function __dispatchStringify_source(s: any): string {
@@ -375,10 +414,30 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "wildcard": return stringify_CronField_wildcard_json_auto(s);
+    case "step": return stringify_CronField_step_json_auto(s);
+    case "value": return stringify_CronField_value_json_auto(s);
+    case "range": return stringify_CronField_range_json_auto(s);
+    case undefined: return stringify_CommandWord_json_auto(s);
+    case "command": return stringify_Command_json_auto(s);
+    case "cron": return stringify_Cron_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -393,6 +452,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

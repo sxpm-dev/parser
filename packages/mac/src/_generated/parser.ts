@@ -1093,6 +1093,19 @@ function stringify_MacAddress_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node MacAddress (target source)");
 }
 
+function stringify_MacAddress_mac_address_json_auto(s: any): string {
+  if (s["separator"] === ":") return "{\"type\":\"mac-address\",\"octets\":[" + __renderSlot_json_auto(s["octets"][0]) + "," + __renderSlot_json_auto(s["octets"][1]) + "," + __renderSlot_json_auto(s["octets"][2]) + "," + __renderSlot_json_auto(s["octets"][3]) + "," + __renderSlot_json_auto(s["octets"][4]) + "," + __renderSlot_json_auto(s["octets"][5]) + "],\"separator\":\":\"}";
+  if (s["separator"] === "-") return "{\"type\":\"mac-address\",\"octets\":[" + __renderSlot_json_auto(s["octets"][0]) + "," + __renderSlot_json_auto(s["octets"][1]) + "," + __renderSlot_json_auto(s["octets"][2]) + "," + __renderSlot_json_auto(s["octets"][3]) + "," + __renderSlot_json_auto(s["octets"][4]) + "," + __renderSlot_json_auto(s["octets"][5]) + "],\"separator\":\"-\"}";
+  throw new Error("stringify: no production matches structure shape for node MacAddress (target json-auto, type mac-address)");
+}
+
+function stringify_MacAddress_json_auto(s: any): string {
+  switch (s.type) {
+    case "mac-address": return stringify_MacAddress_mac_address_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node MacAddress (target json-auto)");
+}
+
 function __dispatchStringify_source(s: any): string {
   if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
   switch (s.type) {
@@ -1101,10 +1114,24 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "mac-address": return stringify_MacAddress_mac_address_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -1119,6 +1146,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

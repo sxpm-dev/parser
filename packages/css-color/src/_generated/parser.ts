@@ -4200,12 +4200,24 @@ function stringify_ColorKeyword_source(s: any): string {
   return __renderSlot_source(s["value"]);
 }
 
+function stringify_ColorKeyword_json_auto(s: any): string {
+  return "{\"type\":\"color-keyword\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
 function stringify_HashColor_source(s: any): string {
   return "#" + __renderSlot_source(s["value"]);
 }
 
+function stringify_HashColor_json_auto(s: any): string {
+  return "{\"type\":\"hash-color\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
 function stringify_RgbColorFunction_source(s: any): string {
   return __renderSlot_source(s["name"]) + "(" + "255" + " )";
+}
+
+function stringify_RgbColorFunction_json_auto(s: any): string {
+  return "{\"type\":\"color-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
 }
 
 function stringify_ColorFunction_color_function_source(s: any): string {
@@ -4219,6 +4231,19 @@ function stringify_ColorFunction_source(s: any): string {
     case "color-function": return stringify_ColorFunction_color_function_source(s);
   }
   throw new Error("stringify: no production matches structure shape for node ColorFunction (target source)");
+}
+
+function stringify_ColorFunction_color_function_json_auto(s: any): string {
+  if (true) return "{\"type\":\"color-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
+  if (true) return "{\"type\":\"color-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node ColorFunction (target json-auto, type color-function)");
+}
+
+function stringify_ColorFunction_json_auto(s: any): string {
+  switch (s.type) {
+    case "color-function": return stringify_ColorFunction_color_function_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node ColorFunction (target json-auto)");
 }
 
 function stringify_NumericColorFunctionToken_percentage_source(s: any): string {
@@ -4242,6 +4267,29 @@ function stringify_NumericColorFunctionToken_source(s: any): string {
     case "separator": return stringify_NumericColorFunctionToken_separator_source(s);
   }
   throw new Error("stringify: no production matches structure shape for node NumericColorFunctionToken (target source)");
+}
+
+function stringify_NumericColorFunctionToken_percentage_json_auto(s: any): string {
+  return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_NumericColorFunctionToken_number_json_auto(s: any): string {
+  return "{\"type\":\"number\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_NumericColorFunctionToken_separator_json_auto(s: any): string {
+  if (s["value"] === "/") return "{\"type\":\"separator\",\"value\":\"/\"}";
+  if (s["value"] === ",") return "{\"type\":\"separator\",\"value\":\",\"}";
+  throw new Error("stringify: no production matches structure shape for node NumericColorFunctionToken (target json-auto, type separator)");
+}
+
+function stringify_NumericColorFunctionToken_json_auto(s: any): string {
+  switch (s.type) {
+    case "percentage": return stringify_NumericColorFunctionToken_percentage_json_auto(s);
+    case "number": return stringify_NumericColorFunctionToken_number_json_auto(s);
+    case "separator": return stringify_NumericColorFunctionToken_separator_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node NumericColorFunctionToken (target json-auto)");
 }
 
 function stringify_ColorFunctionToken_percentage_source(s: any): string {
@@ -4277,12 +4325,53 @@ function stringify_ColorFunctionToken_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node ColorFunctionToken (target source)");
 }
 
+function stringify_ColorFunctionToken_percentage_json_auto(s: any): string {
+  return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_ColorFunctionToken_number_json_auto(s: any): string {
+  return "{\"type\":\"number\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_ColorFunctionToken_ident_json_auto(s: any): string {
+  return "{\"type\":\"ident\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_ColorFunctionToken_string_json_auto(s: any): string {
+  return "{\"type\":\"string\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_ColorFunctionToken_separator_json_auto(s: any): string {
+  if (s["value"] === "/") return "{\"type\":\"separator\",\"value\":\"/\"}";
+  if (s["value"] === ",") return "{\"type\":\"separator\",\"value\":\",\"}";
+  throw new Error("stringify: no production matches structure shape for node ColorFunctionToken (target json-auto, type separator)");
+}
+
+function stringify_ColorFunctionToken_json_auto(s: any): string {
+  switch (s.type) {
+    case "percentage": return stringify_ColorFunctionToken_percentage_json_auto(s);
+    case "number": return stringify_ColorFunctionToken_number_json_auto(s);
+    case "ident": return stringify_ColorFunctionToken_ident_json_auto(s);
+    case "string": return stringify_ColorFunctionToken_string_json_auto(s);
+    case "separator": return stringify_ColorFunctionToken_separator_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node ColorFunctionToken (target json-auto)");
+}
+
 function stringify_VarFunction_source(s: any): string {
   return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + ")";
 }
 
+function stringify_VarFunction_json_auto(s: any): string {
+  return "{\"type\":\"var-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"args\":" + __renderSlot_json_auto(s["args"]) + "}";
+}
+
 function stringify_CssColor_source(s: any): string {
   return __renderSlot_source(s["value"]);
+}
+
+function stringify_CssColor_json_auto(s: any): string {
+  return "{\"type\":\"css-color\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
 }
 
 function __dispatchStringify_source(s: any): string {
@@ -4302,10 +4391,33 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "color-keyword": return stringify_ColorKeyword_json_auto(s);
+    case "hash-color": return stringify_HashColor_json_auto(s);
+    case "color-function": return stringify_ColorFunction_color_function_json_auto(s);
+    case "percentage": return stringify_ColorFunctionToken_percentage_json_auto(s);
+    case "number": return stringify_ColorFunctionToken_number_json_auto(s);
+    case "separator": return stringify_ColorFunctionToken_separator_json_auto(s);
+    case "ident": return stringify_ColorFunctionToken_ident_json_auto(s);
+    case "string": return stringify_ColorFunctionToken_string_json_auto(s);
+    case "var-function": return stringify_VarFunction_json_auto(s);
+    case "css-color": return stringify_CssColor_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -4320,6 +4432,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

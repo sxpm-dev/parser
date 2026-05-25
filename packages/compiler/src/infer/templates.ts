@@ -6,7 +6,7 @@ import { CompilerError, type NodeTypeInfo, type StringifyTemplate } from '../mod
 // production object in place (productions are constructed mutably in
 // productions.ts; we cast away readonly here, same pattern other passes use).
 
-const RESERVED_TARGETS = new Set(['source']);
+const RESERVED_TARGETS = new Set(['source', 'json-auto']);
 
 export function attachAuthorTemplates(
   nodeTypes: ReadonlyMap<string, NodeTypeInfo>,

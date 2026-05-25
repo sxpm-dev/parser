@@ -12,6 +12,7 @@
     "bench:focused": "tsx bench/focused.ts",
     "bench:direct-profile": "tsx bench/direct-profile.ts",
     "bench:lazy-materialization": "tsx bench/lazy-materialization.ts",
+    "bench:json": "tsx bench/json.ts",
     "browser:build": "tsx ../../scripts/browser-build.ts css",
     "perf:baseline": "tsx ../../scripts/perf-gate.ts css --write",
     "perf:gate": "tsx ../../scripts/perf-gate.ts css",

@@ -2167,12 +2167,41 @@ function stringify_Declaration_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node Declaration (target source)");
 }
 
+function stringify_Declaration_syntax_json_auto(s: any): string {
+  return "{\"type\":\"syntax\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_Declaration_package_json_auto(s: any): string {
+  return "{\"type\":\"package\",\"name\":[" + __renderSlot_json_auto(s["name"][0]) + "," + __renderSlot_json_auto(s["name"][1]) + "]}";
+}
+
+function stringify_Declaration_message_json_auto(s: any): string {
+  return "{\"type\":\"message\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"fields\":" + __renderSlot_json_auto(s["fields"]) + "}";
+}
+
+function stringify_Declaration_json_auto(s: any): string {
+  switch (s.type) {
+    case "syntax": return stringify_Declaration_syntax_json_auto(s);
+    case "package": return stringify_Declaration_package_json_auto(s);
+    case "message": return stringify_Declaration_message_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node Declaration (target json-auto)");
+}
+
 function stringify_Field_source(s: any): string {
   return __renderSlot_source(s["fieldType"]) + " " + __renderSlot_source(s["name"]) + " = " + __renderSlot_source(s["number"]) + ";";
 }
 
+function stringify_Field_json_auto(s: any): string {
+  return "{\"type\":\"field\",\"fieldType\":" + __renderSlot_json_auto(s["fieldType"]) + ",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"number\":" + __renderSlot_json_auto(s["number"]) + "}";
+}
+
 function stringify_ProtoFile_source(s: any): string {
   return __renderSlot_source(s["declarations"]);
+}
+
+function stringify_ProtoFile_json_auto(s: any): string {
+  return "{\"type\":\"proto-file\",\"declarations\":" + __renderSlot_json_auto(s["declarations"]) + "}";
 }
 
 function __dispatchStringify_source(s: any): string {
@@ -2187,10 +2216,28 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "syntax": return stringify_Declaration_syntax_json_auto(s);
+    case "package": return stringify_Declaration_package_json_auto(s);
+    case "message": return stringify_Declaration_message_json_auto(s);
+    case "field": return stringify_Field_json_auto(s);
+    case "proto-file": return stringify_ProtoFile_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -2205,6 +2252,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

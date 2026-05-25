@@ -2750,6 +2750,11 @@ function stringify_PathSegment_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node PathSegment (target source)");
 }
 
+function stringify_PathSegment_json_auto(s: any): string {
+  if (true) return __renderSlot_json_auto(s);
+  throw new Error("stringify: no production matches structure shape for node PathSegment (target json-auto)");
+}
+
 function stringify_Host_host_source(s: any): string {
   if (s["port"] === undefined) return __renderSlot_source(s["parts"][0]) + "." + __renderSlot_source(s["parts"][1]);
   if (s["port"] !== undefined) return __renderSlot_source(s["parts"][0]) + ":" + __renderSlot_source(s["port"]);
@@ -2763,12 +2768,33 @@ function stringify_Host_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node Host (target source)");
 }
 
+function stringify_Host_host_json_auto(s: any): string {
+  if (s["port"] === undefined) return "{\"type\":\"host\",\"parts\":[" + __renderSlot_json_auto(s["parts"][0]) + "," + __renderSlot_json_auto(s["parts"][1]) + "]}";
+  if (s["port"] !== undefined) return "{\"type\":\"host\",\"parts\":[" + __renderSlot_json_auto(s["parts"][0]) + "],\"port\":" + __renderSlot_json_auto(s["port"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node Host (target json-auto, type host)");
+}
+
+function stringify_Host_json_auto(s: any): string {
+  switch (s.type) {
+    case "host": return stringify_Host_host_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node Host (target json-auto)");
+}
+
 function stringify_QueryPair_source(s: any): string {
   return __renderSlot_source(s["key"]) + "=" + __renderSlot_source(s["value"]);
 }
 
+function stringify_QueryPair_json_auto(s: any): string {
+  return "{\"type\":\"pair\",\"key\":" + __renderSlot_json_auto(s["key"]) + ",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
 function stringify_Query_source(s: any): string {
   return __renderSlot_source(s["pairs"]);
+}
+
+function stringify_Query_json_auto(s: any): string {
+  return "{\"type\":\"query\",\"pairs\":" + __renderSlot_json_auto(s["pairs"]) + "}";
 }
 
 function stringify_Url_url_source(s: any): string {
@@ -2784,6 +2810,19 @@ function stringify_Url_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node Url (target source)");
 }
 
+function stringify_Url_url_json_auto(s: any): string {
+  if (s["query"] !== undefined && s["protocol"] === undefined && s["host"] === undefined) return "{\"type\":\"url\",\"path\":[" + __renderSlot_json_auto(s["path"][0]) + "," + __renderSlot_json_auto(s["path"][1]) + "],\"query\":" + __renderSlot_json_auto(s["query"]) + "}";
+  if (s["protocol"] !== undefined && s["host"] !== undefined && s["query"] === undefined) return "{\"type\":\"url\",\"protocol\":" + __renderSlot_json_auto(s["protocol"]) + ",\"host\":" + __renderSlot_json_auto(s["host"]) + ",\"path\":[" + __renderSlot_json_auto(s["path"][0]) + "]}";
+  throw new Error("stringify: no production matches structure shape for node Url (target json-auto, type url)");
+}
+
+function stringify_Url_json_auto(s: any): string {
+  switch (s.type) {
+    case "url": return stringify_Url_url_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node Url (target json-auto)");
+}
+
 function __dispatchStringify_source(s: any): string {
   if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
   switch (s.type) {
@@ -2796,10 +2835,28 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case undefined: return stringify_PathSegment_json_auto(s);
+    case "host": return stringify_Host_host_json_auto(s);
+    case "pair": return stringify_QueryPair_json_auto(s);
+    case "query": return stringify_Query_json_auto(s);
+    case "url": return stringify_Url_url_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -2814,6 +2871,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

@@ -299,6 +299,57 @@ ${cases.join('\n')}
 
   const helpers = targets.map((target) => {
     const id = jsId(target);
+    if (target === 'json-auto') {
+      // Variant B: AST-shape autopilot. Each production template emits a full
+      // JSON object including its outer braces, so arrays bracket-wrap and
+      // comma-separate normally. Strings are fully JSON-quoted (slot helper
+      // adds both the quotes and the escapes), matching the synthesizer's
+      // assumption that `${$.name}` interpolates as a complete JSON value.
+      return `function __renderSlot_${id}(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_${id}(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_${id}(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_${id}(v);
+}`;
+    }
+    if (target === 'json') {
+      // Variant A: author-written custom-shape JSON. Strings interpolate as
+      // JSON-escaped *content* only — the author writes the surrounding "..."
+      // themselves in the template literal, which is what lets composite keys
+      // ("@media screen") and selector-as-key shapes ({"\.foo": {...}}) be
+      // expressed. Arrays comma-join *without* brackets, and pieces that
+      // render to "" are skipped (comments collapse without leaving a `,,`).
+      // The parent template chooses whether to wrap with `{...}`, `[...]`, or
+      // neither.
+      return `function __renderSlot_${id}(v: any): string {
+  if (v === null || v === undefined) return "";
+  const t = typeof v;
+  if (t === "string") return __jsonEscapeInner(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    let out = "";
+    let first = true;
+    for (let i = 0; i < v.length; i++) {
+      const piece = __renderSlot_${id}(v[i]);
+      if (piece === "") continue;
+      if (!first) out += ",";
+      out += piece;
+      first = false;
+    }
+    return out;
+  }
+  return __dispatchStringify_${id}(v);
+}`;
+    }
     return `function __renderSlot_${id}(v: any): string {
   if (v === null || v === undefined) return "";
   const t = typeof v;
@@ -314,6 +365,27 @@ ${cases.join('\n')}
 }`;
   }).join('\n\n');
 
+  const needsJsonString = targets.includes('json-auto');
+  const needsJsonInner = targets.includes('json');
+  const jsonStringHelper = needsJsonString
+    ? `
+const __JSON_STRING_SAFE = /^[\\x20-\\x21\\x23-\\x5b\\x5d-\\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
+}
+`
+    : '';
+  const jsonInnerHelper = needsJsonInner
+    ? `
+const __JSON_INNER_SAFE = /^[\\x20-\\x21\\x23-\\x5b\\x5d-\\x7e]*$/;
+function __jsonEscapeInner(s: string): string {
+  if (__JSON_INNER_SAFE.test(s)) return s;
+  const wrapped = JSON.stringify(s);
+  return wrapped.slice(1, wrapped.length - 1);
+}
+`
+    : '';
+
   const publicBranches = targets.map((target) => {
     const id = jsId(target);
     return `  if (target === ${jsString(target)}) return __dispatchStringify_${id}(s as any);`;
@@ -326,7 +398,7 @@ export function stringify(s: unknown, options?: { target?: string }): string {
 ${publicBranches}
   throw new Error("stringify: unknown target '" + target + "'");
 }
-
+${jsonStringHelper}${jsonInnerHelper}
 ${helpers}`;
 }
 

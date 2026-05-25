@@ -3926,6 +3926,46 @@ function stringify_LengthPercentageItem_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source)");
 }
 
+function stringify_LengthPercentageItem_dimension_json_auto(s: any): string {
+  if (true) return "{\"type\":\"dimension\",\"value\":" + __renderSlot_json_auto(s["value"]) + ",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
+  if (s["value"] === "-10") return "{\"type\":\"dimension\",\"value\":\"-10\",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
+  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto, type dimension)");
+}
+
+function stringify_LengthPercentageItem_percentage_json_auto(s: any): string {
+  if (true) return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+  if (s["value"] === "-50") return "{\"type\":\"percentage\",\"value\":\"-50\"}";
+  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto, type percentage)");
+}
+
+function stringify_LengthPercentageItem_zero_json_auto(s: any): string {
+  return "{\"type\":\"zero\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_LengthPercentageItem_length_function_json_auto(s: any): string {
+  return "{\"type\":\"length-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"args\":" + __renderSlot_json_auto(s["args"]) + "}";
+}
+
+function stringify_LengthPercentageItem_var_function_json_auto(s: any): string {
+  return "{\"type\":\"var-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"args\":" + __renderSlot_json_auto(s["args"]) + "}";
+}
+
+function stringify_LengthPercentageItem_length_keyword_json_auto(s: any): string {
+  return "{\"type\":\"length-keyword\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_LengthPercentageItem_json_auto(s: any): string {
+  switch (s.type) {
+    case "dimension": return stringify_LengthPercentageItem_dimension_json_auto(s);
+    case "percentage": return stringify_LengthPercentageItem_percentage_json_auto(s);
+    case "zero": return stringify_LengthPercentageItem_zero_json_auto(s);
+    case "length-function": return stringify_LengthPercentageItem_length_function_json_auto(s);
+    case "var-function": return stringify_LengthPercentageItem_var_function_json_auto(s);
+    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto)");
+}
+
 function stringify_LengthFunctionToken_dimension_source(s: any): string {
   return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
 }
@@ -3961,8 +4001,47 @@ function stringify_LengthFunctionToken_source(s: any): string {
   throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target source)");
 }
 
+function stringify_LengthFunctionToken_dimension_json_auto(s: any): string {
+  return "{\"type\":\"dimension\",\"value\":" + __renderSlot_json_auto(s["value"]) + ",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
+}
+
+function stringify_LengthFunctionToken_percentage_json_auto(s: any): string {
+  return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_LengthFunctionToken_zero_json_auto(s: any): string {
+  return "{\"type\":\"zero\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
+}
+
+function stringify_LengthFunctionToken_operator_json_auto(s: any): string {
+  if (s["value"] === "-") return "{\"type\":\"operator\",\"value\":\"-\"}";
+  if (s["value"] === "+") return "{\"type\":\"operator\",\"value\":\"+\"}";
+  if (s["value"] === "*") return "{\"type\":\"operator\",\"value\":\"*\"}";
+  if (s["value"] === "/") return "{\"type\":\"operator\",\"value\":\"/\"}";
+  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target json-auto, type operator)");
+}
+
+function stringify_LengthFunctionToken_separator_json_auto(s: any): string {
+  return "{\"type\":\"separator\",\"value\":\",\"}";
+}
+
+function stringify_LengthFunctionToken_json_auto(s: any): string {
+  switch (s.type) {
+    case "dimension": return stringify_LengthFunctionToken_dimension_json_auto(s);
+    case "percentage": return stringify_LengthFunctionToken_percentage_json_auto(s);
+    case "zero": return stringify_LengthFunctionToken_zero_json_auto(s);
+    case "operator": return stringify_LengthFunctionToken_operator_json_auto(s);
+    case "separator": return stringify_LengthFunctionToken_separator_json_auto(s);
+  }
+  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target json-auto)");
+}
+
 function stringify_CssLengthPercentage_source(s: any): string {
   return __renderSlot_source(s["items"]);
+}
+
+function stringify_CssLengthPercentage_json_auto(s: any): string {
+  return "{\"type\":\"css-length-percentage\",\"items\":" + __renderSlot_json_auto(s["items"]) + "}";
 }
 
 function __dispatchStringify_source(s: any): string {
@@ -3981,10 +4060,32 @@ function __dispatchStringify_source(s: any): string {
   throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
 }
 
+function __dispatchStringify_json_auto(s: any): string {
+  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
+  switch (s.type) {
+    case "dimension": return stringify_LengthFunctionToken_dimension_json_auto(s);
+    case "percentage": return stringify_LengthFunctionToken_percentage_json_auto(s);
+    case "zero": return stringify_LengthFunctionToken_zero_json_auto(s);
+    case "length-function": return stringify_LengthPercentageItem_length_function_json_auto(s);
+    case "var-function": return stringify_LengthPercentageItem_var_function_json_auto(s);
+    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_json_auto(s);
+    case "operator": return stringify_LengthFunctionToken_operator_json_auto(s);
+    case "separator": return stringify_LengthFunctionToken_separator_json_auto(s);
+    case "css-length-percentage": return stringify_CssLengthPercentage_json_auto(s);
+  }
+  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+}
+
 export function stringify(s: unknown, options?: { target?: string }): string {
   const target = options?.target ?? "source";
   if (target === "source") return __dispatchStringify_source(s as any);
+  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
   throw new Error("stringify: unknown target '" + target + "'");
+}
+
+const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
+function __jsonString(s: string): string {
+  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
 }
 
 function __renderSlot_source(v: any): string {
@@ -3999,6 +4100,21 @@ function __renderSlot_source(v: any): string {
     return out;
   }
   return __dispatchStringify_source(v);
+}
+
+function __renderSlot_json_auto(v: any): string {
+  if (v === null || v === undefined) return "null";
+  const t = typeof v;
+  if (t === "string") return __jsonString(v);
+  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
+  if (t === "boolean") return v ? "true" : "false";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "[]";
+    let out = "[" + __renderSlot_json_auto(v[0]);
+    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
+    return out + "]";
+  }
+  return __dispatchStringify_json_auto(v);
 }
 
 export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {

@@ -2,6 +2,7 @@ import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { resolveCompositionGraph } from './infer/composition.ts';
 import { buildProductions } from './infer/productions.ts';
 import { resolveRecursiveRoles } from './infer/roles.ts';
+import { attachJsonAutoTemplates } from './infer/json-auto-template.ts';
 import { attachSourceTemplates } from './infer/source-template.ts';
 import { attachAuthorTemplates } from './infer/templates.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
@@ -34,6 +35,7 @@ export function inferSchema(
   validate(nodeTypes);
   attachAuthorTemplates(nodeTypes);
   attachSourceTemplates(nodeTypes, root.whitespace);
+  attachJsonAutoTemplates(nodeTypes);
   const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
   return {
     packageName: options.packageName ?? 'parser',

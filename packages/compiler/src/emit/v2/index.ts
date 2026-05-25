@@ -10,7 +10,6 @@
 
 import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../model.ts';
 import { emitRender } from '../render.ts';
-import { emitStringify } from '../stringify.ts';
 import { jsString } from '../strings.ts';
 import { emitDispatcher } from './dispatch.ts';
 import { emitProduction } from './production.ts';
@@ -23,10 +22,11 @@ export function emitV2Parser(schema: InferredSchema): string {
   for (const info of schema.nodeTypes.values()) {
     nodeFns.push(emitNodeType(info, schema));
   }
-  const stringify = emitStringify(schema);
+  // Phase 3 ships only the forward path. The public `stringify` returns in
+  // Phase 4 once inverse derivation is in place.
   const render = emitRender(schema);
   const api = emitPublicApi(schema);
-  return [header, runtime, nodeFns.join('\n\n'), stringify, render, api].join('\n\n') + '\n';
+  return [header, runtime, nodeFns.join('\n\n'), render, api].join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {
@@ -43,13 +43,14 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
     throw new CompilerError(`Node type '${info.name}' has zero productions`);
   }
   if (info.productions.length === 1) {
-    return emitProduction(info.name, info.productions[0]!, schema, { fnName: parseFnName(info.name) });
+    return emitProduction(info.name, info.productions[0]!, schema, { fnName: parseFnName(info.name), prodIdx: 0 });
   }
   // Multi-prod: emit each alt as its own function plus a dispatcher.
   const altFns: string[] = [];
   for (let i = 0; i < info.productions.length; i++) {
     altFns.push(emitProduction(info.name, info.productions[i]!, schema, {
       fnName: `${parseFnName(info.name)}__alt${i}`,
+      prodIdx: i,
     }));
   }
   const dispatcher = emitDispatcher(info, schema, parseFnName);

@@ -1,12 +1,25 @@
 import { isStructureRef, type RenderBody } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
-import { emitStructureExpr } from './structure.ts';
 import { jsIdent, jsString } from './strings.ts';
 
-// Local helper: pull the 'ast' render body off a production. Phase 3 rewires
-// this code on top of production.renders directly; until then, this bridge
-// keeps the legacy shape-based fast-path inference compiling unchanged.
-function structureOf(production: Production): RenderBody {
+// Direct fast path emits *captures* payloads, not ASTs. Each builder returns
+// `{ __production: "<NodeType>#<idx>", <spanName>: <value>, ... }`. The
+// per-target render dispatcher (emit/render.ts) routes on __production
+// to the appropriate __build_<NodeType>_<idx>_<target> function. No AST
+// keys leak through here — the captures-shape contract belongs to
+// emit/captures.ts; this file builds the same shape inline for hot
+// CSS-like layouts.
+//
+// Helpers below reach into the 'ast' render body only to:
+//   1. Verify the production's span layout matches the recognised shape
+//      (the inferer never *consumes* AST keys; it just checks the body
+//      uses span refs at all).
+//   2. Locate which spans are required for boolean / literal alternation
+//      between sibling productions (the flag-pair shape).
+//
+// Future Phase: when the inverse pipeline lands, the boolean discriminator
+// derivation moves out of here and into the inverse-derivation pass.
+function astBodyOf(production: Production): RenderBody {
   return production.renders.get('ast')?.body ?? null;
 }
 
@@ -19,11 +32,11 @@ export function emitDirectFastPath(schema: InferredSchema): string | null {
 }
 
 type FastShape = {
-  readonly root: ObjectShape & { readonly childrenKey: string };
-  readonly comment: (ObjectShape & { readonly textKey: string }) | null;
-  readonly block: ObjectShape & { readonly captureKey: string; readonly childrenKey: string };
-  readonly pair: ObjectShape & { readonly leftKey: string; readonly rightKey: string; readonly flagKey: string | null };
-  readonly prefixed: (ObjectShape & { readonly nameKey: string; readonly paramsKey: string; readonly childrenKey: string }) | null;
+  readonly root: ProdRef & { readonly childrenSpan: string };
+  readonly comment: (ProdRef & { readonly textSpan: string }) | null;
+  readonly block: ProdRef & { readonly captureSpan: string; readonly childrenSpan: string };
+  readonly pair: PairShape;
+  readonly prefixed: (ProdRef & { readonly nameSpan: string; readonly paramsSpan: string; readonly childrenSpan: string }) | null;
   readonly literals: {
     readonly open: string;
     readonly close: string;
@@ -39,21 +52,30 @@ type BlockShape = FastShape['block'] & {
   readonly closeLiteral: string;
 };
 
-type PairShape = FastShape['pair'] & {
+type PairShape = ProdRef & {
+  readonly leftSpan: string;
+  readonly rightSpan: string;
+  // When the schema declares a second production for the flagged variant,
+  // its routing key flows through here so direct-fast can stamp the right
+  // __production when it sees the flag literal in input.
+  readonly flagProdKey: string | null;
   readonly pairLiteral: string;
   readonly flagLiteral: string | null;
 };
 
-type PrefixedShape = FastShape['prefixed'] & {
+type PrefixedShape = NonNullable<FastShape['prefixed']> & {
   readonly prefixLiteral: string;
 };
 
-type ObjectShape = {
-  readonly typeKey: string | null;
-  readonly typeValue: string | null;
+// One handle per production direct-fast recognises. Stored on every
+// FastShape variant so the captures payload's __production stays in sync
+// with the render dispatcher's switch table.
+type ProdRef = {
+  readonly prodKey: string;
 };
 
 type DelimitedRecordShape = {
+  readonly rootProdKey: string;
   readonly rootProduction: Production;
   readonly rootLiteral: string;
   readonly delimiter: string;
@@ -65,6 +87,7 @@ type DelimitedRecordShape = {
 type DelimitedVariantShape = {
   readonly firstClass: ResolvedSpan['class'];
   readonly alternatives: ReadonlyArray<{
+    readonly prodKey: string;
     readonly production: Production;
     readonly first: ResolvedSpan & { readonly name: string };
     readonly separator: string | null;
@@ -75,7 +98,9 @@ type DelimitedVariantShape = {
 function inferDelimitedRecordFastShape(schema: InferredSchema): DelimitedRecordShape | null {
   const rootInfo = schema.nodeTypes.get(schema.rootType);
   const rootProduction = rootInfo?.productions.length === 1 ? rootInfo.productions[0] : undefined;
-  if (!rootProduction) return null;
+  if (!rootInfo || !rootProduction) return null;
+  const rootProdKey = productionKey(rootInfo, rootProduction);
+  if (rootProdKey === null) return null;
 
   const spans = rootProduction.spans;
   const rootLiteral = spans[0];
@@ -96,6 +121,7 @@ function inferDelimitedRecordFastShape(schema: InferredSchema): DelimitedRecordS
       const variant = inferDelimitedVariantShape(schema.nodeTypes.get(role));
       if (!variant) return null;
       return {
+        rootProdKey,
         rootProduction,
         rootLiteral: rootLiteral.text,
         delimiter,
@@ -122,8 +148,10 @@ function inferDelimitedVariantShape(info: NodeTypeInfo | undefined): DelimitedVa
     if (!first?.name || !isDirectDelimitedScalar(first)) return null;
     firstClass ??= first.class;
     if (firstClass !== first.class) return null;
+    const prodKey = productionKey(info, production);
+    if (prodKey === null) return null;
     if (spans.length === 1) {
-      alternatives.push({ production, first: first as ResolvedSpan & { readonly name: string }, separator: null, second: null });
+      alternatives.push({ prodKey, production, first: first as ResolvedSpan & { readonly name: string }, separator: null, second: null });
       continue;
     }
     const separator = spans[1];
@@ -131,6 +159,7 @@ function inferDelimitedVariantShape(info: NodeTypeInfo | undefined): DelimitedVa
     if (spans.length !== 3 || separator?.class !== 'literal' || !separator.text || separator.text.length !== 1) return null;
     if (!second?.name || !isDirectDelimitedScalar(second)) return null;
     alternatives.push({
+      prodKey,
       production,
       first: first as ResolvedSpan & { readonly name: string },
       separator: separator.text,
@@ -156,10 +185,13 @@ function inferNestedBlockFastShape(schema: InferredSchema): FastShape | null {
   const rootProduction = rootInfo?.productions.length === 1 ? rootInfo.productions[0] : undefined;
   const rootRepeat = rootProduction?.spans.find((span) => findModifier(span, 'repeats') && span.recursiveRoles.length > 0);
   const rootRepeatModifier = rootRepeat ? findModifier(rootRepeat, 'repeats') : undefined;
-  if (!rootProduction || !rootRepeat?.name || !rootRepeatModifier?.sep) return null;
-  const root = objectShape(structureOf(rootProduction));
-  const rootChildrenKey = keyForSpanRef(structureOf(rootProduction), rootRepeat.name);
-  if (!rootChildrenKey) return null;
+  if (!rootInfo || !rootProduction || !rootRepeat?.name || !rootRepeatModifier?.sep) return null;
+  const rootProdKey = productionKey(rootInfo, rootProduction);
+  if (rootProdKey === null) return null;
+  // Verify the root's ast body actually references the repeated span;
+  // otherwise the captures shape direct-fast emits wouldn't match the
+  // builder. (Pre-Phase 3 the equivalent check happened in keyForSpanRef.)
+  if (!bodyReferencesSpan(astBodyOf(rootProduction), rootRepeat.name)) return null;
 
   let comment: FastShape['comment'] | null = null;
   let block: BlockShape | null = null;
@@ -177,7 +209,7 @@ function inferNestedBlockFastShape(schema: InferredSchema): FastShape | null {
   const literals = inferFastLiterals(block, pair, prefixed, rootRepeatModifier.sep);
   if (!literals) return null;
   return {
-    root: { ...root, childrenKey: rootChildrenKey },
+    root: { prodKey: rootProdKey, childrenSpan: rootRepeat.name },
     comment,
     block,
     pair,
@@ -191,9 +223,10 @@ function inferCommentShape(info: NodeTypeInfo): FastShape['comment'] | null {
   const production = info.productions[0]!;
   const [span] = production.spans;
   if (!span?.name || span.class !== 'comment') return null;
-  const textKey = keyForSpanRef(structureOf(production), span.name);
-  if (!textKey) return null;
-  return { ...objectShape(structureOf(production)), textKey };
+  if (!bodyReferencesSpan(astBodyOf(production), span.name)) return null;
+  const prodKey = productionKey(info, production);
+  if (prodKey === null) return null;
+  return { prodKey, textSpan: span.name };
 }
 
 function inferBlockShape(info: NodeTypeInfo): BlockShape | null {
@@ -207,10 +240,11 @@ function inferBlockShape(info: NodeTypeInfo): BlockShape | null {
   const until = first ? findModifier(first, 'until') : undefined;
   if (!first?.name || open?.class !== 'literal' || !open.text || !until?.stops.includes(open.text)) return null;
   if (!repeated?.name || close?.class !== 'literal' || !close.text) return null;
-  const captureKey = keyForSpanRef(structureOf(production), first.name);
-  const childrenKey = keyForSpanRef(structureOf(production), repeated.name);
-  if (!captureKey || !childrenKey) return null;
-  return { ...objectShape(structureOf(production)), captureKey, childrenKey, openLiteral: open.text, closeLiteral: close.text };
+  if (!bodyReferencesSpan(astBodyOf(production), first.name)) return null;
+  if (!bodyReferencesSpan(astBodyOf(production), repeated.name)) return null;
+  const prodKey = productionKey(info, production);
+  if (prodKey === null) return null;
+  return { prodKey, captureSpan: first.name, childrenSpan: repeated.name, openLiteral: open.text, closeLiteral: close.text };
 }
 
 function inferPairShape(info: NodeTypeInfo): PairShape | null {
@@ -224,13 +258,15 @@ function inferPairShape(info: NodeTypeInfo): PairShape | null {
   const rightUntil = right ? findModifier(right, 'until') : undefined;
   if (!left?.name || !right?.name || pairLiteral?.class !== 'literal' || !pairLiteral.text) return null;
   if (!leftUntil?.stops.includes(pairLiteral.text) || !rightUntil?.stops.length) return null;
-  const leftKey = keyForSpanRef(structureOf(first), left.name);
-  const rightKey = keyForSpanRef(structureOf(first), right.name);
-  if (!leftKey || !rightKey) return null;
-  let flagKey: string | null = null;
+  if (!bodyReferencesSpan(astBodyOf(first), left.name)) return null;
+  if (!bodyReferencesSpan(astBodyOf(first), right.name)) return null;
+  const prodKey = productionKey(info, first);
+  if (prodKey === null) return null;
+  let flagProdKey: string | null = null;
   let flagLiteral: string | null = null;
   for (const production of productions) {
-    flagKey ??= keyForBooleanLiteral(structureOf(production), true);
+    const isFlagged = keyForBooleanLiteral(astBodyOf(production), true);
+    if (isFlagged !== null) flagProdKey ??= productionKey(info, production);
     const valueSpan = production.spans[2];
     const valueUntil = valueSpan ? findModifier(valueSpan, 'until') : undefined;
     for (let i = 3; i < production.spans.length; i++) {
@@ -240,7 +276,7 @@ function inferPairShape(info: NodeTypeInfo): PairShape | null {
       }
     }
   }
-  return { ...objectShape(structureOf(first)), leftKey, rightKey, flagKey, pairLiteral: pairLiteral.text, flagLiteral };
+  return { prodKey, leftSpan: left.name, rightSpan: right.name, flagProdKey, pairLiteral: pairLiteral.text, flagLiteral };
 }
 
 function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
@@ -255,11 +291,35 @@ function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
   const repeated = spans.find((span) => span.name && findModifier(span, 'repeats') && span.recursiveRoles.length > 0);
   if (prefix?.class !== 'literal' || !prefix.text || !name?.name || name.class !== 'ident') return null;
   if (!params?.name || !open?.text || !findModifier(params, 'until')?.stops.includes(open.text) || !repeated?.name) return null;
-  const nameKey = keyForSpanRef(structureOf(blockProduction), name.name);
-  const paramsKey = keyForSpanRef(structureOf(blockProduction), params.name);
-  const childrenKey = keyForSpanRef(structureOf(blockProduction), repeated.name);
-  if (!nameKey || !paramsKey || !childrenKey) return null;
-  return { ...objectShape(structureOf(blockProduction)), nameKey, paramsKey, childrenKey, prefixLiteral: prefix.text };
+  if (!bodyReferencesSpan(astBodyOf(blockProduction), name.name)) return null;
+  if (!bodyReferencesSpan(astBodyOf(blockProduction), params.name)) return null;
+  if (!bodyReferencesSpan(astBodyOf(blockProduction), repeated.name)) return null;
+  const prodKey = productionKey(info, blockProduction);
+  if (prodKey === null) return null;
+  return { prodKey, nameSpan: name.name, paramsSpan: params.name, childrenSpan: repeated.name, prefixLiteral: prefix.text };
+}
+
+function productionKey(info: NodeTypeInfo, production: Production): string | null {
+  const idx = info.productions.indexOf(production);
+  if (idx < 0) return null;
+  return `${info.name}#${idx}`;
+}
+
+function bodyReferencesSpan(body: RenderBody, spanName: string): boolean {
+  if (body === null || typeof body === 'string' || typeof body === 'number' || typeof body === 'boolean') return false;
+  if (isStructureRef(body)) {
+    if (body.__ref === 'span-value' || body.__ref === 'span-presence') return body.name === spanName;
+    if (body.__ref === 'span-raw' || body.__ref === 'span-ends-with' || body.__ref === 'span-comment-left' || body.__ref === 'span-comment-right') return body.name === spanName;
+    if (body.__ref === 'span-tail') return body.from === spanName;
+    if (body.__ref === 'span-gap') return body.from === spanName || body.to === spanName;
+    return false;
+  }
+  if ('__tpl' in (body as object)) return false;
+  if (Array.isArray(body)) return body.some((c) => bodyReferencesSpan(c, spanName));
+  for (const child of Object.values(body as Record<string, RenderBody>)) {
+    if (bodyReferencesSpan(child, spanName)) return true;
+  }
+  return false;
 }
 
 function inferFastLiterals(
@@ -282,24 +342,6 @@ function inferFastLiterals(
   };
 }
 
-function objectShape(value: RenderBody): ObjectShape {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) {
-    return { typeKey: null, typeValue: null };
-  }
-  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
-    if (typeof child === 'string') return { typeKey: key, typeValue: child };
-  }
-  return { typeKey: null, typeValue: null };
-}
-
-function keyForSpanRef(value: RenderBody, spanName: string): string | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) return null;
-  for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
-    if (isStructureRef(child) && child.__ref === 'span-value' && child.name === spanName) return key;
-  }
-  return null;
-}
-
 function keyForBooleanLiteral(value: RenderBody, flag: boolean): string | null {
   if (!value || typeof value !== 'object' || Array.isArray(value) || isStructureRef(value)) return null;
   for (const [key, child] of Object.entries(value as Record<string, RenderBody>)) {
@@ -317,12 +359,14 @@ function findModifier<K extends ResolvedSpan['modifiers'][number]['kind']>(
 }
 
 function emitNestedBlockFastPath(shape: FastShape): string {
-  const rootType = typeProp(shape.root);
-  const commentType = shape.comment ? typeProp(shape.comment) : '';
-  const blockType = typeProp(shape.block);
-  const pairType = typeProp(shape.pair);
-  const prefixedType = shape.prefixed ? typeProp(shape.prefixed) : '';
-  const pairFlag = shape.pair.flagKey ? `${prop(shape.pair.flagKey)}: true` : '';
+  const rootType = prodProp(shape.root.prodKey);
+  const commentType = shape.comment ? prodProp(shape.comment.prodKey) : '';
+  const blockType = prodProp(shape.block.prodKey);
+  const pairType = prodProp(shape.pair.prodKey);
+  // Flagged pair production gets a distinct __production routing key so the
+  // dispatcher selects the boolean-flag-bearing builder.
+  const pairFlagType = shape.pair.flagProdKey ? prodProp(shape.pair.flagProdKey) : pairType;
+  const prefixedType = shape.prefixed ? prodProp(shape.prefixed.prodKey) : '';
   const prefixCode = shape.literals.prefix?.charCodeAt(0) ?? -1;
   const openCode = shape.literals.open.charCodeAt(0);
   const closeCode = shape.literals.close.charCodeAt(0);
@@ -357,7 +401,7 @@ function parseDirectComment(state: DirectState): unknown {
     if (tc !== 0x20 && tc !== 0x09 && tc !== 0x0a && tc !== 0x0d) break;
     textEnd--;
   }
-  return { ${joinProps(commentType, `${prop(shape.comment.textKey)}: input.slice(textStart, textEnd)`)} };
+  return { ${joinProps(commentType, `${prop(shape.comment.textSpan)}: input.slice(textStart, textEnd)`)} };
 }
 ` : '';
   const prefixedRootBranch = shape.prefixed ? `    if (c === ${prefixCode}) {
@@ -380,10 +424,10 @@ function parseDirectPrefixed(state: DirectState): unknown {
   if (scanStop === ${openCode}) {
     state.pos++;
     const nodes = parseDirectChildren(state);
-    return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `${prop(shape.prefixed.childrenKey)}: nodes`)} };
+    return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `${prop(shape.prefixed.childrenSpan)}: nodes`)} };
   }
   if (scanStop === ${separatorCode}) state.pos++;
-  return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`)} };
+  return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`)} };
 }
 ` : '';
   const validateCommentBranch = shape.comment ? `    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
@@ -451,10 +495,10 @@ const __DIRECT_SCAN_BOUNDARY_CLASS = /* @__PURE__ */ buildDirectScanClass([
   0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, ${separatorCode}, ${openCode}, ${closeCode}
 ]);
 const __DIRECT_SCAN_PAIR_CLASS = /* @__PURE__ */ buildDirectScanClass([
-  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, ${separatorCode}, ${openCode}, ${closeCode}, ${pairCode}${shape.pair.flagKey !== null ? `, ${flagCode}` : ''}
+  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, ${separatorCode}, ${openCode}, ${closeCode}, ${pairCode}${shape.pair.flagLiteral !== null ? `, ${flagCode}` : ''}
 ]);
 const __DIRECT_SCAN_VALUE_CLASS = /* @__PURE__ */ buildDirectScanClass([
-  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, ${separatorCode}, ${closeCode}${shape.pair.flagKey !== null ? `, ${flagCode}` : ''}
+  0x60, 0x22, 0x27, 0x5c, 0x2f, 0x28, 0x29, 0x5b, 0x5d, 0x7b, 0x7d, ${separatorCode}, ${closeCode}${shape.pair.flagLiteral !== null ? `, ${flagCode}` : ''}
 ]);
 function buildDirectScanClass(codes: readonly number[]): Uint8Array {
   const t = new Uint8Array(128);
@@ -480,7 +524,7 @@ function parseDirectFast(input: string): unknown {
   const nodes = parseDirectRootChildren(state);
   skipDirectWsAndSeparators(state);
   if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
-  return { ${joinProps(rootType, `${prop(shape.root.childrenKey)}: nodes`)} };
+  return { ${joinProps(rootType, `${prop(shape.root.childrenSpan)}: nodes`)} };
 }
 
 function parseDirectRaws(input: string): unknown {
@@ -503,7 +547,7 @@ function parseDirectRaws(input: string): unknown {
   if (state.pos !== state.len) throw new SyntaxError(\`unexpected trailing character at position \${state.pos}\`);
   const end = state.pos;
   return {
-    ${joinProps(rootType, `${prop(shape.root.childrenKey)}: list.nodes`, `raws: { after: input.slice(list.prevEnd, end), semicolon: input.charCodeAt(list.prevEnd - 1) === ${separatorCode} }`)}
+    ${joinProps(rootType, `${prop(shape.root.childrenSpan)}: list.nodes`, `raws: { after: input.slice(list.prevEnd, end), semicolon: input.charCodeAt(list.prevEnd - 1) === ${separatorCode} }`)}
   };
 }
 
@@ -742,7 +786,7 @@ ${shape.comment ? `function parseDirectCommentRaws(state: DirectState): unknown 
   const raw = input.slice(start, state.pos);
   state.lastNodeStart = start;
   state.lastNodeEnd = state.pos;
-  return { ${joinProps(commentType, `${prop(shape.comment.textKey)}: commentInterior(raw)`, `raws: { left: commentLeft(raw), right: commentRight(raw) }`)} };
+  return { ${joinProps(commentType, `${prop(shape.comment.textSpan)}: commentInterior(raw)`, `raws: { left: commentLeft(raw), right: commentRight(raw) }`)} };
 }
 ` : ''}
 ${shape.prefixed ? `function parseDirectPrefixedRaws(state: DirectState): unknown {
@@ -771,14 +815,14 @@ ${shape.prefixed ? `function parseDirectPrefixedRaws(state: DirectState): unknow
     state.lastNodeStart = start;
     state.lastNodeEnd = state.pos;
     return {
-      ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `${prop(shape.prefixed.childrenKey)}: body.nodes`, `raws: { afterName, between, after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === ${separatorCode} }`)}
+      ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `${prop(shape.prefixed.childrenSpan)}: body.nodes`, `raws: { afterName, between, after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === ${separatorCode} }`)}
     };
   }
   if (scanStop === ${separatorCode}) state.pos++;
   state.lastNodeStart = start;
   state.lastNodeEnd = scanStop === ${separatorCode} ? state.pos : paramsEnd;
   return {
-    ${joinProps(prefixedType, `${prop(shape.prefixed.nameKey)}: name`, `${prop(shape.prefixed.paramsKey)}: params`, `raws: { afterName, between }`)}
+    ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `raws: { afterName, between }`)}
   };
 }
 ` : ''}
@@ -804,7 +848,7 @@ function parseDirectBlockOrPairRaws(state: DirectState): unknown {
       state.lastNodeStart = start;
       state.lastNodeEnd = state.pos;
       return {
-        ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: body.nodes`, `raws: { between: input.slice(selectorEndOffset, openIdx), after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === ${separatorCode} }`)}
+        ${joinProps(blockType, `${prop(shape.block.captureSpan)}: selector`, `${prop(shape.block.childrenSpan)}: body.nodes`, `raws: { between: input.slice(selectorEndOffset, openIdx), after: input.slice(body.prevEnd, body.closeStart), semicolon: input.charCodeAt(body.prevEnd - 1) === ${separatorCode} }`)}
       };
     }
   }
@@ -833,7 +877,7 @@ function parseDirectBlockOrPairRaws(state: DirectState): unknown {
   if (state.scanStop === ${separatorCode}) state.pos++;
   state.lastNodeStart = start;
   state.lastNodeEnd = state.scanStop === ${separatorCode} ? state.pos : valueEnd;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`, `raws: { between: input.slice(propEnd, betweenEnd) }`)} };
+  return { ${joinProps(pairType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, `raws: { between: input.slice(propEnd, betweenEnd) }`)} };
 }
 
 function parseDirectDeclarationRestRaws(state: DirectState, start: number, prop: string, propEnd: number): unknown {
@@ -853,7 +897,7 @@ function parseDirectDeclarationRestRaws(state: DirectState, start: number, prop:
   if (state.scanStop === ${separatorCode}) state.pos++;
   state.lastNodeStart = start;
   state.lastNodeEnd = state.scanStop === ${separatorCode} ? state.pos : valueEnd;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`, `raws: { between: input.slice(propEnd, betweenEnd) }`)} };
+  return { ${joinProps(pairType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, `raws: { between: input.slice(propEnd, betweenEnd) }`)} };
 }
 
 function parseDirectImportantDeclarationRestRaws(state: DirectState, start: number, prop: string, value: string, propEnd: number, valueStart: number): unknown {
@@ -867,7 +911,7 @@ function parseDirectImportantDeclarationRestRaws(state: DirectState, start: numb
   if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
   state.lastNodeStart = start;
   state.lastNodeEnd = state.pos;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`, pairFlag, `raws: { between: input.slice(propEnd, valueStart) }`)} };
+  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, `raws: { between: input.slice(propEnd, valueStart) }`)} };
 }
 
 function parseDirectBlockOrPair(state: DirectState): unknown {
@@ -885,7 +929,7 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
       }
       state.pos = state.scanStopIdx + 1;
       const nodes = parseDirectChildren(state);
-      return { ${joinProps(blockType, `${prop(shape.block.captureKey)}: selector`, `${prop(shape.block.childrenKey)}: nodes`)} };
+      return { ${joinProps(blockType, `${prop(shape.block.captureSpan)}: selector`, `${prop(shape.block.childrenSpan)}: nodes`)} };
     }
   }
   const scanColonIdx = state.scanColonIdx;
@@ -924,7 +968,7 @@ function parseDirectBlockOrPair(state: DirectState): unknown {
   state.pos = scanBangIdx >= 0 ? scanBangIdx : state.scanStopIdx;
   if (scanBangIdx >= 0) return parseDirectImportantDeclarationRest(state, prop, value);
   if (state.scanStop === ${separatorCode}) state.pos++;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`)} };
+  return { ${joinProps(pairType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`)} };
 }
 
 function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
@@ -936,7 +980,7 @@ function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
     return parseDirectImportantDeclarationRest(state, prop, value);
   }
   if (state.scanStop === ${separatorCode}) state.pos++;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`)} };
+  return { ${joinProps(pairType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`)} };
 }
 
 function parseDirectImportantDeclarationRest(state: DirectState, prop: string, value: string): unknown {
@@ -948,7 +992,7 @@ function parseDirectImportantDeclarationRest(state: DirectState, prop: string, v
   if (state.pos === importantStart) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
   skipDirectWs(state);
   if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
-  return { ${joinProps(pairType, `${prop(shape.pair.leftKey)}: prop`, `${prop(shape.pair.rightKey)}: value`, pairFlag)} };
+  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`)} };
 }
 
 function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {
@@ -1366,15 +1410,8 @@ function directSyntaxError(state: DirectState, message: string, offset: number):
 
 function emitDelimitedRecordFastPath(shape: DelimitedRecordShape): string {
   const delimiterCode = shape.delimiter.charCodeAt(0);
-  const rootValues = new Map<string, string>();
-  for (const field of shape.fields) rootValues.set(field.name, jsIdent(field.name));
-  rootValues.set(shape.finalSpan.name, jsIdent(shape.finalSpan.name));
-  const rootStructure = emitStructureExpr(structureOf(shape.rootProduction), {
-    valueExpr: rootValues,
-    presenceExpr: new Map([...rootValues].map(([name, value]) => [name, `(${value}.length > 0)`])),
-    startOffExpr: new Map(),
-    endOffExpr: new Map(),
-  }, { omitRaws: true });
+  const rootSpanNames = [...shape.fields.map((f) => f.name), shape.finalSpan.name];
+  const rootCaptures = emitInlineCaptures(shape.rootProdKey, rootSpanNames.map((n) => [n, jsIdent(n)] as const));
   const parseFields: string[] = [];
   for (const field of shape.fields) {
     parseFields.push(emitInlineExpectChar(delimiterCode, shape.delimiter));
@@ -1396,7 +1433,7 @@ function emitDelimitedRecordFastPath(shape: DelimitedRecordShape): string {
   ${finalVariant}
   ${skipWsCode()}
   if (pos !== len) throw new SyntaxError(\`unexpected trailing character at position \${pos}\`);
-  return ${rootStructure};
+  return ${rootCaptures};
 }
 
 function validateDirectFast(input: string): void {
@@ -1411,33 +1448,22 @@ function emitInlineDelimitedVariant(shape: DelimitedVariantShape, targetName: st
   const bare = shape.alternatives.find((alternative) => alternative.separator === null);
   for (const alternative of shape.alternatives) {
     if (!alternative.separator || !alternative.second) continue;
-    const valueExpr = new Map<string, string>([
+    const captures = emitInlineCaptures(alternative.prodKey, [
       [alternative.first.name, '__first'],
       [alternative.second.name, jsIdent(alternative.second.name)],
     ]);
-    const structure = emitStructureExpr(structureOf(alternative.production), {
-      valueExpr,
-      presenceExpr: new Map([...valueExpr].map(([name, value]) => [name, `(${value}.length > 0)`])),
-      startOffExpr: new Map(),
-      endOffExpr: new Map(),
-    }, { omitRaws: true });
     const code = alternative.separator.charCodeAt(0);
     const secondName = jsIdent(alternative.second.name);
     branches.push(`if (input.charCodeAt(pos) === ${code}) {
     pos++;
     ${skipWsCode()}
     ${emitInlineReadScalar(alternative.second, secondName, jsString(alternative.second.name))}
-    ${targetName} = ${structure};
+    ${targetName} = ${captures};
   }`);
   }
 
   const fallback = bare
-    ? `${targetName} = ${emitStructureExpr(structureOf(bare.production), {
-      valueExpr: new Map([[bare.first.name, '__first']]),
-      presenceExpr: new Map([[bare.first.name, '(__first.length > 0)']]),
-      startOffExpr: new Map(),
-      endOffExpr: new Map(),
-    }, { omitRaws: true })};`
+    ? `${targetName} = ${emitInlineCaptures(bare.prodKey, [[bare.first.name, '__first']])};`
     : `throw new SyntaxError(\`expected variant separator at position \${pos}\`);`;
   const first = shape.alternatives[0]!.first;
   const lines = [
@@ -1594,12 +1620,23 @@ function prop(key: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? key : jsString(key);
 }
 
-function typeProp(shape: ObjectShape): string {
-  return shape.typeKey && shape.typeValue ? `${prop(shape.typeKey)}: ${jsString(shape.typeValue)}` : '';
+// Emit the routing key the per-target render dispatcher switches on. Always
+// goes in the lead position of each captures literal direct-fast builds.
+function prodProp(prodKey: string): string {
+  return `__production: ${jsString(prodKey)}`;
 }
 
 function joinProps(...items: string[]): string {
   return items.filter(Boolean).join(', ');
+}
+
+// Build a captures object literal: `{ __production: "<key>", spanA: exprA, ... }`.
+// Used by the delimited-record fast path; the nested-block path inlines its
+// own joinProps calls because they also carry mode-specific raws fields.
+function emitInlineCaptures(prodKey: string, entries: ReadonlyArray<readonly [string, string]>): string {
+  const parts = [prodProp(prodKey)];
+  for (const [name, expr] of entries) parts.push(`${prop(name)}: ${expr}`);
+  return `{ ${parts.join(', ')} }`;
 }
 
 function indent(s: string, level: number): string {

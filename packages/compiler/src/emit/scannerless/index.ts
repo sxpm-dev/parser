@@ -1,14 +1,14 @@
 import type { InferredSchema } from '../../model.ts';
 import { emitDirectFastPath } from '../direct-fast.ts';
 import { emitRender } from '../render.ts';
-import { emitStringify } from '../stringify.ts';
 import { jsString } from '../strings.ts';
 import { emitNodeFunctions, parseFnName, takePendingHelpers } from './parse.ts';
 import { SCANNERLESS_PARSE_RUNTIME } from './runtime.ts';
 
 // Top-level scannerless emitter. Produces a TypeScript file that operates
-// directly on source bytes — no intermediate token stream. Public API is
-// parse/validate/stringify (no tokenize/countTokens).
+// directly on source bytes — no intermediate token stream. Public API:
+// parse / validate / render. Phase 4 will add a public stringify once
+// inverse derivation lands.
 
 export function emitScannerlessParser(schema: InferredSchema): string {
   const header = emitHeader(schema);
@@ -20,10 +20,11 @@ export function emitScannerlessParser(schema: InferredSchema): string {
   // bypassing the generic production-driven body. Already byte-based, so
   // wiring it into scannerless mode is just dispatch.
   const directFast = emitDirectFastPath(schema);
-  const stringify = emitStringify(schema);
+  // Phase 3 ships only the forward path. The public `stringify` returns in
+  // Phase 4 once inverse derivation is in place.
   const render = emitRender(schema);
   const api = emitPublicApi(schema, directFast !== null);
-  return [header, runtime, parsers, helpers, directFast, stringify, render, api].filter((p) => p !== null && p !== '').join('\n\n') + '\n';
+  return [header, runtime, parsers, helpers, directFast, render, api].filter((p) => p !== null && p !== '').join('\n\n') + '\n';
 }
 
 function emitHeader(schema: InferredSchema): string {

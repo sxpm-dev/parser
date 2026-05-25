@@ -12,18 +12,12 @@
 // `__off = state.off` after the call returns. This keeps state.off out of
 // register pressure within a tight per-row body.
 
-import type { RenderBody, SpanModifier } from '@parser2/parser';
+import type { SpanModifier } from '@parser2/parser';
 import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production, type ResolvedSpan } from '../../model.ts';
-import { collectOffsetRefs, emitStructureExpr } from '../structure.ts';
+import { collectOffsetRefs, emitCapturesExpr } from '../captures.ts';
+import { productionRoutingKey } from '../render.ts';
 import { jsIdent, jsString } from '../strings.ts';
 import { emitClassScan, emitClassOffsetVars } from './scan-class.ts';
-
-// Local bridge — Phase 3 deletes when this emitter is rewritten on top of
-// the Production.renders IR directly. Until then we keep reading "the AST
-// structure body" off the 'ast' render entry.
-function structureOf(production: Production): RenderBody {
-  return production.renders.get('ast')?.body ?? null;
-}
 
 type ParseVariant = 'fast' | 'raws' | 'validate';
 
@@ -78,11 +72,11 @@ function emitNodeFunction(info: NodeTypeInfo, ctx: Ctx): string {
     if (validProductions.length === 0) {
       throw new CompilerError(`Node type '${info.name}' has only .recovers() productions — at least one valid production is required`);
     }
-    return emitNodeFunctionWithRecovery(info.name, validProductions, recoveryProductions, ctx);
+    return emitNodeFunctionWithRecovery(info, validProductions, recoveryProductions, ctx);
   }
 
   if (info.productions.length === 1) {
-    const body = emitProductionBody(info.productions[0]!, ctx);
+    const body = emitProductionBody(info.productions[0]!, 0, ctx);
     return `function ${fnName}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -109,7 +103,7 @@ ${indent(body, 1)}
       const inlineSpec: InlineFromDispatcher | undefined = isUnbounded
         ? { skipSpans: 0, preboundValues: new Map(), softFail: true }
         : undefined;
-      const body = emitProductionBody(production, ctx, inlineSpec);
+      const body = emitProductionBody(production, i, ctx, inlineSpec);
       return `function ${fnName}__alt${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -125,7 +119,7 @@ ${indent(body, 1)}
   // by then we've ruled out all other alts, so its throws are real.
   const lastIdx = info.productions.length - 1;
   const softAltFns = info.productions.slice(0, -1).map((production, i) => {
-    const body = emitProductionBody(production, ctx, {
+    const body = emitProductionBody(production, i, ctx, {
       skipSpans: 0,
       preboundValues: new Map(),
       softFail: true,
@@ -134,7 +128,7 @@ ${indent(body, 1)}
 ${indent(body, 1)}
 }`;
   }).join('\n\n');
-  const lastBody = emitProductionBody(info.productions[lastIdx]!, ctx);
+  const lastBody = emitProductionBody(info.productions[lastIdx]!, lastIdx, ctx);
   const lastFn = `function ${fnName}__alt${lastIdx}(state: State): unknown {
 ${indent(lastBody, 1)}
 }`;
@@ -440,7 +434,7 @@ ${tail}`;
       skipSpans: prefixLen + 1,
       preboundValues,
     };
-    const altBody = emitProductionBody(productions[idx]!, ctx, inlineSpec);
+    const altBody = emitProductionBody(productions[idx]!, idx, ctx, inlineSpec);
     // The discriminator value (e.g. tag string) flows through as a fn arg
     // so the helper itself doesn't allocate; the dispatcher passes the
     // slice it already needed for the oneOf compare.
@@ -485,16 +479,28 @@ ${indent(altBody, 1)}
       if (hasModifier(last.modifiers, 'optional')) return null;
       if (lastAlts.includes(last.text)) return null; // duplicate, weird
       lastAlts.push(last.text);
-      // Structures must be identical so we emit one tail.
-      if (JSON.stringify(structureOf(p)) !== JSON.stringify(structureOf(ref))) return null;
+      // All render bodies must be identical so the merged tail can emit
+      // ONE captures payload regardless of which closing literal matched.
+      // (Phase 3 stamps captures.__production as a single value per emitted
+      // body; if any target's body differs across the merged alts, the
+      // render dispatcher would route them all to ref's builder, which
+      // would silently render the wrong shape.) Compares the full renders
+      // map for each alt against the reference.
+      for (const [target, refEntry] of ref.renders) {
+        const pEntry = p.renders.get(target);
+        if (!pEntry) return null;
+        if (JSON.stringify(refEntry.body) !== JSON.stringify(pEntry.body)) return null;
+      }
     }
+    // The merged body inherits `ref`'s routing key — all alts produce the
+    // same renders, so any one will do.
     const name = `${fnNameArg}__altMerged_${subIndexes.join('_')}__body`;
     const inlineSpec: InlineFromDispatcher = {
       skipSpans: prefixLenArg + 1,
       preboundValues: preboundValuesArg,
       lastSpanLiteralAlternatives: lastAlts,
     };
-    const mergedBody = emitProductionBody(ref, ctxArg, inlineSpec);
+    const mergedBody = emitProductionBody(ref, subIndexes[0]!, ctxArg, inlineSpec);
     const paramName = '__pre_' + (discName ?? 'disc');
     const helper = `function ${name}(state: State, ${paramName}: string): unknown {
 ${indent(mergedBody, 1)}
@@ -1035,11 +1041,19 @@ function sameSpanSignature(a: ResolvedSpan, b: ResolvedSpan): boolean {
 }
 
 function emitNodeFunctionWithRecovery(
-  nodeName: string,
+  info: NodeTypeInfo,
   validProductions: ReadonlyArray<Production>,
   recoveryProductions: ReadonlyArray<Production>,
   ctx: Ctx,
 ): string {
+  const nodeName = info.name;
+  const nodeProductionIndex = (production: Production): number => {
+    const idx = info.productions.indexOf(production);
+    if (idx < 0) {
+      throw new Error(`emitNodeFunctionWithRecovery: production not found in info '${info.name}'`);
+    }
+    return idx;
+  };
   const fnName = parseFnName(nodeName, ctx.variant);
   const validFnName = `${fnName}__valid`;
   const validInfo: NodeTypeInfo = { name: nodeName, productions: validProductions };
@@ -1061,8 +1075,12 @@ function emitNodeFunctionWithRecovery(
     );
   }
 
+  // Recovery productions inherit their index from the full info.productions
+  // array so their captures.__production stays unique across the schema
+  // (matches what the render dispatcher's switch was emitted with).
   const recoveryFns = recoveryProductions.map((production, i) => {
-    const body = emitProductionBody(production, ctx);
+    const fullIdx = nodeProductionIndex(production);
+    const body = emitProductionBody(production, fullIdx, ctx);
     return `function ${fnName}__recovery${i}(state: State): unknown {
 ${indent(body, 1)}
 }`;
@@ -1147,15 +1165,15 @@ type InlineFromDispatcher = {
   readonly softFail?: boolean;
 };
 
-function emitProductionBody(production: Production, ctx: Ctx, inline?: InlineFromDispatcher): string {
+function emitProductionBody(production: Production, prodIdx: number, ctx: Ctx, inline?: InlineFromDispatcher): string {
   const lines: string[] = [];
   const valueExpr = new Map<string, string>();
   const presenceExpr = new Map<string, string>();
   const startOffExpr = new Map<string, string>();
   const endOffExpr = new Map<string, string>();
   const spans = production.spans;
-  const structureOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
-  const offsetRefs = collectOffsetRefs(structureOf(production), structureOptions);
+  const capturesOptions = ctx.variant === 'fast' || ctx.variant === 'validate' ? { omitRaws: true } : {};
+  const offsetRefs = collectOffsetRefs(production, capturesOptions);
   const needsNodeRange = ctx.variant === 'raws';
   const skipSpans = inline?.skipSpans ?? 0;
 
@@ -1333,15 +1351,16 @@ let __off = state.off;`);
     return applySoftFail(lines.join('\n'), inline?.softFail);
   }
 
-  const bindings = { valueExpr, presenceExpr, startOffExpr, endOffExpr };
-  const structure = emitStructureExpr(structureOf(production), bindings, structureOptions);
+  const bindings = { valueExpr, startOffExpr, endOffExpr };
+  const prodKey = productionRoutingKey(production, prodIdx);
+  const captures = emitCapturesExpr(production, prodKey, bindings, capturesOptions);
   if (ctx.variant === 'fast') {
-    lines.push(`return ${structure};`);
+    lines.push(`return ${captures};`);
     return applySoftFail(lines.join('\n'), inline?.softFail);
   }
-  lines.push(`const __struct: Record<string, unknown> = ${structure};`);
-  lines.push(`__struct.source = makeSource(state, __startOff, __endOff);`);
-  lines.push(`return __struct;`);
+  lines.push(`const __captures: Record<string, unknown> = ${captures};`);
+  lines.push(`__captures.source = makeSource(state, __startOff, __endOff);`);
+  lines.push(`return __captures;`);
   return applySoftFail(lines.join('\n'), inline?.softFail);
 }
 

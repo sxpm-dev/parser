@@ -2,7 +2,6 @@
 // inference passes and consumed by the emitter. It contains only generic
 // shape — no language-specific knowledge.
 
-import { isTemplate } from '@parser2/parser';
 import type {
   ExampleDef,
   RecoveryPolicy,
@@ -23,24 +22,6 @@ export type ResolvedSpan = {
   readonly refinements: ReadonlyArray<Refinement>;
   readonly modifiers: ReadonlyArray<SpanModifier>;
   readonly recursiveRoles: ReadonlyArray<string>; // resolved against the composition graph
-};
-
-// TODO(Phase 3): delete; transient codegen-internal data used by emit/stringify.ts until that file is rewritten.
-export type StringifyTemplate = {
-  readonly target: string;
-  readonly parts: ReadonlyArray<string>;
-  readonly slots: ReadonlyArray<StringifyTemplateSlot>;
-};
-
-// TODO(Phase 3): delete; transient codegen-internal data used by emit/stringify.ts until that file is rewritten.
-export type StringifyTemplateSlot = {
-  readonly kind: 'capture';
-  readonly ref: string;
-  // Set by infer/source-template.ts when the underlying span has .optional().
-  // At emit time, the preceding separator part collapses to "" when the
-  // runtime value is null/undefined. Not settable from the public `tpl` DSL;
-  // author templates always have optional === undefined.
-  readonly optional?: boolean;
 };
 
 // Per-(production, target) IR entry built by infer/render-targets.ts.
@@ -113,9 +94,10 @@ export type InferredSchema = {
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
   // Default render target, propagated from SchemaDef.defaultTarget. The
-  // generated `render(input, opts)` / `stringify(s, opts)` wrappers use this
-  // as the fallback when the caller didn't pass `{ target }`. Phase 3 wires
-  // this into the emitted dispatch table.
+  // generated `render(input, opts)` wrapper uses this as the fallback when
+  // the caller didn't pass `{ type }`. Phase 4 will wire the same constant
+  // into the public `stringify(s, opts)` wrapper once inverse derivation
+  // lands.
   readonly defaultTarget?: string;
   readonly validation?: ValidationDef;
 };
@@ -135,29 +117,3 @@ export class CompilerError extends Error {
   }
 }
 
-// --- Transient bridge: derive legacy stringify-template view from renders --
-//
-// Phase 3 deletes this helper along with StringifyTemplate / StringifyTemplateSlot.
-// Until then, emit/stringify.ts continues to consume the legacy shape and
-// pulls it through this bridge instead of reading a Production field directly.
-//
-// The bridge picks every render entry whose body is a Template (i.e. the
-// author handed a `tpl` literal to .render), and reshapes it into
-// { target, parts, slots }. Entries whose body is structured data (the
-// StructureValue-tree forms today's AST) are skipped — emit/stringify.ts
-// doesn't know how to render them. Phase 3's new emit pipeline handles
-// both shapes uniformly.
-export function derivedStringifyTemplates(
-  production: Production,
-): ReadonlyArray<StringifyTemplate> {
-  const out: StringifyTemplate[] = [];
-  for (const entry of production.renders.values()) {
-    if (!isTemplate(entry.body)) continue;
-    out.push({
-      target: entry.target,
-      parts: [...entry.body.parts],
-      slots: entry.body.slots.map((s) => ({ kind: 'capture', ref: s.ref })),
-    });
-  }
-  return out;
-}

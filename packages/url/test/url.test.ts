@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
+
+// Note: public `parse()` was removed in Phase 5 of the unified-render-targets
+// refactor. The previous `parse(input)` call is replaced by
+// `render(input, { type: 'ast' })`, which yields the object-shape AST that
+// the schema declares under `.render('ast', { ... })`.
+
+function parseAst(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
 
 test('url parses path and query pairs', () => {
-  assert.deepEqual(parse('/foo/bar?q=hello&tag=one'), {
+  assert.deepEqual(parseAst('/foo/bar?q=hello&tag=one'), {
     type: 'url',
     path: ['foo', 'bar'],
     query: {
@@ -17,7 +26,7 @@ test('url parses path and query pairs', () => {
 });
 
 test('url parses absolute URL with host', () => {
-  assert.deepEqual(parse('https://example.com/search'), {
+  assert.deepEqual(parseAst('https://example.com/search'), {
     type: 'url',
     protocol: 'https',
     host: { type: 'host', parts: ['example', 'com'] },
@@ -26,7 +35,7 @@ test('url parses absolute URL with host', () => {
 });
 
 test('url parses absolute URL with localhost port', () => {
-  assert.deepEqual(parse('https://localhost:8888/search'), {
+  assert.deepEqual(parseAst('https://localhost:8888/search'), {
     type: 'url',
     protocol: 'https',
     host: { type: 'host', parts: ['localhost'], port: '8888' },

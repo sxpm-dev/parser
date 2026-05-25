@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Url',
@@ -17,7 +17,8 @@ export default defineSchema({
     ex('foo')
       .as('PathSegment')
       .span('value', 'foo').ident().css()
-      .structure($.value)
+      .render('ast', $.value)
+      .render('source', tpl`${$.value}`)
       .build(),
 
     ex('example.com')
@@ -25,7 +26,8 @@ export default defineSchema({
       .span('name', 'example').ident().css()
       .span('.')
       .span('tld', 'com').ident().css()
-      .structure({ type: 'host', parts: [$.name, $.tld] })
+      .render('ast', { type: 'host', parts: [$.name, $.tld] })
+      .render('source', tpl`${$.name}.${$.tld}`)
       .build(),
 
     ex('localhost:8888')
@@ -33,7 +35,8 @@ export default defineSchema({
       .span('name', 'localhost').ident().css()
       .span(':')
       .span('port', '8888').number().int()
-      .structure({ type: 'host', parts: [$.name], port: $.port })
+      .render('ast', { type: 'host', parts: [$.name], port: $.port })
+      .render('source', tpl`${$.name}:${$.port}`)
       .build(),
 
     ex('q=hello')
@@ -41,13 +44,15 @@ export default defineSchema({
       .span('key', 'q').ident().css()
       .span('=')
       .span('value', 'hello').ident().css()
-      .structure({ type: 'pair', key: $.key, value: $.value })
+      .render('ast', { type: 'pair', key: $.key, value: $.value })
+      .render('source', tpl`${$.key}=${$.value}`)
       .build(),
 
     ex('q=hello&tag=one')
       .as('Query')
       .span('pairs', 'q=hello', 'QueryPair').repeats({ sep: '&', min: 1 })
-      .structure({ type: 'query', pairs: $.pairs })
+      .render('ast', { type: 'query', pairs: $.pairs })
+      .render('source', tpl`${$.pairs}`)
       .build(),
 
     ex('/foo/bar?q=hello&tag=one')
@@ -58,7 +63,8 @@ export default defineSchema({
       .span('s2', 'bar', 'PathSegment')
       .span('?')
       .span('query', 'q=hello&tag=one', 'Query')
-      .structure({ type: 'url', path: [$.s1, $.s2], query: $.query })
+      .render('ast', { type: 'url', path: [$.s1, $.s2], query: $.query })
+      .render('source', tpl`/${$.s1}/${$.s2}?${$.query}`)
       .build(),
 
     ex('https://example.com/search')
@@ -70,7 +76,8 @@ export default defineSchema({
       .span('host', 'example.com', 'Host')
       .span('/')
       .span('s1', 'search', 'PathSegment')
-      .structure({ type: 'url', protocol: $.protocol, host: $.host, path: [$.s1] })
+      .render('ast', { type: 'url', protocol: $.protocol, host: $.host, path: [$.s1] })
+      .render('source', tpl`${$.protocol}://${$.host}/${$.s1}`)
       .build(),
   ],
 });

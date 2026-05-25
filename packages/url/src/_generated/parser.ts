@@ -334,9 +334,9 @@ function parsePathSegment(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = value;
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "PathSegment#0", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseHost__alt0(state: State): unknown {
@@ -508,9 +508,9 @@ function parseHost__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "host", parts: [name, tld] };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Host#0", name: name, tld: tld };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseHost__alt1(state: State): unknown {
@@ -635,9 +635,9 @@ function parseHost__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "host", parts: [name], port: port };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Host#1", name: name, port: port };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseHost(state: State): unknown {
@@ -836,9 +836,9 @@ function parseQueryPair(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "pair", key: key, value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "QueryPair#0", key: key, value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseQuery(state: State): unknown {
@@ -883,9 +883,9 @@ function parseQuery(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "query", pairs: pairs };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Query#0", pairs: pairs };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseUrl__alt0(state: State): unknown {
@@ -952,9 +952,9 @@ function parseUrl__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "url", path: [s1, s2], query: query };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Url#0", s1: s1, s2: s2, query: query };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseUrl__alt1(state: State): unknown {
@@ -1094,9 +1094,9 @@ function parseUrl__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "url", protocol: protocol, host: host, path: [s1] };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Url#1", protocol: protocol, host: host, s1: s1 };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseUrl(state: State): unknown {
@@ -1201,7 +1201,7 @@ function parsePathSegmentFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return value;
+  return { __production: "PathSegment#0", value: value };
 }
 
 function parseHostFast__alt0(state: State): unknown {
@@ -1367,7 +1367,7 @@ function parseHostFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "host", parts: [name, tld] };
+  return { __production: "Host#0", name: name, tld: tld };
 }
 
 function parseHostFast__alt1(state: State): unknown {
@@ -1486,7 +1486,7 @@ function parseHostFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "host", parts: [name], port: port };
+  return { __production: "Host#1", name: name, port: port };
 }
 
 function parseHostFast(state: State): unknown {
@@ -1679,7 +1679,7 @@ function parseQueryPairFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "pair", key: key, value: value };
+  return { __production: "QueryPair#0", key: key, value: value };
 }
 
 function parseQueryFast(state: State): unknown {
@@ -1717,7 +1717,7 @@ function parseQueryFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "query", pairs: pairs };
+  return { __production: "Query#0", pairs: pairs };
 }
 
 function parseUrlFast__alt0(state: State): unknown {
@@ -1775,7 +1775,7 @@ function parseUrlFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "url", path: [s1, s2], query: query };
+  return { __production: "Url#0", s1: s1, s2: s2, query: query };
 }
 
 function parseUrlFast__alt1(state: State): unknown {
@@ -1905,7 +1905,7 @@ function parseUrlFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "url", protocol: protocol, host: host, path: [s1] };
+  return { __production: "Url#1", protocol: protocol, host: host, s1: s1 };
 }
 
 function parseUrlFast(state: State): unknown {
@@ -2745,156 +2745,700 @@ function validateUrl(state: State): unknown {
   throw new SyntaxError('no production matched at position ' + __peek);
 }
 
-function stringify_PathSegment_source(s: any): string {
-  if (true) return __renderSlot_source(s);
-  throw new Error("stringify: no production matches structure shape for node PathSegment (target source)");
+const __defaultTarget: string | undefined = undefined;
+
+function __build_PathSegment_0_ast(captures: any): any {
+  return __renderSlot_ast(captures.value);
 }
 
-function stringify_PathSegment_json_auto(s: any): string {
-  if (true) return __renderSlot_json_auto(s);
-  throw new Error("stringify: no production matches structure shape for node PathSegment (target json-auto)");
+function __build_PathSegment_0_source(captures: any): any {
+  return String((__renderSlot_source(captures.value) ?? ""));
 }
 
-function stringify_Host_host_source(s: any): string {
-  if (s["port"] === undefined) return __renderSlot_source(s["parts"][0]) + "." + __renderSlot_source(s["parts"][1]);
-  if (s["port"] !== undefined) return __renderSlot_source(s["parts"][0]) + ":" + __renderSlot_source(s["port"]);
-  throw new Error("stringify: no production matches structure shape for node Host (target source, type host)");
+function __build_Host_0_ast(captures: any): any {
+  return { type: "host", parts: [__renderSlot_ast(captures.name), __renderSlot_ast(captures.tld)] };
 }
 
-function stringify_Host_source(s: any): string {
-  switch (s.type) {
-    case "host": return stringify_Host_host_source(s);
+function __build_Host_0_source(captures: any): any {
+  return (__renderSlot_source(captures.name) ?? "") + "." + (__renderSlot_source(captures.tld) ?? "");
+}
+
+function __build_Host_1_ast(captures: any): any {
+  return { type: "host", parts: [__renderSlot_ast(captures.name)], port: __renderSlot_ast(captures.port) };
+}
+
+function __build_Host_1_source(captures: any): any {
+  return (__renderSlot_source(captures.name) ?? "") + ":" + (__renderSlot_source(captures.port) ?? "");
+}
+
+function __build_QueryPair_0_ast(captures: any): any {
+  return { type: "pair", key: __renderSlot_ast(captures.key), value: __renderSlot_ast(captures.value) };
+}
+
+function __build_QueryPair_0_source(captures: any): any {
+  return (__renderSlot_source(captures.key) ?? "") + "=" + (__renderSlot_source(captures.value) ?? "");
+}
+
+function __build_Query_0_ast(captures: any): any {
+  return { type: "query", pairs: __renderSlot_ast(captures.pairs) };
+}
+
+function __build_Query_0_source(captures: any): any {
+  return String((Array.isArray(captures.pairs) ? captures.pairs.map(__renderSlot_source).join("&") : (__renderSlot_source(captures.pairs) ?? "")));
+}
+
+function __build_Url_0_ast(captures: any): any {
+  return { type: "url", path: [__renderSlot_ast(captures.s1), __renderSlot_ast(captures.s2)], query: __renderSlot_ast(captures.query) };
+}
+
+function __build_Url_0_source(captures: any): any {
+  return "/" + (__renderSlot_source(captures.s1) ?? "") + "/" + (__renderSlot_source(captures.s2) ?? "") + "?" + (__renderSlot_source(captures.query) ?? "");
+}
+
+function __build_Url_1_ast(captures: any): any {
+  return { type: "url", protocol: __renderSlot_ast(captures.protocol), host: __renderSlot_ast(captures.host), path: [__renderSlot_ast(captures.s1)] };
+}
+
+function __build_Url_1_source(captures: any): any {
+  return (__renderSlot_source(captures.protocol) ?? "") + "://" + (__renderSlot_source(captures.host) ?? "") + "/" + (__renderSlot_source(captures.s1) ?? "");
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no production matches structure shape for node Host (target source)");
-}
-
-function stringify_Host_host_json_auto(s: any): string {
-  if (s["port"] === undefined) return "{\"type\":\"host\",\"parts\":[" + __renderSlot_json_auto(s["parts"][0]) + "," + __renderSlot_json_auto(s["parts"][1]) + "]}";
-  if (s["port"] !== undefined) return "{\"type\":\"host\",\"parts\":[" + __renderSlot_json_auto(s["parts"][0]) + "],\"port\":" + __renderSlot_json_auto(s["port"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node Host (target json-auto, type host)");
-}
-
-function stringify_Host_json_auto(s: any): string {
-  switch (s.type) {
-    case "host": return stringify_Host_host_json_auto(s);
+  switch (captures.__production) {
+    case "PathSegment#0": return __build_PathSegment_0_ast(captures);
+    case "Host#0": return __build_Host_0_ast(captures);
+    case "Host#1": return __build_Host_1_ast(captures);
+    case "QueryPair#0": return __build_QueryPair_0_ast(captures);
+    case "Query#0": return __build_Query_0_ast(captures);
+    case "Url#0": return __build_Url_0_ast(captures);
+    case "Url#1": return __build_Url_1_ast(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node Host (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function stringify_QueryPair_source(s: any): string {
-  return __renderSlot_source(s["key"]) + "=" + __renderSlot_source(s["value"]);
-}
-
-function stringify_QueryPair_json_auto(s: any): string {
-  return "{\"type\":\"pair\",\"key\":" + __renderSlot_json_auto(s["key"]) + ",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_Query_source(s: any): string {
-  return __renderSlot_source(s["pairs"]);
-}
-
-function stringify_Query_json_auto(s: any): string {
-  return "{\"type\":\"query\",\"pairs\":" + __renderSlot_json_auto(s["pairs"]) + "}";
-}
-
-function stringify_Url_url_source(s: any): string {
-  if (s["query"] !== undefined && s["protocol"] === undefined && s["host"] === undefined) return "/" + __renderSlot_source(s["path"][0]) + "/" + __renderSlot_source(s["path"][1]) + "?" + __renderSlot_source(s["query"]);
-  if (s["protocol"] !== undefined && s["host"] !== undefined && s["query"] === undefined) return __renderSlot_source(s["protocol"]) + "://" + __renderSlot_source(s["host"]) + "/" + __renderSlot_source(s["path"][0]);
-  throw new Error("stringify: no production matches structure shape for node Url (target source, type url)");
-}
-
-function stringify_Url_source(s: any): string {
-  switch (s.type) {
-    case "url": return stringify_Url_url_source(s);
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
   }
-  throw new Error("stringify: no production matches structure shape for node Url (target source)");
-}
-
-function stringify_Url_url_json_auto(s: any): string {
-  if (s["query"] !== undefined && s["protocol"] === undefined && s["host"] === undefined) return "{\"type\":\"url\",\"path\":[" + __renderSlot_json_auto(s["path"][0]) + "," + __renderSlot_json_auto(s["path"][1]) + "],\"query\":" + __renderSlot_json_auto(s["query"]) + "}";
-  if (s["protocol"] !== undefined && s["host"] !== undefined && s["query"] === undefined) return "{\"type\":\"url\",\"protocol\":" + __renderSlot_json_auto(s["protocol"]) + ",\"host\":" + __renderSlot_json_auto(s["host"]) + ",\"path\":[" + __renderSlot_json_auto(s["path"][0]) + "]}";
-  throw new Error("stringify: no production matches structure shape for node Url (target json-auto, type url)");
-}
-
-function stringify_Url_json_auto(s: any): string {
-  switch (s.type) {
-    case "url": return stringify_Url_url_json_auto(s);
+  switch (captures.__production) {
+    case "PathSegment#0": return __build_PathSegment_0_source(captures);
+    case "Host#0": return __build_Host_0_source(captures);
+    case "Host#1": return __build_Host_1_source(captures);
+    case "QueryPair#0": return __build_QueryPair_0_source(captures);
+    case "Query#0": return __build_Query_0_source(captures);
+    case "Url#0": return __build_Url_0_source(captures);
+    case "Url#1": return __build_Url_1_source(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node Url (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case undefined: return stringify_PathSegment_source(s);
-    case "host": return stringify_Host_host_source(s);
-    case "pair": return stringify_QueryPair_source(s);
-    case "query": return stringify_Query_source(s);
-    case "url": return stringify_Url_url_source(s);
-  }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case undefined: return stringify_PathSegment_json_auto(s);
-    case "host": return stringify_Host_host_json_auto(s);
-    case "pair": return stringify_QueryPair_json_auto(s);
-    case "query": return stringify_Query_json_auto(s);
-    case "url": return stringify_Url_url_json_auto(s);
-  }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
-}
-
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
-}
-
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
-}
-
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
     return out;
   }
-  return __dispatchStringify_source(v);
-}
-
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
   }
-  return __dispatchStringify_json_auto(v);
+  return v;
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_PathSegment_0(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
+function __rebuild_Host_0(captures: any): string {
+  return __rebuildSlot(captures.name) + "." + __rebuildSlot(captures.tld);
+}
+
+function __rebuild_Host_1(captures: any): string {
+  return __rebuildSlot(captures.name) + ":" + __rebuildSlot(captures.port);
+}
+
+function __rebuild_QueryPair_0(captures: any): string {
+  return __rebuildSlot(captures.key) + "=" + __rebuildSlot(captures.value);
+}
+
+function __rebuild_Query_0(captures: any): string {
+  return String(__rebuildSlot(captures.pairs, "&"));
+}
+
+function __rebuild_Url_0(captures: any): string {
+  return "/" + __rebuildSlot(captures.s1) + "/" + __rebuildSlot(captures.s2) + "?" + __rebuildSlot(captures.query);
+}
+
+function __rebuild_Url_1(captures: any): string {
+  return __rebuildSlot(captures.protocol) + ":" + "/" + "/" + __rebuildSlot(captures.host) + "/" + __rebuildSlot(captures.s1);
+}
+
+function __invert_PathSegment_0_ast(value: any): string {
+  const captures: any = {};
+  captures.value = __invertSlotLeaf_ast(value);
+  return __rebuild_PathSegment_0(captures);
+}
+
+function __invert_Host_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "host")) {
+    throw new Error("stringify: field \"type\" expected \"host\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.parts) || value.parts.length !== 2) {
+    throw new Error("stringify: expected array of length 2, got " + (Array.isArray(value.parts) ? ("length " + value.parts.length) : typeof value.parts));
+  }
+  captures.name = __invertSlotLeaf_ast(value.parts[0]);
+  captures.tld = __invertSlotLeaf_ast(value.parts[1]);
+  return __rebuild_Host_0(captures);
+}
+
+function __invert_Host_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "host")) {
+    throw new Error("stringify: field \"type\" expected \"host\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.parts) || value.parts.length !== 1) {
+    throw new Error("stringify: expected array of length 1, got " + (Array.isArray(value.parts) ? ("length " + value.parts.length) : typeof value.parts));
+  }
+  captures.name = __invertSlotLeaf_ast(value.parts[0]);
+  captures.port = __invertSlotLeaf_ast(value.port);
+  return __rebuild_Host_1(captures);
+}
+
+function __invert_QueryPair_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "pair")) {
+    throw new Error("stringify: field \"type\" expected \"pair\", got " + JSON.stringify(value.type));
+  }
+  captures.key = __invertSlotLeaf_ast(value.key);
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_QueryPair_0(captures);
+}
+
+function __invert_Query_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "query")) {
+    throw new Error("stringify: field \"type\" expected \"query\", got " + JSON.stringify(value.type));
+  }
+  captures.pairs = __invertSlotFor_QueryPair_ast(value.pairs);
+  return __rebuild_Query_0(captures);
+}
+
+function __invert_Url_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "url")) {
+    throw new Error("stringify: field \"type\" expected \"url\", got " + JSON.stringify(value.type));
+  }
+  if (!Array.isArray(value.path) || value.path.length !== 2) {
+    throw new Error("stringify: expected array of length 2, got " + (Array.isArray(value.path) ? ("length " + value.path.length) : typeof value.path));
+  }
+  captures.s1 = __invertSlotFor_PathSegment_ast(value.path[0]);
+  captures.s2 = __invertSlotFor_PathSegment_ast(value.path[1]);
+  captures.query = __invertSlotFor_Query_ast(value.query);
+  return __rebuild_Url_0(captures);
+}
+
+function __invert_Url_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "url")) {
+    throw new Error("stringify: field \"type\" expected \"url\", got " + JSON.stringify(value.type));
+  }
+  captures.protocol = __invertSlotLeaf_ast(value.protocol);
+  captures.host = __invertSlotFor_Host_ast(value.host);
+  if (!Array.isArray(value.path) || value.path.length !== 1) {
+    throw new Error("stringify: expected array of length 1, got " + (Array.isArray(value.path) ? ("length " + value.path.length) : typeof value.path));
+  }
+  captures.s1 = __invertSlotFor_PathSegment_ast(value.path[0]);
+  return __rebuild_Url_1(captures);
+}
+
+function __invert_PathSegment_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.value = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_PathSegment_0(captures);
+}
+
+function __invert_Host_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(".", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \".\" after capture name");
+    }
+    captures.name = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.tld = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Host_0(captures);
+}
+
+function __invert_Host_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture name");
+    }
+    captures.name = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.port = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Host_1(captures);
+}
+
+function __invert_QueryPair_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf("=", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"=\" after capture key");
+    }
+    captures.key = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.value = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_QueryPair_0(captures);
+}
+
+function __invert_Query_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.pairs = __invertSlotFor_QueryPair_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Query_0(captures);
+}
+
+function __invert_Url_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("/", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"/\" in template body");
+  }
+  __pos += 1;
+  {
+    const __end = __s.indexOf("/", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"/\" after capture s1");
+    }
+    captures.s1 = __invertSlotFor_PathSegment_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf("?", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"?\" after capture s2");
+    }
+    captures.s2 = __invertSlotFor_PathSegment_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.query = __invertSlotFor_Query_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Url_0(captures);
+}
+
+function __invert_Url_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf("://", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"://\" after capture protocol");
+    }
+    captures.protocol = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
+  {
+    const __end = __s.indexOf("/", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"/\" after capture host");
+    }
+    captures.host = __invertSlotFor_Host_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.s1 = __invertSlotFor_PathSegment_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Url_1(captures);
+}
+
+function __dispatchInverse_PathSegment_ast(value: any): string {
+  if (typeof value === "string") {
+    return __invert_PathSegment_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Host_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "host") && !("port" in value)) return __invert_Host_0_ast(value);
+    if (Object.is(value.type, "host") && "port" in value) return __invert_Host_1_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_QueryPair_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "pair")) return __invert_QueryPair_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Query_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "query")) return __invert_Query_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Url_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "url") && "query" in value && !("protocol" in value) && !("host" in value)) return __invert_Url_0_ast(value);
+    if (Object.is(value.type, "url") && "protocol" in value && "host" in value && !("query" in value)) return __invert_Url_1_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_Url_ast(value);
+}
+
+function __dispatchInverse_PathSegment_source(value: any): string {
+  if (typeof value === "string") {
+    return __invert_PathSegment_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Host_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf(".") >= 0) return __invert_Host_0_source(value);
+    if (value.indexOf(":") >= 0) return __invert_Host_1_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_QueryPair_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf("=") >= 0) return __invert_QueryPair_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Query_source(value: any): string {
+  if (typeof value === "string") {
+    return __invert_Query_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Url_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf("://") >= 0) return __invert_Url_1_source(value);
+    if (value.startsWith("/")) return __invert_Url_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_source(value: any): string {
+  return __dispatchInverse_Url_source(value);
+}
+
+function __invertSlotFor_PathSegment_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_PathSegment_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_PathSegment_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_Host_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Host_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Host_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_QueryPair_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_QueryPair_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_QueryPair_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_Query_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Query_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Query_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_Url_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Url_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Url_ast(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_PathSegment_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_PathSegment_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_PathSegment_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_Host_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Host_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Host_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_QueryPair_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_QueryPair_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_QueryPair_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_Query_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Query_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Query_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_Url_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Url_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Url_source(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+  "source": __dispatchInverse_source,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

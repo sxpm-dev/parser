@@ -153,6 +153,12 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
   // value is null/undefined, the preceding literal separator must be
   // suppressed too — otherwise the rendered output carries a dangling
   // separator. Mirrors the inverse rebuild fusion in emit/rebuild.ts.
+  //
+  // Gap B — Forward template joinSep for .repeats() arrays: when the slot
+  // references a `.repeats()` span, the captured value at runtime is an
+  // array. Without an explicit join, JS coerces via Array.prototype.toString
+  // (comma-join). Emit an inline `Array.isArray(...) ? .map(...).join(<sep>)`
+  // expression with the same join separator the rebuild path uses.
   const targetId = jsIdent(target);
   const parts = template.parts;
   const slots = template.slots;
@@ -173,7 +179,18 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
       const access = `captures${memberAccess(slot.ref)}`;
       const span = findSpanByName(production, slot.ref);
       const optional = span !== undefined && isAbsentAllowedSpan(span);
-      const slotExpr = `(__renderSlot_${targetId}(${access}) ?? "")`;
+      const repeats = span !== undefined ? repeatsJoinSeparator(span) : null;
+      let slotExpr: string;
+      if (repeats !== null) {
+        // Array-of-children slot: per-child dispatch then join with the
+        // span-declared separator. Fall back to the scalar path when the
+        // capture isn't actually an array (e.g. .repeats({min:0}) with a
+        // single child or a non-array sentinel).
+        const sepLit = jsString(repeats);
+        slotExpr = `(Array.isArray(${access}) ? ${access}.map(__renderSlot_${targetId}).join(${sepLit}) : (__renderSlot_${targetId}(${access}) ?? ""))`;
+      } else {
+        slotExpr = `(__renderSlot_${targetId}(${access}) ?? "")`;
+      }
       pieces.push({ kind: 'slot', text: slotExpr, optional, access });
     }
   }
@@ -230,6 +247,21 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
     if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
   }
   return false;
+}
+
+// Returns the per-array join separator if the span is `.repeats(...)`, or
+// null when the span doesn't repeat. Mirrors the rebuild-side
+// `joinSeparatorOf` in emit/rebuild.ts: `.repeats({ sep })` declares an
+// explicit per-child suffix (children carry their own separator → join with
+// ""), `.repeats()` without `sep` relies on the schema-level whitespace
+// policy (single space) between children → join with " ".
+function repeatsJoinSeparator(span: ResolvedSpan): string | null {
+  for (const m of span.modifiers) {
+    if (m.kind === 'repeats') {
+      return m.sep === undefined ? ' ' : '';
+    }
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------

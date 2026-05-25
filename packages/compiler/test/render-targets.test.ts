@@ -314,6 +314,39 @@ test('forward template: optional-absent slot suppresses preceding separator', as
   assert.equal(mod.render('a', { type: 'source' }), 'a');
 });
 
+// ---------- Forward template slot joinSep for .repeats() arrays (Gap B) --
+
+test('forward template: .repeats() slot joins array with declared separator', async () => {
+  // A schema span captured via `.repeats({ min: 1 })` lands at runtime as
+  // an array. When that capture is interpolated into a template slot, the
+  // forward render must join with the same separator the rebuild path uses
+  // (single space for plain .repeats(), empty string for .repeats({ sep })).
+  // Without the joinSep thread, JS coerces arrays via toString → comma-join,
+  // producing 'npm,test' instead of 'npm test'.
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Cmd',
+    examples: [
+      ex('npm')
+        .as('Word')
+        .span('value', 'npm').ident().css()
+        .render('ast', $.value)
+        .render('source', tpl`${$.value}`)
+        .build(),
+      ex('npm test')
+        .as('Cmd')
+        .span('words', 'npm', 'Word').repeats({ min: 1 })
+        .render('ast', { type: 'cmd', words: $.words })
+        .render('source', tpl`${$.words}`)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'gap-b-repeats-join');
+  assert.equal(mod.render('npm test', { type: 'source' }), 'npm test');
+  assert.equal(mod.render('npm', { type: 'source' }), 'npm');
+  assert.equal(mod.render('npm test deploy', { type: 'source' }), 'npm test deploy');
+});
+
 // ---------- Recovery + interleaved-valid regression -----------------------
 //
 // Regression for the scannerless-emit bug where emitNodeFunctionWithRecovery

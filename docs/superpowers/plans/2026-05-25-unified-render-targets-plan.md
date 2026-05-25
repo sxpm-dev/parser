@@ -1303,3 +1303,137 @@ git commit -m "chore: post-migration tidy"
 - **Never amend** — new commits on hook failures.
 - **If a spec contradiction surfaces**, stop and ask the user; do not silently choose.
 - **The bench gates (`packages/css/bench/json.ts` and `packages/css/bench/focused.ts`) must keep running** — verify with `npm run bench:css-json` and `npm run bench:css:focused` between phases when in doubt.
+
+---
+
+## Migration notes (post-Phase 6 / 7)
+
+Reality check after the all-package migration. The plan's design held;
+several refinements landed during Phase 6 to handle real-world schemas
+and two productions diverged from the spec's "every package supports
+every target" ideal because the inverse derivation cannot yet
+discriminate them. None of these are blocking — they are documented here
+so future work has a clear baseline.
+
+### What shipped beyond the spec
+
+- **`render(input, { type, mode? })`** — the `mode?: ParseMode` option
+  was added during Phase 6 css migration so the public `render` wrapper
+  can route through the parser's `'raws'` parse mode (PostCSS-style
+  source-fidelity captures) without bypassing the per-target dispatcher.
+  The mode is opt-in per call and defaults to `'fast'`. The runtime API
+  is now `render(input, opts?)` / `stringify(value, opts?)` with
+  `opts.type` selecting the target and `opts.mode` (render-only)
+  selecting the parser mode.
+
+- **Identical-template inverse productions are accepted** (compiler
+  commit `0691a93`). Spec rule 5 ("value-stable round-trip") implies
+  that when two productions share an identical template body for the
+  same target, the inverse dispatcher can pick either deterministically
+  — the rebuilt source re-parses to the same target value. The compiler
+  now allows this rather than throwing the "indistinguishable
+  productions" error; the value-stability invariant is preserved.
+
+- **Multi-role recursive capture inverse dispatch** (compiler commit
+  `02df6ec`). When a recursive span declares multiple permitted roles
+  (e.g. `.span("nodes", ..., ["Comment", "AtRule", "Rule",
+  "Declaration"])`), the inverse dispatcher walks the captured array
+  and routes each element through `__dispatchInverse_<target>` so
+  heterogeneous children stringify correctly back to source.
+
+- **Forward-template fixes (Gaps A/B/C)** landed in commits `b4a7e4b`,
+  `1977a00`, `f1f0e56`:
+  - Gap A: optional-absent slots fuse with their preceding separator in
+    both the forward template and the inverse template-scanner.
+  - Gap B: forward template slots thread `joinSep` for `.repeats({sep})`
+    arrays (previously joined with empty string).
+  - Gap C: the inverse dispatcher dispatches only on root productions —
+    sub-productions are dispatched recursively through field/element
+    reads, not from the top.
+
+- **Rebuild correctness fixes** landed in commits `6128b15`, `7071d3f`,
+  `fe25f54`, `c7d4f64`, `a50a798`:
+  - Template inverse discriminator handles unique embedded literals as
+    a discrimination strategy (not just leading prefixes).
+  - Rebuild fuses optional slots with their preceding separators so the
+    rebuilt source matches the canonical form when the optional is
+    absent.
+  - `__rebuildSlot` joins `.repeats()` arrays with the declared
+    separator, not an empty string.
+  - Template render slots null-coerce to `""` in concat contexts so
+    optional-absent slots don't propagate `undefined` into the rebuilt
+    string.
+
+### What diverged from the spec
+
+- **css dropped the `'json'` and `'json-auto'` targets entirely** (css
+  migration commit `9cba292`). The selector-as-key `'json'` target
+  merged sibling rules at the parent (Stylesheet) scope; an inverse
+  cannot reconstruct the original rule sequence from a merged
+  representation without bespoke "merge semantics" support in the
+  compiler. `'json-auto'` was compiler-wide synthesis and was removed
+  in Phase 2. CSS now declares `'ast'` and `'source'` only.
+
+- **css-color is AST-only** (commit `d257b88`). ColorFunctionToken /
+  NumericColorFunctionToken have bare-slot productions
+  (`tpl`${$.value}`` for number / ident / string) whose source-template
+  inverse cannot discriminate productions from source alone — there is
+  no embedded literal segment to use as a runtime discriminator. The
+  schema declares `'ast'` only. (As part of the migration the
+  previously-shared `{ type: 'color-function', name }` AST shape was
+  split into distinct `rgb-color-function` (RGB) and `color-function`
+  (non-RGB) literals so the AST-target inverse dispatcher can route
+  reliably on `.type`.)
+
+- **css-length-percentage is AST-only** (commit `f4e6ab4`). Multiple
+  productions share the same example input (e.g. `ex('0')` appears as
+  `LengthPercentageItem` and `LengthFunctionToken`), which blocked the
+  migration aid's synth-source step. The schema declares `'ast'` only.
+
+- **markdown's `'html'` target is forward-only** (commit `edcb1aa`).
+  The markdown -> html mapping is many-to-one (`---`, `***`, `___` all
+  render to `<hr>`) AND the html surface is itself valid input to the
+  markdown parser, which would re-parse `<hr>` as a paragraph wrapping
+  the literal text. A reverse `stringify(htmlString, 'html')` would
+  need a markdown serializer that knows the html came from a markdown
+  source — out of scope for v1. The per-package round-trip test only
+  exercises `'ast'` and `'source'`.
+
+- **html limits round-trip to inputs without attribute lists** (commit
+  `4f7b788`). The `attrs` span is a `.repeats({ min: 0 })` whose
+  synthesised forward source template omits the span. Source round-trip
+  is green for both empty and non-empty inputs (both pin to the
+  canonical empty-attrs form) but `stringify(ast, 'source')` emits
+  `<tagattr=...>` (no space between tag and attrs) for inputs with
+  attributes. Closing the gap requires a dedicated `options.inverse`
+  template plus compiler support for "separator-when-non-empty"
+  optional spans.
+
+### Known limitations / Phase 7 follow-ups
+
+- **css comment AST round-trip** (`packages/css/test/round-trip.test.ts`
+  comment): Comment uses `.comment()` to strip `/*` / `*/` delimiters
+  from the captured `text`. The source rebuild reads `captures.text`
+  directly and produces only the interior, so re-parsing the rebuilt
+  comment fails. Tracked as a follow-up; fix is either a synthesis rule
+  that re-adds delimiters around `.comment()` slots (compiler-side) or
+  splitting the comment span into three (which breaks the comment fast
+  path in direct-fast).
+
+- **css `raws` field removal** (css schema header comment): the
+  Phase 4 inverse-derivation pass rejects synthetic refs (`$.gap` /
+  `$.tail` / `$.endsWith` / `$.commentLeft` / `$.commentRight`)
+  anywhere in an object-body render target. Re-introducing them
+  requires compiler support for synthetic refs in object bodies.
+  Source-level whitespace fidelity now flows through the `'source'`
+  target instead; AST round-trip is value-stable, not byte-stable.
+
+- **bench gate naming.** The old `npm run bench:css-json` script is
+  renamed to `npm run bench:css:round-trip` (the css workspace's
+  `bench:json` script is renamed to `bench:round-trip`). The bench
+  itself was rewritten in `packages/css/bench/round-trip.ts`. The
+  reverse contestant guards `stringify` errors with a JSON-byte-count
+  fallback so real-world fixtures with constructs the source rebuild
+  cannot reconstruct (free-floating comments, etc.) don't crash the
+  bench — they fall back to reporting the rendered AST's JSON size.
+

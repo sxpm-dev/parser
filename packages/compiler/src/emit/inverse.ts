@@ -43,6 +43,13 @@ export function emitInverse(schema: InferredSchema): string {
   const dispatchers: string[] = [];
   const slotHelpers: string[] = [];
 
+  // Feature 2: collect every (sorted-roles, target) pair used by any
+  // multi-role recursive capture in the schema. We emit one
+  // `__invertSlotMulti_<roles>_<target>` helper per pair, deduplicated
+  // by the joined role names — so two schemas with the same role tuple
+  // share the helper.
+  const multiRoleCombos = collectMultiRoleCombos(schema, targets);
+
   for (const target of targets) {
     for (const info of schema.nodeTypes.values()) {
       for (let i = 0; i < info.productions.length; i++) {
@@ -63,6 +70,14 @@ export function emitInverse(schema: InferredSchema): string {
     for (const info of schema.nodeTypes.values()) {
       dispatchers.push(emitNodeDispatcher(info, target));
       slotHelpers.push(emitNodeSlotHelper(info.name, target));
+    }
+    // Feature 2: per-target multi-role slot helpers. Each helper tries
+    // every role's per-(NodeType, target) dispatcher in order, returning
+    // the first whose discriminator matches. Built on top of the
+    // single-role per-node dispatchers established by Gap C — see
+    // `emitMultiRoleSlotHelper` for the routing logic.
+    for (const roles of multiRoleCombos.get(target) ?? []) {
+      slotHelpers.push(emitMultiRoleSlotHelper(roles, target));
     }
     // Generic leaf slot helper (per target) for non-recursive captures.
     // Non-recursive captures are primitives or arrays of primitives — no
@@ -236,14 +251,11 @@ function slotHelperCall(
     if (roles.length === 1) {
       return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr})`;
     }
-    // Multi-role recursive capture is rejected at v1 — the per-call-site
-    // dispatcher cannot pick which child node type to use without runtime
-    // discrimination on the rendered value's shape (the very thing Gap C
-    // pushes out of the public surface). Surface a clear compile error
-    // when encountered; the spec calls this out under v1 constraints.
-    throw new Error(
-      `inverse: capture '${capture}' in production '${production.nodeType}' references multiple recursive roles (${roles.join(', ')}); v1 supports single-role recursive captures only`,
-    );
+    // Feature 2: multi-role recursive capture. The runtime value at each
+    // array element is dispatched to whichever role's per-node inverse
+    // dispatcher matches its shape — using the shared per-(roles, target)
+    // helper emitted by `emitMultiRoleSlotHelper`.
+    return `${multiRoleSlotHelperName(roles, target)}(${valueExpr})`;
   }
   // No span found for this capture — defensive fallback. This shouldn't
   // happen because validate.ts checks that every $.name in a body refers
@@ -703,6 +715,50 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
 }`;
 }
 
+// Feature 2: multi-role slot helper. A capture annotated with
+// `.span(name, text, [Role1, Role2, ...])` produces values that may be
+// instances of any of the listed roles. The helper recurses arrays
+// element-wise, and for objects routes through each role's
+// per-(NodeType, target) dispatcher in declared order — returning the
+// first that succeeds (try/catch). String children pass through
+// unchanged (template-targeted children arrive pre-rebuilt).
+//
+// Determinism: the dispatcher within a single node-type is unambiguous
+// post-`validateInverseDiscrimination`. Across roles, ordering is the
+// schema-declared role order; if two roles share an indistinguishable
+// production shape, the first role wins. `validateMultiRoleDiscrimination`
+// surfaces a CompilerError when that would silently mis-route.
+function emitMultiRoleSlotHelper(
+  roles: ReadonlyArray<string>,
+  target: string,
+): string {
+  const helper = multiRoleSlotHelperName(roles, target);
+  const tryCalls: string[] = [];
+  for (const role of roles) {
+    const childDispatch = nodeDispatcherName(role, target);
+    tryCalls.push(
+      `    try { return ${childDispatch}(v); } catch (_e) { /* try next role */ }`,
+    );
+  }
+  return `function ${helper}(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = ${helper}(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") {
+${tryCalls.join('\n')}
+    throw new Error("stringify: no role matched for multi-role capture (roles: ${roles.join(', ')}; value: " + JSON.stringify(v) + ")");
+  }
+  return String(v);
+}`;
+}
+
 // Per-target leaf slot helper for non-recursive captures (primitives or
 // arrays of primitives). No object branch — leaves never carry recursive
 // children, so no per-node dispatcher is needed. Arrays still get
@@ -742,6 +798,46 @@ function nodeDispatcherName(nodeName: string, target: string): string {
 
 function nodeSlotHelperName(nodeName: string, target: string): string {
   return `__invertSlotFor_${jsIdent(nodeName)}_${jsIdent(target)}`;
+}
+
+// Feature 2: deterministic name for a multi-role slot helper. Roles are
+// included in declaration order (not sorted) so the generated identifier
+// reflects the dispatch order — the first role wins on ambiguous shapes.
+function multiRoleSlotHelperName(
+  roles: ReadonlyArray<string>,
+  target: string,
+): string {
+  return `__invertSlotMulti_${roles.map((r) => jsIdent(r)).join('_')}_${jsIdent(target)}`;
+}
+
+// Feature 2: collect every (roles, target) combination used by any
+// multi-role recursive capture in the schema. Keyed by target, with
+// inner roles deduplicated by the joined role names so identical
+// tuples emitted from multiple call sites share a single helper.
+function collectMultiRoleCombos(
+  schema: InferredSchema,
+  targets: ReadonlyArray<string>,
+): ReadonlyMap<string, ReadonlyArray<ReadonlyArray<string>>> {
+  const out = new Map<string, ReadonlyArray<string>[]>();
+  for (const target of targets) {
+    const seen = new Map<string, ReadonlyArray<string>>();
+    for (const info of schema.nodeTypes.values()) {
+      for (const production of info.productions) {
+        // Only consider productions that actually declare this target —
+        // otherwise the slot helper would never be reached for that
+        // (target, role-tuple) combination.
+        if (!production.renders.has(target)) continue;
+        for (const span of production.spans) {
+          if (span.recursiveRoles.length <= 1) continue;
+          const roles = [...span.recursiveRoles];
+          const key = roles.join('|');
+          if (!seen.has(key)) seen.set(key, roles);
+        }
+      }
+    }
+    out.set(target, [...seen.values()]);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------

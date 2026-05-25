@@ -533,6 +533,59 @@ test('inverse: structurally-identical template bodies do NOT collide; dispatcher
   assert.equal(html2, htmlA);
 });
 
+// Feature 2: Multi-role recursive captures. Previously, a capture whose
+// `recursiveRoles.length > 1` (e.g. `.span('children', '', ['Foo','Bar'])`)
+// was rejected at emit time. The dispatcher now recurses INTO each role
+// at runtime, selecting the child-node dispatcher whose value-shape
+// matches each array element. Children dispatch via the per-(NodeType,
+// target) inverse dispatcher already established by Gap C.
+test('inverse: multi-role recursive capture dispatches per array element', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Parent 'Doc' captures a heterogeneous children array. Two child node
+  // types (Foo / Bar) discriminate by `value.type`. Mimics html's
+  // `children: ['Doctype', 'Comment', 'HtmlElement', 'TextNode']` shape.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('foo').as('Doc')
+        .span('children', 'foo', ['Foo', 'Bar']).repeats({ min: 1, sep: '|' })
+        .render('ast', { type: 'doc', children: $.children })
+        .build(),
+      ex('foo').as('Foo')
+        .span('text', 'foo').ident()
+        .render('ast', { type: 'foo', text: $.text })
+        .build(),
+      ex('!bar').as('Bar')
+        .span('!')
+        .span('text', 'bar').ident()
+        .render('ast', { type: 'bar', text: $.text })
+        .build(),
+    ],
+  });
+  // Inference + emit must succeed (previously: error referencing 'v1
+  // supports single-role recursive captures only').
+  assert.doesNotThrow(() => inferSchema(schema));
+  const mod = await loadGenerated(schema, 'feature2-multi-role');
+  // Forward: parser yields heterogeneous children array.
+  const ast = mod.render('foo|!bar|foo', { type: 'ast' });
+  assert.deepEqual(ast, {
+    type: 'doc',
+    children: [
+      { type: 'foo', text: 'foo' },
+      { type: 'bar', text: 'bar' },
+      { type: 'foo', text: 'foo' },
+    ],
+  });
+  // Round-trip: stringify(render(input, ast), ast) re-renders to the
+  // same value (value-stable, not byte-stable per spec rule 5).
+  const src = mod.stringify(ast, { type: 'ast' });
+  const ast2 = mod.render(src, { type: 'ast' });
+  assert.deepEqual(ast2, ast);
+  // Verify order and types are preserved.
+  const kids = (ast2 as { children: Array<{ type: string }> }).children;
+  assert.deepEqual(kids.map((c) => c.type), ['foo', 'bar', 'foo']);
+});
+
 // generateParser code shape: both render + stringify exported.
 test('generateParser emits public render and public stringify', async () => {
   const { defineSchema, ex, $, tpl } = await import('@parser2/parser');

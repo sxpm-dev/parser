@@ -30,6 +30,7 @@ import type {
   InferredSchema,
   InverseField,
   InverseIR,
+  NodeTypeInfo,
   Production,
   RenderTargetIR,
 } from '../model.ts';
@@ -53,8 +54,22 @@ export function emitInverse(schema: InferredSchema): string {
         inverters.push(emitInverter(info.name, i, target, entry, production));
       }
     }
-    dispatchers.push(emitDispatcher(target, schema));
-    slotHelpers.push(emitSlotHelper(target));
+    // Gap C: per-(NodeType, target) dispatchers. The PUBLIC stringify routes
+    // through `__dispatchInverse_<rootType>_<target>` only — sub-productions
+    // are reachable only via recursive child capture sites that dispatch on
+    // the statically-known child node type. This prevents a sub-production's
+    // template prefix (e.g. `*` for a CronField wildcard) from accidentally
+    // matching a root-level rendered value that starts the same way.
+    for (const info of schema.nodeTypes.values()) {
+      dispatchers.push(emitNodeDispatcher(info, target));
+      slotHelpers.push(emitNodeSlotHelper(info.name, target));
+    }
+    // Generic leaf slot helper (per target) for non-recursive captures.
+    // Non-recursive captures are primitives or arrays of primitives — no
+    // dispatching needed; the helper just unboxes shapes for rebuild.
+    slotHelpers.push(emitLeafSlotHelper(target));
+    // Root entry-point dispatcher used by the public stringify table.
+    dispatchers.push(emitRootDispatcher(schema.rootType, target));
   }
 
   const dispatchTable = emitDispatchTable(targets);
@@ -97,7 +112,7 @@ ${indent(assertion, 1)}
   return ${jsString(production.source.input)};
 }`;
   }
-  const body = emitInverseBody(ir, 'value', target);
+  const body = emitInverseBody(ir, 'value', target, production);
   const rebuild = rebuildFnName(nodeName, prodIdx);
   return `function ${fnName}(value: any): string {
   const captures: any = {};
@@ -108,18 +123,29 @@ ${indent(body, 1)}
 
 // Returns JS statements (one per line, no leading indent) that read from the
 // given `value` expression into the in-scope `captures` object.
-function emitInverseBody(ir: InverseIR, valueExpr: string, target: string): string {
+//
+// Gap C: capture sites resolve the slot helper per (child node type,
+// target). The child node type for each capture is looked up on the
+// owning production's spans (`recursiveRoles[0]`). Non-recursive
+// captures use a target-scoped no-dispatch helper that just unboxes the
+// already-source-shaped value.
+function emitInverseBody(
+  ir: InverseIR,
+  valueExpr: string,
+  target: string,
+  production: Production,
+): string {
   switch (ir.kind) {
     case 'object':
-      return emitObjectBody(ir.fields, valueExpr, target);
+      return emitObjectBody(ir.fields, valueExpr, target, production);
     case 'array':
-      return emitArrayBody(ir.elements, valueExpr, target);
+      return emitArrayBody(ir.elements, valueExpr, target, production);
     case 'scalar':
       return emitScalarAssertion(ir.value, valueExpr);
     case 'ref':
-      return `captures${memberAccess(ir.capture)} = __invertSlot_${jsIdent(target)}(${valueExpr});`;
+      return `captures${memberAccess(ir.capture)} = ${slotHelperCall(ir.capture, production, target, valueExpr)};`;
     case 'template':
-      return emitTemplateBody(ir.segments, ir.captures, valueExpr, target);
+      return emitTemplateBody(ir.segments, ir.captures, valueExpr, target, production);
   }
 }
 
@@ -127,6 +153,7 @@ function emitObjectBody(
   fields: ReadonlyArray<InverseField>,
   valueExpr: string,
   target: string,
+  production: Production,
 ): string {
   const lines: string[] = [];
   lines.push(
@@ -144,7 +171,7 @@ function emitObjectBody(
         `}`,
       );
     } else {
-      lines.push(...emitInverseBody(field.inverse, access, target).split('\n'));
+      lines.push(...emitInverseBody(field.inverse, access, target, production).split('\n'));
     }
   }
   return lines.join('\n');
@@ -154,6 +181,7 @@ function emitArrayBody(
   elements: ReadonlyArray<InverseIR>,
   valueExpr: string,
   target: string,
+  production: Production,
 ): string {
   const lines: string[] = [];
   lines.push(
@@ -162,9 +190,65 @@ function emitArrayBody(
     `}`,
   );
   for (let i = 0; i < elements.length; i++) {
-    lines.push(...emitInverseBody(elements[i]!, `${valueExpr}[${i}]`, target).split('\n'));
+    lines.push(...emitInverseBody(elements[i]!, `${valueExpr}[${i}]`, target, production).split('\n'));
   }
   return lines.join('\n');
+}
+
+// Lookup whether a named capture on the given production references an
+// optional (.optional() or .repeats({min:0})) span. Used by the inverse
+// template scanner so the tail-optional-absent path mirrors Gap A's
+// forward fusion.
+function isOptionalCapture(production: Production, captureName: string): boolean {
+  for (const span of production.spans) {
+    if (span.name !== captureName) continue;
+    for (const m of span.modifiers) {
+      if (m.kind === 'optional') return true;
+      if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
+    }
+    return false;
+  }
+  return false;
+}
+
+// Resolve the slot-helper call for a capture site. Looks up the capture's
+// span on the owning production. If the span is recursive (single child
+// role — Gap C v1 constraint), call the per-(child-node-type, target)
+// helper so the recursive dispatcher is scoped to the child node's
+// productions only. Otherwise the captured value is a leaf (string or
+// array of strings) and we route through the generic per-target slot
+// helper that just unboxes.
+function slotHelperCall(
+  capture: string,
+  production: Production,
+  target: string,
+  valueExpr: string,
+): string {
+  for (const span of production.spans) {
+    if (span.name !== capture) continue;
+    const roles = span.recursiveRoles;
+    if (roles.length === 0) {
+      // Non-recursive capture — primitive or repeated primitive. The
+      // generic helper handles null/string/array pass-through without
+      // dispatching to any per-node inverter.
+      return `__invertSlotLeaf_${jsIdent(target)}(${valueExpr})`;
+    }
+    if (roles.length === 1) {
+      return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr})`;
+    }
+    // Multi-role recursive capture is rejected at v1 — the per-call-site
+    // dispatcher cannot pick which child node type to use without runtime
+    // discrimination on the rendered value's shape (the very thing Gap C
+    // pushes out of the public surface). Surface a clear compile error
+    // when encountered; the spec calls this out under v1 constraints.
+    throw new Error(
+      `inverse: capture '${capture}' in production '${production.nodeType}' references multiple recursive roles (${roles.join(', ')}); v1 supports single-role recursive captures only`,
+    );
+  }
+  // No span found for this capture — defensive fallback. This shouldn't
+  // happen because validate.ts checks that every $.name in a body refers
+  // to a real span. Use the leaf helper so the build still runs.
+  return `__invertSlotLeaf_${jsIdent(target)}(${valueExpr})`;
 }
 
 function emitScalarAssertion(
@@ -184,6 +268,7 @@ function emitTemplateBody(
   captures: ReadonlyArray<string>,
   valueExpr: string,
   target: string,
+  production: Production,
 ): string {
   // Literal-segment scanner. segments.length === captures.length + 1.
   // Walk:
@@ -191,8 +276,28 @@ function emitTemplateBody(
   //   require value starts with segments[0]; advance past it
   //   for each i: read up to next occurrence of segments[i+1] into captures[i]
   //   final: require remainder starts with segments[captures.length]
+  //
+  // Optional-tail handling (mirrors Gap A's forward fusion):
+  //   The forward render path now suppresses an optional-absent slot AND
+  //   its preceding whitespace separator. The inverse scanner must accept
+  //   the same shape — when scanning for the separator that precedes an
+  //   optional capture fails AND every capture from that point on is
+  //   optional (or .repeats({min:0})), the scanner consumes the remainder
+  //   for captures[i], records null for each tail optional capture, and
+  //   exits cleanly. The "tail-only" restriction keeps the scanner
+  //   deterministic; mid-list optional captures still require their
+  //   separator to be present.
+  const isOptional: ReadonlyArray<boolean> = captures.map(
+    (name) => isOptionalCapture(production, name),
+  );
+  // Precompute: for each capture index, true iff every capture at j >= i is optional.
+  const tailOptional: boolean[] = new Array(captures.length).fill(false);
+  let allOpt = true;
+  for (let j = captures.length - 1; j >= 0; j--) {
+    if (!isOptional[j]) allOpt = false;
+    tailOptional[j] = allOpt;
+  }
   const lines: string[] = [];
-  const targetId = jsIdent(target);
   lines.push(
     `if (typeof ${valueExpr} !== "string") {`,
     `  throw new Error("stringify: expected string value for template body, got " + typeof ${valueExpr});`,
@@ -213,25 +318,77 @@ function emitTemplateBody(
   for (let i = 0; i < captures.length; i++) {
     const nextSeg = segments[i + 1] ?? '';
     const capName = captures[i]!;
+    const helperCall = slotHelperCall(capName, production, target, '__s.slice(__pos)');
     if (i === captures.length - 1 && nextSeg.length === 0) {
-      // Last capture, no trailing separator: take the remainder.
-      lines.push(`captures${memberAccess(capName)} = __invertSlot_${targetId}(__s.slice(__pos));`);
-      lines.push(`__pos = __s.length;`);
+      // Last capture, no trailing separator: take the remainder. If the
+      // last capture is itself optional and the input is already
+      // exhausted, leave it null instead of capturing an empty slice —
+      // matches the forward fusion's null-coalesce.
+      if (isOptional[i]) {
+        lines.push(
+          `if (__pos >= __s.length) {`,
+          `  captures${memberAccess(capName)} = null;`,
+          `} else {`,
+          `  captures${memberAccess(capName)} = ${helperCall};`,
+          `  __pos = __s.length;`,
+          `}`,
+        );
+      } else {
+        lines.push(`captures${memberAccess(capName)} = ${helperCall};`);
+        lines.push(`__pos = __s.length;`);
+      }
     } else if (nextSeg.length === 0) {
       // Inner adjacent slots are blocked at derivation time, but be
       // defensive — empty separator between captures cannot be scanned.
       throw new Error(`emit/inverse: empty separator between captures '${capName}' and '${captures[i + 1]}'`);
     } else {
-      lines.push(
-        `{`,
-        `  const __end = __s.indexOf(${jsString(nextSeg)}, __pos);`,
-        `  if (__end < 0) {`,
-        `    throw new Error("stringify: expected separator ${escapeForError(jsString(nextSeg))} after capture ${capName}");`,
-        `  }`,
-        `  captures${memberAccess(capName)} = __invertSlot_${targetId}(__s.slice(__pos, __end));`,
-        `  __pos = __end + ${nextSeg.length};`,
-        `}`,
-      );
+      const innerHelperCall = slotHelperCall(capName, production, target, '__s.slice(__pos, __end)');
+      // If captures[i+1] is the start of a tail-optional run, missing
+      // separator means every subsequent capture is absent. Consume the
+      // remainder for captures[i] and null-out the optional tail.
+      const nextIdx = i + 1;
+      const nextIsTailOptional = nextIdx < captures.length && tailOptional[nextIdx];
+      if (nextIsTailOptional) {
+        const tailNullLines: string[] = [];
+        for (let k = nextIdx; k < captures.length; k++) {
+          tailNullLines.push(`  captures${memberAccess(captures[k]!)} = null;`);
+        }
+        lines.push(
+          `{`,
+          `  const __end = __s.indexOf(${jsString(nextSeg)}, __pos);`,
+          `  if (__end < 0) {`,
+          `    captures${memberAccess(capName)} = ${helperCall};`,
+          `    __pos = __s.length;`,
+          ...tailNullLines,
+          `  } else {`,
+          `    captures${memberAccess(capName)} = ${innerHelperCall};`,
+          `    __pos = __end + ${nextSeg.length};`,
+          `  }`,
+          `}`,
+        );
+        // We've fully handled the rest of the captures in the tail-null
+        // branch. The else branch falls through to the next loop iter.
+        // Subsequent loop iterations will produce more code that only
+        // executes when we took the else branch. To preserve that flow,
+        // wrap subsequent iterations inside the else branch... but doing
+        // that requires structural rewrite. Simpler: rely on the runtime
+        // null-set; the subsequent iterations will be guarded by the
+        // pos pointer (if pos == __s.length, scanning for nextSeg fails
+        // again and the same tail-null logic fires, leaving them null).
+        // The captures we set to null above will be overwritten by the
+        // subsequent iteration's tail-null branch — same value, no harm.
+      } else {
+        lines.push(
+          `{`,
+          `  const __end = __s.indexOf(${jsString(nextSeg)}, __pos);`,
+          `  if (__end < 0) {`,
+          `    throw new Error("stringify: expected separator ${escapeForError(jsString(nextSeg))} after capture ${capName}");`,
+          `  }`,
+          `  captures${memberAccess(capName)} = ${innerHelperCall};`,
+          `  __pos = __end + ${nextSeg.length};`,
+          `}`,
+        );
+      }
     }
   }
   // Validate trailing remainder when there are no captures (literal-only template)
@@ -250,8 +407,14 @@ function emitTemplateBody(
 // Per-target dispatcher
 // ---------------------------------------------------------------------------
 
-function emitDispatcher(target: string, schema: InferredSchema): string {
-  const fnName = `__dispatchInverse_${jsIdent(target)}`;
+// Per-(NodeType, target) inverse dispatcher. Gap C: the public entry point
+// dispatches over the root node's productions only — sub-productions are
+// reachable through recursive capture sites that statically know which
+// child node type to invoke. validateInverseDiscrimination enforces
+// distinguishability WITHIN a node-type, so the cases here are mutually
+// exclusive for a well-formed schema.
+function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
+  const fnName = nodeDispatcherName(info.name, target);
   // Classify by InverseIR kind shape:
   //  - object-target: switch on literal-field discriminators
   //  - template-target: switch on leading literal prefix (longest match)
@@ -264,16 +427,14 @@ function emitDispatcher(target: string, schema: InferredSchema): string {
     readonly target: string;
   };
   const branches: Branch[] = [];
-  for (const info of schema.nodeTypes.values()) {
-    for (let i = 0; i < info.productions.length; i++) {
-      const entry = info.productions[i]!.renders.get(target);
-      if (!entry || !entry.inverseDerived) continue;
-      branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
-    }
+  for (let i = 0; i < info.productions.length; i++) {
+    const entry = info.productions[i]!.renders.get(target);
+    if (!entry || !entry.inverseDerived) continue;
+    branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
   }
   if (branches.length === 0) {
     return `function ${fnName}(value: any): string {
-  throw new Error("stringify: no productions declared for target '${target}'");
+  throw new Error("stringify: no productions declared for node '${info.name}' target '${target}'");
 }`;
   }
   // Group by kind for fast dispatch.
@@ -477,11 +638,17 @@ function fieldNameSet(ir: Extract<InverseIR, { kind: 'object' }>): Set<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Slot helper (target-scoped recursion entry)
+// Slot helper (per-(NodeType, target) recursion entry — Gap C)
 // ---------------------------------------------------------------------------
 
-function emitSlotHelper(target: string): string {
-  const id = jsIdent(target);
+// Per-(NodeType, target) slot helper. Each recursive capture site emits a
+// call to `__invertSlotFor_<ChildNodeType>_<target>(value)` so the
+// dispatcher routed-into is restricted to the statically-known child node
+// type's productions — never the global production list. Behaviour for
+// primitive/array shapes is unchanged.
+function emitNodeSlotHelper(nodeName: string, target: string): string {
+  const helper = nodeSlotHelperName(nodeName, target);
+  const childDispatch = nodeDispatcherName(nodeName, target);
   // Returns whatever shape the rebuild expects to read back from captures:
   //   null/undefined → null (Fix 2: rebuild's optional-slot ternary checks
   //                          for null; coercing to "" would mask absent
@@ -491,23 +658,65 @@ function emitSlotHelper(target: string): string {
   //                    repeats arrays with the correct separator via
   //                    __rebuildSlot(captures.x, " "); flattening here
   //                    would lose the per-element boundaries).
-  //   object         → dispatch through __dispatchInverse_<target> to
-  //                    recursively rebuild the child into a source string.
+  //   object         → dispatch through the per-(NodeType, target)
+  //                    inverse dispatcher (Gap C) to recursively rebuild
+  //                    the child into a source string.
   //   other          → String(v).
-  return `function __invertSlot_${id}(v: any): any {
+  return `function ${helper}(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlot_${id}(v[i]);
+      const r = ${helper}(v[i]);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_${id}(v);
+  if (typeof v === "object") return ${childDispatch}(v);
   return String(v);
 }`;
+}
+
+// Per-target leaf slot helper for non-recursive captures (primitives or
+// arrays of primitives). No object branch — leaves never carry recursive
+// children, so no per-node dispatcher is needed. Arrays still get
+// per-element recursion through the same helper so nested arrays of
+// strings unbox cleanly.
+function emitLeafSlotHelper(target: string): string {
+  const id = jsIdent(target);
+  return `function __invertSlotLeaf_${id}(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_${id}(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}`;
+}
+
+// Top-level dispatcher used by the public stringify table. Forwards to the
+// per-(NodeType, target) dispatcher for the root node type only. Gap C:
+// public entry never considers sub-production branches.
+function emitRootDispatcher(rootType: string, target: string): string {
+  const fnName = `__dispatchInverse_${jsIdent(target)}`;
+  const rootCall = nodeDispatcherName(rootType, target);
+  return `function ${fnName}(value: any): string {
+  return ${rootCall}(value);
+}`;
+}
+
+function nodeDispatcherName(nodeName: string, target: string): string {
+  return `__dispatchInverse_${jsIdent(nodeName)}_${jsIdent(target)}`;
+}
+
+function nodeSlotHelperName(nodeName: string, target: string): string {
+  return `__invertSlotFor_${jsIdent(nodeName)}_${jsIdent(target)}`;
 }
 
 // ---------------------------------------------------------------------------

@@ -347,6 +347,71 @@ test('forward template: .repeats() slot joins array with declared separator', as
   assert.equal(mod.render('npm test deploy', { type: 'source' }), 'npm test deploy');
 });
 
+// ---------- Inverse dispatcher dispatches only on root productions (Gap C)
+
+test('inverse dispatch: stringify routes via root productions, not sub-production prefixes', async () => {
+  // A sub-production (Field wildcard) shares a leading literal ('*') with
+  // the root production (Pair). The public stringify must invert as the
+  // ROOT (Pair) not as the sub-production (Field). Sub-productions are
+  // reached only via the per-(node, target) dispatcher invoked from a
+  // parent's __invert during recursion.
+  //
+  // Schema uses distinct example texts ('*' for Field, 'a b' for Pair) so
+  // the validator's recursive-span uniqueness check is satisfied. Each
+  // recursive span in the Pair example uses a different terminal text to
+  // disambiguate parsing — but at runtime the user can also stringify a
+  // wildcard pair `{ type: 'pair', a: {type:'wild'}, b: {type:'wild'} }`
+  // whose source form is `* *`, and the dispatcher must return `* *` (root
+  // Pair), NOT `*` (sub-production Field) just because `* *` starts with `*`.
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Pair',
+    examples: [
+      ex('*')
+        .as('Field')
+        .span('*')
+        .render('ast', { type: 'wild' })
+        .render('source', tpl`*`)
+        .build(),
+      ex('9')
+        .as('Field')
+        .span('v', '9').number().int()
+        .render('ast', { type: 'value', value: $.v })
+        .render('source', tpl`${$.v}`)
+        .build(),
+      ex('* 9')
+        .as('Pair')
+        .span('a', '*', 'Field')
+        .span('b', '9', 'Field')
+        .render('ast', { type: 'pair', a: $.a, b: $.b })
+        .render('source', tpl`${$.a} ${$.b}`)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'gap-c-root-dispatch') as GeneratedModule & {
+    stringify: (v: unknown, opts?: { type?: string }) => string;
+  };
+  // Root-level round trip via 'source' target. The intermediate string
+  // `* 9` would historically (pre-Gap C) be mis-dispatched: the global
+  // template dispatcher sees `*` as the longest leading prefix and routes
+  // to the sub-production Field (wildcard), not to Pair. With per-root
+  // dispatch, the dispatcher only considers Pair's productions and the
+  // input round-trips correctly.
+  const src = mod.render('* 9', { type: 'source' });
+  assert.equal(src, '* 9');
+  const back = mod.stringify(src, { type: 'source' });
+  assert.equal(back, '* 9', 'root-level source round-trip must dispatch via Pair, not Field');
+  // Sub-production recursion remains reachable — Pair's source contains
+  // a `*` child and a `9` child, and stringify must invoke the Field
+  // dispatcher for each child via the parent's __invert.
+  const ast = mod.render('* 9', { type: 'ast' }) as Record<string, unknown>;
+  assert.equal(ast.type, 'pair');
+  assert.deepEqual(ast.a, { type: 'wild' });
+  assert.equal((ast.b as Record<string, unknown>).type, 'value');
+  const backAst = mod.stringify(ast, { type: 'ast' });
+  assert.equal(backAst, '* 9');
+});
+
 // ---------- Recovery + interleaved-valid regression -----------------------
 //
 // Regression for the scannerless-emit bug where emitNodeFunctionWithRecovery

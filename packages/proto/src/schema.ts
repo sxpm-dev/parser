@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'ProtoFile',
@@ -17,7 +17,8 @@ export default defineSchema({
       .span('=')
       .span('value', '"proto3"').string().doubleQuoted()
       .span(';')
-      .structure({ type: 'syntax', value: $.value })
+      .render('ast', { type: 'syntax', value: $.value })
+      .render('source', tpl`syntax = ${$.value};`)
       .build(),
 
     ex('package example.v1;')
@@ -27,7 +28,8 @@ export default defineSchema({
       .span('.')
       .span('version', 'v1').ident().css()
       .span(';')
-      .structure({ type: 'package', name: [$.name, $.version] })
+      .render('ast', { type: 'package', name: [$.name, $.version] })
+      .render('source', tpl`package ${$.name}.${$.version};`)
       .build(),
 
     ex('string name = 1;')
@@ -37,7 +39,8 @@ export default defineSchema({
       .span('=')
       .span('number', '1').number().int()
       .span(';')
-      .structure({ type: 'field', fieldType: $.fieldType, name: $.name, number: $.number })
+      .render('ast', { type: 'field', fieldType: $.fieldType, name: $.name, number: $.number })
+      .render('source', tpl`${$.fieldType} ${$.name} = ${$.number};`)
       .build(),
 
     ex('message User { string name = 1; int32 age = 2; }')
@@ -47,13 +50,15 @@ export default defineSchema({
       .span('{')
       .span('fields', 'string name = 1;', 'Field').repeats({ min: 0 })
       .span('}')
-      .structure({ type: 'message', name: $.name, fields: $.fields })
+      .render('ast', { type: 'message', name: $.name, fields: $.fields })
+      .render('source', tpl`message ${$.name} { ${$.fields} }`)
       .build(),
 
     ex('syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }')
       .as('ProtoFile')
       .span('declarations', 'syntax = "proto3";', 'Declaration').repeats({ min: 1 })
-      .structure({ type: 'proto-file', declarations: $.declarations })
+      .render('ast', { type: 'proto-file', declarations: $.declarations })
+      .render('source', tpl`${$.declarations}`)
       .build(),
   ],
 });

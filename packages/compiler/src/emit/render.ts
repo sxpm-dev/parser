@@ -28,7 +28,7 @@
 //                                          exprs
 
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
-import type { InferredSchema, NodeTypeInfo, Production } from '../model.ts';
+import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
 import { syntheticKey } from './captures.ts';
 import { jsString } from './strings.ts';
 
@@ -47,7 +47,7 @@ export function emitRender(schema: InferredSchema): string {
           // would mean a code path bypassed the validator.
           throw new Error(`render: production '${info.name}#${i}' missing target '${target}'`);
         }
-        builders.push(emitBuilder(info.name, i, target, entry.body));
+        builders.push(emitBuilder(info.name, i, target, entry.body, production));
       }
     }
   }
@@ -86,15 +86,21 @@ function collectTargets(nodeTypes: ReadonlyArray<NodeTypeInfo>): ReadonlyArray<s
 // Per-production builder
 // ---------------------------------------------------------------------------
 
-function emitBuilder(nodeName: string, prodIdx: number, target: string, body: RenderBody): string {
+function emitBuilder(
+  nodeName: string,
+  prodIdx: number,
+  target: string,
+  body: RenderBody,
+  production: Production,
+): string {
   const fnName = builderName(nodeName, prodIdx, target);
-  const expr = emitBodyExpr(body, target);
+  const expr = emitBodyExpr(body, target, production);
   return `function ${fnName}(captures: any): any {
   return ${expr};
 }`;
 }
 
-function emitBodyExpr(body: RenderBody, target: string): string {
+function emitBodyExpr(body: RenderBody, target: string, production: Production): string {
   if (body === null) return 'null';
   if (typeof body === 'string') return jsString(body);
   if (typeof body === 'number') {
@@ -103,13 +109,13 @@ function emitBodyExpr(body: RenderBody, target: string): string {
   }
   if (typeof body === 'boolean') return body ? 'true' : 'false';
   if (isStructureRef(body)) return emitRefExpr(body, target);
-  if (isTemplate(body)) return emitTemplateExpr(body, target);
+  if (isTemplate(body)) return emitTemplateExpr(body, target, production);
   if (Array.isArray(body)) {
-    const items = body.map((child) => emitBodyExpr(child, target));
+    const items = body.map((child) => emitBodyExpr(child, target, production));
     return `[${items.join(', ')}]`;
   }
   const entries = Object.entries(body as Record<string, RenderBody>)
-    .map(([key, value]) => `${jsObjectKey(key)}: ${emitBodyExpr(value, target)}`);
+    .map(([key, value]) => `${jsObjectKey(key)}: ${emitBodyExpr(value, target, production)}`);
   return `{ ${entries.join(', ')} }`;
 }
 
@@ -129,7 +135,7 @@ function emitRefExpr(ref: StructureRef, target: string): string {
   return access;
 }
 
-function emitTemplateExpr(template: Template, target: string): string {
+function emitTemplateExpr(template: Template, target: string, production: Production): string {
   // Fused concat: seg0 + slot(captures.<a>) + seg1 + slot(captures.<b>) + ...
   // Each slot routes through __renderSlot_<target> so nested-capture and
   // array-of-children slots collapse to strings (per the target's slot
@@ -141,21 +147,89 @@ function emitTemplateExpr(template: Template, target: string): string {
   // passes null/undefined through for object/array body recursion (where
   // null is a legitimate property value), so we defensively coalesce at
   // the concat site.
+  //
+  // Gap A — Forward template fusion for optional-absent slots: when a slot
+  // references an .optional() / .repeats({min:0}) span and the captured
+  // value is null/undefined, the preceding literal separator must be
+  // suppressed too — otherwise the rendered output carries a dangling
+  // separator. Mirrors the inverse rebuild fusion in emit/rebuild.ts.
+  const targetId = jsIdent(target);
   const parts = template.parts;
   const slots = template.slots;
-  const pieces: string[] = [];
+  type LiteralPiece = { readonly kind: 'literal'; readonly text: string; readonly raw: string };
+  type SlotPiece = {
+    readonly kind: 'slot';
+    readonly text: string;
+    readonly optional: boolean;
+    readonly access: string;
+  };
+  type Piece = LiteralPiece | SlotPiece;
+  const pieces: Piece[] = [];
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]!;
-    if (part.length > 0) pieces.push(jsString(part));
+    if (part.length > 0) pieces.push({ kind: 'literal', text: jsString(part), raw: part });
     if (i < slots.length) {
       const slot = slots[i]!;
       const access = `captures${memberAccess(slot.ref)}`;
-      pieces.push(`(__renderSlot_${jsIdent(target)}(${access}) ?? "")`);
+      const span = findSpanByName(production, slot.ref);
+      const optional = span !== undefined && isAbsentAllowedSpan(span);
+      const slotExpr = `(__renderSlot_${targetId}(${access}) ?? "")`;
+      pieces.push({ kind: 'slot', text: slotExpr, optional, access });
     }
   }
-  if (pieces.length === 0) return '""';
-  if (pieces.length === 1) return `String(${pieces[0]})`;
-  return pieces.join(' + ');
+
+  // Fuse optional-absent slots with their immediately-preceding literal
+  // separator. When the captured value is null/undefined, both the literal
+  // and the slot collapse to "". Only fuse when the preceding literal is
+  // purely whitespace — i.e. acts as an inter-span separator (mirrors
+  // rebuild's `canonicalSeparator` which collapses every inter-span gap to
+  // a single space). Author-supplied non-whitespace literals (HTML tags,
+  // brackets, structural punctuation) are kept verbatim around an absent
+  // optional slot, matching the null-coalesce-only behaviour Fix 4
+  // introduced.
+  const fused: string[] = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = pieces[i]!;
+    if (piece.kind === 'literal') {
+      fused.push(piece.text);
+      continue;
+    }
+    if (!piece.optional) {
+      fused.push(piece.text);
+      continue;
+    }
+    const prevPiece = i > 0 ? pieces[i - 1] : undefined;
+    const prevIsWhitespaceLiteral =
+      prevPiece !== undefined
+      && prevPiece.kind === 'literal'
+      && prevPiece.raw.length > 0
+      && /^\s+$/.test(prevPiece.raw);
+    if (prevIsWhitespaceLiteral && fused.length > 0) {
+      const sepLit = fused.pop()!;
+      fused.push(`(${piece.access} == null ? "" : ${sepLit} + ${piece.text})`);
+    } else {
+      fused.push(`(${piece.access} == null ? "" : ${piece.text})`);
+    }
+  }
+
+  if (fused.length === 0) return '""';
+  if (fused.length === 1) return `String(${fused[0]})`;
+  return fused.join(' + ');
+}
+
+function findSpanByName(production: Production, name: string): ResolvedSpan | undefined {
+  for (const span of production.spans) {
+    if (span.name === name) return span;
+  }
+  return undefined;
+}
+
+function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
+  for (const m of span.modifiers) {
+    if (m.kind === 'optional') return true;
+    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------

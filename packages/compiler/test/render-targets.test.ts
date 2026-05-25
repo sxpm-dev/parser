@@ -284,6 +284,36 @@ test('render(input, { type: "bogus" }) throws unknown target', async () => {
   assert.throws(() => mod.render('# title', { type: 'bogus' }), /render: unknown target 'bogus'/);
 });
 
+// ---------- Forward template fusion: optional-absent slots (Gap A) -------
+
+test('forward template: optional-absent slot suppresses preceding separator', async () => {
+  // When a template's slot references an .optional() span and the parsed
+  // input does not contain that span, the forward emit must suppress BOTH
+  // the slot value AND its preceding literal separator. Mirrors the inverse
+  // rebuild fusion (emit/rebuild.ts, commit 7071d3f).
+  //
+  // Schema models a minimal "head [opt-tail]" production where tail is
+  // .optional(); the source template puts the optional last with a leading
+  // space separator. Without fusion the renderer emits a trailing space.
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Pair',
+    examples: [
+      ex('a b').as('Pair')
+        .span('head', 'a').ident()
+        .span('body', 'b').ident().optional()
+        .render('ast', { type: 'pair', head: $.head, body: $.body })
+        .render('source', tpl`${$.head} ${$.body}`)
+        .build(),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'gap-a-optional-trailing');
+  // Present case unchanged.
+  assert.equal(mod.render('a b', { type: 'source' }), 'a b');
+  // Absent case must NOT include a trailing space.
+  assert.equal(mod.render('a', { type: 'source' }), 'a');
+});
+
 // ---------- Recovery + interleaved-valid regression -----------------------
 //
 // Regression for the scannerless-emit bug where emitNodeFunctionWithRecovery

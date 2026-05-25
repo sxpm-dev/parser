@@ -3026,6 +3026,9 @@ function __invert_PathSegment_0_source(value: any): string {
   let __pos = 0;
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_PathSegment_0(captures);
 }
 
@@ -3046,6 +3049,9 @@ function __invert_Host_0_source(value: any): string {
   }
   captures.tld = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Host_0(captures);
 }
 
@@ -3066,6 +3072,9 @@ function __invert_Host_1_source(value: any): string {
   }
   captures.port = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Host_1(captures);
 }
 
@@ -3086,6 +3095,9 @@ function __invert_QueryPair_0_source(value: any): string {
   }
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_QueryPair_0(captures);
 }
 
@@ -3098,6 +3110,9 @@ function __invert_Query_0_source(value: any): string {
   let __pos = 0;
   captures.pairs = __invertSlotFor_QueryPair_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Query_0(captures);
 }
 
@@ -3130,6 +3145,9 @@ function __invert_Url_0_source(value: any): string {
   }
   captures.query = __invertSlotFor_Query_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Url_0(captures);
 }
 
@@ -3158,6 +3176,9 @@ function __invert_Url_1_source(value: any): string {
   }
   captures.s1 = __invertSlotFor_PathSegment_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Url_1(captures);
 }
 
@@ -3245,7 +3266,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_PathSegment_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_PathSegment_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3260,7 +3283,9 @@ function __invertSlotFor_PathSegment_ast(v: any): any {
 
 function __invertSlotFor_Host_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Host_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3275,7 +3300,9 @@ function __invertSlotFor_Host_ast(v: any): any {
 
 function __invertSlotFor_QueryPair_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_QueryPair_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3290,7 +3317,9 @@ function __invertSlotFor_QueryPair_ast(v: any): any {
 
 function __invertSlotFor_Query_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Query_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3305,7 +3334,9 @@ function __invertSlotFor_Query_ast(v: any): any {
 
 function __invertSlotFor_Url_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Url_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3334,7 +3365,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_PathSegment_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_PathSegment_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3349,7 +3382,9 @@ function __invertSlotFor_PathSegment_source(v: any): any {
 
 function __invertSlotFor_Host_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Host_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3364,7 +3399,9 @@ function __invertSlotFor_Host_source(v: any): any {
 
 function __invertSlotFor_QueryPair_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_QueryPair_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3379,7 +3416,9 @@ function __invertSlotFor_QueryPair_source(v: any): any {
 
 function __invertSlotFor_Query_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Query_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3394,7 +3433,9 @@ function __invertSlotFor_Query_source(v: any): any {
 
 function __invertSlotFor_Url_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Url_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

@@ -9,9 +9,11 @@ import { render, stringify } from '../src/index.ts';
 // round-trip property `render(stringify(render(x, T), T), T) === render(x, T)`
 // which is exercised exhaustively by round-trip.test.ts.
 //
-// One useful piece survives: for value-target pairs whose canonical
-// surface bytes match the input, the forward render must equal a stringify
-// round-trip through that target. Documented here as a small set of pins:
+// One useful piece survives: for the 'source' target — where canonical
+// surface bytes match the input — the forward render must equal a stringify
+// round-trip through 'source'. This is a stronger byte-identity invariant
+// than rule 5 (value-stable) gives us. For non-source targets the equivalent
+// invariant is value-stable round-trip; see round-trip.test.ts.
 
 const inputs = [
   '# Release notes',
@@ -25,11 +27,6 @@ for (const input of inputs) {
   test(`source-target self-round-trip stringify parity: ${JSON.stringify(input).slice(0, 40)}`, () => {
     const direct = render(input, { type: 'source' });
     const indirect = stringify(render(input, { type: 'source' }), { type: 'source' });
-    assert.equal(direct, indirect);
-  });
-  test(`html-target self-round-trip stringify parity: ${JSON.stringify(input).slice(0, 40)}`, () => {
-    const direct = render(input, { type: 'html' });
-    const indirect = stringify(render(input, { type: 'html' }), { type: 'html' });
     assert.equal(direct, indirect);
   });
 }

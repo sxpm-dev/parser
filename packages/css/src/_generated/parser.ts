@@ -6526,6 +6526,9 @@ function __invert_Comment_0_source(value: any): string {
   let __pos = 0;
   captures.text = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Comment_0(captures);
 }
 
@@ -6560,6 +6563,9 @@ function __invert_Declaration_0_source(value: any): string {
     captures.important = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Declaration_0(captures);
 }
 
@@ -6585,6 +6591,9 @@ function __invert_Declaration_1_source(value: any): string {
     }
     captures.value = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Declaration_1(captures);
 }
@@ -6614,6 +6623,9 @@ function __invert_Rule_0_source(value: any): string {
     }
     captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end));
     __pos = __end + 1;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Rule_0(captures);
 }
@@ -6656,6 +6668,9 @@ function __invert_AtRule_0_source(value: any): string {
     captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_AtRule_0(captures);
 }
 
@@ -6686,6 +6701,9 @@ function __invert_AtRule_1_source(value: any): string {
     captures.params = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_AtRule_1(captures);
 }
 
@@ -6701,6 +6719,9 @@ function __invert_Stylesheet_0_source(value: any): string {
   } else {
     captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos));
     __pos = __s.length;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Stylesheet_0(captures);
 }
@@ -6789,7 +6810,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_Comment_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6804,7 +6827,9 @@ function __invertSlotFor_Comment_ast(v: any): any {
 
 function __invertSlotFor_Declaration_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Declaration_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6819,7 +6844,9 @@ function __invertSlotFor_Declaration_ast(v: any): any {
 
 function __invertSlotFor_Rule_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Rule_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6834,7 +6861,9 @@ function __invertSlotFor_Rule_ast(v: any): any {
 
 function __invertSlotFor_AtRule_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_AtRule_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6849,7 +6878,9 @@ function __invertSlotFor_AtRule_ast(v: any): any {
 
 function __invertSlotFor_Stylesheet_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Stylesheet_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6864,7 +6895,13 @@ function __invertSlotFor_Stylesheet_ast(v: any): any {
 
 function __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_ast(v); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6899,7 +6936,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_Comment_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6914,7 +6953,9 @@ function __invertSlotFor_Comment_source(v: any): any {
 
 function __invertSlotFor_Declaration_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Declaration_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6929,7 +6970,9 @@ function __invertSlotFor_Declaration_source(v: any): any {
 
 function __invertSlotFor_Rule_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Rule_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6944,7 +6987,9 @@ function __invertSlotFor_Rule_source(v: any): any {
 
 function __invertSlotFor_AtRule_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_AtRule_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6959,7 +7004,9 @@ function __invertSlotFor_AtRule_source(v: any): any {
 
 function __invertSlotFor_Stylesheet_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Stylesheet_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -6974,7 +7021,13 @@ function __invertSlotFor_Stylesheet_source(v: any): any {
 
 function __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_source(v); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

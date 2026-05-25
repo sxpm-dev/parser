@@ -11634,6 +11634,9 @@ function __invert_HtmlDocument_0_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos));
     __pos = __s.length;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlDocument_0(captures);
 }
 
@@ -11664,6 +11667,9 @@ function __invert_Doctype_0_source(value: any): string {
     captures.name = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Doctype_0(captures);
 }
 
@@ -11688,6 +11694,9 @@ function __invert_Doctype_1_source(value: any): string {
   }
   captures.name = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Doctype_1(captures);
 }
 
@@ -11709,6 +11718,9 @@ function __invert_Comment_0_source(value: any): string {
     }
     captures.data = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 3;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Comment_0(captures);
 }
@@ -11748,6 +11760,9 @@ function __invert_HtmlElement_0_source(value: any): string {
     captures.closeTag = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_0(captures);
 }
 
@@ -11769,6 +11784,9 @@ function __invert_HtmlElement_1_source(value: any): string {
     }
     captures.tag = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_1(captures);
 }
@@ -11792,6 +11810,9 @@ function __invert_HtmlElement_2_source(value: any): string {
     captures.tag = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 3;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_2(captures);
 }
 
@@ -11813,6 +11834,9 @@ function __invert_HtmlElement_3_source(value: any): string {
     }
     captures.tag = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 2;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_3(captures);
 }
@@ -11847,6 +11871,9 @@ function __invert_HtmlElement_4_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 5;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_4(captures);
 }
 
@@ -11879,6 +11906,9 @@ function __invert_HtmlElement_5_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 5;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_5(captures);
 }
@@ -11913,6 +11943,9 @@ function __invert_HtmlElement_6_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 5;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_6(captures);
 }
 
@@ -11945,6 +11978,9 @@ function __invert_HtmlElement_7_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 5;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_7(captures);
 }
@@ -11979,6 +12015,9 @@ function __invert_HtmlElement_8_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 4;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_8(captures);
 }
 
@@ -12011,6 +12050,9 @@ function __invert_HtmlElement_9_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 9;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_9(captures);
 }
@@ -12045,6 +12087,9 @@ function __invert_HtmlElement_10_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 7;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_10(captures);
 }
 
@@ -12077,6 +12122,9 @@ function __invert_HtmlElement_11_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 7;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_11(captures);
 }
@@ -12111,6 +12159,9 @@ function __invert_HtmlElement_12_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 8;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_12(captures);
 }
 
@@ -12143,6 +12194,9 @@ function __invert_HtmlElement_13_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 8;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_13(captures);
 }
@@ -12177,6 +12231,9 @@ function __invert_HtmlElement_14_source(value: any): string {
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 8;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_14(captures);
 }
 
@@ -12209,6 +12266,9 @@ function __invert_HtmlElement_15_source(value: any): string {
     }
     captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
     __pos = __end + 7;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_HtmlElement_15(captures);
 }
@@ -12248,6 +12308,9 @@ function __invert_HtmlElement_16_source(value: any): string {
     captures.closeTag = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_HtmlElement_16(captures);
 }
 
@@ -12260,6 +12323,9 @@ function __invert_TextNode_0_source(value: any): string {
   let __pos = 0;
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_TextNode_0(captures);
 }
 
@@ -12285,6 +12351,9 @@ function __invert_Attribute_0_source(value: any): string {
     }
     captures.value = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Attribute_0(captures);
 }
@@ -12312,6 +12381,9 @@ function __invert_Attribute_1_source(value: any): string {
     captures.value = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Attribute_1(captures);
 }
 
@@ -12332,6 +12404,9 @@ function __invert_Attribute_2_source(value: any): string {
   }
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Attribute_2(captures);
 }
 
@@ -12344,6 +12419,9 @@ function __invert_Attribute_3_source(value: any): string {
   let __pos = 0;
   captures.name = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Attribute_3(captures);
 }
 
@@ -12480,7 +12558,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_HtmlDocument_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_HtmlDocument_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12495,7 +12575,9 @@ function __invertSlotFor_HtmlDocument_ast(v: any): any {
 
 function __invertSlotFor_Doctype_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12510,7 +12592,9 @@ function __invertSlotFor_Doctype_ast(v: any): any {
 
 function __invertSlotFor_Comment_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12525,7 +12609,9 @@ function __invertSlotFor_Comment_ast(v: any): any {
 
 function __invertSlotFor_HtmlElement_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_HtmlElement_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12540,7 +12626,9 @@ function __invertSlotFor_HtmlElement_ast(v: any): any {
 
 function __invertSlotFor_TextNode_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_TextNode_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12555,7 +12643,9 @@ function __invertSlotFor_TextNode_ast(v: any): any {
 
 function __invertSlotFor_Attribute_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Attribute_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12570,7 +12660,13 @@ function __invertSlotFor_Attribute_ast(v: any): any {
 
 function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12605,7 +12701,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_HtmlDocument_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_HtmlDocument_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12620,7 +12718,9 @@ function __invertSlotFor_HtmlDocument_source(v: any): any {
 
 function __invertSlotFor_Doctype_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12635,7 +12735,9 @@ function __invertSlotFor_Doctype_source(v: any): any {
 
 function __invertSlotFor_Comment_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12650,7 +12752,9 @@ function __invertSlotFor_Comment_source(v: any): any {
 
 function __invertSlotFor_HtmlElement_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_HtmlElement_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12665,7 +12769,9 @@ function __invertSlotFor_HtmlElement_source(v: any): any {
 
 function __invertSlotFor_TextNode_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_TextNode_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12680,7 +12786,9 @@ function __invertSlotFor_TextNode_source(v: any): any {
 
 function __invertSlotFor_Attribute_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Attribute_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -12695,7 +12803,13 @@ function __invertSlotFor_Attribute_source(v: any): any {
 
 function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

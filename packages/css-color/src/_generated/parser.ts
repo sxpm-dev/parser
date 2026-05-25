@@ -4199,7 +4199,9 @@ function __dispatchInverse_ast(value: any): string {
 
 function __invertSlotFor_CssColorValue_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CssColorValue_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -4214,7 +4216,9 @@ function __invertSlotFor_CssColorValue_ast(v: any): any {
 
 function __invertSlotFor_NumericColorFunctionToken_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_NumericColorFunctionToken_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -4229,7 +4233,9 @@ function __invertSlotFor_NumericColorFunctionToken_ast(v: any): any {
 
 function __invertSlotFor_ColorFunctionToken_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_ColorFunctionToken_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -4244,7 +4250,9 @@ function __invertSlotFor_ColorFunctionToken_ast(v: any): any {
 
 function __invertSlotFor_CssColor_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CssColor_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

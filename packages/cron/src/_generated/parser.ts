@@ -591,6 +591,9 @@ function __invert_CronField_0_source(value: any): string {
     throw new Error("stringify: expected leading literal \"*\" in template body");
   }
   __pos += 1;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_CronField_0(captures);
 }
 
@@ -607,6 +610,9 @@ function __invert_CronField_1_source(value: any): string {
   __pos += 2;
   captures.step = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_CronField_1(captures);
 }
 
@@ -619,6 +625,9 @@ function __invert_CronField_2_source(value: any): string {
   let __pos = 0;
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_CronField_2(captures);
 }
 
@@ -639,6 +648,9 @@ function __invert_CronField_3_source(value: any): string {
   }
   captures.end = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_CronField_3(captures);
 }
 
@@ -651,6 +663,9 @@ function __invert_CommandWord_0_source(value: any): string {
   let __pos = 0;
   captures.value = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_CommandWord_0(captures);
 }
 
@@ -663,6 +678,9 @@ function __invert_Command_0_source(value: any): string {
   let __pos = 0;
   captures.words = __invertSlotFor_CommandWord_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Command_0(captures);
 }
 
@@ -721,6 +739,9 @@ function __invert_Cron_0_source(value: any): string {
   } else {
     captures.command = __invertSlotFor_Command_source(__s.slice(__pos));
     __pos = __s.length;
+  }
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuild_Cron_0(captures);
 }
@@ -797,7 +818,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_CronField_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CronField_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -812,7 +835,9 @@ function __invertSlotFor_CronField_ast(v: any): any {
 
 function __invertSlotFor_CommandWord_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CommandWord_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -827,7 +852,9 @@ function __invertSlotFor_CommandWord_ast(v: any): any {
 
 function __invertSlotFor_Command_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Command_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -842,7 +869,9 @@ function __invertSlotFor_Command_ast(v: any): any {
 
 function __invertSlotFor_Cron_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Cron_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -871,7 +900,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_CronField_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CronField_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -886,7 +917,9 @@ function __invertSlotFor_CronField_source(v: any): any {
 
 function __invertSlotFor_CommandWord_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CommandWord_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -901,7 +934,9 @@ function __invertSlotFor_CommandWord_source(v: any): any {
 
 function __invertSlotFor_Command_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Command_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -916,7 +951,9 @@ function __invertSlotFor_Command_source(v: any): any {
 
 function __invertSlotFor_Cron_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Cron_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

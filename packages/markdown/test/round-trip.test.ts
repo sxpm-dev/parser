@@ -12,14 +12,11 @@ import * as mod from '../src/index.ts';
 //     `type` literal (plus `marker` / `variant` for productions that share
 //     a `type` value). Value-stable across all fixtures.
 //   - 'source' — value-stable across canonical inputs.
-//
-// 'html' target round-trip is NOT exercised here. The markdown -> html
-// mapping is many-to-one (e.g. `---`, `***`, `___` all render to `<hr>`)
-// AND the html surface is itself valid input to the markdown parser,
-// which will re-parse `<hr>` as a paragraph wrapping the literal text and
-// render back as `<p><hr></p>`. The reverse `stringify(htmlString, 'html')`
-// would need a markdown serializer that knows the html came from a
-// markdown source, not from arbitrary text — out of scope for v1.
+//   - 'html' — value-stable per spec rule 5: many-to-one renderings (e.g.
+//     `---`, `***`, `___` all render to `<hr>`) collapse on stringify to a
+//     single canonical markdown source whose re-render equals the original
+//     html, so the round-trip property holds even though byte-identity does
+//     not.
 
 const FIXTURES: ReadonlyArray<string> = [
   '# Release notes',
@@ -54,6 +51,10 @@ test("round-trip 'ast' (value-stable)", () => {
 
 test("round-trip 'source' (value-stable)", () => {
   assertRoundTrip(mod, 'source', FIXTURES);
+});
+
+test("round-trip 'html' (value-stable)", () => {
+  assertRoundTrip(mod, 'html', FIXTURES);
 });
 
 // 'source' must additionally re-stringify to the same canonical bytes for

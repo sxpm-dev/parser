@@ -1280,6 +1280,9 @@ function __invert_MacAddress_0_source(value: any): string {
   }
   captures.o6 = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_MacAddress_0(captures);
 }
 
@@ -1332,6 +1335,9 @@ function __invert_MacAddress_1_source(value: any): string {
   }
   captures.o6 = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_MacAddress_1(captures);
 }
 
@@ -1361,7 +1367,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_MacAddress_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_MacAddress_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -1390,7 +1398,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_MacAddress_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_MacAddress_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

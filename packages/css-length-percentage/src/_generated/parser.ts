@@ -4357,7 +4357,9 @@ function __dispatchInverse_ast(value: any): string {
 
 function __invertSlotFor_LengthPercentageItem_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_LengthPercentageItem_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -4372,7 +4374,9 @@ function __invertSlotFor_LengthPercentageItem_ast(v: any): any {
 
 function __invertSlotFor_LengthFunctionToken_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_LengthFunctionToken_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -4387,7 +4391,9 @@ function __invertSlotFor_LengthFunctionToken_ast(v: any): any {
 
 function __invertSlotFor_CssLengthPercentage_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_CssLengthPercentage_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

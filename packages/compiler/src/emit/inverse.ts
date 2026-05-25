@@ -412,6 +412,18 @@ function emitTemplateBody(
       // means parts.length === 1. tail === seg0 by construction.
     }
   }
+  // Strict end-of-input. If anything remains, this body did not actually
+  // describe the input — surface a throw so dispatch can fall through to a
+  // sibling production / role rather than silently returning a partial
+  // rebuild. Required for spec rule 4 (bidirectional by default; failures
+  // must not be runtime surprises). When the last capture consumed the
+  // remainder explicitly (the helper above sets __pos = __s.length), the
+  // check is a no-op.
+  lines.push(
+    `if (__pos !== __s.length) {`,
+    `  throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");`,
+    `}`,
+  );
   return lines.join('\n');
 }
 
@@ -687,21 +699,28 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   const helper = nodeSlotHelperName(nodeName, target);
   const childDispatch = nodeDispatcherName(nodeName, target);
   // Returns whatever shape the rebuild expects to read back from captures:
-  //   null/undefined → null (Fix 2: rebuild's optional-slot ternary checks
-  //                          for null; coercing to "" would mask absent
-  //                          state and leave dangling separators).
-  //   string         → string (already source-shaped).
-  //   array          → array of inverted children (Fix 3: rebuild joins
-  //                    repeats arrays with the correct separator via
-  //                    __rebuildSlot(captures.x, " "); flattening here
+  //   null/undefined → null (rebuild's optional-slot ternary checks for null;
+  //                          coercing to "" would mask absent state and
+  //                          leave dangling separators).
+  //   string         → dispatch through the child node's inverter when it
+  //                    accepts strings (string-template targets like 'html'
+  //                    capture child substrings that still need to be
+  //                    inverted back to source). Object-only dispatchers
+  //                    throw, in which case the string is already
+  //                    source-shaped and we pass it through.
+  //   array          → array of inverted children (rebuild joins repeats
+  //                    arrays with the correct separator via
+  //                    __rebuildSlot(captures.x, sep); flattening here
   //                    would lose the per-element boundaries).
-  //   object         → dispatch through the per-(NodeType, target)
-  //                    inverse dispatcher (Gap C) to recursively rebuild
-  //                    the child into a source string.
+  //   object         → dispatch through the per-(NodeType, target) inverse
+  //                    dispatcher to recursively rebuild the child into a
+  //                    source string.
   //   other          → String(v).
   return `function ${helper}(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return ${childDispatch}(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -720,8 +739,11 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
 // instances of any of the listed roles. The helper recurses arrays
 // element-wise, and for objects routes through each role's
 // per-(NodeType, target) dispatcher in declared order — returning the
-// first that succeeds (try/catch). String children pass through
-// unchanged (template-targeted children arrive pre-rebuilt).
+// first that succeeds (try/catch). String children also dispatch through
+// each role (string-template targets like 'html' capture child substrings
+// that still need to be inverted back to source); if no role accepts the
+// string, it passes through unchanged so source-target captures (already
+// source-shaped) round-trip cleanly.
 //
 // Determinism: the dispatcher within a single node-type is unambiguous
 // post-`validateInverseDiscrimination`. Across roles, ordering is the
@@ -742,7 +764,10 @@ function emitMultiRoleSlotHelper(
   }
   return `function ${helper}(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+${tryCalls.join('\n')}
+    return v;
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

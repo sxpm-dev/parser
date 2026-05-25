@@ -2993,6 +2993,9 @@ function __invert_ArnResource_0_source(value: any): string {
   }
   captures.name = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_ArnResource_0(captures);
 }
 
@@ -3013,6 +3016,9 @@ function __invert_ArnResource_1_source(value: any): string {
   }
   captures.name = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_ArnResource_1(captures);
 }
 
@@ -3025,6 +3031,9 @@ function __invert_ArnResource_2_source(value: any): string {
   let __pos = 0;
   captures.name = __invertSlotLeaf_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_ArnResource_2(captures);
 }
 
@@ -3073,6 +3082,9 @@ function __invert_Arn_0_source(value: any): string {
   }
   captures.resource = __invertSlotFor_ArnResource_source(__s.slice(__pos));
   __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
   return __rebuild_Arn_0(captures);
 }
 
@@ -3118,7 +3130,9 @@ function __dispatchInverse_source(value: any): string {
 
 function __invertSlotFor_ArnResource_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_ArnResource_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3133,7 +3147,9 @@ function __invertSlotFor_ArnResource_ast(v: any): any {
 
 function __invertSlotFor_Arn_ast(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Arn_ast(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3162,7 +3178,9 @@ function __invertSlotLeaf_ast(v: any): any {
 
 function __invertSlotFor_ArnResource_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_ArnResource_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
@@ -3177,7 +3195,9 @@ function __invertSlotFor_ArnResource_source(v: any): any {
 
 function __invertSlotFor_Arn_source(v: any): any {
   if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Arn_source(v); } catch (_e) { return v; }
+  }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {

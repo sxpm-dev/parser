@@ -416,9 +416,9 @@ function parseArnResource__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "resource", kind: kind, name: name, separator: ":" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "ArnResource#0", kind: kind, name: name };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseArnResource__alt1(state: State): unknown {
@@ -590,9 +590,9 @@ function parseArnResource__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "resource", kind: kind, name: name, separator: "/" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "ArnResource#1", kind: kind, name: name };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseArnResource__alt2(state: State): unknown {
@@ -682,9 +682,9 @@ function parseArnResource__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "resource", name: name };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "ArnResource#2", name: name };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseArnResource(state: State): unknown {
@@ -1033,9 +1033,9 @@ function parseArn(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "Arn#0", partition: partition, service: service, region: region, account: account, resource: resource };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseArnResourceFast__alt0(state: State): unknown {
@@ -1201,7 +1201,7 @@ function parseArnResourceFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "resource", kind: kind, name: name, separator: ":" };
+  return { __production: "ArnResource#0", kind: kind, name: name };
 }
 
 function parseArnResourceFast__alt1(state: State): unknown {
@@ -1367,7 +1367,7 @@ function parseArnResourceFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "resource", kind: kind, name: name, separator: "/" };
+  return { __production: "ArnResource#1", kind: kind, name: name };
 }
 
 function parseArnResourceFast__alt2(state: State): unknown {
@@ -1453,7 +1453,7 @@ function parseArnResourceFast__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "resource", name: name };
+  return { __production: "ArnResource#2", name: name };
 }
 
 function parseArnResourceFast(state: State): unknown {
@@ -1788,7 +1788,7 @@ function parseArnFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
+  return { __production: "Arn#0", partition: partition, service: service, region: region, account: account, resource: resource };
 }
 
 function validateArnResource__alt0(state: State): unknown {
@@ -2734,7 +2734,7 @@ function parseDirectFast(input: string): unknown {
     if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
     pos++;
   }
-    resource = { type: "resource", kind: __first, name: name, separator: ":" };
+    resource = { __production: "ArnResource#0", kind: __first, name: name };
   }
   else if (input.charCodeAt(pos) === 47) {
     pos++;
@@ -2763,10 +2763,10 @@ function parseDirectFast(input: string): unknown {
     if (__ws !== 0x20 && __ws !== 0x09 && __ws !== 0x0a && __ws !== 0x0d) break;
     pos++;
   }
-    resource = { type: "resource", kind: __first, name: name, separator: "/" };
+    resource = { __production: "ArnResource#1", kind: __first, name: name };
   }
   else {
-    resource = { type: "resource", name: __first };
+    resource = { __production: "ArnResource#2", name: __first };
   }
   while (pos < len) {
     const __ws = input.charCodeAt(pos);
@@ -2774,7 +2774,7 @@ function parseDirectFast(input: string): unknown {
     pos++;
   }
   if (pos !== len) throw new SyntaxError(`unexpected trailing character at position ${pos}`);
-  return { type: "arn", partition: partition, service: service, region: region, account: account, resource: resource };
+  return { __production: "Arn#0", partition: partition, service: service, region: region, account: account, resource: resource };
 }
 
 function validateDirectFast(input: string): void {
@@ -2783,108 +2783,445 @@ function validateDirectFast(input: string): void {
 
 
 
-function stringify_ArnResource_resource_source(s: any): string {
-  if (s["separator"] === ":" && s["kind"] !== undefined) return __renderSlot_source(s["kind"]) + ":" + __renderSlot_source(s["name"]);
-  if (s["separator"] === "/" && s["kind"] !== undefined) return __renderSlot_source(s["kind"]) + "/" + __renderSlot_source(s["name"]);
-  if (s["kind"] === undefined && s["separator"] === undefined) return __renderSlot_source(s["name"]);
-  throw new Error("stringify: no production matches structure shape for node ArnResource (target source, type resource)");
+const __defaultTarget: string | undefined = undefined;
+
+function __build_ArnResource_0_ast(captures: any): any {
+  return { type: "resource", kind: __renderSlot_ast(captures.kind), name: __renderSlot_ast(captures.name), separator: ":" };
 }
 
-function stringify_ArnResource_source(s: any): string {
-  switch (s.type) {
-    case "resource": return stringify_ArnResource_resource_source(s);
+function __build_ArnResource_0_source(captures: any): any {
+  return (__renderSlot_source(captures.kind) ?? "") + ":" + (__renderSlot_source(captures.name) ?? "");
+}
+
+function __build_ArnResource_1_ast(captures: any): any {
+  return { type: "resource", kind: __renderSlot_ast(captures.kind), name: __renderSlot_ast(captures.name), separator: "/" };
+}
+
+function __build_ArnResource_1_source(captures: any): any {
+  return (__renderSlot_source(captures.kind) ?? "") + "/" + (__renderSlot_source(captures.name) ?? "");
+}
+
+function __build_ArnResource_2_ast(captures: any): any {
+  return { type: "resource", name: __renderSlot_ast(captures.name) };
+}
+
+function __build_ArnResource_2_source(captures: any): any {
+  return String((__renderSlot_source(captures.name) ?? ""));
+}
+
+function __build_Arn_0_ast(captures: any): any {
+  return { type: "arn", partition: __renderSlot_ast(captures.partition), service: __renderSlot_ast(captures.service), region: __renderSlot_ast(captures.region), account: __renderSlot_ast(captures.account), resource: __renderSlot_ast(captures.resource) };
+}
+
+function __build_Arn_0_source(captures: any): any {
+  return "arn:" + (__renderSlot_source(captures.partition) ?? "") + ":" + (__renderSlot_source(captures.service) ?? "") + ":" + (__renderSlot_source(captures.region) ?? "") + ":" + (__renderSlot_source(captures.account) ?? "") + ":" + (__renderSlot_source(captures.resource) ?? "");
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no production matches structure shape for node ArnResource (target source)");
-}
-
-function stringify_ArnResource_resource_json_auto(s: any): string {
-  if (s["separator"] === ":" && s["kind"] !== undefined) return "{\"type\":\"resource\",\"kind\":" + __renderSlot_json_auto(s["kind"]) + ",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"separator\":\":\"}";
-  if (s["separator"] === "/" && s["kind"] !== undefined) return "{\"type\":\"resource\",\"kind\":" + __renderSlot_json_auto(s["kind"]) + ",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"separator\":\"/\"}";
-  if (s["kind"] === undefined && s["separator"] === undefined) return "{\"type\":\"resource\",\"name\":" + __renderSlot_json_auto(s["name"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node ArnResource (target json-auto, type resource)");
-}
-
-function stringify_ArnResource_json_auto(s: any): string {
-  switch (s.type) {
-    case "resource": return stringify_ArnResource_resource_json_auto(s);
+  switch (captures.__production) {
+    case "ArnResource#0": return __build_ArnResource_0_ast(captures);
+    case "ArnResource#1": return __build_ArnResource_1_ast(captures);
+    case "ArnResource#2": return __build_ArnResource_2_ast(captures);
+    case "Arn#0": return __build_Arn_0_ast(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node ArnResource (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function stringify_Arn_source(s: any): string {
-  return "arn:" + __renderSlot_source(s["partition"]) + ":" + __renderSlot_source(s["service"]) + ":" + __renderSlot_source(s["region"]) + ":" + __renderSlot_source(s["account"]) + ":" + __renderSlot_source(s["resource"]);
-}
-
-function stringify_Arn_json_auto(s: any): string {
-  return "{\"type\":\"arn\",\"partition\":" + __renderSlot_json_auto(s["partition"]) + ",\"service\":" + __renderSlot_json_auto(s["service"]) + ",\"region\":" + __renderSlot_json_auto(s["region"]) + ",\"account\":" + __renderSlot_json_auto(s["account"]) + ",\"resource\":" + __renderSlot_json_auto(s["resource"]) + "}";
-}
-
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "resource": return stringify_ArnResource_resource_source(s);
-    case "arn": return stringify_Arn_source(s);
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "resource": return stringify_ArnResource_resource_json_auto(s);
-    case "arn": return stringify_Arn_json_auto(s);
+  switch (captures.__production) {
+    case "ArnResource#0": return __build_ArnResource_0_source(captures);
+    case "ArnResource#1": return __build_ArnResource_1_source(captures);
+    case "ArnResource#2": return __build_ArnResource_2_source(captures);
+    case "Arn#0": return __build_Arn_0_source(captures);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
-}
-
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
-}
-
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
     return out;
   }
-  return __dispatchStringify_source(v);
-}
-
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
-  if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
   }
-  return __dispatchStringify_json_auto(v);
+  return v;
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
+}
+
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __rebuild_ArnResource_0(captures: any): string {
+  return __rebuildSlot(captures.kind) + ":" + __rebuildSlot(captures.name);
+}
+
+function __rebuild_ArnResource_1(captures: any): string {
+  return __rebuildSlot(captures.kind) + "/" + __rebuildSlot(captures.name);
+}
+
+function __rebuild_ArnResource_2(captures: any): string {
+  return String(__rebuildSlot(captures.name));
+}
+
+function __rebuild_Arn_0(captures: any): string {
+  return "arn" + ":" + __rebuildSlot(captures.partition) + ":" + __rebuildSlot(captures.service) + ":" + __rebuildSlot(captures.region) + ":" + __rebuildSlot(captures.account) + ":" + __rebuildSlot(captures.resource);
+}
+
+function __invert_ArnResource_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "resource")) {
+    throw new Error("stringify: field \"type\" expected \"resource\", got " + JSON.stringify(value.type));
+  }
+  captures.kind = __invertSlotLeaf_ast(value.kind);
+  captures.name = __invertSlotLeaf_ast(value.name);
+  if (!Object.is(value.separator, ":")) {
+    throw new Error("stringify: field \"separator\" expected \":\", got " + JSON.stringify(value.separator));
+  }
+  return __rebuild_ArnResource_0(captures);
+}
+
+function __invert_ArnResource_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "resource")) {
+    throw new Error("stringify: field \"type\" expected \"resource\", got " + JSON.stringify(value.type));
+  }
+  captures.kind = __invertSlotLeaf_ast(value.kind);
+  captures.name = __invertSlotLeaf_ast(value.name);
+  if (!Object.is(value.separator, "/")) {
+    throw new Error("stringify: field \"separator\" expected \"/\", got " + JSON.stringify(value.separator));
+  }
+  return __rebuild_ArnResource_1(captures);
+}
+
+function __invert_ArnResource_2_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "resource")) {
+    throw new Error("stringify: field \"type\" expected \"resource\", got " + JSON.stringify(value.type));
+  }
+  captures.name = __invertSlotLeaf_ast(value.name);
+  return __rebuild_ArnResource_2(captures);
+}
+
+function __invert_Arn_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "arn")) {
+    throw new Error("stringify: field \"type\" expected \"arn\", got " + JSON.stringify(value.type));
+  }
+  captures.partition = __invertSlotLeaf_ast(value.partition);
+  captures.service = __invertSlotLeaf_ast(value.service);
+  captures.region = __invertSlotLeaf_ast(value.region);
+  captures.account = __invertSlotLeaf_ast(value.account);
+  captures.resource = __invertSlotFor_ArnResource_ast(value.resource);
+  return __rebuild_Arn_0(captures);
+}
+
+function __invert_ArnResource_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture kind");
+    }
+    captures.kind = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.name = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_ArnResource_0(captures);
+}
+
+function __invert_ArnResource_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf("/", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"/\" after capture kind");
+    }
+    captures.kind = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.name = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_ArnResource_1(captures);
+}
+
+function __invert_ArnResource_2_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.name = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_ArnResource_2(captures);
+}
+
+function __invert_Arn_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("arn:", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"arn:\" in template body");
+  }
+  __pos += 4;
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture partition");
+    }
+    captures.partition = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture service");
+    }
+    captures.service = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture region");
+    }
+    captures.region = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture account");
+    }
+    captures.account = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.resource = __invertSlotFor_ArnResource_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Arn_0(captures);
+}
+
+function __dispatchInverse_ArnResource_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "resource") && Object.is(value.separator, ":")) return __invert_ArnResource_0_ast(value);
+    if (Object.is(value.type, "resource") && Object.is(value.separator, "/")) return __invert_ArnResource_1_ast(value);
+    if (Object.is(value.type, "resource")) return __invert_ArnResource_2_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Arn_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "arn")) return __invert_Arn_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_Arn_ast(value);
+}
+
+function __dispatchInverse_ArnResource_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.indexOf(":") >= 0) return __invert_ArnResource_0_source(value);
+    if (value.indexOf("/") >= 0) return __invert_ArnResource_1_source(value);
+    return __invert_ArnResource_2_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Arn_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.startsWith("arn:")) return __invert_Arn_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_source(value: any): string {
+  return __dispatchInverse_Arn_source(value);
+}
+
+function __invertSlotFor_ArnResource_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_ArnResource_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_ArnResource_ast(v);
+  return String(v);
+}
+
+function __invertSlotFor_Arn_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Arn_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Arn_ast(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+function __invertSlotFor_ArnResource_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_ArnResource_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_ArnResource_source(v);
+  return String(v);
+}
+
+function __invertSlotFor_Arn_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Arn_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Arn_source(v);
+  return String(v);
+}
+
+function __invertSlotLeaf_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+  "source": __dispatchInverse_source,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (mode === 'fast') return parseDirectFast(input);
   if (mode === 'raws') return parseDirectRaws(input);

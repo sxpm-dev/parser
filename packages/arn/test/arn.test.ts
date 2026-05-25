@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
+
+function parseAst(input: string): unknown {
+  return render(input, { type: 'ast' });
+}
 
 test('arn parses AWS ARN fields through generated schema parser', () => {
-  assert.deepEqual(parse('arn:aws:lambda:us-east-1:123456789012:function:MyFn'), {
+  assert.deepEqual(parseAst('arn:aws:lambda:us-east-1:123456789012:function:MyFn'), {
     type: 'arn',
     partition: 'aws',
     service: 'lambda',
@@ -14,7 +18,7 @@ test('arn parses AWS ARN fields through generated schema parser', () => {
 });
 
 test('arn generalizes service and resource names', () => {
-  assert.deepEqual(parse('arn:aws:sqs:ap-south-1:444455556666:order-queue'), {
+  assert.deepEqual(parseAst('arn:aws:sqs:ap-south-1:444455556666:order-queue'), {
     type: 'arn',
     partition: 'aws',
     service: 'sqs',
@@ -25,7 +29,7 @@ test('arn generalizes service and resource names', () => {
 });
 
 test('arn parses slash-separated resources', () => {
-  assert.deepEqual(parse('arn:aws:ec2:us-west-2:123456789012:instance/i-0abcdef'), {
+  assert.deepEqual(parseAst('arn:aws:ec2:us-west-2:123456789012:instance/i-0abcdef'), {
     type: 'arn',
     partition: 'aws',
     service: 'ec2',
@@ -36,7 +40,7 @@ test('arn parses slash-separated resources', () => {
 });
 
 test('arn accepts hyphenated partition and region fields', () => {
-  assert.deepEqual(parse('arn:aws-cn:s3:cn-north-1:123456789012:bucket-name'), {
+  assert.deepEqual(parseAst('arn:aws-cn:s3:cn-north-1:123456789012:bucket-name'), {
     type: 'arn',
     partition: 'aws-cn',
     service: 's3',

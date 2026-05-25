@@ -103,7 +103,7 @@ ${validateAfterParse}    return result;
 
 export function validate(input: string, options?: ParseOptions): void {
   if (options?.validate === true${hasValidation ? '' : ' && false'}) {
-    parse(input, options);
+    __parse(input, options);
     return;
   }
 ${validateDirectFastDispatch}  const state: State = {
@@ -172,7 +172,11 @@ function emitPropertyValidation(schema: InferredSchema): string {
     const values = [...new Set(rule.matchValues.map((value) => value.toLowerCase()))].sort();
     setDecls.push(`const ${setName} = new Set<string>([${values.map(jsString).join(', ')}]);`);
     const nodeTypeValue = structureTypeForNode(schema, rule.nodeType);
-    ruleBranches.push(`if (record.type === ${jsString(nodeTypeValue)}) {
+    // Captures payloads stamp `__production: "<NodeType>#<idx>"` instead of
+    // `type: "<typeLiteral>"`. Match either: legacy AST node (post-render)
+    // OR captures (pre-render) — render only happens when a target is
+    // requested, but validate() runs on raw captures from __parse.
+    ruleBranches.push(`if (record.type === ${jsString(nodeTypeValue)} || (typeof record.__production === 'string' && record.__production.startsWith(${jsString(`${rule.nodeType}#`)}))) {
     const matchValue = record[${jsString(rule.matchField)}];
     const value = record[${jsString(rule.field)}];
     if (typeof matchValue === 'string' && typeof value === 'string') {

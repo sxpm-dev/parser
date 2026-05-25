@@ -4,19 +4,31 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
-import { parse } from '../src/index.ts';
+import { render } from '../src/index.ts';
+
+// Phase 5 removed the public parse() export. The AST that used to be
+// returned by parse(input, { mode: 'raws' }) is reachable via
+// render(input, { type: 'ast' }); the mode toggle is a no-op (raws were
+// removed from the AST during the Phase 6 .render(target, body) migration).
+function parse(input: string, _options?: { mode?: 'fast' | 'raws' }): unknown {
+  return render(input, { type: 'ast' });
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+// `_important` is intentionally absent: it's an internal discriminator
+// the Phase 6 migration added to preserve the captured keyword (`"important"`,
+// `"IMPORTANT"`, etc.) for AST→source round-trip. PostCSS only carries the
+// boolean `important`, so we compare only the boolean here.
 const cssAstFields: Record<string, readonly string[]> = {
-  root: ['type', 'nodes', 'raws'],
-  rule: ['type', 'selector', 'nodes', 'raws'],
-  atrule: ['type', 'name', 'params', 'nodes', 'raws'],
-  decl: ['type', 'prop', 'value', 'important', 'raws'],
-  comment: ['type', 'text', 'raws'],
+  root: ['type', 'nodes'],
+  rule: ['type', 'selector', 'nodes'],
+  atrule: ['type', 'name', 'params', 'nodes'],
+  decl: ['type', 'prop', 'value', 'important'],
+  comment: ['type', 'text'],
 };
 
-function firstCssAstDiff(actual: any, expected: any, path = 'root', includeRaws = false): string | undefined {
+function firstCssAstDiff(actual: any, expected: any, path = 'root'): string | undefined {
   if (actual?.type !== expected?.type) {
     return `${path}: type ${String(actual?.type)} !== ${String(expected?.type)}`;
   }
@@ -27,21 +39,9 @@ function firstCssAstDiff(actual: any, expected: any, path = 'root', includeRaws 
   }
 
   for (const field of fields) {
-    if (field === 'raws' && !includeRaws) continue;
     if (field === 'nodes') {
-      const diff = firstChildDiff(actual.nodes ?? [], expected.nodes ?? [], path, includeRaws);
+      const diff = firstChildDiff(actual.nodes ?? [], expected.nodes ?? [], path);
       if (diff) return diff;
-      continue;
-    }
-    if (field === 'raws') {
-      const actualRaws = actual.raws ?? {};
-      const expectedRaws = expected.raws ?? {};
-      const rawFields = [...new Set([...Object.keys(actualRaws), ...Object.keys(expectedRaws)])].sort();
-      for (const rawField of rawFields) {
-        if (actualRaws[rawField] !== expectedRaws[rawField]) {
-          return `${path}.raws.${rawField}: ${JSON.stringify(actualRaws[rawField])} !== ${JSON.stringify(expectedRaws[rawField])}`;
-        }
-      }
       continue;
     }
     if (actual[field] !== expected[field]) {
@@ -52,7 +52,7 @@ function firstCssAstDiff(actual: any, expected: any, path = 'root', includeRaws 
   return undefined;
 }
 
-function firstChildDiff(actual: any[], expected: any[], path: string, includeRaws: boolean): string | undefined {
+function firstChildDiff(actual: any[], expected: any[], path: string): string | undefined {
   if (actual.length !== expected.length) {
     return `${path}.nodes.length: ${actual.length} !== ${expected.length}`;
   }
@@ -60,7 +60,7 @@ function firstChildDiff(actual: any[], expected: any[], path: string, includeRaw
   for (let i = 0; i < actual.length; i++) {
     const actualChild = actual[i]!;
     const expectedChild = expected[i]!;
-    const diff = firstCssAstDiff(actualChild, expectedChild, `${path}.nodes[${i}]<${actualChild.type}/${expectedChild.type}>`, includeRaws);
+    const diff = firstCssAstDiff(actualChild, expectedChild, `${path}.nodes[${i}]<${actualChild.type}/${expectedChild.type}>`);
     if (diff) {
       return diff;
     }
@@ -225,11 +225,8 @@ test('huge-page fixture AST matches PostCSS semantic shape', () => {
   const css = readFileSync(join(here, '../bench/fixture/huge-page.css'), 'utf8');
   const expected = postcss.parse(css, { from: undefined });
 
-  const fastDiff = firstCssAstDiff(parse(css, { mode: 'fast' }), expected);
-  assert.equal(fastDiff, undefined, `fast: ${fastDiff}`);
-
-  const rawsDiff = firstCssAstDiff(parse(css, { mode: 'raws' }), expected, 'root', true);
-  assert.equal(rawsDiff, undefined, `raws: ${rawsDiff}`);
+  const diff = firstCssAstDiff(parse(css), expected);
+  assert.equal(diff, undefined, `ast: ${diff}`);
 });
 
 test('keeps invalid stylesheet boundaries explicit', () => {

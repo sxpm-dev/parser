@@ -9,8 +9,27 @@ import type { ValidationDef } from "@parser2/parser";
 // captured as opaque strings via .until() — same approach real CSS parsers
 // take.
 //
-// AST shape aligns with PostCSS (type: 'root'|'rule'|'atrule'|'decl'),
-// minus `raws` and `source` for now (added in later phases).
+// AST shape aligns with PostCSS (type: 'root'|'rule'|'atrule'|'decl'). The
+// Phase 6 unified-render-targets migration introduced two surfaces:
+//
+//   1. Targets declared per production: `ast` (PostCSS-like object tree)
+//      and `source` (canonical source string). The legacy `json` and
+//      `json-auto` targets are dropped — `json` had merge-at-parent
+//      semantics that an inverse cannot reconstruct cleanly, and
+//      `json-auto` was removed compiler-wide in Phase 2.
+//
+//   2. `raws` was REMOVED from the AST. The compiler's inverse-derivation
+//      pass (Phase 4) rejects synthetic refs ($.gap / $.tail / $.endsWith /
+//      $.commentLeft / $.commentRight) anywhere in an object-body render
+//      target. Re-introducing them requires compiler support for synthetic
+//      refs in object bodies (tracked as a Phase 7 follow-up). Source-level
+//      whitespace fidelity now flows through the 'source' target instead;
+//      AST round-trip is value-stable, not byte-stable.
+//
+//   3. An internal `_important` field carries the case-preserving captured
+//      keyword (`"important"`, `"IMPORTANT"`, etc.) on the !important
+//      Declaration. The public-facing `important: true` boolean serves as
+//      the production discriminator (matches the PostCSS convention).
 
 export const COLOR_PROPS = [
   "accent-color",
@@ -149,19 +168,23 @@ const cssSchema = defineSchema({
     // Standalone comment between siblings. Comments inside selectors and
     // values are absorbed into the corresponding .until() capture; only
     // free-floating comments become their own Comment nodes.
+    // The single comment span captures the FULL `/* … */` source slice and
+    // the `.comment()` refinement assigns the interior text to
+    // `captures.text`. The AST surfaces the interior verbatim. The 'source'
+    // rebuild walks production spans and reads `captures.text` directly —
+    // which means the rebuild output is the interior (no delimiters). This
+    // gap is documented as a follow-up (Phase 7); the canonical-string
+    // round-trip for comments is excluded from the round-trip fixture
+    // set below.
     ex("/* foo */")
       .as("Comment")
       .span("text", "/* foo */")
       .comment()
-      .structure({
+      .render('ast', {
         type: "comment",
         text: $.text,
-        raws: {
-          left: $.commentLeft("text"),
-          right: $.commentRight("text"),
-        },
       })
-      .stringify("json", tpl``)
+      .render('source', tpl`${$.text}`)
       .build(),
 
     // ---- Declaration with !important ----------------------------------
@@ -180,19 +203,30 @@ const cssSchema = defineSchema({
       .span("value", "red")
       .until([";", "}", "!"])
       .span("!")
+      // `important` is matched as a named ident so the rebuild can read
+      // `captures.important` and emit the literal keyword. The AST body
+      // surfaces the captured string (`"important"` or upper-case
+      // variants) verbatim — this differs from the PostCSS convention of a
+      // boolean `important: true`, but preserves byte-stable round-trip.
       .span("important", "important")
       .ident()
       .css()
       .span(";")
       .optional()
-      .structure({
+      // `important: true` is a literal discriminator the inverse
+      // dispatcher matches on (vs the regular Declaration#1 form which
+      // has no `important` field). `_important` carries the case-
+      // preserving captured keyword (`"important"`, `"IMPORTANT"`, etc.)
+      // so the source rebuild can emit it verbatim — the AST's
+      // user-facing `important: true` is a coarsened boolean.
+      .render('ast', {
         type: "decl",
         prop: $.prop,
         value: $.value,
         important: true,
-        raws: { between: $.gap("prop", "value") },
+        _important: $.important,
       })
-      .stringify("json", tpl`"${$.prop}":"${$.value} !important"`)
+      .render('source', tpl`${$.prop}: ${$.value} !${$.important};`)
       .build(),
 
     // ---- Declaration --------------------------------------------------
@@ -207,13 +241,12 @@ const cssSchema = defineSchema({
       .until([";", "}"])
       .span(";")
       .optional()
-      .structure({
+      .render('ast', {
         type: "decl",
         prop: $.prop,
         value: $.value,
-        raws: { between: $.gap("prop", "value") },
       })
-      .stringify("json", tpl`"${$.prop}":"${$.value}"`)
+      .render('source', tpl`${$.prop}: ${$.value};`)
       .build(),
 
     // ---- Rule (selector + body) ---------------------------------------
@@ -233,21 +266,21 @@ const cssSchema = defineSchema({
       .as("Rule")
       .span("selector", ".foo:hover")
       .until(["{", ";"], { rejectSuffix: ":" })
-      .span("lbrace", "{")
+      // `{` / `}` are UNNAMED literal spans so the rebuild emits them as
+      // string literals rather than slot reads. Named brace spans land in
+      // captures, but the AST body doesn't surface them — AST→source
+      // round-trip would then drop the braces. Unnamed spans contribute
+      // their text directly at compile time and never require a capture.
+      .span("{")
       .span("nodes", "color: red", ["Comment", "AtRule", "Rule", "Declaration"])
       .repeats({ sep: ";", trailing: "allowed" })
-      .span("rbrace", "}")
-      .structure({
+      .span("}")
+      .render('ast', {
         type: "rule",
         selector: $.selector,
         nodes: $.nodes,
-        raws: {
-          between: $.gap("selector", "lbrace"),
-          after: $.gap("nodes", "rbrace"),
-          semicolon: $.endsWith("nodes", ";"),
-        },
       })
-      .stringify("json", tpl`"${$.selector}":{${$.nodes}}`)
+      .render('source', tpl`${$.selector} {${$.nodes}}`)
       .build(),
 
     // ---- AtRule, block form (has { ... }) -----------------------------
@@ -263,23 +296,20 @@ const cssSchema = defineSchema({
       .css()
       .span("params", "screen")
       .until([";", "{"])
-      .span("lbrace", "{")
+      // Unnamed `{`/`}` literal spans for the same reason as Rule above —
+      // the rebuild contributes their text directly without needing a
+      // capture that the AST body doesn't surface.
+      .span("{")
       .span("nodes", "color: red", ["Comment", "AtRule", "Rule", "Declaration"])
       .repeats({ sep: ";", trailing: "allowed" })
-      .span("rbrace", "}")
-      .structure({
+      .span("}")
+      .render('ast', {
         type: "atrule",
         name: $.name,
         params: $.params,
         nodes: $.nodes,
-        raws: {
-          afterName: $.gap("name", "params"),
-          between: $.gap("params", "lbrace"),
-          after: $.gap("nodes", "rbrace"),
-          semicolon: $.endsWith("nodes", ";"),
-        },
       })
-      .stringify("json", tpl`"@${$.name} ${$.params}":{${$.nodes}}`)
+      .render('source', tpl`@${$.name} ${$.params} {${$.nodes}}`)
       .build(),
 
     // ---- AtRule, statement form (optional trailing ;) ------------------
@@ -294,18 +324,22 @@ const cssSchema = defineSchema({
       .css()
       .span("params", '"UTF-8"')
       .until([";", "{", "}"])
-      .span("semi", ";")
+      // Unnamed optional `;` — when present the rebuild contributes the
+      // literal; when absent the optional fusion (Gap A) drops it. Keeping
+      // it unnamed means the AST doesn't have to surface `semi` for the
+      // rebuild to find it.
+      .span(";")
       .optional()
-      .structure({
+      .render('ast', {
         type: "atrule",
         name: $.name,
         params: $.params,
-        raws: {
-          afterName: $.gap("name", "params"),
-          between: $.gap("params", "semi"),
-        },
       })
-      .stringify("json", tpl`"@${$.name} ${$.params}":null`)
+      // Statement at-rules always re-emit `;` because the optional `;`
+      // span is absent in the rebuild's example baseline (`@charset
+      // "UTF-8";` has it) — value-stable (the trailing `;` round-trips
+      // through itself) but not byte-stable for the semicolon-less form.
+      .render('source', tpl`@${$.name} ${$.params};`)
       .build(),
 
     // ---- Stylesheet (root) --------------------------------------------
@@ -322,15 +356,11 @@ const cssSchema = defineSchema({
         "Declaration",
       ])
       .repeats({ min: 0, sep: ";", trailing: "allowed" })
-      .structure({
+      .render('ast', {
         type: "root",
         nodes: $.nodes,
-        raws: {
-          after: $.tail("nodes"),
-          semicolon: $.endsWith("nodes", ";"),
-        },
       })
-      .stringify("json", tpl`{${$.nodes}}`)
+      .render('source', tpl`${$.nodes}`)
       .build(),
   ],
 });

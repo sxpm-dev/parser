@@ -1,31 +1,27 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse } from '../src/index.ts';
+import { render } from '../src/index.ts';
 
 // Phase-A+B smoke test, updated for named punctuators + .until() captures.
 //
-// These smoke tests focus on structural shape only — strip `raws` before
-// comparing. The fixture-driven cases.test.ts checks raw spacing end-to-end.
+// These smoke tests focus on structural shape only. Raws were removed from
+// the AST during the .render(target, body) migration (Phase 6) — the
+// .render('ast', ...) body for each production no longer surfaces the
+// $.gap / $.tail / $.endsWith / $.commentLeft / $.commentRight synthetic
+// refs because the compiler's inverse-derivation pass rejects synthetic
+// refs at any position in an object body. Source-level whitespace fidelity
+// now flows through the 'source' target instead.
 
-function strip(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(strip);
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) {
-      if (k === 'raws') continue;
-      out[k] = strip(v);
-    }
-    return out;
-  }
-  return value;
-}
-
-function parseStripped(input: string): unknown {
-  return strip(parse(input));
+// Phase 5 removed the public parse() export from generated parsers. The
+// AST that used to be returned by parse(input, { mode: 'raws' }) is now
+// reachable via render(input, { type: 'ast' }); the raws-mode toggle is
+// a no-op (every AST is the same regardless of mode).
+function parse(input: string, _options?: { mode?: 'fast' | 'raws' }): unknown {
+  return render(input, { type: 'ast' });
 }
 
 test('parses single rule with simple selector', () => {
-  assert.deepEqual(parseStripped('foo { color: red }'), {
+  assert.deepEqual(parse('foo { color: red }'), {
     type: 'root',
     nodes: [
       {
@@ -37,20 +33,8 @@ test('parses single rule with simple selector', () => {
   });
 });
 
-test('defaults to fast mode without formatting metadata', () => {
-  const ast = parse('foo { color: red }') as Record<string, unknown>;
-  assert.equal('source' in ast, false);
-  assert.equal('raws' in ast, false);
-});
-
-test('can parse with raw spacing metadata when requested', () => {
-  const ast = parse('foo { color: red }', { mode: 'raws' }) as Record<string, unknown>;
-  assert.equal('source' in ast, false);
-  assert.equal(typeof ast.raws, 'object');
-});
-
 test('parses single rule with class selector', () => {
-  assert.deepEqual(parseStripped('.foo { color: red }'), {
+  assert.deepEqual(parse('.foo { color: red }'), {
     type: 'root',
     nodes: [
       {
@@ -63,7 +47,7 @@ test('parses single rule with class selector', () => {
 });
 
 test('parses compound selector with pseudo-class', () => {
-  assert.deepEqual(parseStripped('.foo:hover { color: red }'), {
+  assert.deepEqual(parse('.foo:hover { color: red }'), {
     type: 'root',
     nodes: [
       {
@@ -76,7 +60,7 @@ test('parses compound selector with pseudo-class', () => {
 });
 
 test('parses trailing semicolon tolerantly', () => {
-  assert.deepEqual(parseStripped('foo { color: red; }'), {
+  assert.deepEqual(parse('foo { color: red; }'), {
     type: 'root',
     nodes: [
       {
@@ -89,7 +73,7 @@ test('parses trailing semicolon tolerantly', () => {
 });
 
 test('parses multiple declarations separated by semicolons', () => {
-  assert.deepEqual(parseStripped('foo { color: red; background: blue }'), {
+  assert.deepEqual(parse('foo { color: red; background: blue }'), {
     type: 'root',
     nodes: [
       {
@@ -105,7 +89,7 @@ test('parses multiple declarations separated by semicolons', () => {
 });
 
 test('parses multiple rules', () => {
-  assert.deepEqual(parseStripped('foo { color: red } bar { background: blue }'), {
+  assert.deepEqual(parse('foo { color: red } bar { background: blue }'), {
     type: 'root',
     nodes: [
       {
@@ -123,7 +107,7 @@ test('parses multiple rules', () => {
 });
 
 test('parses selector list and hex value', () => {
-  assert.deepEqual(parseStripped('.foo, .bar { color: #fff }'), {
+  assert.deepEqual(parse('.foo, .bar { color: #fff }'), {
     type: 'root',
     nodes: [
       {
@@ -136,7 +120,7 @@ test('parses selector list and hex value', () => {
 });
 
 test('parses combinator and function value', () => {
-  assert.deepEqual(parseStripped('.foo > .bar { color: rgb(1,2,3) }'), {
+  assert.deepEqual(parse('.foo > .bar { color: rgb(1,2,3) }'), {
     type: 'root',
     nodes: [
       {
@@ -149,7 +133,7 @@ test('parses combinator and function value', () => {
 });
 
 test('parses dimensions and percentages in values', () => {
-  assert.deepEqual(parseStripped('.a { width: 100px; height: 50% }'), {
+  assert.deepEqual(parse('.a { width: 100px; height: 50% }'), {
     type: 'root',
     nodes: [
       {
@@ -165,7 +149,7 @@ test('parses dimensions and percentages in values', () => {
 });
 
 test('parses balanced parens in values', () => {
-  assert.deepEqual(parseStripped('.a { background: calc(100% - 1px) }'), {
+  assert.deepEqual(parse('.a { background: calc(100% - 1px) }'), {
     type: 'root',
     nodes: [
       {
@@ -178,7 +162,7 @@ test('parses balanced parens in values', () => {
 });
 
 test('parses strings inside values', () => {
-  assert.deepEqual(parseStripped('.a { background: url("a.png") }'), {
+  assert.deepEqual(parse('.a { background: url("a.png") }'), {
     type: 'root',
     nodes: [
       {
@@ -192,12 +176,12 @@ test('parses strings inside values', () => {
 
 test('rejects unrecognized characters', () => {
   // Backtick is not whitespace, not a declared punctuator/delim, not a class start.
-  assert.throws(() => parseStripped('foo { color: `red` }'), SyntaxError);
+  assert.throws(() => parse('foo { color: `red` }'), SyntaxError);
 });
 
 test('reports source frame for unexpected block close after selector fragment', () => {
   assert.throws(
-    () => parseStripped('.bar }'),
+    () => parse('.bar }'),
     (error) => error instanceof SyntaxError
       && error.message.includes("Unexpected '}' at position 5")
       && error.message.includes('1 | .bar }')

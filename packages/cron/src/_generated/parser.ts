@@ -443,7 +443,7 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options?: { type?: string }): unknown {
+export function render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
@@ -452,7 +452,7 @@ export function render(input: string, options?: { type?: string }): unknown {
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = __parse(input);
+  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
   return fn(captures);
 }
 

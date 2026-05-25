@@ -339,7 +339,11 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   // The constant `__defaultTarget` is emitted separately so the runtime
   // reads it as a plain identifier. No target name flows through the
   // compiler logic — the constant is the only mention.
-  return `export function render(input: string, options?: { type?: string }): unknown {
+  // `mode` is optional and only meaningful for packages whose generated
+  // `__parse` accepts it (currently css's raws mode). Passing `undefined`
+  // for non-css packages is a no-op — the inner __parse just falls back
+  // to its default.
+  return `export function render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
@@ -348,7 +352,7 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = __parse(input);
+  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
   return fn(captures);
 }`;
 }

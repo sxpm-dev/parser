@@ -36,7 +36,12 @@ type FastShape = {
   readonly comment: (ProdRef & { readonly textSpan: string }) | null;
   readonly block: ProdRef & { readonly captureSpan: string; readonly childrenSpan: string };
   readonly pair: PairShape;
-  readonly prefixed: (ProdRef & { readonly nameSpan: string; readonly paramsSpan: string; readonly childrenSpan: string }) | null;
+  // `prefixed` is the block-form prefixed production (e.g. AtRule with body).
+  // `prefixedStatementProdKey` is the no-body alternative — when both exist,
+  // direct-fast must emit the statement key for inputs without an open
+  // literal, so the ast builder's `nodes: $.nodes` doesn't surface as
+  // `nodes: undefined` on statement at-rules.
+  readonly prefixed: (ProdRef & { readonly nameSpan: string; readonly paramsSpan: string; readonly childrenSpan: string; readonly statementProdKey: string | null }) | null;
   readonly literals: {
     readonly open: string;
     readonly close: string;
@@ -61,6 +66,12 @@ type PairShape = ProdRef & {
   readonly flagProdKey: string | null;
   readonly pairLiteral: string;
   readonly flagLiteral: string | null;
+  // Span name carrying the flagged keyword's captured text (e.g.
+  // 'important' for CSS's `!important`). When the flagged production
+  // declares a NAMED span for the keyword, direct-fast captures the
+  // matched text under this key so the rebuild can emit the case-
+  // preserving original on AST→source.
+  readonly flagSpan: string | null;
 };
 
 type PrefixedShape = NonNullable<FastShape['prefixed']> & {
@@ -250,17 +261,25 @@ function inferBlockShape(info: NodeTypeInfo): BlockShape | null {
 function inferPairShape(info: NodeTypeInfo): PairShape | null {
   const productions = info.productions;
   if (productions.length < 1 || productions.length > 2) return null;
+  // The regular (non-flagged) pair production must be chosen for `prodKey`
+  // so the direct-fast emitter stamps `__production: "<NodeType>#<regular>"`
+  // on non-flagged decls. Schemas often list the flagged production FIRST
+  // (so speculative dispatch tries the longer match before falling back),
+  // but the direct-fast captures payload routes through `prodKey` for the
+  // regular case and `flagProdKey` for the flagged case — flipping that
+  // here picks the right pairing regardless of declaration order.
+  const regular = productions.find((p) => keyForBooleanLiteral(astBodyOf(p), true) === null) ?? productions[0]!;
   const first = productions[0]!;
-  const left = first.spans[0];
-  const pairLiteral = first.spans[1];
-  const right = first.spans[2];
+  const left = regular.spans[0];
+  const pairLiteral = regular.spans[1];
+  const right = regular.spans[2];
   const leftUntil = left ? findModifier(left, 'until') : undefined;
   const rightUntil = right ? findModifier(right, 'until') : undefined;
   if (!left?.name || !right?.name || pairLiteral?.class !== 'literal' || !pairLiteral.text) return null;
   if (!leftUntil?.stops.includes(pairLiteral.text) || !rightUntil?.stops.length) return null;
-  if (!bodyReferencesSpan(astBodyOf(first), left.name)) return null;
-  if (!bodyReferencesSpan(astBodyOf(first), right.name)) return null;
-  const prodKey = productionKey(info, first);
+  if (!bodyReferencesSpan(astBodyOf(regular), left.name)) return null;
+  if (!bodyReferencesSpan(astBodyOf(regular), right.name)) return null;
+  const prodKey = productionKey(info, regular);
   if (prodKey === null) return null;
   let flagProdKey: string | null = null;
   let flagLiteral: string | null = null;
@@ -276,7 +295,30 @@ function inferPairShape(info: NodeTypeInfo): PairShape | null {
       }
     }
   }
-  return { prodKey, leftSpan: left.name, rightSpan: right.name, flagProdKey, pairLiteral: pairLiteral.text, flagLiteral };
+  // Keep an `as` reference to first so unused-var warnings stay silent in
+  // builds that lint the compiler; the regular-vs-first distinction matters
+  // for prodKey selection but the rest of the shape relies on regular.
+  void first;
+  // Discover the flag span's name on the flagged production — the
+  // first named ident-classed span that appears AFTER the flag literal.
+  // Used by direct-fast to capture the keyword's text so the rebuild can
+  // emit the original case (e.g. `IMPORTANT` instead of `important`).
+  let flagSpan: string | null = null;
+  const flaggedProduction = productions.find((p) => keyForBooleanLiteral(astBodyOf(p), true) !== null);
+  if (flaggedProduction && flagLiteral) {
+    let seenFlag = false;
+    for (const span of flaggedProduction.spans) {
+      if (!seenFlag && span.class === 'literal' && span.text === flagLiteral) {
+        seenFlag = true;
+        continue;
+      }
+      if (seenFlag && span.name && (span.class === 'ident' || span.class === 'literal')) {
+        flagSpan = span.name;
+        break;
+      }
+    }
+  }
+  return { prodKey, leftSpan: left.name, rightSpan: right.name, flagProdKey, pairLiteral: pairLiteral.text, flagLiteral, flagSpan };
 }
 
 function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
@@ -296,7 +338,12 @@ function inferPrefixedShape(info: NodeTypeInfo): PrefixedShape | null {
   if (!bodyReferencesSpan(astBodyOf(blockProduction), repeated.name)) return null;
   const prodKey = productionKey(info, blockProduction);
   if (prodKey === null) return null;
-  return { prodKey, nameSpan: name.name, paramsSpan: params.name, childrenSpan: repeated.name, prefixLiteral: prefix.text };
+  // The other production (statement form, no body) gets its own routing
+  // key so direct-fast emits AtRule#<stmt> for `@charset "UTF-8"` without
+  // leaking a `nodes: undefined` from the block-form AST builder.
+  const statementProduction = info.productions.find((p) => p !== blockProduction);
+  const statementProdKey = statementProduction ? productionKey(info, statementProduction) : null;
+  return { prodKey, nameSpan: name.name, paramsSpan: params.name, childrenSpan: repeated.name, prefixLiteral: prefix.text, statementProdKey };
 }
 
 function productionKey(info: NodeTypeInfo, production: Production): string | null {
@@ -367,6 +414,13 @@ function emitNestedBlockFastPath(shape: FastShape): string {
   // dispatcher selects the boolean-flag-bearing builder.
   const pairFlagType = shape.pair.flagProdKey ? prodProp(shape.pair.flagProdKey) : pairType;
   const prefixedType = shape.prefixed ? prodProp(shape.prefixed.prodKey) : '';
+  // Statement-form prefixed production gets a distinct __production key so
+  // the ast builder for the no-body alternative is selected (otherwise
+  // direct-fast routes the no-body case through the block-form builder and
+  // surfaces `nodes: undefined`).
+  const prefixedStmtType = shape.prefixed && shape.prefixed.statementProdKey
+    ? prodProp(shape.prefixed.statementProdKey)
+    : prefixedType;
   const prefixCode = shape.literals.prefix?.charCodeAt(0) ?? -1;
   const openCode = shape.literals.open.charCodeAt(0);
   const closeCode = shape.literals.close.charCodeAt(0);
@@ -427,7 +481,7 @@ function parseDirectPrefixed(state: DirectState): unknown {
     return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `${prop(shape.prefixed.childrenSpan)}: nodes`)} };
   }
   if (scanStop === ${separatorCode}) state.pos++;
-  return { ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`)} };
+  return { ${joinProps(prefixedStmtType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`)} };
 }
 ` : '';
   const validateCommentBranch = shape.comment ? `    if (c === 0x2f /* / */ && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a /* * */) {
@@ -822,7 +876,7 @@ ${shape.prefixed ? `function parseDirectPrefixedRaws(state: DirectState): unknow
   state.lastNodeStart = start;
   state.lastNodeEnd = scanStop === ${separatorCode} ? state.pos : paramsEnd;
   return {
-    ${joinProps(prefixedType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `raws: { afterName, between }`)}
+    ${joinProps(prefixedStmtType, `${prop(shape.prefixed.nameSpan)}: name`, `${prop(shape.prefixed.paramsSpan)}: params`, `raws: { afterName, between }`)}
   };
 }
 ` : ''}
@@ -907,11 +961,12 @@ function parseDirectImportantDeclarationRestRaws(state: DirectState, start: numb
   const importantStart = state.pos;
   readDirectIdent(state);
   if (state.pos === importantStart) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
+  const important = input.slice(importantStart, state.pos);
   skipDirectWsAndComments(state);
   if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
   state.lastNodeStart = start;
   state.lastNodeEnd = state.pos;
-  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, `raws: { between: input.slice(propEnd, valueStart) }`)} };
+  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, ...(shape.pair.flagSpan ? [`${prop(shape.pair.flagSpan)}: important`] : []), `raws: { between: input.slice(propEnd, valueStart) }`)} };
 }
 
 function parseDirectBlockOrPair(state: DirectState): unknown {
@@ -986,13 +1041,14 @@ function parseDirectDeclarationRest(state: DirectState, prop: string): unknown {
 function parseDirectImportantDeclarationRest(state: DirectState, prop: string, value: string): unknown {
   const input = state.input;
   state.pos++;
-  skipDirectWs(state);
+  skipDirectWsAndComments(state);
   const importantStart = state.pos;
   readDirectIdent(state);
   if (state.pos === importantStart) throw new SyntaxError(\`expected token of class 'ident' at position \${importantStart}\`);
-  skipDirectWs(state);
+  const important = input.slice(importantStart, state.pos);
+  skipDirectWsAndComments(state);
   if (input.charCodeAt(state.pos) === ${separatorCode}) state.pos++;
-  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`)} };
+  return { ${joinProps(pairFlagType, `${prop(shape.pair.leftSpan)}: prop`, `${prop(shape.pair.rightSpan)}: value`, ...(shape.pair.flagSpan ? [`${prop(shape.pair.flagSpan)}: important`] : []))} };
 }
 
 function scanDirectBoundary(state: DirectState, stop0: number, stop1: number, stop2: number): void {

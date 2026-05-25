@@ -7,7 +7,7 @@ import {
   type Node as CommonmarkNode,
 } from "commonmark";
 import MarkdownIt from "markdown-it";
-import { parse, render } from "../src/index.ts";
+import { render } from "../src/index.ts";
 import { type BenchResult, type Contestant, runBenchTable as runSharedBenchTable } from "../../../scripts/bench-table.ts";
 
 // Focused markdown bench: two suites, one real fixture each.
@@ -33,7 +33,7 @@ const astContestants: Contestant[] = [
     label: "parser2 markdown fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(parse(input)),
+      units: countParser2Nodes(render(input, { type: "ast" })),
     }),
   },
   {
@@ -58,7 +58,7 @@ const htmlContestants: Contestant[] = [
     label: "parser2 render html",
     unit: "bytes",
     fn: (input: string): BenchResult => ({
-      units: render(input, { target: "html" }).length,
+      units: (render(input, { type: "html" }) as string).length,
     }),
   },
   {

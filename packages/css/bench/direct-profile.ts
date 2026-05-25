@@ -1,4 +1,4 @@
-import { parse, type CssNode, type CssRoot } from '../src/index.ts';
+import { render } from '../src/index.ts';
 import { fmtNs, hashInput } from './common.ts';
 
 type ProfileCase = {
@@ -31,7 +31,7 @@ const CASES: readonly ProfileCase[] = [
 ];
 
 console.log('Direct fast path shape profile');
-console.log('Each row uses parse(input, { mode: "fast" }) and counts AST nodes. This profiles schema shapes through the public API.');
+console.log('Each row uses render(input, { type: "ast", mode: "fast" }) and counts AST nodes. This profiles schema shapes through the public API.');
 console.log(
   'shape'.padEnd(24) +
   'input'.padEnd(18) +
@@ -62,12 +62,12 @@ for (const profileCase of CASES) {
 }
 
 function measure(input: string): Array<{ ns: number; nodes: number }> {
-  for (let i = 0; i < 100; i++) countAst(parse(input, { mode: 'fast' }) as CssRoot);
+  for (let i = 0; i < 100; i++) countAst(render(input, { type: 'ast', mode: 'fast' }));
   const samples: Array<{ ns: number; nodes: number }> = [];
   for (let sample = 0; sample < 7; sample++) {
     let nodes = 0;
     const start = process.hrtime.bigint();
-    for (let i = 0; i < 120; i++) nodes = countAst(parse(input, { mode: 'fast' }) as CssRoot);
+    for (let i = 0; i < 120; i++) nodes = countAst(render(input, { type: 'ast', mode: 'fast' }));
     samples[samples.length] = { ns: Number(process.hrtime.bigint() - start) / 120, nodes };
   }
   return samples;
@@ -90,14 +90,10 @@ function median(values: readonly number[]): number {
   return sorted[sorted.length >> 1] ?? 0;
 }
 
-function countAst(root: CssRoot): number {
-  let nodes = 1;
-  const visit = (node: CssNode): void => {
-    nodes++;
-    if ('nodes' in node && node.nodes) {
-      for (const child of node.nodes) visit(child);
-    }
-  };
-  for (const node of root.nodes) visit(node);
-  return nodes;
+function countAst(value: unknown): number {
+  if (!value || typeof value !== 'object') return 0;
+  const node = value as { readonly nodes?: readonly unknown[] };
+  let count = 1;
+  if (node.nodes) for (const child of node.nodes) count += countAst(child);
+  return count;
 }

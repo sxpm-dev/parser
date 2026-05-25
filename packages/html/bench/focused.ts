@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
 import { parse as parse5Parse } from "parse5";
-import { parse } from "../src/index.ts";
+import { render } from "../src/index.ts";
 import { type BenchResult, type Contestant, runBenchTable as runSharedBenchTable } from "../../../scripts/bench-table.ts";
 
 // Focused bench: parser2 (fast) vs parse5, one real fixture, AST→AST.
@@ -20,7 +20,7 @@ const contestants: Contestant[] = [
     label: "parser2 html fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(parse(input, { mode: "fast" })),
+      units: countParser2Nodes(render(input, { type: "ast", mode: "fast" })),
     }),
   },
   {

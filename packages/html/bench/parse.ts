@@ -2,7 +2,7 @@ import { parseDocument as htmlparser2ParseDocument } from "htmlparser2";
 import { parseHTML } from "linkedom";
 import { parse as parseHtml } from "node-html-parser";
 import { parse as parse5 } from "parse5";
-import { parse } from "../src/index.ts";
+import { render } from "../src/index.ts";
 import { type BenchResult, type Contestant, runBenchTable } from "./common.ts";
 
 const contestants: Contestant[] = [
@@ -11,7 +11,8 @@ const contestants: Contestant[] = [
     unit: "nodes",
     fn: (input: string): BenchResult => ({
       units: countParser2Nodes(
-        parse(input, {
+        render(input, {
+          type: "ast",
           mode: "fast",
         }),
       ),
@@ -22,7 +23,8 @@ const contestants: Contestant[] = [
     unit: "nodes",
     fn: (input: string): BenchResult => ({
       units: countParser2Nodes(
-        parse(input, {
+        render(input, {
+          type: "ast",
           mode: "raws",
         }),
       ),

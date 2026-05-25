@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import postcss from "postcss";
-import { parse } from "../src/index.ts";
+import { render } from "../src/index.ts";
 import { type BenchResult, type Contestant, runBenchTable as runSharedBenchTable } from "../../../scripts/bench-table.ts";
 
 // Focused bench: parser2 (fast) vs postcss, one real fixture, AST→AST.
@@ -18,7 +18,7 @@ const contestants: Contestant[] = [
     label: "parser2 css fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(parse(input, { mode: "fast" })),
+      units: countParser2Nodes(render(input, { type: "ast", mode: "fast" })),
     }),
   },
   {

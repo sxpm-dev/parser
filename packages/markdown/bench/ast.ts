@@ -7,7 +7,7 @@ import { marked } from "marked";
 import { micromark } from "micromark";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
-import { parse } from "../src/index.ts";
+import { render } from "../src/index.ts";
 import { type BenchResult, type Contestant, runBenchTable } from "./common.ts";
 
 const markdownIt = new MarkdownIt();
@@ -19,14 +19,14 @@ const contestants: Contestant[] = [
     label: "parser2 markdown fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(parse(input, { mode: "fast" })),
+      units: countParser2Nodes(render(input, { type: "ast", mode: "fast" })),
     }),
   },
   {
     label: "parser2 markdown raws",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(parse(input, { mode: "raws" })),
+      units: countParser2Nodes(render(input, { type: "ast", mode: "raws" })),
     }),
   },
   {

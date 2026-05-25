@@ -328,28 +328,56 @@ function __build_CronField_0_ast(captures: any): any {
   return { type: "wildcard" };
 }
 
+function __build_CronField_0_source(captures: any): any {
+  return String("*");
+}
+
 function __build_CronField_1_ast(captures: any): any {
   return { type: "step", step: __renderSlot_ast(captures.step) };
+}
+
+function __build_CronField_1_source(captures: any): any {
+  return "*/" + (__renderSlot_source(captures.step) ?? "");
 }
 
 function __build_CronField_2_ast(captures: any): any {
   return { type: "value", value: __renderSlot_ast(captures.value) };
 }
 
+function __build_CronField_2_source(captures: any): any {
+  return String((__renderSlot_source(captures.value) ?? ""));
+}
+
 function __build_CronField_3_ast(captures: any): any {
   return { type: "range", start: __renderSlot_ast(captures.start), end: __renderSlot_ast(captures.end) };
+}
+
+function __build_CronField_3_source(captures: any): any {
+  return (__renderSlot_source(captures.start) ?? "") + "-" + (__renderSlot_source(captures.end) ?? "");
 }
 
 function __build_CommandWord_0_ast(captures: any): any {
   return __renderSlot_ast(captures.value);
 }
 
+function __build_CommandWord_0_source(captures: any): any {
+  return String((__renderSlot_source(captures.value) ?? ""));
+}
+
 function __build_Command_0_ast(captures: any): any {
   return { type: "command", words: __renderSlot_ast(captures.words) };
 }
 
+function __build_Command_0_source(captures: any): any {
+  return String((__renderSlot_source(captures.words) ?? ""));
+}
+
 function __build_Cron_0_ast(captures: any): any {
   return { type: "cron", minute: __renderSlot_ast(captures.minute), hour: __renderSlot_ast(captures.hour), dayOfMonth: __renderSlot_ast(captures.dayOfMonth), month: __renderSlot_ast(captures.month), dayOfWeek: __renderSlot_ast(captures.dayOfWeek), command: __renderSlot_ast(captures.command) };
+}
+
+function __build_Cron_0_source(captures: any): any {
+  return (__renderSlot_source(captures.minute) ?? "") + " " + (__renderSlot_source(captures.hour) ?? "") + " " + (__renderSlot_source(captures.dayOfMonth) ?? "") + " " + (__renderSlot_source(captures.month) ?? "") + " " + (__renderSlot_source(captures.dayOfWeek) ?? "") + " " + (__renderSlot_source(captures.command) ?? "");
 }
 
 function __dispatchRender_ast(captures: any): any {
@@ -368,6 +396,22 @@ function __dispatchRender_ast(captures: any): any {
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
+function __dispatchRender_source(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'source')");
+  }
+  switch (captures.__production) {
+    case "CronField#0": return __build_CronField_0_source(captures);
+    case "CronField#1": return __build_CronField_1_source(captures);
+    case "CronField#2": return __build_CronField_2_source(captures);
+    case "CronField#3": return __build_CronField_3_source(captures);
+    case "CommandWord#0": return __build_CommandWord_0_source(captures);
+    case "Command#0": return __build_Command_0_source(captures);
+    case "Cron#0": return __build_Cron_0_source(captures);
+  }
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
+}
+
 function __renderSlot_ast(v: any): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
@@ -381,8 +425,22 @@ function __renderSlot_ast(v: any): any {
   return v;
 }
 
+function __renderSlot_source(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_source(v);
+  }
+  return v;
+}
+
 const __renderDispatch: Record<string, (captures: any) => any> = {
   "ast": (captures: any) => __dispatchRender_ast(captures),
+  "source": (captures: any) => __dispatchRender_source(captures),
 };
 
 export function render(input: string, options?: { type?: string }): unknown {
@@ -398,11 +456,14 @@ export function render(input: string, options?: { type?: string }): unknown {
   return fn(captures);
 }
 
-function __rebuildSlot(v: any): string {
+function __rebuildSlot(v: any, joinSep: string = ""): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
     let out = "";
-    for (let i = 0; i < v.length; i++) out += __rebuildSlot(v[i]);
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
     return out;
   }
   return String(v);
@@ -429,11 +490,11 @@ function __rebuild_CommandWord_0(captures: any): string {
 }
 
 function __rebuild_Command_0(captures: any): string {
-  return String(__rebuildSlot(captures.words));
+  return String(__rebuildSlot(captures.words, " "));
 }
 
 function __rebuild_Cron_0(captures: any): string {
-  return __rebuildSlot(captures.minute) + " " + __rebuildSlot(captures.hour) + " " + __rebuildSlot(captures.dayOfMonth) + " " + __rebuildSlot(captures.month) + " " + __rebuildSlot(captures.dayOfWeek) + " " + (captures.command ?? "");
+  return __rebuildSlot(captures.minute) + " " + __rebuildSlot(captures.hour) + " " + __rebuildSlot(captures.dayOfMonth) + " " + __rebuildSlot(captures.month) + " " + __rebuildSlot(captures.dayOfWeek) + (captures.command == null ? "" : " " + __rebuildSlot(captures.command));
 }
 
 function __invert_CronField_0_ast(value: any): string {
@@ -519,6 +580,144 @@ function __invert_Cron_0_ast(value: any): string {
   return __rebuild_Cron_0(captures);
 }
 
+function __invert_CronField_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("*", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"*\" in template body");
+  }
+  __pos += 1;
+  return __rebuild_CronField_0(captures);
+}
+
+function __invert_CronField_1_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  if (__s.indexOf("*/", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"*/\" in template body");
+  }
+  __pos += 2;
+  captures.step = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_CronField_1(captures);
+}
+
+function __invert_CronField_2_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.value = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_CronField_2(captures);
+}
+
+function __invert_CronField_3_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf("-", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \"-\" after capture start");
+    }
+    captures.start = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.end = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_CronField_3(captures);
+}
+
+function __invert_CommandWord_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.value = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_CommandWord_0(captures);
+}
+
+function __invert_Command_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.words = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Command_0(captures);
+}
+
+function __invert_Cron_0_source(value: any): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture minute");
+    }
+    captures.minute = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture hour");
+    }
+    captures.hour = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture dayOfMonth");
+    }
+    captures.dayOfMonth = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture month");
+    }
+    captures.month = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  {
+    const __end = __s.indexOf(" ", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" \" after capture dayOfWeek");
+    }
+    captures.dayOfWeek = __invertSlot_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.command = __invertSlot_source(__s.slice(__pos));
+  __pos = __s.length;
+  return __rebuild_Cron_0(captures);
+}
+
 function __dispatchInverse_ast(value: any): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     if (Object.is(value.type, "wildcard")) return __invert_CronField_0_ast(value);
@@ -534,20 +733,52 @@ function __dispatchInverse_ast(value: any): string {
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __invertSlot_ast(v: any): string {
-  if (v === null || v === undefined) return "";
+function __dispatchInverse_source(value: any): string {
+  if (typeof value === "string") {
+    if (value.startsWith("*/")) return __invert_CronField_1_source(value);
+    if (value.startsWith("*")) return __invert_CronField_0_source(value);
+    if (value.indexOf("-") >= 0) return __invert_CronField_3_source(value);
+    if (value.indexOf(" ") >= 0) return __invert_Cron_0_source(value);
+    return __invert_CronField_2_source(value);
+    return __invert_CommandWord_0_source(value);
+    return __invert_Command_0_source(value);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __invertSlot_ast(v: any): any {
+  if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __invertSlot_ast(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlot_ast(v[i]);
+      if (r != null) out.push(r);
+    }
     return out;
   }
   if (typeof v === "object") return __dispatchInverse_ast(v);
   return String(v);
 }
 
+function __invertSlot_source(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlot_source(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_source(v);
+  return String(v);
+}
+
 const __inverseDispatch: Record<string, (value: any) => string> = {
   "ast": __dispatchInverse_ast,
+  "source": __dispatchInverse_source,
 };
 
 export function stringify(value: unknown, options?: { type?: string }): string {

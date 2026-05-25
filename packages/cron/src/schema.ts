@@ -1,4 +1,4 @@
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, ex, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Cron',
@@ -13,6 +13,7 @@ export default defineSchema({
       .as('CronField')
       .span('*')
       .render('ast', { type: 'wildcard' })
+      .render('source', tpl`*`)
       .build(),
 
     ex('*/5')
@@ -21,12 +22,14 @@ export default defineSchema({
       .span('/')
       .span('step', '5').number().int()
       .render('ast', { type: 'step', step: $.step })
+      .render('source', tpl`*/${$.step}`)
       .build(),
 
     ex('9')
       .as('CronField')
       .span('value', '9').number().int()
       .render('ast', { type: 'value', value: $.value })
+      .render('source', tpl`${$.value}`)
       .build(),
 
     ex('1-5')
@@ -35,18 +38,21 @@ export default defineSchema({
       .span('-')
       .span('end', '5').number().int()
       .render('ast', { type: 'range', start: $.start, end: $.end })
+      .render('source', tpl`${$.start}-${$.end}`)
       .build(),
 
     ex('npm')
       .as('CommandWord')
       .span('value', 'npm').ident().css()
       .render('ast', $.value)
+      .render('source', tpl`${$.value}`)
       .build(),
 
     ex('npm test')
       .as('Command')
       .span('words', 'npm', 'CommandWord').repeats({ min: 1 })
       .render('ast', { type: 'command', words: $.words })
+      .render('source', tpl`${$.words}`)
       .build(),
 
     ex('0 9 7 8 1-5 npm test')
@@ -66,6 +72,7 @@ export default defineSchema({
         dayOfWeek: $.dayOfWeek,
         command: $.command,
       })
+      .render('source', tpl`${$.minute} ${$.hour} ${$.dayOfMonth} ${$.month} ${$.dayOfWeek} ${$.command}`)
       .build(),
   ],
 });

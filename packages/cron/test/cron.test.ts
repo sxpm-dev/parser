@@ -66,12 +66,12 @@ test('cron rejects malformed field syntax', () => {
   assert.throws(() => validate('* * * * @daily'), SyntaxError);
 });
 
-test('cron stringify(render(input, ast), ast) is parse-equivalent for canonical inputs', () => {
-  // Value-stable round-trip (per the spec): rendering the stringified
-  // form yields the same AST. The intermediate source string is allowed
-  // to normalize (e.g. trailing whitespace from the rebuild subroutine
-  // when the optional `command` span is absent — a known rebuild-emit
-  // limitation tracked in the unified-render-targets plan).
+test('cron stringify(render(input, ast), ast) round-trips for canonical inputs', () => {
+  // Value-stable round-trip per the spec: render(stringify(render(x, T), T), T)
+  // === render(x, T). After compiler fixes 1-4 (template discriminator,
+  // optional-slot fusion, .repeats-array join separator, template null
+  // coercion), the intermediate source string is byte-stable for the
+  // canonical fixtures too — see round-trip.test.ts for that contract.
   for (const input of ['* * * * *', '0 0 * * *', '*/5 * * * *', '0 1-3 * * *']) {
     const ast = parseAst(input);
     const src = stringify(ast, { type: 'ast' });

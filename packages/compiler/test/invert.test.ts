@@ -486,6 +486,53 @@ test('round-trip: scalar body asserts equality and rebuilds source', async () =>
   assert.throws(() => mod.stringify(false, { type: 'flag' }), /stringify: no production matches/);
 });
 
+// Feature 1: Two productions whose template bodies are structurally
+// identical (same segments AND same captures) are NOT a collision — the
+// inverse dispatcher can pick either and the spec's round-trip contract
+// is value-stable, not byte-stable (Design rule 5). The chosen production
+// is the lowest-index one for determinism.
+test('inverse: structurally-identical template bodies do NOT collide; dispatcher picks lowest-index production', async () => {
+  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  // Two heading productions render IDENTICAL HTML — `<h1>${text}</h1>`.
+  // Their AST shapes differ ({type:'h1-hash'} vs {type:'h1-bang'}) so the
+  // AST target stays unambiguous; the HTML target is the one we're
+  // relaxing. Distinct leading punctuators (`#` vs `!`) keep the
+  // forward parser unambiguous.
+  const schema = defineSchema({
+    rootType: 'Heading',
+    examples: [
+      ex('# title').as('Heading')
+        .span('#')
+        .span('text', 'title').ident().css()
+        .render('ast', { type: 'h1-hash', text: $.text })
+        .render('html', tpl`<h1>${$.text}</h1>`)
+        .build(),
+      ex('! title').as('Heading')
+        .span('!')
+        .span('text', 'title').ident().css()
+        .render('ast', { type: 'h1-bang', text: $.text })
+        .render('html', tpl`<h1>${$.text}</h1>`)
+        .build(),
+    ],
+  });
+  // Inference must succeed even though both `html` templates are identical.
+  assert.doesNotThrow(() => inferSchema(schema));
+  const mod = await loadGenerated(schema, 'feature1-identical-templates');
+  // Forward: each input renders to the same HTML.
+  const htmlA = mod.render('# title', { type: 'html' });
+  const htmlB = mod.render('! title', { type: 'html' });
+  assert.equal(htmlA, '<h1>title</h1>');
+  assert.equal(htmlB, '<h1>title</h1>');
+  // Inverse: stringify must not throw; it picks the lowest-index
+  // production (hash form). The re-rendered HTML matches the original.
+  const back = mod.stringify(htmlA, { type: 'html' });
+  // Lowest-index production is the hash form, so back rebuilds to `# title`.
+  assert.equal(back, '# title');
+  // Value-stable round-trip: render(stringify(html)) === html.
+  const html2 = mod.render(back, { type: 'html' });
+  assert.equal(html2, htmlA);
+});
+
 // generateParser code shape: both render + stringify exported.
 test('generateParser emits public render and public stringify', async () => {
   const { defineSchema, ex, $, tpl } = await import('@parser2/parser');

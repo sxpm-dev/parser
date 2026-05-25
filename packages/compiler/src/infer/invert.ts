@@ -221,6 +221,14 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
     }
     case 'template': {
       const bt = b as Extract<InverseIR, { kind: 'template' }>;
+      // Feature 1 (spec Design rule 5 — value-stable round-trip): if the
+      // two templates are structurally identical (same segments AND same
+      // captures), they are NOT a collision. The inverse dispatcher can
+      // pick either production deterministically (lowest-index wins in
+      // emit/inverse.ts) and the resulting source re-parses to a value
+      // that, when re-rendered to this target, equals the original. Bytes
+      // may differ between the two source forms; value-stability holds.
+      if (templatesAreStructurallyIdentical(a, bt)) return null;
       const aPrefix = a.segments[0] ?? '';
       const bPrefix = bt.segments[0] ?? '';
       // 1) Distinct non-empty leading prefixes (or one empty + the other
@@ -269,6 +277,27 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
 // `value.includes(<unique-literal>)`).
 function nonEmptySegments(segments: ReadonlyArray<string>): ReadonlyArray<string> {
   return segments.filter((s) => s.length > 0);
+}
+
+// Feature 1: deep structural equality between two template inverses.
+// `segments` and `captures` are both string arrays; identity means the
+// same length AND element-wise string equality. When templates are
+// structurally identical, the spec rule 5 (value-stable round-trip)
+// allows the inverse dispatcher to pick either production — the rebuilt
+// source re-parses to the same target value either way.
+function templatesAreStructurallyIdentical(
+  a: Extract<InverseIR, { kind: 'template' }>,
+  b: Extract<InverseIR, { kind: 'template' }>,
+): boolean {
+  if (a.segments.length !== b.segments.length) return false;
+  if (a.captures.length !== b.captures.length) return false;
+  for (let i = 0; i < a.segments.length; i++) {
+    if (a.segments[i] !== b.segments[i]) return false;
+  }
+  for (let i = 0; i < a.captures.length; i++) {
+    if (a.captures[i] !== b.captures[i]) return false;
+  }
+  return true;
 }
 
 // Does production A have a non-empty literal segment that does not appear

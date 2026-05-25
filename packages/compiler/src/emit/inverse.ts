@@ -527,7 +527,23 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     //     the fallback (at most one — validateInverseDiscrimination rejected
     //     the schema if there were two such branches sharing a prefix).
     type TplBranch = Branch & { readonly ir: Extract<InverseIR, { kind: 'template' }> };
-    const tpls = templates as ReadonlyArray<TplBranch>;
+    // Feature 1 (spec Design rule 5): when two or more template branches
+    // are structurally identical (same segments AND same captures), the
+    // inverse dispatcher cannot distinguish them — and need not. Group by
+    // (segments, captures) shape and keep only the lowest-index branch
+    // from each group; the dropped duplicates would have emitted dead
+    // `if` clauses checking the same discriminator. Round-trip stays
+    // value-stable: rebuilding through the chosen production yields a
+    // source whose re-render to this target matches the input value.
+    const allTpls = templates as ReadonlyArray<TplBranch>;
+    const tpls: TplBranch[] = [];
+    const groupSeen = new Set<string>();
+    for (const b of allTpls) {
+      const key = templateShapeKey(b.ir);
+      if (groupSeen.has(key)) continue;
+      groupSeen.add(key);
+      tpls.push(b);
+    }
     type Plan = {
       readonly branch: TplBranch;
       readonly check: string | null; // null = fallback (`return <call>;`)
@@ -613,6 +629,15 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
   return `function ${fnName}(value: any): string {
 ${indent(lines.join('\n'), 1)}
 }`;
+}
+
+// Feature 1: deterministic shape key for grouping structurally-identical
+// template inverses. Two productions whose template body has the same
+// segments and the same captures collapse to the same key, and the
+// dispatcher keeps only the lowest-index occurrence (see callsite
+// comment in emitNodeDispatcher).
+function templateShapeKey(ir: Extract<InverseIR, { kind: 'template' }>): string {
+  return JSON.stringify({ s: ir.segments, c: ir.captures });
 }
 
 function literalFieldsCondition(ir: Extract<InverseIR, { kind: 'object' }>): string {

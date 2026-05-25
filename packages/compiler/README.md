@@ -151,32 +151,42 @@ packages/<schema>/src/_generated/parser.ts
 It exports:
 
 ```ts
-parse(input: string, options?: {
+render(input: string, options?: {
+  type?: string
   mode?: 'fast' | 'raws'
-}): Structure
+}): unknown
+stringify(value: unknown, options?: {
+  type?: string
+}): string
 validate(input: string, options?: {
   mode?: 'fast' | 'raws'
 }): void
 tokenize(input: string): Token[]
 countTokens(input: string): number
-stringify(structure: Structure): string
 ```
 
-`parse()` defaults to `mode: 'fast'`, which emits the schema structure without
-formatting metadata. `mode: 'raws'` keeps source ranges and `raws` fields for
-callers that need formatting fidelity. The mode names are domain-neutral and
-apply to any generated parser.
+`render(input, {type})` dispatches the input to the schema-declared target's
+builder (one of `'ast'`, `'source'`, or any author-declared target like
+`'html'`). When `type` is omitted, the schema's `defaultTarget` is used;
+missing both throws "render: missing target". `mode: 'fast'` (default) emits
+without formatting metadata; `mode: 'raws'` keeps source positions for
+callers that need formatting fidelity. `parse()` is no longer exported —
+declare `.render('ast', {...})` on the schema and call `render(input,
+{type:'ast'})` to get the AST view.
 
-`validate()` is the non-materializing sibling of `parse()`: it accepts the same
+`stringify(value, {type})` is the inverse: it takes a value produced by
+`render(input, {type:T})` and reconstructs the source. Per spec rule 5,
+round-trip is value-stable not byte-stable.
+
+`validate()` is the non-materializing sibling: it accepts the same
 language, throws on invalid input, and returns nothing on success. It is still
 domainless. A package named `@sx/color` may export a generic `validate()`, but
 the compiler must not emit API names like `validateCssColor` from schema data.
 That `validate()` must be emitted from the schema by codegen; package facades
 must not replace it with handwritten domain-specific validation logic.
 
-The `Structure` type is inferred from the schema's examples; see the DSL doc
-for the inference rules. `Token[]` is derived from the schema's spans and
-declarations; it is intentionally minimal (`type`, `value`, optional position).
+`Token[]` is derived from the schema's spans and declarations; it is
+intentionally minimal (`type`, `value`, optional position).
 
 Generated parsers never re-export schema data, runtime helpers, or compiler
 internals.
@@ -222,8 +232,9 @@ Currently implemented vs in-progress:
 | Source positions auto-attach | implemented |
 | `whitespace: 'preserve'` policy | declared but not yet wired through codegen |
 | `raws` capture (PostCSS-style formatting) | not yet implemented |
-| `.recovers()` policy emission | not yet implemented |
-| `stringify` | placeholder that throws |
+| `.recovers()` policy emission | implemented |
+| `render` / `stringify` per-target dispatch | implemented (unified `.render(target, body)` API) |
+| Inverse derivation per (production, target) | implemented |
 
 These are detailed in the [DSL spec](../../docs/example-first-structure-dsl.md).
 

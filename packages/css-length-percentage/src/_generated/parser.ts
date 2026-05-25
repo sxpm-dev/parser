@@ -364,9 +364,9 @@ function parseLengthPercentageItem__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "dimension", value: value, unit: unit };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#0", value: value, unit: unit };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt1(state: State): unknown {
@@ -494,9 +494,9 @@ function parseLengthPercentageItem__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "dimension", value: "-10", unit: unit };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#1", value: value, unit: unit };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt2(state: State): unknown {
@@ -548,9 +548,9 @@ function parseLengthPercentageItem__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "percentage", value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#2", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt3(state: State): unknown {
@@ -610,9 +610,9 @@ function parseLengthPercentageItem__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "percentage", value: "-50" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#3", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt4(state: State): unknown {
@@ -657,9 +657,9 @@ function parseLengthPercentageItem__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "zero", value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#4", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt5(state: State): unknown {
@@ -786,9 +786,9 @@ function parseLengthPercentageItem__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "length-function", name: name, args: args };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#5", name: name, args: args };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt6(state: State): unknown {
@@ -988,9 +988,9 @@ function parseLengthPercentageItem__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "var-function", name: name, args: args };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#6", name: name, args: args };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem__alt7(state: State): unknown {
@@ -1082,9 +1082,9 @@ function parseLengthPercentageItem__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "length-keyword", value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthPercentageItem#7", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItem(state: State): unknown {
@@ -1233,9 +1233,9 @@ function parseLengthFunctionToken__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "dimension", value: value, unit: unit };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#0", value: value, unit: unit };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt1(state: State): unknown {
@@ -1287,9 +1287,9 @@ function parseLengthFunctionToken__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "percentage", value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#1", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt2(state: State): unknown {
@@ -1334,9 +1334,9 @@ function parseLengthFunctionToken__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "zero", value: value };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#2", value: value };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt3(state: State): unknown {
@@ -1360,9 +1360,9 @@ function parseLengthFunctionToken__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "operator", value: "-" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#3" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt4(state: State): unknown {
@@ -1386,9 +1386,9 @@ function parseLengthFunctionToken__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "operator", value: "+" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#4" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt5(state: State): unknown {
@@ -1412,9 +1412,9 @@ function parseLengthFunctionToken__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "operator", value: "*" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#5" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt6(state: State): unknown {
@@ -1438,9 +1438,9 @@ function parseLengthFunctionToken__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "operator", value: "/" };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#6" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken__alt7(state: State): unknown {
@@ -1464,9 +1464,9 @@ function parseLengthFunctionToken__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "separator", value: "," };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "LengthFunctionToken#7" };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthFunctionToken(state: State): unknown {
@@ -1537,9 +1537,9 @@ function parseCssLengthPercentage(state: State): unknown {
     break;
   }
   state.off = __off;
-  const __struct: Record<string, unknown> = { type: "css-length-percentage", items: items };
-  __struct.source = makeSource(state, __startOff, __endOff);
-  return __struct;
+  const __captures: Record<string, unknown> = { __production: "CssLengthPercentage#0", items: items };
+  __captures.source = makeSource(state, __startOff, __endOff);
+  return __captures;
 }
 
 function parseLengthPercentageItemFast__alt0(state: State): unknown {
@@ -1654,7 +1654,7 @@ function parseLengthPercentageItemFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "dimension", value: value, unit: unit };
+  return { __production: "LengthPercentageItem#0", value: value, unit: unit };
 }
 
 function parseLengthPercentageItemFast__alt1(state: State): unknown {
@@ -1776,7 +1776,7 @@ function parseLengthPercentageItemFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "dimension", value: "-10", unit: unit };
+  return { __production: "LengthPercentageItem#1", value: value, unit: unit };
 }
 
 function parseLengthPercentageItemFast__alt2(state: State): unknown {
@@ -1823,7 +1823,7 @@ function parseLengthPercentageItemFast__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "percentage", value: value };
+  return { __production: "LengthPercentageItem#2", value: value };
 }
 
 function parseLengthPercentageItemFast__alt3(state: State): unknown {
@@ -1877,7 +1877,7 @@ function parseLengthPercentageItemFast__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "percentage", value: "-50" };
+  return { __production: "LengthPercentageItem#3", value: value };
 }
 
 function parseLengthPercentageItemFast__alt4(state: State): unknown {
@@ -1918,7 +1918,7 @@ function parseLengthPercentageItemFast__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "zero", value: value };
+  return { __production: "LengthPercentageItem#4", value: value };
 }
 
 function parseLengthPercentageItemFast__alt5(state: State): unknown {
@@ -2035,7 +2035,7 @@ function parseLengthPercentageItemFast__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "length-function", name: name, args: args };
+  return { __production: "LengthPercentageItem#5", name: name, args: args };
 }
 
 function parseLengthPercentageItemFast__alt6(state: State): unknown {
@@ -2224,7 +2224,7 @@ function parseLengthPercentageItemFast__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "var-function", name: name, args: args };
+  return { __production: "LengthPercentageItem#6", name: name, args: args };
 }
 
 function parseLengthPercentageItemFast__alt7(state: State): unknown {
@@ -2312,7 +2312,7 @@ function parseLengthPercentageItemFast__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "length-keyword", value: value };
+  return { __production: "LengthPercentageItem#7", value: value };
 }
 
 function parseLengthPercentageItemFast(state: State): unknown {
@@ -2456,7 +2456,7 @@ function parseLengthFunctionTokenFast__alt0(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "dimension", value: value, unit: unit };
+  return { __production: "LengthFunctionToken#0", value: value, unit: unit };
 }
 
 function parseLengthFunctionTokenFast__alt1(state: State): unknown {
@@ -2503,7 +2503,7 @@ function parseLengthFunctionTokenFast__alt1(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "percentage", value: value };
+  return { __production: "LengthFunctionToken#1", value: value };
 }
 
 function parseLengthFunctionTokenFast__alt2(state: State): unknown {
@@ -2544,7 +2544,7 @@ function parseLengthFunctionTokenFast__alt2(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "zero", value: value };
+  return { __production: "LengthFunctionToken#2", value: value };
 }
 
 function parseLengthFunctionTokenFast__alt3(state: State): unknown {
@@ -2564,7 +2564,7 @@ function parseLengthFunctionTokenFast__alt3(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "operator", value: "-" };
+  return { __production: "LengthFunctionToken#3" };
 }
 
 function parseLengthFunctionTokenFast__alt4(state: State): unknown {
@@ -2584,7 +2584,7 @@ function parseLengthFunctionTokenFast__alt4(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "operator", value: "+" };
+  return { __production: "LengthFunctionToken#4" };
 }
 
 function parseLengthFunctionTokenFast__alt5(state: State): unknown {
@@ -2604,7 +2604,7 @@ function parseLengthFunctionTokenFast__alt5(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "operator", value: "*" };
+  return { __production: "LengthFunctionToken#5" };
 }
 
 function parseLengthFunctionTokenFast__alt6(state: State): unknown {
@@ -2624,7 +2624,7 @@ function parseLengthFunctionTokenFast__alt6(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "operator", value: "/" };
+  return { __production: "LengthFunctionToken#6" };
 }
 
 function parseLengthFunctionTokenFast__alt7(state: State): unknown {
@@ -2644,7 +2644,7 @@ function parseLengthFunctionTokenFast__alt7(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "separator", value: "," };
+  return { __production: "LengthFunctionToken#7" };
 }
 
 function parseLengthFunctionTokenFast(state: State): unknown {
@@ -2708,7 +2708,7 @@ function parseCssLengthPercentageFast(state: State): unknown {
     break;
   }
   state.off = __off;
-  return { type: "css-length-percentage", items: items };
+  return { __production: "CssLengthPercentage#0", items: items };
 }
 
 function validateLengthPercentageItem__alt0(state: State): unknown {
@@ -3886,244 +3886,551 @@ function validateCssLengthPercentage(state: State): unknown {
   return;
 }
 
-function stringify_LengthPercentageItem_dimension_source(s: any): string {
-  if (true) return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
-  if (s["value"] === "-10") return "-" + "" + __renderSlot_source(s["unit"]);
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source, type dimension)");
+const __defaultTarget: string | undefined = undefined;
+
+function __build_LengthPercentageItem_0_ast(captures: any): any {
+  return { type: "dimension", value: __renderSlot_ast(captures.value), unit: __renderSlot_ast(captures.unit) };
 }
 
-function stringify_LengthPercentageItem_percentage_source(s: any): string {
-  if (true) return __renderSlot_source(s["value"]) + "%";
-  if (s["value"] === "-50") return "-" + "" + "%";
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source, type percentage)");
+function __build_LengthPercentageItem_1_ast(captures: any): any {
+  return { type: "dimension", value: "-10", unit: __renderSlot_ast(captures.unit) };
 }
 
-function stringify_LengthPercentageItem_zero_source(s: any): string {
-  return __renderSlot_source(s["value"]);
+function __build_LengthPercentageItem_2_ast(captures: any): any {
+  return { type: "percentage", value: __renderSlot_ast(captures.value) };
 }
 
-function stringify_LengthPercentageItem_length_function_source(s: any): string {
-  return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + " )";
+function __build_LengthPercentageItem_3_ast(captures: any): any {
+  return { type: "percentage", value: "-50" };
 }
 
-function stringify_LengthPercentageItem_var_function_source(s: any): string {
-  return __renderSlot_source(s["name"]) + "(" + __renderSlot_source(s["args"]) + ")";
+function __build_LengthPercentageItem_4_ast(captures: any): any {
+  return { type: "zero", value: __renderSlot_ast(captures.value) };
 }
 
-function stringify_LengthPercentageItem_length_keyword_source(s: any): string {
-  return __renderSlot_source(s["value"]);
+function __build_LengthPercentageItem_5_ast(captures: any): any {
+  return { type: "length-function", name: __renderSlot_ast(captures.name), args: __renderSlot_ast(captures.args) };
 }
 
-function stringify_LengthPercentageItem_source(s: any): string {
-  switch (s.type) {
-    case "dimension": return stringify_LengthPercentageItem_dimension_source(s);
-    case "percentage": return stringify_LengthPercentageItem_percentage_source(s);
-    case "zero": return stringify_LengthPercentageItem_zero_source(s);
-    case "length-function": return stringify_LengthPercentageItem_length_function_source(s);
-    case "var-function": return stringify_LengthPercentageItem_var_function_source(s);
-    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_source(s);
+function __build_LengthPercentageItem_6_ast(captures: any): any {
+  return { type: "var-function", name: __renderSlot_ast(captures.name), args: __renderSlot_ast(captures.args) };
+}
+
+function __build_LengthPercentageItem_7_ast(captures: any): any {
+  return { type: "length-keyword", value: __renderSlot_ast(captures.value) };
+}
+
+function __build_LengthFunctionToken_0_ast(captures: any): any {
+  return { type: "dimension", value: __renderSlot_ast(captures.value), unit: __renderSlot_ast(captures.unit) };
+}
+
+function __build_LengthFunctionToken_1_ast(captures: any): any {
+  return { type: "percentage", value: __renderSlot_ast(captures.value) };
+}
+
+function __build_LengthFunctionToken_2_ast(captures: any): any {
+  return { type: "zero", value: __renderSlot_ast(captures.value) };
+}
+
+function __build_LengthFunctionToken_3_ast(captures: any): any {
+  return { type: "operator", value: "-" };
+}
+
+function __build_LengthFunctionToken_4_ast(captures: any): any {
+  return { type: "operator", value: "+" };
+}
+
+function __build_LengthFunctionToken_5_ast(captures: any): any {
+  return { type: "operator", value: "*" };
+}
+
+function __build_LengthFunctionToken_6_ast(captures: any): any {
+  return { type: "operator", value: "/" };
+}
+
+function __build_LengthFunctionToken_7_ast(captures: any): any {
+  return { type: "separator", value: "," };
+}
+
+function __build_CssLengthPercentage_0_ast(captures: any): any {
+  return { type: "css-length-percentage", items: __renderSlot_ast(captures.items) };
+}
+
+function __dispatchRender_ast(captures: any): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'ast')");
   }
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target source)");
-}
-
-function stringify_LengthPercentageItem_dimension_json_auto(s: any): string {
-  if (true) return "{\"type\":\"dimension\",\"value\":" + __renderSlot_json_auto(s["value"]) + ",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
-  if (s["value"] === "-10") return "{\"type\":\"dimension\",\"value\":\"-10\",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto, type dimension)");
-}
-
-function stringify_LengthPercentageItem_percentage_json_auto(s: any): string {
-  if (true) return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-  if (s["value"] === "-50") return "{\"type\":\"percentage\",\"value\":\"-50\"}";
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto, type percentage)");
-}
-
-function stringify_LengthPercentageItem_zero_json_auto(s: any): string {
-  return "{\"type\":\"zero\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_LengthPercentageItem_length_function_json_auto(s: any): string {
-  return "{\"type\":\"length-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"args\":" + __renderSlot_json_auto(s["args"]) + "}";
-}
-
-function stringify_LengthPercentageItem_var_function_json_auto(s: any): string {
-  return "{\"type\":\"var-function\",\"name\":" + __renderSlot_json_auto(s["name"]) + ",\"args\":" + __renderSlot_json_auto(s["args"]) + "}";
-}
-
-function stringify_LengthPercentageItem_length_keyword_json_auto(s: any): string {
-  return "{\"type\":\"length-keyword\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_LengthPercentageItem_json_auto(s: any): string {
-  switch (s.type) {
-    case "dimension": return stringify_LengthPercentageItem_dimension_json_auto(s);
-    case "percentage": return stringify_LengthPercentageItem_percentage_json_auto(s);
-    case "zero": return stringify_LengthPercentageItem_zero_json_auto(s);
-    case "length-function": return stringify_LengthPercentageItem_length_function_json_auto(s);
-    case "var-function": return stringify_LengthPercentageItem_var_function_json_auto(s);
-    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_json_auto(s);
+  switch (captures.__production) {
+    case "LengthPercentageItem#0": return __build_LengthPercentageItem_0_ast(captures);
+    case "LengthPercentageItem#1": return __build_LengthPercentageItem_1_ast(captures);
+    case "LengthPercentageItem#2": return __build_LengthPercentageItem_2_ast(captures);
+    case "LengthPercentageItem#3": return __build_LengthPercentageItem_3_ast(captures);
+    case "LengthPercentageItem#4": return __build_LengthPercentageItem_4_ast(captures);
+    case "LengthPercentageItem#5": return __build_LengthPercentageItem_5_ast(captures);
+    case "LengthPercentageItem#6": return __build_LengthPercentageItem_6_ast(captures);
+    case "LengthPercentageItem#7": return __build_LengthPercentageItem_7_ast(captures);
+    case "LengthFunctionToken#0": return __build_LengthFunctionToken_0_ast(captures);
+    case "LengthFunctionToken#1": return __build_LengthFunctionToken_1_ast(captures);
+    case "LengthFunctionToken#2": return __build_LengthFunctionToken_2_ast(captures);
+    case "LengthFunctionToken#3": return __build_LengthFunctionToken_3_ast(captures);
+    case "LengthFunctionToken#4": return __build_LengthFunctionToken_4_ast(captures);
+    case "LengthFunctionToken#5": return __build_LengthFunctionToken_5_ast(captures);
+    case "LengthFunctionToken#6": return __build_LengthFunctionToken_6_ast(captures);
+    case "LengthFunctionToken#7": return __build_LengthFunctionToken_7_ast(captures);
+    case "CssLengthPercentage#0": return __build_CssLengthPercentage_0_ast(captures);
   }
-  throw new Error("stringify: no production matches structure shape for node LengthPercentageItem (target json-auto)");
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function stringify_LengthFunctionToken_dimension_source(s: any): string {
-  return __renderSlot_source(s["value"]) + __renderSlot_source(s["unit"]);
+function __renderSlot_ast(v: any): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_ast(v);
+  }
+  return v;
 }
 
-function stringify_LengthFunctionToken_percentage_source(s: any): string {
-  return __renderSlot_source(s["value"]) + "%";
+const __renderDispatch: Record<string, (captures: any) => any> = {
+  "ast": (captures: any) => __dispatchRender_ast(captures),
+};
+
+export function render(input: string, options?: { type?: string }): unknown {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __renderDispatch[target];
+  if (!fn) {
+    throw new Error("render: unknown target '" + target + "'");
+  }
+  const captures = __parse(input);
+  return fn(captures);
 }
 
-function stringify_LengthFunctionToken_zero_source(s: any): string {
-  return __renderSlot_source(s["value"]);
+function __rebuildSlot(v: any, joinSep: string = ""): string {
+  if (v === null || v === undefined) return "";
+  if (Array.isArray(v)) {
+    let out = "";
+    for (let i = 0; i < v.length; i++) {
+      if (i > 0 && joinSep.length > 0) out += joinSep;
+      out += __rebuildSlot(v[i]);
+    }
+    return out;
+  }
+  return String(v);
 }
 
-function stringify_LengthFunctionToken_operator_source(s: any): string {
-  if (s["value"] === "-") return "-";
-  if (s["value"] === "+") return "+";
-  if (s["value"] === "*") return "*";
-  if (s["value"] === "/") return "/";
-  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target source, type operator)");
+function __rebuild_LengthPercentageItem_0(captures: any): string {
+  return __rebuildSlot(captures.value) + __rebuildSlot(captures.unit);
 }
 
-function stringify_LengthFunctionToken_separator_source(s: any): string {
+function __rebuild_LengthPercentageItem_1(captures: any): string {
+  return "-" + __rebuildSlot(captures.value) + __rebuildSlot(captures.unit);
+}
+
+function __rebuild_LengthPercentageItem_2(captures: any): string {
+  return __rebuildSlot(captures.value) + "%";
+}
+
+function __rebuild_LengthPercentageItem_3(captures: any): string {
+  return "-" + __rebuildSlot(captures.value) + "%";
+}
+
+function __rebuild_LengthPercentageItem_4(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
+function __rebuild_LengthPercentageItem_5(captures: any): string {
+  return __rebuildSlot(captures.name) + "(" + __rebuildSlot(captures.args, " ") + " " + ")";
+}
+
+function __rebuild_LengthPercentageItem_6(captures: any): string {
+  return __rebuildSlot(captures.name) + "(" + __rebuildSlot(captures.args) + ")";
+}
+
+function __rebuild_LengthPercentageItem_7(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
+function __rebuild_LengthFunctionToken_0(captures: any): string {
+  return __rebuildSlot(captures.value) + __rebuildSlot(captures.unit);
+}
+
+function __rebuild_LengthFunctionToken_1(captures: any): string {
+  return __rebuildSlot(captures.value) + "%";
+}
+
+function __rebuild_LengthFunctionToken_2(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
+function __rebuild_LengthFunctionToken_3(captures: any): string {
+  return "-";
+}
+
+function __rebuild_LengthFunctionToken_4(captures: any): string {
+  return "+";
+}
+
+function __rebuild_LengthFunctionToken_5(captures: any): string {
+  return "*";
+}
+
+function __rebuild_LengthFunctionToken_6(captures: any): string {
+  return "/";
+}
+
+function __rebuild_LengthFunctionToken_7(captures: any): string {
   return ",";
 }
 
-function stringify_LengthFunctionToken_source(s: any): string {
-  switch (s.type) {
-    case "dimension": return stringify_LengthFunctionToken_dimension_source(s);
-    case "percentage": return stringify_LengthFunctionToken_percentage_source(s);
-    case "zero": return stringify_LengthFunctionToken_zero_source(s);
-    case "operator": return stringify_LengthFunctionToken_operator_source(s);
-    case "separator": return stringify_LengthFunctionToken_separator_source(s);
+function __rebuild_CssLengthPercentage_0(captures: any): string {
+  return String(__rebuildSlot(captures.items, " "));
+}
+
+function __invert_LengthPercentageItem_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
   }
-  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target source)");
-}
-
-function stringify_LengthFunctionToken_dimension_json_auto(s: any): string {
-  return "{\"type\":\"dimension\",\"value\":" + __renderSlot_json_auto(s["value"]) + ",\"unit\":" + __renderSlot_json_auto(s["unit"]) + "}";
-}
-
-function stringify_LengthFunctionToken_percentage_json_auto(s: any): string {
-  return "{\"type\":\"percentage\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_LengthFunctionToken_zero_json_auto(s: any): string {
-  return "{\"type\":\"zero\",\"value\":" + __renderSlot_json_auto(s["value"]) + "}";
-}
-
-function stringify_LengthFunctionToken_operator_json_auto(s: any): string {
-  if (s["value"] === "-") return "{\"type\":\"operator\",\"value\":\"-\"}";
-  if (s["value"] === "+") return "{\"type\":\"operator\",\"value\":\"+\"}";
-  if (s["value"] === "*") return "{\"type\":\"operator\",\"value\":\"*\"}";
-  if (s["value"] === "/") return "{\"type\":\"operator\",\"value\":\"/\"}";
-  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target json-auto, type operator)");
-}
-
-function stringify_LengthFunctionToken_separator_json_auto(s: any): string {
-  return "{\"type\":\"separator\",\"value\":\",\"}";
-}
-
-function stringify_LengthFunctionToken_json_auto(s: any): string {
-  switch (s.type) {
-    case "dimension": return stringify_LengthFunctionToken_dimension_json_auto(s);
-    case "percentage": return stringify_LengthFunctionToken_percentage_json_auto(s);
-    case "zero": return stringify_LengthFunctionToken_zero_json_auto(s);
-    case "operator": return stringify_LengthFunctionToken_operator_json_auto(s);
-    case "separator": return stringify_LengthFunctionToken_separator_json_auto(s);
+  if (!Object.is(value.type, "dimension")) {
+    throw new Error("stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
   }
-  throw new Error("stringify: no production matches structure shape for node LengthFunctionToken (target json-auto)");
+  captures.value = __invertSlotLeaf_ast(value.value);
+  captures.unit = __invertSlotLeaf_ast(value.unit);
+  return __rebuild_LengthPercentageItem_0(captures);
 }
 
-function stringify_CssLengthPercentage_source(s: any): string {
-  return __renderSlot_source(s["items"]);
-}
-
-function stringify_CssLengthPercentage_json_auto(s: any): string {
-  return "{\"type\":\"css-length-percentage\",\"items\":" + __renderSlot_json_auto(s["items"]) + "}";
-}
-
-function __dispatchStringify_source(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "dimension": return stringify_LengthFunctionToken_dimension_source(s);
-    case "percentage": return stringify_LengthFunctionToken_percentage_source(s);
-    case "zero": return stringify_LengthFunctionToken_zero_source(s);
-    case "length-function": return stringify_LengthPercentageItem_length_function_source(s);
-    case "var-function": return stringify_LengthPercentageItem_var_function_source(s);
-    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_source(s);
-    case "operator": return stringify_LengthFunctionToken_operator_source(s);
-    case "separator": return stringify_LengthFunctionToken_separator_source(s);
-    case "css-length-percentage": return stringify_CssLengthPercentage_source(s);
+function __invert_LengthPercentageItem_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='source'");
-}
-
-function __dispatchStringify_json_auto(s: any): string {
-  if (typeof s !== "object" || s === null) throw new Error("stringify: structure must be an object");
-  switch (s.type) {
-    case "dimension": return stringify_LengthFunctionToken_dimension_json_auto(s);
-    case "percentage": return stringify_LengthFunctionToken_percentage_json_auto(s);
-    case "zero": return stringify_LengthFunctionToken_zero_json_auto(s);
-    case "length-function": return stringify_LengthPercentageItem_length_function_json_auto(s);
-    case "var-function": return stringify_LengthPercentageItem_var_function_json_auto(s);
-    case "length-keyword": return stringify_LengthPercentageItem_length_keyword_json_auto(s);
-    case "operator": return stringify_LengthFunctionToken_operator_json_auto(s);
-    case "separator": return stringify_LengthFunctionToken_separator_json_auto(s);
-    case "css-length-percentage": return stringify_CssLengthPercentage_json_auto(s);
+  if (!Object.is(value.type, "dimension")) {
+    throw new Error("stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
   }
-  throw new Error("stringify: no node type for structure.type='" + (s as any).type + "' under target='json-auto'");
+  if (!Object.is(value.value, "-10")) {
+    throw new Error("stringify: field \"value\" expected \"-10\", got " + JSON.stringify(value.value));
+  }
+  captures.unit = __invertSlotLeaf_ast(value.unit);
+  return __rebuild_LengthPercentageItem_1(captures);
 }
 
-export function stringify(s: unknown, options?: { target?: string }): string {
-  const target = options?.target ?? "source";
-  if (target === "source") return __dispatchStringify_source(s as any);
-  if (target === "json-auto") return __dispatchStringify_json_auto(s as any);
-  throw new Error("stringify: unknown target '" + target + "'");
+function __invert_LengthPercentageItem_2_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "percentage")) {
+    throw new Error("stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_LengthPercentageItem_2(captures);
 }
 
-const __JSON_STRING_SAFE = /^[\x20-\x21\x23-\x5b\x5d-\x7e]*$/;
-function __jsonString(s: string): string {
-  return __JSON_STRING_SAFE.test(s) ? '"' + s + '"' : JSON.stringify(s);
+function __invert_LengthPercentageItem_3_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "percentage")) {
+    throw new Error("stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, "-50")) {
+    throw new Error("stringify: field \"value\" expected \"-50\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthPercentageItem_3(captures);
 }
 
-function __renderSlot_source(v: any): string {
-  if (v === null || v === undefined) return "";
-  const t = typeof v;
-  if (t === "string") return v;
-  if (t === "number") return String(v);
-  if (t === "boolean") return v ? "true" : "false";
+function __invert_LengthPercentageItem_4_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "zero")) {
+    throw new Error("stringify: field \"type\" expected \"zero\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_LengthPercentageItem_4(captures);
+}
+
+function __invert_LengthPercentageItem_5_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "length-function")) {
+    throw new Error("stringify: field \"type\" expected \"length-function\", got " + JSON.stringify(value.type));
+  }
+  captures.name = __invertSlotLeaf_ast(value.name);
+  captures.args = __invertSlotFor_LengthFunctionToken_ast(value.args);
+  return __rebuild_LengthPercentageItem_5(captures);
+}
+
+function __invert_LengthPercentageItem_6_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "var-function")) {
+    throw new Error("stringify: field \"type\" expected \"var-function\", got " + JSON.stringify(value.type));
+  }
+  captures.name = __invertSlotLeaf_ast(value.name);
+  captures.args = __invertSlotLeaf_ast(value.args);
+  return __rebuild_LengthPercentageItem_6(captures);
+}
+
+function __invert_LengthPercentageItem_7_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "length-keyword")) {
+    throw new Error("stringify: field \"type\" expected \"length-keyword\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_LengthPercentageItem_7(captures);
+}
+
+function __invert_LengthFunctionToken_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "dimension")) {
+    throw new Error("stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  captures.unit = __invertSlotLeaf_ast(value.unit);
+  return __rebuild_LengthFunctionToken_0(captures);
+}
+
+function __invert_LengthFunctionToken_1_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "percentage")) {
+    throw new Error("stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_LengthFunctionToken_1(captures);
+}
+
+function __invert_LengthFunctionToken_2_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "zero")) {
+    throw new Error("stringify: field \"type\" expected \"zero\", got " + JSON.stringify(value.type));
+  }
+  captures.value = __invertSlotLeaf_ast(value.value);
+  return __rebuild_LengthFunctionToken_2(captures);
+}
+
+function __invert_LengthFunctionToken_3_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "operator")) {
+    throw new Error("stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, "-")) {
+    throw new Error("stringify: field \"value\" expected \"-\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthFunctionToken_3(captures);
+}
+
+function __invert_LengthFunctionToken_4_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "operator")) {
+    throw new Error("stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, "+")) {
+    throw new Error("stringify: field \"value\" expected \"+\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthFunctionToken_4(captures);
+}
+
+function __invert_LengthFunctionToken_5_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "operator")) {
+    throw new Error("stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, "*")) {
+    throw new Error("stringify: field \"value\" expected \"*\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthFunctionToken_5(captures);
+}
+
+function __invert_LengthFunctionToken_6_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "operator")) {
+    throw new Error("stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, "/")) {
+    throw new Error("stringify: field \"value\" expected \"/\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthFunctionToken_6(captures);
+}
+
+function __invert_LengthFunctionToken_7_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "separator")) {
+    throw new Error("stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
+  }
+  if (!Object.is(value.value, ",")) {
+    throw new Error("stringify: field \"value\" expected \",\", got " + JSON.stringify(value.value));
+  }
+  return __rebuild_LengthFunctionToken_7(captures);
+}
+
+function __invert_CssLengthPercentage_0_ast(value: any): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object value, got " + typeof value);
+  }
+  if (!Object.is(value.type, "css-length-percentage")) {
+    throw new Error("stringify: field \"type\" expected \"css-length-percentage\", got " + JSON.stringify(value.type));
+  }
+  captures.items = __invertSlotFor_LengthPercentageItem_ast(value.items);
+  return __rebuild_CssLengthPercentage_0(captures);
+}
+
+function __dispatchInverse_LengthPercentageItem_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "dimension")) return __invert_LengthPercentageItem_0_ast(value);
+    if (Object.is(value.type, "dimension") && Object.is(value.value, "-10")) return __invert_LengthPercentageItem_1_ast(value);
+    if (Object.is(value.type, "percentage")) return __invert_LengthPercentageItem_2_ast(value);
+    if (Object.is(value.type, "percentage") && Object.is(value.value, "-50")) return __invert_LengthPercentageItem_3_ast(value);
+    if (Object.is(value.type, "zero")) return __invert_LengthPercentageItem_4_ast(value);
+    if (Object.is(value.type, "length-function")) return __invert_LengthPercentageItem_5_ast(value);
+    if (Object.is(value.type, "var-function")) return __invert_LengthPercentageItem_6_ast(value);
+    if (Object.is(value.type, "length-keyword")) return __invert_LengthPercentageItem_7_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_LengthFunctionToken_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "dimension")) return __invert_LengthFunctionToken_0_ast(value);
+    if (Object.is(value.type, "percentage")) return __invert_LengthFunctionToken_1_ast(value);
+    if (Object.is(value.type, "zero")) return __invert_LengthFunctionToken_2_ast(value);
+    if (Object.is(value.type, "operator") && Object.is(value.value, "-")) return __invert_LengthFunctionToken_3_ast(value);
+    if (Object.is(value.type, "operator") && Object.is(value.value, "+")) return __invert_LengthFunctionToken_4_ast(value);
+    if (Object.is(value.type, "operator") && Object.is(value.value, "*")) return __invert_LengthFunctionToken_5_ast(value);
+    if (Object.is(value.type, "operator") && Object.is(value.value, "/")) return __invert_LengthFunctionToken_6_ast(value);
+    if (Object.is(value.type, "separator") && Object.is(value.value, ",")) return __invert_LengthFunctionToken_7_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_CssLengthPercentage_ast(value: any): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    if (Object.is(value.type, "css-length-percentage")) return __invert_CssLengthPercentage_0_ast(value);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_ast(value: any): string {
+  return __dispatchInverse_CssLengthPercentage_ast(value);
+}
+
+function __invertSlotFor_LengthPercentageItem_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
   if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) out += __renderSlot_source(v[i]);
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_LengthPercentageItem_ast(v[i]);
+      if (r != null) out.push(r);
+    }
     return out;
   }
-  return __dispatchStringify_source(v);
+  if (typeof v === "object") return __dispatchInverse_LengthPercentageItem_ast(v);
+  return String(v);
 }
 
-function __renderSlot_json_auto(v: any): string {
-  if (v === null || v === undefined) return "null";
-  const t = typeof v;
-  if (t === "string") return __jsonString(v);
-  if (t === "number") return Number.isFinite(v) ? String(v) : "null";
-  if (t === "boolean") return v ? "true" : "false";
+function __invertSlotFor_LengthFunctionToken_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
   if (Array.isArray(v)) {
-    if (v.length === 0) return "[]";
-    let out = "[" + __renderSlot_json_auto(v[0]);
-    for (let i = 1; i < v.length; i++) out += "," + __renderSlot_json_auto(v[i]);
-    return out + "]";
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_LengthFunctionToken_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
   }
-  return __dispatchStringify_json_auto(v);
+  if (typeof v === "object") return __dispatchInverse_LengthFunctionToken_ast(v);
+  return String(v);
 }
 
-export function render(input: string, options?: { target?: string; mode?: 'fast' | 'raws' }): string {
-  const target = options?.target ?? "source";
-  const parsed = options?.mode ? parse(input, { mode: options.mode }) : parse(input);
-  return stringify(parsed, { target });
+function __invertSlotFor_CssLengthPercentage_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_CssLengthPercentage_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_CssLengthPercentage_ast(v);
+  return String(v);
 }
 
-export function parse(input: string, options?: ParseOptions): unknown {
+function __invertSlotLeaf_ast(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_ast(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
+const __inverseDispatch: Record<string, (value: any) => string> = {
+  "ast": __dispatchInverse_ast,
+};
+
+export function stringify(value: unknown, options?: { type?: string }): string {
+  const target = options?.type ?? __defaultTarget;
+  if (!target) {
+    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  const fn = __inverseDispatch[target];
+  if (!fn) {
+    throw new Error("stringify: unknown target '" + target + "'");
+  }
+  return fn(value);
+}
+
+function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {

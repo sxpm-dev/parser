@@ -57,7 +57,7 @@ export default defineSchema({
       .ident()
       .css()
       .oneOf(LENGTH_UNITS)
-      .structure({ type: "dimension", value: $.value, unit: $.unit })
+      .render('ast', { type: "dimension", value: $.value, unit: $.unit })
       .build(),
 
     ex("-10px")
@@ -70,7 +70,7 @@ export default defineSchema({
       .ident()
       .css()
       .oneOf(LENGTH_UNITS)
-      .structure({ type: "dimension", value: "-10", unit: $.unit })
+      .render('ast', { type: "dimension", value: "-10", unit: $.unit })
       .build(),
 
     ex("50%")
@@ -79,7 +79,7 @@ export default defineSchema({
       .number()
       .noWhitespaceAfter()
       .span("%")
-      .structure({ type: "percentage", value: $.value })
+      .render('ast', { type: "percentage", value: $.value })
       .build(),
 
     ex("-50%")
@@ -89,7 +89,7 @@ export default defineSchema({
       .number()
       .noWhitespaceAfter()
       .span("%")
-      .structure({ type: "percentage", value: "-50" })
+      .render('ast', { type: "percentage", value: "-50" })
       .build(),
 
     ex("0")
@@ -97,7 +97,7 @@ export default defineSchema({
       .span("value", "0")
       .number()
       .oneOf(["0"])
-      .structure({ type: "zero", value: $.value })
+      .render('ast', { type: "zero", value: $.value })
       .build(),
 
     ex("calc(100% - 1rem)")
@@ -110,7 +110,7 @@ export default defineSchema({
       .span("args", "100%", "LengthFunctionToken")
       .repeats({ min: 1 })
       .span(")")
-      .structure({ type: "length-function", name: $.name, args: $.args })
+      .render('ast', { type: "length-function", name: $.name, args: $.args })
       .build(),
 
     ex("1rem")
@@ -122,7 +122,7 @@ export default defineSchema({
       .ident()
       .css()
       .oneOf(LENGTH_UNITS)
-      .structure({ type: "dimension", value: $.value, unit: $.unit })
+      .render('ast', { type: "dimension", value: $.value, unit: $.unit })
       .build(),
 
     ex("100%")
@@ -131,7 +131,7 @@ export default defineSchema({
       .number()
       .noWhitespaceAfter()
       .span("%")
-      .structure({ type: "percentage", value: $.value })
+      .render('ast', { type: "percentage", value: $.value })
       .build(),
 
     ex("0")
@@ -139,37 +139,37 @@ export default defineSchema({
       .span("value", "0")
       .number()
       .oneOf(["0"])
-      .structure({ type: "zero", value: $.value })
+      .render('ast', { type: "zero", value: $.value })
       .build(),
 
     ex("-")
       .as("LengthFunctionToken")
       .span("-")
-      .structure({ type: "operator", value: "-" })
+      .render('ast', { type: "operator", value: "-" })
       .build(),
 
     ex("+")
       .as("LengthFunctionToken")
       .span("+")
-      .structure({ type: "operator", value: "+" })
+      .render('ast', { type: "operator", value: "+" })
       .build(),
 
     ex("*")
       .as("LengthFunctionToken")
       .span("*")
-      .structure({ type: "operator", value: "*" })
+      .render('ast', { type: "operator", value: "*" })
       .build(),
 
     ex("/")
       .as("LengthFunctionToken")
       .span("/")
-      .structure({ type: "operator", value: "/" })
+      .render('ast', { type: "operator", value: "/" })
       .build(),
 
     ex(",")
       .as("LengthFunctionToken")
       .span(",")
-      .structure({ type: "separator", value: "," })
+      .render('ast', { type: "separator", value: "," })
       .build(),
 
     ex("var(--space, 1rem)")
@@ -182,7 +182,7 @@ export default defineSchema({
       .span("args", "--space, 1rem")
       .until(")", { rejectSuffix: "," })
       .span(")")
-      .structure({ type: "var-function", name: $.name, args: $.args })
+      .render('ast', { type: "var-function", name: $.name, args: $.args })
       .build(),
 
     ex("auto")
@@ -191,14 +191,14 @@ export default defineSchema({
       .ident()
       .css()
       .oneOf(LENGTH_KEYWORDS)
-      .structure({ type: "length-keyword", value: $.value })
+      .render('ast', { type: "length-keyword", value: $.value })
       .build(),
 
     ex("10px 20%")
       .as("CssLengthPercentage")
       .span("items", "10px", "LengthPercentageItem")
       .repeats({ min: 1, max: 4 })
-      .structure({ type: "css-length-percentage", items: $.items })
+      .render('ast', { type: "css-length-percentage", items: $.items })
       .build(),
   ],
 });

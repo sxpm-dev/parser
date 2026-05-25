@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parse, validate } from '../src/index.ts';
+import { render, validate } from '../src/index.ts';
 
 test('css length percentage parser returns ASTs for every supported item family', () => {
   const cases = [
@@ -77,7 +77,7 @@ test('css length percentage parser returns ASTs for every supported item family'
   ];
 
   for (const { input, expected } of cases) {
-    assert.deepEqual(parse(input), expected, input);
+    assert.deepEqual(render(input, { type: 'ast' }), expected, input);
   }
 });
 

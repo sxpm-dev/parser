@@ -778,16 +778,29 @@ function dispatchRoles(
   if (roles.length === 1) {
     return parseNode(schema, roles[0]!, state);
   }
-  // Multi-role: try byte-signatured roles before fallthrough. We don't
-  // need the exact byte ladder for correctness — speculation handles
-  // ambiguity — but we DO need fallthrough-last ordering so e.g. markdown's
-  // MarkdownLeaf is tried before MarkdownParagraph.
+  // Multi-role: split roles into byte-signatured vs. fallthrough buckets.
+  // A byte-signatured role's first span is a literal/class with a fixed
+  // first byte; a fallthrough role's first span is .until / .rawUntil /
+  // .repeats / .optional / a recursive role — those match any byte.
+  //
+  // Dispatch order: byteSig roles first (longest literal prefix wins
+  // internally via orderProductionsForDispatch), then fallthrough roles.
+  // The v2 emitter additionally suppresses fallthrough roles when the
+  // current byte is unambiguously claimed by a byteSig role's literal
+  // first byte (e.g. for HTML's `<` byte the dispatcher tries
+  // Comment/Doctype/HtmlElement and explicitly skips TextNode). We mirror
+  // that suppression for *literal* byteSig sets only — class-typed
+  // byteSig spans (ident/number/hex/...) accept broad byte ranges, so
+  // we keep the fallthrough open in that case to avoid regressing CSS
+  // dispatch where ident-class first spans share bytes with paragraph-
+  // style fallthrough roles.
   const byteSig: string[] = [];
   const fallthrough: string[] = [];
+  const byteSigLiteralBytes = new Set<number>();
   for (const role of roles) {
     const info = schema.nodeTypes.get(role);
     if (!info) continue;
-    let allFallthrough = true;
+    let isFallthrough = true;
     for (const prod of info.productions) {
       const s0 = prod.spans[0];
       if (!s0) continue;
@@ -795,18 +808,27 @@ function dispatchRoles(
         findModifier(s0, 'until') ||
         findModifier(s0, 'rawUntil') ||
         findModifier(s0, 'repeats') ||
-        hasModifier(s0, 'optional')
+        hasModifier(s0, 'optional') ||
+        s0.recursiveRoles.length > 0
       ) {
         continue;
       }
-      // A literal / class first span gives this production a fixed first byte.
-      allFallthrough = false;
+      isFallthrough = false;
+      if (s0.class === 'literal' && typeof s0.text === 'string' && s0.text.length > 0) {
+        byteSigLiteralBytes.add(s0.text.charCodeAt(0));
+      }
       break;
     }
-    if (allFallthrough) fallthrough.push(role);
+    if (isFallthrough) fallthrough.push(role);
     else byteSig.push(role);
   }
-  for (const role of [...byteSig, ...fallthrough]) {
+  const c0 = state.input.charCodeAt(state.pos);
+  const byteClaimedByLiteralByteSig =
+    byteSig.length > 0 && byteSigLiteralBytes.has(c0);
+  const ladder = byteClaimedByLiteralByteSig
+    ? byteSig
+    : [...byteSig, ...fallthrough];
+  for (const role of ladder) {
     const entry = state.pos;
     const result = parseNode(schema, role, state);
     if (result !== null) return result;

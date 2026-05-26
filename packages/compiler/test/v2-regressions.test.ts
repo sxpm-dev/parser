@@ -1341,6 +1341,9 @@ test('v2 syntaxErrorAt: includes unexpected byte and position in headline', asyn
   //   Unexpected '<ch>' at position <offset>
   // (These are JS template literal expressions inside the emitted source.)
   assert.match(source, /Unexpected '\$\{.*?\}' at position \$\{offset\}/);
+  // And, when offset is past end-of-input, a fixed-text headline:
+  //   Unexpected end of input at position <offset>
+  assert.match(source, /Unexpected end of input at position \$\{offset\}/);
 });
 
 test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', async () => {

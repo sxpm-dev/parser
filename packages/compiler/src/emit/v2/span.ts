@@ -5,7 +5,7 @@
 // production function. Caller wraps each emit in the right rewind context.
 
 import type { Refinement, SpanModifier } from '@parser2/parser';
-import { type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
+import { type InferredSchema, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import { emitRoleLadder } from './role-ladder.ts';
@@ -19,6 +19,48 @@ import { buildAcScanner } from './scan-until-ac.ts';
 // comparisons, and (b) overlapping prefixes are merged into shared trie
 // edges. Picked from the spec for Task 4.3.
 const AC_MIN_STOPS = 3;
+
+// Compute the union set of byte values (0..255) that can legitimately start a
+// token in this schema: literal/punctuator first byte, class-scanner first
+// byte ranges (ident-start, digit, hex, string quotes, comment `/`), plus the
+// 4 whitespace bytes. Used by .until() bodies when the schema declares
+// unknownChars: 'reject' to fail fast on undeclared bytes.
+export function computeKnownLeadingBytes(schema: InferredSchema): Uint8Array {
+  const bits = new Uint8Array(256);
+  // Whitespace (tab, LF, CR, space).
+  bits[0x09] = 1; bits[0x0a] = 1; bits[0x0d] = 1; bits[0x20] = 1;
+  // Literals + punctuators — take the first byte of each declared text.
+  for (const [text] of schema.literalTypeByText) {
+    if (text.length > 0) bits[text.charCodeAt(0) & 0xff] = 1;
+  }
+  // Class-scanner first-byte ranges. Note: TokenClassUsage uses `.class` (a
+  // SpanClass string), not `.kind`. Refinements live in `.refinements`.
+  for (const cls of schema.classes) {
+    if (cls.class === 'ident' || cls.class === 'keyword') {
+      // ident-start: A-Z, a-z, _; also - for css-ident, $ for js-ident.
+      for (let c = 0x41; c <= 0x5a; c++) bits[c] = 1; // A-Z
+      for (let c = 0x61; c <= 0x7a; c++) bits[c] = 1; // a-z
+      bits[0x5f] = 1; // _
+      if (cls.refinements.some((r) => r.name === 'css')) bits[0x2d] = 1; // -
+      if (cls.refinements.some((r) => r.name === 'js')) bits[0x24] = 1;  // $
+    } else if (cls.class === 'number') {
+      for (let c = 0x30; c <= 0x39; c++) bits[c] = 1; // 0-9
+      bits[0x2d] = 1; // leading minus
+      bits[0x2b] = 1; // leading plus
+      bits[0x2e] = 1; // leading dot (decimal)
+    } else if (cls.class === 'hex') {
+      bits[0x23] = 1; // '#'
+    } else if (cls.class === 'string') {
+      bits[0x22] = 1; bits[0x27] = 1; // " '
+    } else if (cls.class === 'comment') {
+      bits[0x2f] = 1; // '/'
+    }
+    // Other class kinds (regex, template, whitespace, operator) are left
+    // permissive — the guard's job is to catch obviously-undeclared bytes,
+    // not to be byte-exhaustive.
+  }
+  return bits;
+}
 
 export type SpanContext = {
   // The local variable name where the parent's entry-offset is saved
@@ -41,6 +83,16 @@ export type SpanContext = {
   // per-role first-byte signatures (see `emitRoleLadder` below). Reading
   // this is the only schema-wide lookup performed at span-emit time.
   readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
+  // Whether to emit the unknownChars guard inside .until() bodies.
+  // True only when the schema both declares `unknownChars: 'reject'` AND has
+  // at least one token class declared — without class declarations the
+  // knownBytes set would be trivially narrow (whitespace + literal first
+  // bytes only) and would reject legitimate content in simple test schemas.
+  readonly emitUnknownCharsGuard: boolean;
+  // 256-element bitset: bits[c] === 1 iff byte c may legitimately start a
+  // token in this schema. Computed by computeKnownLeadingBytes. Only
+  // consulted when emitUnknownCharsGuard is true.
+  readonly knownBytes: Uint8Array;
 };
 
 export type SpanBindings = {
@@ -799,6 +851,12 @@ function emitUntilSpan(
     // above (`useAc`) already rejected scans that need them. After the scan
     // we walk back from `off` to compute `__lastNonWs` for the trim path.
     // The cost is O(trailing-ws) per scan, typically a handful of bytes.
+    // NOTE: The unknownChars:'reject' guard is NOT emitted for the AC path.
+    // AC scans have no per-byte side state, so there is no clean place to
+    // insert a byte-class check without restructuring the generated code.
+    // None of css/html/markdown currently combine AC-eligible scans (≥3
+    // stops, no strings/comments/balanced) with unknownChars:'reject', so
+    // this is a documented gap, not a live regression.
     const scanner = buildAcScanner(nonEmptyStops);
     lines.push(indent(scanner.emitJs('input', 'off'), 1));
     if (useTrim) {
@@ -810,6 +868,13 @@ function emitUntilSpan(
       lines.push(`  }`);
     }
   } else {
+  // Hoist the known-byte bitset above the loop so it is allocated once per
+  // .until() invocation, not once per input byte. The array literal is small
+  // (256 entries) and JS engines constant-fold it at JIT time.
+  if (ctx.emitUnknownCharsGuard) {
+    const arrLit = '[' + Array.from(ctx.knownBytes).join(',') + ']';
+    lines.push(`  const __KB = ${arrLit};`);
+  }
   lines.push(`  while (off < len) {`);
   lines.push(`    const __c = input.charCodeAt(off);`);
   // Stop check (gated by depth when balanced).
@@ -903,6 +968,28 @@ function emitUntilSpan(
   }
   if (useTrim) {
     lines.push(`    if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;`);
+  }
+  // unknownChars:'reject' guard: depth-0 only (inside brackets/strings/
+  // comments/url() arbitrary content is accepted). If the current byte is
+  // not a stop (already checked above), not an opener, and not in the known-
+  // leading-bytes set, fail the production — mirrors the v1 behavior that
+  // treats undeclared bytes as hard syntax errors in non-tolerant schemas.
+  if (ctx.emitUnknownCharsGuard) {
+    if (balanced) {
+      lines.push(`    if (__depth === 0 && __KB[__c] === 0) {`);
+      lines.push(`      // unknown char (depth 0, no stop, no opener) — fail production`);
+      lines.push(`      if (off > state.maxOff) state.maxOff = off;`);
+      lines.push(`      state.pos = ${ctx.entryOffVar};`);
+      lines.push(`      return null;`);
+      lines.push(`    }`);
+    } else {
+      lines.push(`    if (__KB[__c] === 0) {`);
+      lines.push(`      // unknown char (no stop, no opener) — fail production`);
+      lines.push(`      if (off > state.maxOff) state.maxOff = off;`);
+      lines.push(`      state.pos = ${ctx.entryOffVar};`);
+      lines.push(`      return null;`);
+      lines.push(`    }`);
+    }
   }
   lines.push(`    off++;`);
   lines.push(`  }`);

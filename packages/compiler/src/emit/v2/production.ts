@@ -20,7 +20,7 @@ import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { emitCapturesExpr, type CapturesBindings } from '../captures.ts';
 import { productionRoutingKey } from '../render.ts';
 import { indent } from '../strings.ts';
-import { emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
+import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
 
 export type EmitProductionOptions = {
   readonly fnName: string;
@@ -50,12 +50,24 @@ export function emitProduction(
       cssIdent = true;
     }
   }
+  // The unknownChars guard is only emitted when the schema BOTH declares
+  // 'reject' AND has at least one "content" class — ident, keyword, number,
+  // hex, string, regex, template, or operator. A comment-only or
+  // whitespace-only class set doesn't constrain what content bytes can appear
+  // at depth 0 inside a .until() body, so the guard would fire on legitimate
+  // content (letters, digits, etc.) and is suppressed in that case. Schemas
+  // without any class declarations produce a similarly trivial knownBytes set.
+  const CONTENT_CLASSES = new Set(['ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator']);
+  const hasContentClass = schema.classes.some((cls) => CONTENT_CLASSES.has(cls.class));
+  const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
   const ctx: SpanContext = {
     entryOffVar: 'entryOff',
     raws: false /* per-call-site */,
     tokens: tokenClasses,
     cssIdent,
     nodeTypes: schema.nodeTypes,
+    emitUnknownCharsGuard,
+    knownBytes: computeKnownLeadingBytes(schema),
   };
 
   const lines: string[] = [];

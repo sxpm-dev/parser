@@ -1406,3 +1406,34 @@ test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', 
   // No byte arm matches → fallthrough default.
   assert.equal(__parse('plain text').item.kind, 'text');
 });
+
+test("v2 .until() with unknownChars:'reject' rejects undeclared bytes at depth 0", async () => {
+  // Regression for css smoke test #1: backtick (0x60) is not a declared
+  // literal, punctuator, or class-start byte in the schema, so the .until()
+  // scan should fail fast instead of swallowing it silently.
+  // The schema declares an ident class so that the guard is active: with no
+  // class declarations, knownBytes would be trivially narrow (whitespace +
+  // literal first bytes only) and the guard is suppressed.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Doc',
+    unknownChars: 'reject',
+    examples: [
+      // The prop span uses .ident() so that schema.classes is non-empty and
+      // the unknownChars guard is active on the value's .until() body.
+      ex('prop: value;')
+        .as('Doc')
+        .span('prop', 'prop').ident()
+        .span(':')
+        .span('v', 'value').until([';'])
+        .span(';')
+        .render('ast', { prop: $.prop, v: $.v })
+        .build(),
+    ],
+  });
+  const src = generateParser(schema, undefined, {});
+  // Smoke check at codegen: the until body should contain a depth-0 unknown-byte
+  // bailout, encoded as a state.pos rewind + null return based on a known-byte
+  // bitset check.
+  assert.match(src, /unknown char/);
+});

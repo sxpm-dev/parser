@@ -404,6 +404,48 @@ test('v2 multi-role repeats honors trailing: "required"', async () => {
   assert.throws(() => __parse('a;b'));
 });
 
+test('v2 repeats-sep tolerates items that consumed their own optional sep', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // CSS-shape regression (Task 1.3j): the Decl production ends with
+  // `.span(';').optional()`. When a Decl consumed its trailing `;`, the
+  // parent Rule's `repeats({ sep: ';' })` would find NO `;` between the
+  // first Decl and the next one and prematurely break the loop, losing
+  // every Decl past the first. v1's emit handled this by sweeping leading
+  // separators at the TOP of each loop iteration; v2 must match.
+  const schema = defineSchema({
+    rootType: 'Rule',
+    examples: [
+      ex('prop: val').as('Decl')
+        .span('prop', 'prop').until([':', ';', '}'])
+        .span(':')
+        .span('value', 'val').until([';', '}'])
+        .span(';').optional()
+        .render('ast', { prop: $.prop, value: $.value })
+        .build(),
+      ex('{ a: 1; b: 2 }').as('Rule')
+        .span('{')
+        .span('decls', 'a: 1; b: 2', ['Decl']).repeats({ sep: ';', trailing: 'allowed', min: 0 })
+        .span('}')
+        .render('ast', { decls: $.decls })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('{ a: 1; b: 2 }') as { decls: Array<{ prop: string; value: string }> };
+  assert.equal(result.decls.length, 2);
+  assert.equal(result.decls[0]?.prop, 'a');
+  assert.equal(result.decls[0]?.value, '1');
+  assert.equal(result.decls[1]?.prop, 'b');
+  assert.equal(result.decls[1]?.value, '2');
+  // Also tolerates the trailing-sep variant: `b: 2;` ends the inner Decl
+  // with its own `;`, so the loop sees no further item.
+  const trailing = __parse('{ a: 1; b: 2; }') as { decls: Array<{ prop: string; value: string }> };
+  assert.equal(trailing.decls.length, 2);
+  assert.equal(trailing.decls[1]?.value, '2');
+});
+
 test('v2 multi-role repeats honors max by failing when count too high', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Cap at 2 items. 2 ok, 3 fails.

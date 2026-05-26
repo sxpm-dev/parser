@@ -327,20 +327,33 @@ if (__cand !== null) { off = state.pos; }`;
   // (compact byte-bucketed form).
   const stopBeforeCheck = emitStopBeforeCheck(stopBefore);
 
-  // Build the separator block. Used between items. Returns "consumed" /
-  // "absent" via control flow:
-  //   - if sep matched: advance past sep + inter-sep ws, continue
-  //   - if sep missing: break the loop (rewind off to pre-sep so the parent's
-  //     next span sees the original position — required for trailing:forbidden
-  //     to not have eaten extra ws).
+  // Build the separator-sweep block. Run at the TOP of each loop iteration
+  // (after the first), BEFORE attempting the next item. Mirrors v1's
+  // emitRepeatedSpan which sweeps `while (sepMatch) { off += sep.length; skipWs }`
+  // before each item attempt. This tolerates two cases at once:
+  //   1. The previous item did NOT consume the separator → we sweep it here.
+  //   2. The previous item DID consume an optional separator → the sweep
+  //      finds zero seps and we proceed straight to the next item.
+  //
+  // The sweep is a `while` (not `if`) so consecutive separators (e.g. `a;;b`
+  // in CSS-like grammars where the rule has `.span(';').optional()`) are
+  // absorbed exactly the way v1 absorbs them.
+  //
+  // __preSweep records the offset before the sweep so trailing:forbidden can
+  // rewind when a sweep consumed a sep but no item followed. __sepConsumed
+  // records whether THIS sweep consumed at least one sep, used by both
+  // trailing:forbidden (rewind) and trailing:required (final check).
   const sepBlock = sep
-    ? `const __sepStart = off;
+    ? `__preSweep = off;
+__sepConsumed = false;
 // Skip ws before the separator. v1 always allows ws around seps.
 while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-if (!(${literalMatchExpr(sep, 'off')})) { off = __sepStart; break; }
-off += ${sep.length};
-// Skip ws after the separator.
-while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`
+while (${literalMatchExpr(sep, 'off')}) {
+  __sepConsumed = true;
+  off += ${sep.length};
+  // Skip ws after the separator.
+  while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+}`
     // No explicit separator. Inter-item whitespace is absorbed by the inner
     // `try one role` block:
     //   - multi-role: the role-ladder skips ws before its first-byte peek
@@ -351,19 +364,22 @@ while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __w
     // text into the generated parser.
     : ``;
 
-  // Trailing-separator policy. When sep is set and trailing === 'forbidden',
-  // we must rewind `off` to before the trailing separator on a failed
-  // post-sep item parse. When 'required', we fail if the last item wasn't
-  // followed by a sep. We track this via __sepConsumed (1 = sep, 0 = item).
-  const needsTrailingTrack = sep !== undefined && trailing !== 'allowed';
+  // Trailing-separator policy. The top-of-loop sweep tracks __sepConsumed
+  // (was any sep absorbed before the current item attempt) and __preSweep
+  // (offset before that sweep). After the loop:
+  //   - trailing:forbidden — if the last sweep consumed a sep but no item
+  //     followed, rewind `off` to __preSweep so the trailing sep is left
+  //     unconsumed for the parent's next span.
+  //   - trailing:required — if items were parsed but the most recent sweep
+  //     before exit did NOT consume a sep, the last item lacks its required
+  //     trailing sep → fail the production.
   const trailingChecks: string[] = [];
   if (sep !== undefined && trailing === 'forbidden') {
-    // Rewind off to before the trailing sep — re-tracked by __preLastSep.
-    trailingChecks.push(`if (__sawTrailingSep) { off = __preLastSep; }`);
+    trailingChecks.push(`if (__sepConsumed) { off = __preSweep; }`);
   }
   if (sep !== undefined && trailing === 'required') {
     trailingChecks.push(
-      `if (${listVar}.length > 0 && !__sawTrailingSep) { state.pos = ${ctx.entryOffVar}; return null; }`,
+      `if (${listVar}.length > 0 && !__sepConsumed) { state.pos = ${ctx.entryOffVar}; return null; }`,
     );
   }
 
@@ -377,56 +393,55 @@ while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __w
     ? `if (${listVar}.length > ${max}) { state.pos = ${ctx.entryOffVar}; return null; }`
     : '';
 
-  // Compose the loop. The structure:
+  // Compose the loop. The structure (mirrors v1 emitRepeatedSpan layout):
   //
   //   start = off
   //   list = []
   //   loop:
+  //     // BETWEEN items (skipped on first iteration):
+  //     //   sweep ws, then sweep zero-or-more separators
+  //     //   trailing tracking captures __sepConsumed + __preSweep
   //     (stopBefore? check; break)
   //     __cand = null; <try-one-item>
-  //     if (__cand === null) break
+  //     if (__cand === null) break  // out of items; trailing checks handle policy
   //     list.push(__cand)
-  //     if (sep) { consume sep or break }
-  //     (else: nothing; ladder's ws-skip handles inter-item separation)
+  //     if (off === __loopStart) break  // infinite-loop guard
   //   trailing checks
   //   min/max checks
   //   end = off
   const lines: string[] = [];
   lines.push(`const ${startVar} = off;`);
   lines.push(`const ${listVar}: unknown[] = [];`);
-  if (needsTrailingTrack) {
-    lines.push(`let __sawTrailingSep = false;`);
-    if (trailing === 'forbidden') lines.push(`let __preLastSep = off;`);
+  if (sep !== undefined) {
+    // Sep-sweep state. __sepConsumed reflects the most recent top-of-loop
+    // sweep (true iff it absorbed at least one sep). __preSweep is the
+    // offset before that sweep (used by trailing:forbidden to rewind off).
+    lines.push(`let __sepConsumed = false;`);
+    lines.push(`let __preSweep = off;`);
   }
   lines.push(`while (true) {`);
-  if (stopBeforeCheck) {
-    lines.push(indent(stopBeforeCheck, 1));
-  }
   // Track the off at loop entry. If a successful child parse returns without
   // advancing `off`, we break to avoid an infinite loop. Matches v1
   // emitRepeatedSpan's `if (__off === __before) break;` guard. This can fire
   // on truly empty productions (no spans) or on productions whose only span
   // is an optional that didn't match.
   lines.push(`  const __loopStart = off;`);
+  if (sep !== undefined) {
+    // Top-of-loop sep-sweep, executed after the first item has been pushed.
+    // On the first iteration the list is empty so we skip the sweep entirely
+    // (no leading separator allowed before the first item).
+    lines.push(`  if (${listVar}.length > 0) {`);
+    lines.push(indent(sepBlock, 2));
+    lines.push(`  }`);
+  }
+  if (stopBeforeCheck) {
+    lines.push(indent(stopBeforeCheck, 1));
+  }
   lines.push(`  let __cand: unknown = null;`);
   lines.push(indent(tryItemBlock, 1));
   lines.push(`  if (__cand === null) break;`);
   lines.push(`  ${listVar}.push(__cand);`);
   lines.push(`  if (off === __loopStart) break;`);
-  if (needsTrailingTrack) lines.push(`  __sawTrailingSep = false;`);
-  if (sep !== undefined) {
-    // After pushing the item, attempt to consume the separator. If absent,
-    // break the loop (we exit on the unseparated last item). For
-    // trailing:forbidden we track the pre-sep offset so we can rewind off
-    // if the post-sep slot turns out to be empty (no further item).
-    if (trailing === 'forbidden') {
-      lines.push(`  __preLastSep = off;`);
-    }
-    lines.push(indent(sepBlock, 1));
-    if (needsTrailingTrack) lines.push(`  __sawTrailingSep = true;`);
-  } else {
-    lines.push(indent(sepBlock, 1));
-  }
   lines.push(`}`);
   for (const c of trailingChecks) lines.push(c);
   if (minCheck) lines.push(minCheck);

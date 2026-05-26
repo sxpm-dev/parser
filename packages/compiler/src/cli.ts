@@ -15,23 +15,17 @@ import { generateParser } from './index.ts';
 // validator module metadata).
 
 const argv = process.argv.slice(2);
-const positional: string[] = [];
-let v2 = false;
-for (const arg of argv) {
-  if (arg === '--v2') { v2 = true; continue; }
-  positional.push(arg);
-}
-const schemaArg = positional[0];
+const schemaArg = argv[0];
 if (!schemaArg) {
-  console.error('usage: tsx packages/compiler/src/cli.ts [--v2] <schema.ts>');
+  console.error('usage: tsx packages/compiler/src/cli.ts <schema.ts>');
   process.exit(1);
 }
 
 const schemaPath = isAbsolute(schemaArg) ? schemaArg : resolve(process.cwd(), schemaArg);
 
-await main(schemaPath, v2);
+await main(schemaPath);
 
-async function main(path: string, v2: boolean): Promise<void> {
+async function main(path: string): Promise<void> {
   const module = (await import(pathToFileURL(path).href)) as { default?: unknown; validation?: unknown };
   const schema = module.default;
   if (!isSchema(schema)) {
@@ -39,13 +33,12 @@ async function main(path: string, v2: boolean): Promise<void> {
   }
   const validation = isValidation(module.validation) ? module.validation : undefined;
   const packageName = packageNameFromPath(path);
-  const code = generateParser(schema, validation, { packageName, v2 });
+  const code = generateParser(schema, validation, { packageName });
   const outDir = resolve(dirname(path), '_generated');
   const outFile = resolve(outDir, 'parser.ts');
   mkdirSync(outDir, { recursive: true });
   writeFileSync(outFile, code);
-  const tag = v2 ? ' (v2)' : '';
-  console.log(`generated ${relative(outFile)}${tag}`);
+  console.log(`generated ${relative(outFile)}`);
 }
 
 function packageNameFromPath(path: string): string {

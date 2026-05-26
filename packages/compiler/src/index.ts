@@ -6,7 +6,6 @@ import { attachRenderTargets } from './infer/render-targets.ts';
 import { deriveInverses } from './infer/invert.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
-import { emitScannerlessParser } from './emit/scannerless/index.ts';
 import { emitV2Parser } from './emit/v2/index.ts';
 import type { InferredSchema } from './model.ts';
 
@@ -18,9 +17,6 @@ export type GenerateOptions = {
   // behavior. Defaults to 'parser' if not supplied — keep it explicit at
   // CLI / package-build level.
   readonly packageName?: string;
-  // When true, emit using the v2 backend (see docs/scannerless-emit-v2.md).
-  // Per-schema opt-in while v2 is rolled out.
-  readonly v2?: boolean;
 };
 
 export function inferSchema(
@@ -56,6 +52,5 @@ export function generateParser(
   options: GenerateOptions = {},
 ): string {
   const schema = inferSchema(root, validation, options);
-  if (options.v2) return emitV2Parser(schema);
-  return emitScannerlessParser(schema);
+  return emitV2Parser(schema);
 }

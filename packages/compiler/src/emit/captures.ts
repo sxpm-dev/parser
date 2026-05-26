@@ -77,7 +77,7 @@ export function emitCapturesExpr(
 // production's captures to be computable. Includes any span whose name is
 // referenced by a synthetic ref (gap / raw / tail / endsWith / comments).
 //
-// Used by the scannerless and v2 emitters to know which spans need
+// Used by the v2 emitter to know which spans need
 // __<name>_start / __<name>_end locals.
 export function collectOffsetRefs(
   production: Production,

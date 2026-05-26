@@ -41,8 +41,7 @@ export function emitProduction(
   };
   // Derive scan-kernel feature flags from the schema's declared token classes
   // and ident refinement. These teach .until() captures how to handle strings
-  // / comments / CSS url() as opaque units. Matches the v1 ctx.tokens /
-  // ctx.cssIdent derivation in emit/scannerless/parse.ts.
+  // / comments / CSS url() as opaque units.
   const tokenClasses = new Set<string>();
   let cssIdent = false;
   for (const usage of schema.classes) {

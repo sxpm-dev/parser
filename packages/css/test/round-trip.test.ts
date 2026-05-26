@@ -26,8 +26,7 @@ import * as mod from '../src/index.ts';
 // `captures.text` directly and produces only the interior, so re-parsing
 // the rebuilt comment fails. The fix is either a synthesis rule that
 // re-adds delimiters around `.comment()` slots (compiler-side) or
-// splitting the comment span into three (which breaks the comment fast
-// path in direct-fast). Tracked as a Phase 7 follow-up.
+// splitting the comment span into three. Tracked as a Phase 7 follow-up.
 const FIXTURES: ReadonlyArray<string> = [
   '.foo { color: red }',
   'foo { color: red }',

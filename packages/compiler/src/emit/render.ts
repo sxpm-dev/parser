@@ -383,10 +383,10 @@ function memberAccess(key: string): string {
   return `[${jsString(key)}]`;
 }
 
-// Exposed for the per-production parser body emitters in
-// emit/scannerless/parse.ts and emit/v2/production.ts — they generate
-// `__parse` and need to stamp the same routing key onto each captures
-// payload. Keep this in sync with the dispatcher's switch cases.
+// Exposed for the per-production parser body emitter in
+// emit/v2/production.ts — it generates `__parse` and needs to stamp the
+// same routing key onto each captures payload. Keep this in sync with the
+// dispatcher's switch cases.
 export function productionRoutingKey(production: Production, prodIdx: number): string {
   return productionKey(production.nodeType, prodIdx);
 }

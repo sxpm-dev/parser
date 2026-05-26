@@ -9,6 +9,16 @@ import { type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import { emitRoleLadder } from './role-ladder.ts';
+import { buildAcScanner } from './scan-until-ac.ts';
+
+// Minimum number of stops to justify the AC scanner's setup cost. Below this
+// threshold the per-stop compare chain (emitStopExpr) is faster — its branches
+// already inline into the byte-walk loop and the JIT can hoist constants.
+// At 3+ stops the AC state machine wins because (a) each input byte triggers
+// at most one switch-case dispatch instead of a chain of `__c === N || ...`
+// comparisons, and (b) overlapping prefixes are merged into shared trie
+// edges. Picked from the spec for Task 4.3.
+const AC_MIN_STOPS = 3;
 
 export type SpanContext = {
   // The local variable name where the parent's entry-offset is saved
@@ -721,6 +731,20 @@ function emitUntilSpan(
   const hasStrings = ctx.tokens.has('string');
   const hasComments = ctx.tokens.has('comment');
   const useUrlRaw = ctx.cssIdent && balanced;
+  // AC fast-path eligibility: the Aho-Corasick state machine replaces the
+  // per-stop compare chain when there are enough stops to justify the setup
+  // cost. It is only sound when the scan has no interior token classes
+  // (strings/comments) and no bracket-balance tracking, since those require
+  // per-byte side state the AC emitter doesn't model. See `scan-until-ac.ts`
+  // for the emitter — it advances `off` to the first match-start (or input
+  // length on no match) and falls through.
+  const nonEmptyStops = until.stops.filter((s) => s.length > 0);
+  const useAc =
+    !balanced &&
+    !hasStrings &&
+    !hasComments &&
+    !useUrlRaw &&
+    nonEmptyStops.length >= AC_MIN_STOPS;
   // .until() always trims trailing whitespace from the captured slice.
   // The schema's `trim` option is honored by v1's runtime config but the
   // emitter ignores it — every emitted .until() rewinds `off` to the last
@@ -763,11 +787,29 @@ function emitUntilSpan(
   lines.push(`  }`);
   lines.push(`  ${startVar} = off;`);
   if (useTrim) lines.push(`  let __lastNonWs = off;`);
-  if (balanced) lines.push(`  let __depth = 0;`);
-  if (stopNeedsC2) lines.push(`  let __c2 = -1;`);
+  if (balanced && !useAc) lines.push(`  let __depth = 0;`);
+  if (stopNeedsC2 && !useAc) lines.push(`  let __c2 = -1;`);
   if (hasComments) lines.push(`  const __comments: [number, number][] = [];`);
 
   // --- main loop ------------------------------------------------------------
+  if (useAc) {
+    // Aho-Corasick fast-path: the state-machine scanner advances `off` to
+    // the first match-start (or `len` on no match) in one O(n) pass. No
+    // interior token skips, no bracket tracking — the eligibility predicate
+    // above (`useAc`) already rejected scans that need them. After the scan
+    // we walk back from `off` to compute `__lastNonWs` for the trim path.
+    // The cost is O(trailing-ws) per scan, typically a handful of bytes.
+    const scanner = buildAcScanner(nonEmptyStops);
+    lines.push(indent(scanner.emitJs('input', 'off'), 1));
+    if (useTrim) {
+      lines.push(`  __lastNonWs = off;`);
+      lines.push(`  while (__lastNonWs > ${startVar}) {`);
+      lines.push(`    const __wc = input.charCodeAt(__lastNonWs - 1);`);
+      lines.push(`    if (__wc !== 0x20 && __wc !== 0x09 && __wc !== 0x0a && __wc !== 0x0d) break;`);
+      lines.push(`    __lastNonWs--;`);
+      lines.push(`  }`);
+    }
+  } else {
   lines.push(`  while (off < len) {`);
   lines.push(`    const __c = input.charCodeAt(off);`);
   // Stop check (gated by depth when balanced).
@@ -864,6 +906,7 @@ function emitUntilSpan(
   }
   lines.push(`    off++;`);
   lines.push(`  }`);
+  }
 
   // --- finalize capture -----------------------------------------------------
   const trimEnd = useTrim ? '__lastNonWs' : 'off';

@@ -2053,12 +2053,296 @@ function parseMarkdownParagraph(state: State): unknown {
     }
     __text_start = off;
     let __lastNonWs = off;
-    let __c2 = -1;
-    while (off < len) {
-      const __c = input.charCodeAt(off);
-      if ((__c === 10 && ((__c2 = off + 1 < len ? input.charCodeAt(off + 1) : -1), ((__c2 === 96 && (input.startsWith("\n```", off))) || (__c2 === 45 && (input.startsWith("\n---", off) || input.startsWith("\n- ", off) || input.startsWith("\n-\n", off))) || (__c2 === 42 && (input.startsWith("\n***", off) || input.startsWith("\n* ", off))) || (__c2 === 95 && (input.startsWith("\n___", off))) || (__c2 === 61 && (input.startsWith("\n===", off))) || (__c2 === 43 && (input.startsWith("\n+ ", off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
-      off++;
+    {
+      let __acState = 0;
+      const __acLen = input.length;
+      let __acBest = -1;
+      const __acMaxLen = 4;
+      while (off < __acLen) {
+        const __acC = input.charCodeAt(off);
+        switch (__acState) {
+          case 0: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { break; }
+          }
+          case 1: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 2: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 3: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 4: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 5: {
+            if (__acC === 10) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 7;
+              break;
+            }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 6;
+              break;
+            }
+            else if (__acC === 45) { __acState = 16; break; }
+            else { __acState = 0; continue; }
+          }
+          case 6: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 7: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 8: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 9;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 9: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 10: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 11;
+              break;
+            }
+            else if (__acC === 42) { __acState = 18; break; }
+            else { __acState = 0; continue; }
+          }
+          case 11: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 12: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 96) { __acState = 13; break; }
+            else { __acState = 0; continue; }
+          }
+          case 13: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 96) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 14;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 14: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 15: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 16: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 45) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 17;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 17: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 18: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 42) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 19;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 19: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 20: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 95) { __acState = 21; break; }
+            else { __acState = 0; continue; }
+          }
+          case 21: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 95) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 22;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 22: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 23: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 61) { __acState = 24; break; }
+            else { __acState = 0; continue; }
+          }
+          case 24: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 61) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 25;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 25: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 26: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+        }
+        off++;
+        if (__acBest !== -1 && off >= __acBest + __acMaxLen) break;
+      }
+      off = __acBest === -1 ? __acLen : __acBest;
+    }
+    __lastNonWs = off;
+    while (__lastNonWs > __text_start) {
+      const __wc = input.charCodeAt(__lastNonWs - 1);
+      if (__wc !== 0x20 && __wc !== 0x09 && __wc !== 0x0a && __wc !== 0x0d) break;
+      __lastNonWs--;
     }
     const __emptyAnchor = __text_start;
     if (__lastNonWs === __text_start) {

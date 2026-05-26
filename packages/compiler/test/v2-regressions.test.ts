@@ -1136,3 +1136,84 @@ test('v2 inter-span ws skip also skips /* */ comments when schema declares comme
   assert.deepEqual(__parse('a /* note */ {}'), { selector: 'a' });
   assert.deepEqual(__parse('a/**/\n{}'), { selector: 'a' });
 });
+
+test('v2 .until() with 3+ unbalanced stops uses Aho-Corasick scanner', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Markdown's PARAGRAPH_STOPS is the motivating example: 14 multi-byte
+  // stops, unbalanced, no string/comment tokens. The compiler should pick
+  // the AC fast-path here — verified by grepping for the state-machine
+  // signature in the emitted source — and the produced parser must capture
+  // the same slice the per-stop chain would have. We wrap Paragraph in a
+  // Doc that repeats `Paragraph` so leftover input (`\n# heading`, etc.)
+  // doesn't surface as a parse failure — the Doc role chains paragraphs
+  // and absorbs whatever follows.
+  const PARAGRAPH_STOPS = [
+    '\n\n', '\n#', '\n>', '\n- ', '\n-\n',
+    '\n+ ', '\n* ', '\n```', '\n|',
+    '\n---', '\n***', '\n___', '\n===', '\n[',
+  ] as const;
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('Plain paragraph')
+        .as('Paragraph')
+        .span('text', 'Plain paragraph').until([...PARAGRAPH_STOPS], { balanced: false })
+        .render('ast', { type: 'paragraph', text: $.text })
+        .build(),
+      ex('Plain paragraph')
+        .as('Doc')
+        .span('items', 'Plain paragraph', ['Paragraph']).repeats({ min: 1 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // The AC emitter's unique signature — `__acState`, `__acBest`, and the
+  // max-length bound — should appear in the paragraph parser. Confirms the
+  // fast path fired for the 14-stop PARAGRAPH_STOPS.
+  assert.match(code, /let __acState = 0;/);
+  assert.match(code, /let __acBest = -1;/);
+  assert.match(code, /const __acMaxLen = \d+;/);
+
+  const { render } = await loadV2Parser(code);
+  const firstText = (input: string): string => {
+    const r = render(input, { type: 'ast' }) as {
+      items: Array<{ type: string; text: string }>;
+    };
+    return r.items[0]!.text;
+  };
+  // Plain paragraph runs to EOF.
+  assert.equal(firstText('Plain paragraph'), 'Plain paragraph');
+  // Paragraph stops at the first PARAGRAPH_STOPS match.
+  assert.equal(firstText('Hello world\n\nNext block'), 'Hello world');
+  assert.equal(firstText('Before\n# heading'), 'Before');
+  assert.equal(firstText('Quote follows\n> quoted'), 'Quote follows');
+  assert.equal(firstText('Code\n```\nfn'), 'Code');
+  assert.equal(firstText('Link\n[a][1]'), 'Link');
+  // A `\n` not followed by any stop byte stays in the paragraph.
+  assert.equal(firstText('multi\nline text'), 'multi\nline text');
+  // Trailing whitespace is trimmed (useTrim default).
+  assert.equal(firstText('trim me   '), 'trim me');
+});
+
+test('v2 .until() with <3 stops still uses per-stop compare chain (no AC)', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Two stops, unbalanced — below the AC_MIN_STOPS threshold. The emitter
+  // should pick the byte-walk loop with the compare-chain stopExpr, not
+  // the AC scanner.
+  const schema = defineSchema({
+    rootType: 'P',
+    examples: [
+      ex('hi').as('P')
+        .span('text', 'hi').until(['\n', '@'], { balanced: false })
+        .render('ast', { text: $.text })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // The AC signature must NOT appear for this span.
+  assert.doesNotMatch(code, /let __acState = 0;/);
+  // The compare-chain stop predicate (single-byte form for the two stops)
+  // shows up in the byte-walk loop's `if (...) break;` line.
+  assert.match(code, /if \(__c === 10 \|\| __c === 64\)/);
+});

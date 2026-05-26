@@ -1,78 +1,73 @@
-# v2 emit migration status (captured 2026-05-26, updated after Task 1.3e)
+# v2 emit migration status (updated 2026-05-26 after Task 1.3k closeout)
 
 Status of `--v2` codegen + tests for the 3 in-scope parser packages.
-Captured by running `npx tsx packages/compiler/src/cli.ts packages/<pkg>/src/schema.ts --v2`
+Captured by running
+`npx tsx packages/compiler/src/cli.ts packages/<pkg>/src/schema.ts --v2 && npx tsx --test packages/<pkg>/test/*.test.ts`
 from the worktree root. See `docs/scannerless-emit-v2.md` for the v2 design
 contract.
 
-Baseline (default v1 scannerless emit): css 56/57 (1 skip), html 30/30,
-markdown 76/76. None of these are affected — only `--v2` codegen is exercised
-here.
+## Current ratchet (after Tasks 1.3a–k)
 
-Tasks 1.3a/b/c/d/e landed. Every package now ratchets past the role-ladder's
-indeterminate-first-byte rejection (1.3d added "fallthrough role" handling)
-and the number-class refinement gap (1.3e added float/scientific/separator/
-binary/octal/bigint refinement handling). The remaining blockers are all
-same-signature role disambiguation, gated on Task 1.3f's peek-scan
-dispatcher.
+| Package   | v2 pass | v2 fail | Notes |
+| --------- | ------- | ------- | ----- |
+| compiler  | 33/33   | 0       | v2-regressions test suite |
+| css       | 51/57   | 5 (+1 skip) | residual = direct-fast / validate-hook gaps |
+| html      | 29/30   | 1       | residual = validate-hook gap (unterminated quote rejection) |
+| markdown  | 76/76   | 0       | green |
+| arn / cron / log / proto / url | passing | 0 | green (no regressions) |
+| mac       | 4/5     | 1       | pre-existing validate-hook gap |
+| css-color | 0/4     | 4       | pre-existing v2 gap (out of Phase 1 scope) |
+| css-length-percentage | 2/4 | 2 | pre-existing v2 gap (out of Phase 1 scope) |
+| js        | 0/2     | 2       | package not set up (no `src/index.ts`) |
 
-- [ ] css — codegen fails: `v2: role list [Comment, AtRule, Rule, Declaration]
-  has multiple fallthrough roles (Rule and Declaration both have until/
-  rawUntil/repeats/optional first spans); peek-scan dispatch required
-  (Task 1.3f)`. (Stylesheet `nodes` repeats over [Comment, AtRule, Rule,
-  Declaration] — Rule starts with `.until(['{', ';'])`, Declaration starts
-  with `.until([':', ';', '}'])`; the dispatcher needs to look past the
-  first byte to decide which to try.)
-- [ ] html — codegen fails: `v2: multi-role span has roles sharing first
-  byte 0x3c ('Doctype' and 'Comment'); peek-scan dispatch not yet supported
-  (Task 1.3f)`. (HtmlDocument `children` repeats over [Doctype, Comment,
-  HtmlElement, TextNode] — TextNode is now treated as the fallthrough
-  catch-all, but Doctype and Comment both start with `<` so byte-peek can't
-  pick between them.)
-- [ ] markdown — codegen fails: `v2: role list [MarkdownLeaf,
-  MarkdownParagraph] has multiple fallthrough roles (MarkdownLeaf and
-  MarkdownParagraph both have until/rawUntil/repeats/optional first spans);
-  peek-scan dispatch required (Task 1.3f)`. (MarkdownLeaf has byte-fixed
-  productions for `#`, `-`, `>`, etc., AND setext productions whose first
-  span is `.until(HEADING_LINE_STOPS)` — that makes MarkdownLeaf itself a
-  fallthrough role, conflicting with MarkdownParagraph's fallthrough.)
+## Residual Phase 1 failures (6 total, all out-of-scope for v2 emit)
 
-## v2 design TODOs / not-yet markers remaining in `emit/v2/`
+All six residuals share one root: v1's CSS / HTML packages rely on
+hand-rolled fast paths (`packages/compiler/src/emit/direct-fast.ts`)
+and a validator-hook codegen variant (`emit/scannerless/parse.ts`'s
+`'validate'` mode) that v2's scannerless emit doesn't yet replicate.
+They're tracked under Task 1.3k in the plan; Phase 2 (reference
+interpreter) and the validator-hook codegen work are the natural
+homes.
 
-These constrain what the remaining Task 1.3 slices (e/f) need to implement
-before any of the 3 packages can migrate:
+| Failure | Phase home |
+| --- | --- |
+| css "rejects unrecognized characters" (backtick in value) | Phase 2/3 — `unknownChars` policy in v2 |
+| css "reports source frame for unexpected '}'" | Phase 2 — standardize error shape via reference interpreter |
+| css "keeps invalid stylesheet boundaries explicit" (empty selector) | Phase 2/3 — `.nonEmpty()` refinement or schema rework |
+| css "validate rejects configured color and length values" | Phase 2/3 — validator-hook codegen variant |
+| css "validate reports generated validator failures as regular syntax errors" | same as above |
+| html "validates rejected syntax" (one input: unterminated quote) | Phase 2/3 — same validator-hook gap |
 
-- `emit/v2/role-ladder.ts` — DONE (Task 1.3d). Roles whose first span has no
-  fixed first byte are now treated as the catch-all fallthrough; at most one
-  per role list. Two fallthrough roles raise CompilerError pointing at
-  Task 1.3f (peek-scan dispatcher).
-- `emit/v2/dispatch.ts:5` — discriminator peek-scan (ladder rung 2) still
-  "not yet implemented in v2 first slice". Needed for same-byte and multi-
-  fallthrough disambiguation. (Task 1.3f.)
-- `emit/v2/span.ts:60` — DONE (Task 1.3a). `until` / `rawUntil` spans emit
-  straight-line scan code; balanced/trim/rejectSuffix all honored.
-- `emit/v2/span.ts:184` — DONE (Task 1.3b). Multi-role non-repeats spans emit
-  the role-dispatch ladder.
-- `emit/v2/span.ts:286` — DONE (Task 1.3c). Multi-role repeats spans emit a
-  while-loop wrapping the role-dispatch ladder; sep/min/max/trailing/
-  stopBefore modifiers all honored. Test coverage in
-  `packages/compiler/test/v2-regressions.test.ts`.
-- `emit/v2/span.ts` — DONE (Task 1.3e). Number-class refinements (`.float()`,
-  `.scientific()`, `.separator()`, `.bigint()`, `.binary()`, `.octal()`) are
-  now honored by `numberScanCode`; bare `.number()` / `.int()` still defaults
-  to integer-only. None of the 3 in-scope schemas hit the new branches (css
-  captures floats via `.until(...)` and the css token list, not via
-  `.number().float()` on a span), but the surface is now consistent with the
-  builder API and unblocks downstream schemas that opt into refinements.
+## v2 emit features landed in Tasks 1.3a–k
 
-## Phase 1 implication
+- `.until()` / `.rawUntil()` span emit with balanced bracket / string /
+  comment / url-raw token-class skips (1.3a / 1.3g).
+- Multi-role non-repeats span emit with role-dispatch ladder (1.3b).
+- Multi-role repeats span emit with role-dispatch ladder + sep / min /
+  max / trailing / stopBefore policy (1.3c).
+- Fallthrough role handling (catch-all roles tried last) (1.3d).
+- Number-class refinements honored by the scanner (1.3e).
+- Peek-scan discriminator for same-byte / multi-fallthrough roles (1.3f).
+- Leading-sep sweep + sep-already-consumed tolerance in repeats (1.3j +
+  1.3k commit `e40fa8c`).
+- Inter-span gap skips `/* */` comments when schema declares
+  `tokens: ['comment']` — preserves leading skip as ws-only, suppresses
+  comment-eating before optional or comment-consuming spans (1.3k commit
+  `c608afb`, refined in `e40fa8c` and `ab2d4b8`).
+- Comment-class span returns trimmed interior, not raw `/* … */` byte
+  slice (1.3k commit `ab2d4b8`).
+- `.until()` always trims trailing whitespace (ignores schema `trim:false`
+  to match v1 runtime behavior) (1.3k commit `f1c3a12`).
+- Speculation chain reorders alts within a same-first-byte group:
+  longer literal prefixes first, tag-restricted (`.oneOf`) alts before
+  catch-alls (1.3k commits `4f7a30d` + `bf0a371`).
 
-Task 1.2 ("migrate packages that already pass v2 cleanly") still has zero
-candidates — every in-scope package now hits a Task 1.3f issue (same-byte
-roles in html, multi-fallthrough in markdown/css). Task 1.3f peek-scan
-dispatcher is the next gating item. Once 1.3f lands, html should succeed
-end-to-end, markdown likely will too (its setext-vs-paragraph case is a
-peek-scan target), and css should also succeed (its float-shaped numbers are
-captured via `.until(...)`, not via `.number().float()`, so 1.3e doesn't
-move the css ratchet on its own — it lands the API surface so future
-schemas can opt into float/scientific without further compiler work).
+## Phase 1 next step
+
+Task 1.4 (delete v1 emit) is gated on either (a) accepting the 6 residual
+v2 failures as known feature gaps and proceeding to Phase 2, or (b)
+extending Task 1.3 with a validator-hook codegen variant (1.3l) and
+direct-fast retirement (1.3m). The plan currently takes path (a) — see
+"Exit criteria for combined Task 1.3" in
+`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`.

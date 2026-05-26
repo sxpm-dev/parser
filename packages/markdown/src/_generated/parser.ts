@@ -1,18 +1,9 @@
 // Auto-generated from packages/markdown/src/schema.ts
 // Do not edit by hand. Re-run `npm run generate` to refresh.
+// (v2 scannerless emit — see docs/scannerless-emit-v2.md)
 /* eslint-disable */
 // @ts-nocheck
 
-
-
-type State = {
-  readonly input: string;
-  off: number;
-  readonly mode: ParseMode;
-  readonly lineStarts: number[];
-  __lastCaptureStart: number;
-  __lastCaptureEnd: number;
-};
 
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
@@ -23,6 +14,15 @@ export type ParseOptions = {
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
 type SourceRange = { readonly start: SourcePos; readonly end: SourcePos };
 
+type State = {
+  readonly input: string;
+  readonly len: number;
+  pos: number;
+  maxOff: number;
+  readonly mode: ParseMode;
+  readonly lineStarts: number[];
+};
+
 function computeLineStarts(input: string): number[] {
   const starts = [0];
   for (let i = 0; i < input.length; i++) {
@@ -31,7 +31,7 @@ function computeLineStarts(input: string): number[] {
   return starts;
 }
 
-function offsetToPos(state: State, offset: number): SourcePos {
+function posAt(state: State, offset: number): SourcePos {
   const starts = state.lineStarts;
   let lo = 0, hi = starts.length - 1;
   while (lo < hi) {
@@ -42,10374 +42,2042 @@ function offsetToPos(state: State, offset: number): SourcePos {
 }
 
 function makeSource(state: State, startOff: number, endOff: number): SourceRange {
-  const start = offsetToPos(state, startOff);
+  const start = posAt(state, startOff);
   const end = endOff > startOff
-    ? { ...offsetToPos(state, endOff - 1), offset: endOff }
-    : { ...offsetToPos(state, startOff), offset: endOff };
+    ? { ...posAt(state, endOff - 1), offset: endOff }
+    : { ...posAt(state, startOff), offset: endOff };
   return { start, end };
 }
 
-function isAsciiWs(c: number): boolean {
+function isWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
 
-function isDigit(c: number): boolean {
-  return c >= 48 && c <= 57;
-}
-
+function isDigit(c: number): boolean { return c >= 48 && c <= 57; }
 function isHexDigit(c: number): boolean {
   return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
 }
-
 function isCssIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
 }
-
 function isCssIdentPart(c: number): boolean {
   return isCssIdentStart(c) || (c >= 48 && c <= 57);
 }
-
 function isJsIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36;
 }
-
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
-// Skip whitespace. Always emitted; called between every span where
-// whitespace is allowed (default for whitespace: 'standard' schemas).
-function skipWs(state: State): void {
-  const input = state.input;
-  const len = input.length;
-  let off = state.off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    break;
-  }
-  state.off = off;
-}
-
-function isHexString(value: string): boolean {
-  if (value.length === 0) return false;
-  for (let i = 0; i < value.length; i++) {
-    if (!isHexDigit(value.charCodeAt(i))) return false;
-  }
-  return true;
-}
-
-// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
-// .text and the leading/trailing whitespace inside the comment in raws.
-function commentInterior(text: string): string {
-  return text.slice(2, -2).trim();
-}
-
-function commentLeft(raw: string): string {
-  const inner = raw.slice(2, -2);
-  const match = inner.match(/^\s*/);
-  return match ? match[0] : '';
-}
-
-function commentRight(raw: string): string {
-  const inner = raw.slice(2, -2);
-  if (inner.trim() === '') return '';
-  const match = inner.match(/\s*$/);
-  return match ? match[0] : '';
-}
-
-// Speculate: try fn; on throw rewind state.off and return null. Used for
-// .optional() recursive spans and multi-role dispatch.
-function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
-  const start = state.off;
-  try {
-    return fn(state);
-  } catch {
-    state.off = start;
-    return null;
-  }
-}
-
-function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  let lastError: unknown;
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new SyntaxError('no role matched');
-}
-
-function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch {
-      // try next
-    }
-  }
-  state.off = start;
-  return null;
-}
-
-// Attach raws.before to a parsed child. Used in raws mode for repeated
-// children — the body loop knows where the previous sibling ended (or where
-// the body's opening token ended for the first child); raws.before is the
-// source slice from that point up to this child's source.start.offset.
-function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
-  if (!child || typeof child !== 'object') return;
-  const node = child as { raws?: Record<string, unknown>; source?: { start?: { offset?: number } } };
-  const childStart = node.source?.start?.offset;
-  if (typeof childStart !== 'number') return;
-  if (!node.raws) node.raws = {};
-  const slice = state.input.slice(prevEnd, childStart);
-  if (prevEnd === 0 && /^\s*$/.test(slice)) {
-    node.raws.before = '';
-  } else {
-    node.raws.before = slice;
-  }
-}
-
-function decorateSyntaxError(input: string, error: unknown, state?: State): never {
-  if (!(error instanceof SyntaxError)) throw error;
-  if (hasSourceFrame(error.message)) throw error;
-  const messageOffset = offsetFromMessage(error.message, -1);
-  const offset = messageOffset >= 0
-    ? messageOffset
-    : state !== undefined
-    ? state.off
-    : offsetFromMessage(error.message, input.length);
-  throw syntaxErrorWithFrame(input, error.message, offset);
-}
-
-function syntaxErrorWithFrame(input: string, message: string, offset: number): SyntaxError {
-  const cleanMessage = stripPositionSuffix(message);
+function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
-  while (lineStart > 0) {
-    const c = input.charCodeAt(lineStart - 1);
-    if (c === 0x0a || c === 0x0d) break;
-    lineStart--;
-  }
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
   let lineEnd = offset;
-  while (lineEnd < input.length) {
-    const c = input.charCodeAt(lineEnd);
-    if (c === 0x0a || c === 0x0d) break;
-    lineEnd++;
-  }
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
   let line = 1;
   for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`${cleanMessage} at position ${offset}
+  return new SyntaxError(`parse failed at position ${offset}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
-function stripPositionSuffix(message: string): string {
-  const marker = ' at position ';
-  const index = message.lastIndexOf(marker);
-  if (index < 0) return message;
-  let pos = index + marker.length;
-  if (pos >= message.length) return message;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) return message;
-    pos++;
-  }
-  return message.slice(0, index);
-}
-
-function hasSourceFrame(message: string): boolean {
-  return message.includes('\n') && message.includes(' | ');
-}
-
-function offsetFromMessage(message: string, fallback: number): number {
-  const marker = 'position ';
-  const index = message.indexOf(marker);
-  if (index < 0) return fallback;
-  let pos = index + marker.length;
-  let value = 0;
-  let found = false;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
-    found = true;
-    value = value * 10 + c - 48;
-    pos++;
-  }
-  return found ? value : fallback;
-}
-
 function parseMarkdownDocument(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
   const children: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__off >= __len) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = tryRoles(state, [parseMarkdownLeaf, parseMarkdownParagraph]); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownDocument#0", children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("######", __off))) { state.off = __off; throw new SyntaxError("expected " + "######" + " at position " + __off); }
-  __off += 6;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    const __loopStart = off;
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#0", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("#####", __off))) { state.off = __off; throw new SyntaxError("expected " + "#####" + " at position " + __off); }
-  __off += 5;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#1", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("####", __off))) { state.off = __off; throw new SyntaxError("expected " + "####" + " at position " + __off); }
-  __off += 4;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#2", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("###", __off))) { state.off = __off; throw new SyntaxError("expected " + "###" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#3", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 35 && __input.charCodeAt(__off + 1) === 35)) { state.off = __off; throw new SyntaxError("expected " + "##" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#4", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#5", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#6", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#7", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#8" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#9" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#10" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("- [x]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [x]" + " at position " + __off); }
-  __off += 5;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#11", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("- [ ]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [ ]" + " at position " + __off); }
-  __off += 5;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#12", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#13", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#14", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#15", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt16(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __index_s = __off;
-  let index;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __index_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  index = __input.slice(__index_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#16", index: index, text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt17(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#17", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt18(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __lang_s = __off;
-  let lang;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __lang_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __lang_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__lang_s) | 32) === 0x75
-        && (__input.charCodeAt(__lang_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__lang_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  lang = __input.slice(__lang_s, __off);
-  __consumedEnd = __off;
-  let body = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      body = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#18", lang: lang, body: body };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt19(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("```\n", __off))) { state.off = __off; throw new SyntaxError("expected " + "```\n" + " at position " + __off); }
-  __off += 4;
-  __consumedEnd = __off;
-  let body = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      body = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#19", body: body };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt20(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 42 && __input.startsWith("**", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#20", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt21(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 42) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#21", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt22(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#22", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt23(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 96) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#23", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt24(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let label = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      label = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 41) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#24", label: label, url: url };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt25(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let label = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      label = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#25", label: label, id: id };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt26(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let alt = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      alt = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 41) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#26", alt: alt, url: url };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt27(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let alt = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      alt = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#27", alt: alt, id: id };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt28(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 38)) { state.off = __off; throw new SyntaxError("expected " + "&" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 59)) { state.off = __off; throw new SyntaxError("expected " + ";" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#28", name: name };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt29(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#29" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt30(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#30" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt31(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let first = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 124) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      first = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    first = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let second = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 124) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      second = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    second = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#31", first: first, second: second };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt32(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#32", id: id, url: url };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt33(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#33", id: id, text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt34(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#34", id: id };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt35(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "div" || __tag_lc === "span" || __tag_lc === "p" || __tag_lc === "pre" || __tag_lc === "code" || __tag_lc === "blockquote" || __tag_lc === "a" || __tag_lc === "img" || __tag_lc === "br" || __tag_lc === "hr" || __tag_lc === "ul" || __tag_lc === "ol" || __tag_lc === "li" || __tag_lc === "dl" || __tag_lc === "dt" || __tag_lc === "dd" || __tag_lc === "table" || __tag_lc === "thead" || __tag_lc === "tbody" || __tag_lc === "tfoot" || __tag_lc === "tr" || __tag_lc === "td" || __tag_lc === "th" || __tag_lc === "caption" || __tag_lc === "figure" || __tag_lc === "figcaption" || __tag_lc === "section" || __tag_lc === "article" || __tag_lc === "header" || __tag_lc === "footer" || __tag_lc === "nav" || __tag_lc === "aside" || __tag_lc === "main" || __tag_lc === "address" || __tag_lc === "details" || __tag_lc === "summary" || __tag_lc === "h1" || __tag_lc === "h2" || __tag_lc === "h3" || __tag_lc === "h4" || __tag_lc === "h5" || __tag_lc === "h6" || __tag_lc === "em" || __tag_lc === "strong" || __tag_lc === "i" || __tag_lc === "b" || __tag_lc === "u" || __tag_lc === "s" || __tag_lc === "small" || __tag_lc === "sub" || __tag_lc === "sup" || __tag_lc === "kbd" || __tag_lc === "var" || __tag_lc === "samp" || __tag_lc === "cite" || __tag_lc === "q" || __tag_lc === "dfn" || __tag_lc === "abbr" || __tag_lc === "time" || __tag_lc === "mark" || __tag_lc === "ruby" || __tag_lc === "rt" || __tag_lc === "rp" || __tag_lc === "bdi" || __tag_lc === "bdo" || __tag_lc === "wbr" || __tag_lc === "form" || __tag_lc === "input" || __tag_lc === "button" || __tag_lc === "select" || __tag_lc === "option" || __tag_lc === "optgroup" || __tag_lc === "textarea" || __tag_lc === "label" || __tag_lc === "fieldset" || __tag_lc === "legend" || __tag_lc === "datalist" || __tag_lc === "output" || __tag_lc === "progress" || __tag_lc === "meter" || __tag_lc === "video" || __tag_lc === "audio" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "canvas" || __tag_lc === "svg" || __tag_lc === "math" || __tag_lc === "iframe" || __tag_lc === "embed" || __tag_lc === "object" || __tag_lc === "param" || __tag_lc === "picture" || __tag_lc === "script" || __tag_lc === "style" || __tag_lc === "noscript" || __tag_lc === "template" || __tag_lc === "html" || __tag_lc === "head" || __tag_lc === "body" || __tag_lc === "title" || __tag_lc === "meta" || __tag_lc === "link" || __tag_lc === "base")) { state.off = __off; throw new SyntaxError("expected one of div, span, p, pre, code, blockquote, a, img, br, hr, ul, ol, li, dl, dt, dd, table, thead, tbody, tfoot, tr, td, th, caption, figure, figcaption, section, article, header, footer, nav, aside, main, address, details, summary, h1, h2, h3, h4, h5, h6, em, strong, i, b, u, s, small, sub, sup, kbd, var, samp, cite, q, dfn, abbr, time, mark, ruby, rt, rp, bdi, bdo, wbr, form, input, button, select, option, optgroup, textarea, label, fieldset, legend, datalist, output, progress, meter, video, audio, source, track, canvas, svg, math, iframe, embed, object, param, picture, script, style, noscript, template, html, head, body, title, meta, link, base at position " + __tag_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let body = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
-    body = __input.slice(__startOff, __earliest);
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closingTag_s = __off;
-  let closingTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closingTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closingTag = __input.slice(__closingTag_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf__alt36(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 62) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownLeaf#36", url: url };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownLeaf(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    if (__input.startsWith("######", __peek)) {
-      return parseMarkdownLeaf__alt0(state);
-    }
-    else if (__input.startsWith("#####", __peek)) {
-      return parseMarkdownLeaf__alt1(state);
-    }
-    else if (__input.startsWith("####", __peek)) {
-      return parseMarkdownLeaf__alt2(state);
-    }
-    else if (__input.startsWith("###", __peek)) {
-      return parseMarkdownLeaf__alt3(state);
-    }
-    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-      return parseMarkdownLeaf__alt4(state);
-    }
-    else {
-      return parseMarkdownLeaf__alt5(state);
-    }
-  } else if (__byte0 === 45) {
-    if (__input.startsWith("- [x]", __peek)) {
-      return parseMarkdownLeaf__alt11(state);
-    }
-    else if (__input.startsWith("- [ ]", __peek)) {
-      return parseMarkdownLeaf__alt12(state);
-    }
-    else if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeaf__alt10(state);
-    }
-    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt15(state);
-    }
-  } else if (__byte0 === 96) {
-    if (__input.startsWith("```\n", __peek)) {
-      return parseMarkdownLeaf__alt19(state);
-    }
-    else if (__input.startsWith("```", __peek)) {
-      return parseMarkdownLeaf__alt18(state);
-    }
-    else {
-      return parseMarkdownLeaf__alt23(state);
-    }
-  } else if (__byte0 === 42) {
-    if (__input.startsWith("***", __peek)) {
-      return parseMarkdownLeaf__alt8(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt14(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-      return parseMarkdownLeaf__alt20(state);
-    }
-    else {
-      return parseMarkdownLeaf__alt21(state);
-    }
-  } else if (__byte0 === 95) {
-    if (__input.startsWith("___", __peek)) {
-      return parseMarkdownLeaf__alt9(state);
-    }
-  } else if (__byte0 === 43) {
-    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeaf__alt13(state);
-    }
-  } else if (__byte0 === 126) {
-    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-      return parseMarkdownLeaf__alt22(state);
-    }
-  } else if (__byte0 === 91) {
-    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-      state.off = __peek;
-      { const r = trySpeculate(state, parseMarkdownLeaf__alt33); if (r !== null) return r; }
-      return parseMarkdownLeaf__alt34(state);
-    }
-    else {
-      state.off = __peek;
-      { const r = trySpeculate(state, parseMarkdownLeaf__alt24); if (r !== null) return r; }
-      { const r = trySpeculate(state, parseMarkdownLeaf__alt25); if (r !== null) return r; }
-      return parseMarkdownLeaf__alt32(state);
-    }
-  } else if (__byte0 === 62) {
-    return parseMarkdownLeaf__alt17(state);
-  } else if (__byte0 === 33) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeaf__alt26); if (r !== null) return r; }
-    return parseMarkdownLeaf__alt27(state);
-  } else if (__byte0 === 38) {
-    return parseMarkdownLeaf__alt28(state);
-  } else if (__byte0 === 124) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 124)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeaf__alt29(state);
-    }
-    if (__input.charCodeAt(__peek) === 58) {
-      return parseMarkdownLeaf__alt30(state);
-    }
-    return parseMarkdownLeaf__alt31(state);
-  } else if (__byte0 === 60) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseMarkdownLeaf__alt36(state);
-    {
-      const __identStart = __peek;
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      const __ident = __input.slice(__identStart, __peek).toLowerCase();
-      if (__ident === "div") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "span") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "p") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "pre") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "code") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "blockquote") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "a") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "img") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "br") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "hr") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "ul") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "ol") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "li") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "dl") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "dt") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "dd") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "table") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "thead") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "tbody") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "tfoot") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "tr") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "td") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "th") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "caption") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "figure") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "figcaption") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "section") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "article") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "header") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "footer") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "nav") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "aside") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "main") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "address") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "details") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "summary") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h1") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h2") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h3") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h4") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h5") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "h6") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "em") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "strong") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "i") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "b") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "u") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "s") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "small") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "sub") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "sup") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "kbd") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "var") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "samp") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "cite") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "q") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "dfn") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "abbr") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "time") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "mark") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "ruby") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "rt") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "rp") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "bdi") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "bdo") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "wbr") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "form") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "input") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "button") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "select") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "option") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "optgroup") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "textarea") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "label") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "fieldset") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "legend") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "datalist") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "output") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "progress") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "meter") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "video") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "audio") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "source") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "track") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "canvas") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "svg") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "math") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "iframe") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "embed") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "object") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "param") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "picture") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "script") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "style") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "noscript") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "template") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "html") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "head") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "body") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "title") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "meta") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "link") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      if (__ident === "base") {
-      return parseMarkdownLeaf__alt35(state);
-    }
-      return parseMarkdownLeaf__alt36(state);
-    }
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-    return parseMarkdownLeaf__alt16(state);
-  }
-  { state.off = __peek; const r = parseMarkdownLeaf__alt6(state); if (r !== null) return r; }
-  { state.off = __peek; const r = parseMarkdownLeaf__alt7(state); if (r !== null) return r; }
-  state.off = __peek;
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function parseMarkdownParagraph(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __c2 = -1;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "MarkdownParagraph#0", text: text };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseMarkdownDocumentFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__off >= __len) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = tryRoles(state, [parseMarkdownLeafFast, parseMarkdownParagraphFast]); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      __cand = parseMarkdownLeaf(state);
+      if (__cand === null) { __cand = parseMarkdownParagraph(state); }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownDocument#0", children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownDocument#0", children: children };
 }
 
-function parseMarkdownLeafFast__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("######", __off))) { state.off = __off; throw new SyntaxError("expected " + "######" + " at position " + __off); }
-  __off += 6;
-  let text = '';
+function parseMarkdownLeaf__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 6;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#0", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#0", text: text };
 }
 
-function parseMarkdownLeafFast__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("#####", __off))) { state.off = __off; throw new SyntaxError("expected " + "#####" + " at position " + __off); }
-  __off += 5;
-  let text = '';
+function parseMarkdownLeaf__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#1", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#1", text: text };
 }
 
-function parseMarkdownLeafFast__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("####", __off))) { state.off = __off; throw new SyntaxError("expected " + "####" + " at position " + __off); }
-  __off += 4;
-  let text = '';
+function parseMarkdownLeaf__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#2", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#2", text: text };
 }
 
-function parseMarkdownLeafFast__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("###", __off))) { state.off = __off; throw new SyntaxError("expected " + "###" + " at position " + __off); }
-  __off += 3;
-  let text = '';
+function parseMarkdownLeaf__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#3", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#3", text: text };
 }
 
-function parseMarkdownLeafFast__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35 && __input.charCodeAt(__off + 1) === 35)) { state.off = __off; throw new SyntaxError("expected " + "##" + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt4(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#4", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#4", text: text };
 }
 
-function parseMarkdownLeafFast__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  let text = '';
+function parseMarkdownLeaf__alt5(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#5", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#5", text: text };
 }
 
-function parseMarkdownLeafFast__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  let text = '';
+function parseMarkdownLeaf__alt6(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#6", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#6", text: text };
 }
 
-function parseMarkdownLeafFast__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  let text = '';
+function parseMarkdownLeaf__alt7(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#7", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#7", text: text };
 }
 
-function parseMarkdownLeafFast__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt8(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#8" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#8" };
 }
 
-function parseMarkdownLeafFast__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt9(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#9" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#9" };
 }
 
-function parseMarkdownLeafFast__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt10(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#10" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#10" };
 }
 
-function parseMarkdownLeafFast__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("- [x]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [x]" + " at position " + __off); }
-  __off += 5;
-  let text = '';
+function parseMarkdownLeaf__alt11(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#11", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#11", text: text };
 }
 
-function parseMarkdownLeafFast__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("- [ ]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [ ]" + " at position " + __off); }
-  __off += 5;
-  let text = '';
+function parseMarkdownLeaf__alt12(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#12", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#12", text: text };
 }
 
-function parseMarkdownLeafFast__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt13(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#13", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#13", text: text };
 }
 
-function parseMarkdownLeafFast__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt14(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#14", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#14", text: text };
 }
 
-function parseMarkdownLeafFast__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt15(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#15", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#15", text: text };
 }
 
-function parseMarkdownLeafFast__alt16(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __index_s = __off;
-  let index;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __index_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  index = __input.slice(__index_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
-  __off += 1;
-  let text = '';
+function parseMarkdownLeaf__alt16(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __index_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __index_end = off;
+  const index = input.slice(__index_start, __index_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#16", index: index, text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#16", index: index, text: text };
 }
 
-function parseMarkdownLeafFast__alt17(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  let text = '';
+function parseMarkdownLeaf__alt17(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#17", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#17", text: text };
 }
 
-function parseMarkdownLeafFast__alt18(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __lang_s = __off;
-  let lang;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __lang_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __lang_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__lang_s) | 32) === 0x75
-        && (__input.charCodeAt(__lang_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__lang_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  lang = __input.slice(__lang_s, __off);
-  let body = '';
+function parseMarkdownLeaf__alt18(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __lang_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __lang_end = off;
+  const lang = input.slice(__lang_start, __lang_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
+    __body_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 96 && input.startsWith("```", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __body_start;
+    if (__lastNonWs === __body_start) {
+      off = __emptyAnchor;
       body = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      body = input.slice(__body_start, __lastNonWs);
     }
+    __body_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#18", lang: lang, body: body };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#18", lang: lang, body: body };
 }
 
-function parseMarkdownLeafFast__alt19(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```\n", __off))) { state.off = __off; throw new SyntaxError("expected " + "```\n" + " at position " + __off); }
-  __off += 4;
-  let body = '';
+function parseMarkdownLeaf__alt19(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
+    __body_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 96 && input.startsWith("```", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __body_start;
+    if (__lastNonWs === __body_start) {
+      off = __emptyAnchor;
       body = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      body = input.slice(__body_start, __lastNonWs);
     }
+    __body_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#19", body: body };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#19", body: body };
 }
 
-function parseMarkdownLeafFast__alt20(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt20(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 42 && __input.startsWith("**", __off))) break;
-      __off++;
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 42 && input.startsWith("**", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#20", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#20", text: text };
 }
 
-function parseMarkdownLeafFast__alt21(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  let text = '';
+function parseMarkdownLeaf__alt21(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 42) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#21", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#21", text: text };
 }
 
-function parseMarkdownLeafFast__alt22(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  let text = '';
+function parseMarkdownLeaf__alt22(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      __off++;
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 126 && input.startsWith("~~", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#22", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#22", text: text };
 }
 
-function parseMarkdownLeafFast__alt23(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  let text = '';
+function parseMarkdownLeaf__alt23(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 96) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#23", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#23", text: text };
 }
 
-function parseMarkdownLeafFast__alt24(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let label = '';
+function parseMarkdownLeaf__alt24(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let label: string = '';
+  let __label_start = off;
+  let __label_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __label_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __label_start;
+    if (__lastNonWs === __label_start) {
+      off = __emptyAnchor;
       label = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      label = input.slice(__label_start, __lastNonWs);
     }
+    __label_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let url = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 41) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
       url = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
     }
+    __url_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#24", label: label, url: url };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#24", label: label, url: url };
 }
 
-function parseMarkdownLeafFast__alt25(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let label = '';
+function parseMarkdownLeaf__alt25(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let label: string = '';
+  let __label_start = off;
+  let __label_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __label_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __label_start;
+    if (__lastNonWs === __label_start) {
+      off = __emptyAnchor;
       label = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      label = input.slice(__label_start, __lastNonWs);
     }
+    __label_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  let id = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
       id = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
     }
+    __id_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#25", label: label, id: id };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#25", label: label, id: id };
 }
 
-function parseMarkdownLeafFast__alt26(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let alt = '';
+function parseMarkdownLeaf__alt26(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let alt: string = '';
+  let __alt_start = off;
+  let __alt_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __alt_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __alt_start;
+    if (__lastNonWs === __alt_start) {
+      off = __emptyAnchor;
       alt = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      alt = input.slice(__alt_start, __lastNonWs);
     }
+    __alt_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let url = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 41) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
       url = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
     }
+    __url_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#26", alt: alt, url: url };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#26", alt: alt, url: url };
 }
 
-function parseMarkdownLeafFast__alt27(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let alt = '';
+function parseMarkdownLeaf__alt27(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let alt: string = '';
+  let __alt_start = off;
+  let __alt_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __alt_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __alt_start;
+    if (__lastNonWs === __alt_start) {
+      off = __emptyAnchor;
       alt = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      alt = input.slice(__alt_start, __lastNonWs);
     }
+    __alt_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  let id = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
       id = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
     }
+    __id_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#27", alt: alt, id: id };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#27", alt: alt, id: id };
 }
 
-function parseMarkdownLeafFast__alt28(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt28(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#28", name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 38)) { state.off = __off; throw new SyntaxError("expected " + "&" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 59)) { state.off = __off; throw new SyntaxError("expected " + ";" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#28", name: name };
 }
 
-function parseMarkdownLeafFast__alt29(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt29(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#29" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#29" };
 }
 
-function parseMarkdownLeafFast__alt30(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseMarkdownLeaf__alt30(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#30" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#30" };
 }
 
-function parseMarkdownLeafFast__alt31(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  let first = '';
+function parseMarkdownLeaf__alt31(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let first: string = '';
+  let __first_start = off;
+  let __first_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __first_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 124) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __first_start;
+    if (__lastNonWs === __first_start) {
+      off = __emptyAnchor;
       first = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    first = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      first = input.slice(__first_start, __lastNonWs);
     }
+    __first_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  let second = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let second: string = '';
+  let __second_start = off;
+  let __second_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __second_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 124) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __second_start;
+    if (__lastNonWs === __second_start) {
+      off = __emptyAnchor;
       second = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    second = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      second = input.slice(__second_start, __lastNonWs);
     }
+    __second_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#31", first: first, second: second };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#31", first: first, second: second };
 }
 
-function parseMarkdownLeafFast__alt32(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let id = '';
+function parseMarkdownLeaf__alt32(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
       id = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
     }
+    __id_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  let url = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
       url = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
     }
+    __url_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#32", id: id, url: url };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#32", id: id, url: url };
 }
 
-function parseMarkdownLeafFast__alt33(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  let id = '';
+function parseMarkdownLeaf__alt33(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
       id = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
     }
+    __id_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  let text = '';
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 10) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#33", id: id, text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownLeaf#33", id: id, text: text };
 }
 
-function parseMarkdownLeafFast__alt34(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  let id = '';
+function parseMarkdownLeaf__alt34(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 93) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
       id = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
     }
+    __id_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#34", id: id };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#34", id: id };
 }
 
-function parseMarkdownLeafFast__alt35(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "div" || __tag_lc === "span" || __tag_lc === "p" || __tag_lc === "pre" || __tag_lc === "code" || __tag_lc === "blockquote" || __tag_lc === "a" || __tag_lc === "img" || __tag_lc === "br" || __tag_lc === "hr" || __tag_lc === "ul" || __tag_lc === "ol" || __tag_lc === "li" || __tag_lc === "dl" || __tag_lc === "dt" || __tag_lc === "dd" || __tag_lc === "table" || __tag_lc === "thead" || __tag_lc === "tbody" || __tag_lc === "tfoot" || __tag_lc === "tr" || __tag_lc === "td" || __tag_lc === "th" || __tag_lc === "caption" || __tag_lc === "figure" || __tag_lc === "figcaption" || __tag_lc === "section" || __tag_lc === "article" || __tag_lc === "header" || __tag_lc === "footer" || __tag_lc === "nav" || __tag_lc === "aside" || __tag_lc === "main" || __tag_lc === "address" || __tag_lc === "details" || __tag_lc === "summary" || __tag_lc === "h1" || __tag_lc === "h2" || __tag_lc === "h3" || __tag_lc === "h4" || __tag_lc === "h5" || __tag_lc === "h6" || __tag_lc === "em" || __tag_lc === "strong" || __tag_lc === "i" || __tag_lc === "b" || __tag_lc === "u" || __tag_lc === "s" || __tag_lc === "small" || __tag_lc === "sub" || __tag_lc === "sup" || __tag_lc === "kbd" || __tag_lc === "var" || __tag_lc === "samp" || __tag_lc === "cite" || __tag_lc === "q" || __tag_lc === "dfn" || __tag_lc === "abbr" || __tag_lc === "time" || __tag_lc === "mark" || __tag_lc === "ruby" || __tag_lc === "rt" || __tag_lc === "rp" || __tag_lc === "bdi" || __tag_lc === "bdo" || __tag_lc === "wbr" || __tag_lc === "form" || __tag_lc === "input" || __tag_lc === "button" || __tag_lc === "select" || __tag_lc === "option" || __tag_lc === "optgroup" || __tag_lc === "textarea" || __tag_lc === "label" || __tag_lc === "fieldset" || __tag_lc === "legend" || __tag_lc === "datalist" || __tag_lc === "output" || __tag_lc === "progress" || __tag_lc === "meter" || __tag_lc === "video" || __tag_lc === "audio" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "canvas" || __tag_lc === "svg" || __tag_lc === "math" || __tag_lc === "iframe" || __tag_lc === "embed" || __tag_lc === "object" || __tag_lc === "param" || __tag_lc === "picture" || __tag_lc === "script" || __tag_lc === "style" || __tag_lc === "noscript" || __tag_lc === "template" || __tag_lc === "html" || __tag_lc === "head" || __tag_lc === "body" || __tag_lc === "title" || __tag_lc === "meta" || __tag_lc === "link" || __tag_lc === "base")) { state.off = __off; throw new SyntaxError("expected one of div, span, p, pre, code, blockquote, a, img, br, hr, ul, ol, li, dl, dt, dd, table, thead, tbody, tfoot, tr, td, th, caption, figure, figcaption, section, article, header, footer, nav, aside, main, address, details, summary, h1, h2, h3, h4, h5, h6, em, strong, i, b, u, s, small, sub, sup, kbd, var, samp, cite, q, dfn, abbr, time, mark, ruby, rt, rp, bdi, bdo, wbr, form, input, button, select, option, optgroup, textarea, label, fieldset, legend, datalist, output, progress, meter, video, audio, source, track, canvas, svg, math, iframe, embed, object, param, picture, script, style, noscript, template, html, head, body, title, meta, link, base at position " + __tag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let body = '';
+function parseMarkdownLeaf__alt35(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
   {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    __body_start = off;
+    let __earliest = len;
+    for (let __i = __body_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
-    __off = __earliest;
-    body = __input.slice(__startOff, __earliest);
+    off = __earliest;
+    __body_end = off;
+    body = input.slice(__body_start, __body_end);
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closingTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closingTag_end = off;
+  const closingTag = input.slice(__closingTag_start, __closingTag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closingTag_s = __off;
-  let closingTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closingTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closingTag = __input.slice(__closingTag_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
 }
 
-function parseMarkdownLeafFast__alt36(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  let url = '';
+function parseMarkdownLeaf__alt36(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__c === 62) break;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
       url = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
     }
+    __url_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownLeaf#36", url: url };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "MarkdownLeaf#36", url: url };
 }
 
-function parseMarkdownLeafFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    if (__input.startsWith("######", __peek)) {
-      return parseMarkdownLeafFast__alt0(state);
-    }
-    else if (__input.startsWith("#####", __peek)) {
-      return parseMarkdownLeafFast__alt1(state);
-    }
-    else if (__input.startsWith("####", __peek)) {
-      return parseMarkdownLeafFast__alt2(state);
-    }
-    else if (__input.startsWith("###", __peek)) {
-      return parseMarkdownLeafFast__alt3(state);
-    }
-    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-      return parseMarkdownLeafFast__alt4(state);
-    }
-    else {
-      return parseMarkdownLeafFast__alt5(state);
-    }
-  } else if (__byte0 === 45) {
-    if (__input.startsWith("- [x]", __peek)) {
-      return parseMarkdownLeafFast__alt11(state);
-    }
-    else if (__input.startsWith("- [ ]", __peek)) {
-      return parseMarkdownLeafFast__alt12(state);
-    }
-    else if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeafFast__alt10(state);
-    }
-    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt15(state);
-    }
-  } else if (__byte0 === 96) {
-    if (__input.startsWith("```\n", __peek)) {
-      return parseMarkdownLeafFast__alt19(state);
-    }
-    else if (__input.startsWith("```", __peek)) {
-      return parseMarkdownLeafFast__alt18(state);
-    }
-    else {
-      return parseMarkdownLeafFast__alt23(state);
-    }
-  } else if (__byte0 === 42) {
-    if (__input.startsWith("***", __peek)) {
-      return parseMarkdownLeafFast__alt8(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt14(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-      return parseMarkdownLeafFast__alt20(state);
-    }
-    else {
-      return parseMarkdownLeafFast__alt21(state);
-    }
-  } else if (__byte0 === 95) {
-    if (__input.startsWith("___", __peek)) {
-      return parseMarkdownLeafFast__alt9(state);
-    }
-  } else if (__byte0 === 43) {
-    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return parseMarkdownLeafFast__alt13(state);
-    }
-  } else if (__byte0 === 126) {
-    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-      return parseMarkdownLeafFast__alt22(state);
-    }
-  } else if (__byte0 === 91) {
-    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-      state.off = __peek;
-      { const r = trySpeculate(state, parseMarkdownLeafFast__alt33); if (r !== null) return r; }
-      return parseMarkdownLeafFast__alt34(state);
-    }
-    else {
-      state.off = __peek;
-      { const r = trySpeculate(state, parseMarkdownLeafFast__alt24); if (r !== null) return r; }
-      { const r = trySpeculate(state, parseMarkdownLeafFast__alt25); if (r !== null) return r; }
-      return parseMarkdownLeafFast__alt32(state);
-    }
-  } else if (__byte0 === 62) {
-    return parseMarkdownLeafFast__alt17(state);
-  } else if (__byte0 === 33) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseMarkdownLeafFast__alt26); if (r !== null) return r; }
-    return parseMarkdownLeafFast__alt27(state);
-  } else if (__byte0 === 38) {
-    return parseMarkdownLeafFast__alt28(state);
-  } else if (__byte0 === 124) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 124)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.startsWith("---", __peek)) {
-      return parseMarkdownLeafFast__alt29(state);
-    }
-    if (__input.charCodeAt(__peek) === 58) {
-      return parseMarkdownLeafFast__alt30(state);
-    }
-    return parseMarkdownLeafFast__alt31(state);
-  } else if (__byte0 === 60) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseMarkdownLeafFast__alt36(state);
-    {
-      const __identStart = __peek;
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      const __tagOrig = __input.slice(__identStart, __peek);
-      const __ident = __tagOrig.toLowerCase();
-      if (__ident === "div") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "span") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "p") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "pre") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "code") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "blockquote") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "a") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "img") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "br") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "hr") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ul") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ol") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "li") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dl") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dt") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dd") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "table") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "thead") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tbody") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tfoot") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tr") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "td") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "th") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "caption") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "figure") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "figcaption") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "section") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "article") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "header") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "footer") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "nav") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "aside") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "main") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "address") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "details") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "summary") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h1") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h2") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h3") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h4") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h5") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h6") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "em") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "strong") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "i") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "b") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "u") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "s") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "small") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "sub") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "sup") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "kbd") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "var") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "samp") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "cite") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "q") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dfn") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "abbr") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "time") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "mark") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ruby") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "rt") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "rp") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "bdi") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "bdo") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "wbr") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "form") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "input") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "button") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "select") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "option") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "optgroup") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "textarea") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "label") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "fieldset") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "legend") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "datalist") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "output") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "progress") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "meter") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "video") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "audio") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "source") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "track") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "canvas") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "svg") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "math") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "iframe") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "embed") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "object") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "param") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "picture") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "script") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "style") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "noscript") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "template") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "html") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "head") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "body") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "title") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "meta") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "link") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "base") {
-      state.off = __peek; return parseMarkdownLeafFast__alt35__body(state, __tagOrig);
-    }
-      return parseMarkdownLeafFast__alt36(state);
-    }
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-    return parseMarkdownLeafFast__alt16(state);
-  }
-  { state.off = __peek; const r = parseMarkdownLeafFast__alt6(state); if (r !== null) return r; }
-  { state.off = __peek; const r = parseMarkdownLeafFast__alt7(state); if (r !== null) return r; }
-  state.off = __peek;
-  throw new SyntaxError('no production matched at position ' + __peek);
+function parseMarkdownLeaf(state: State): unknown {
+  { const r = parseMarkdownLeaf__alt0(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt1(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt2(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt3(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt4(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt5(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt6(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt7(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt8(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt9(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt10(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt11(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt12(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt13(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt14(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt15(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt16(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt17(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt18(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt19(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt20(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt21(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt22(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt23(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt24(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt25(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt26(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt27(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt28(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt29(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt30(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt31(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt32(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt33(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt34(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt35(state); if (r !== null) return r; }
+  return parseMarkdownLeaf__alt36(state);
 }
 
-function parseMarkdownParagraphFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let text = '';
+function parseMarkdownParagraph(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
+    __text_start = off;
+    let __lastNonWs = off;
     let __c2 = -1;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
-      __off++;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 10 && ((__c2 = off + 1 < len ? input.charCodeAt(off + 1) : -1), ((__c2 === 96 && (input.startsWith("\n```", off))) || (__c2 === 45 && (input.startsWith("\n---", off) || input.startsWith("\n- ", off) || input.startsWith("\n-\n", off))) || (__c2 === 42 && (input.startsWith("\n***", off) || input.startsWith("\n* ", off))) || (__c2 === 95 && (input.startsWith("\n___", off))) || (__c2 === 61 && (input.startsWith("\n===", off))) || (__c2 === 43 && (input.startsWith("\n+ ", off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
       text = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
     }
+    __text_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "MarkdownParagraph#0", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "MarkdownParagraph#0", text: text };
-}
-
-function validateMarkdownDocument(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __count_children = 0;
-  while (!(__off >= __len)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; tryRoles(state, [validateMarkdownLeaf, validateMarkdownParagraph]); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("######", __off))) { state.off = __off; throw new SyntaxError("expected " + "######" + " at position " + __off); }
-  __off += 6;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("#####", __off))) { state.off = __off; throw new SyntaxError("expected " + "#####" + " at position " + __off); }
-  __off += 5;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("####", __off))) { state.off = __off; throw new SyntaxError("expected " + "####" + " at position " + __off); }
-  __off += 4;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("###", __off))) { state.off = __off; throw new SyntaxError("expected " + "###" + " at position " + __off); }
-  __off += 3;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35 && __input.charCodeAt(__off + 1) === 35)) { state.off = __off; throw new SyntaxError("expected " + "##" + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("===", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  const __softStart = state.off;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { { state.off = __softStart; return null; } }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("***", __off))) { state.off = __off; throw new SyntaxError("expected " + "***" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("___", __off))) { state.off = __off; throw new SyntaxError("expected " + "___" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("- [x]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [x]" + " at position " + __off); }
-  __off += 5;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("- [ ]", __off))) { state.off = __off; throw new SyntaxError("expected " + "- [ ]" + " at position " + __off); }
-  __off += 5;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 43 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "+ " + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "* " + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 45 && __input.charCodeAt(__off + 1) === 32)) { state.off = __off; throw new SyntaxError("expected " + "- " + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt16(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __index_s = __off;
-
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __index_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 46)) { state.off = __off; throw new SyntaxError("expected " + "." + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt17(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt18(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __lang_s = __off;
-
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __lang_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __lang_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__lang_s) | 32) === 0x75
-        && (__input.charCodeAt(__lang_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__lang_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-
-  let body = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      body = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt19(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```\n", __off))) { state.off = __off; throw new SyntaxError("expected " + "```\n" + " at position " + __off); }
-  __off += 4;
-  let body = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 96 && __input.startsWith("```", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      body = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    body = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("```", __off))) { state.off = __off; throw new SyntaxError("expected " + "```" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt20(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 42 && __input.startsWith("**", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42 && __input.charCodeAt(__off + 1) === 42)) { state.off = __off; throw new SyntaxError("expected " + "**" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt21(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 42) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 42)) { state.off = __off; throw new SyntaxError("expected " + "*" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt22(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 126 && __input.startsWith("~~", __off))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 126 && __input.charCodeAt(__off + 1) === 126)) { state.off = __off; throw new SyntaxError("expected " + "~~" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt23(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 96) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 96)) { state.off = __off; throw new SyntaxError("expected " + "`" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt24(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let label = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      label = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 41) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt25(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let label = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      label = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    label = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt26(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let alt = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      alt = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 41) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt27(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 33)) { state.off = __off; throw new SyntaxError("expected " + "!" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let alt = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      alt = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    alt = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93 && __input.charCodeAt(__off + 1) === 91)) { state.off = __off; throw new SyntaxError("expected " + "][" + " at position " + __off); }
-  __off += 2;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt28(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 38)) { state.off = __off; throw new SyntaxError("expected " + "&" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 59)) { state.off = __off; throw new SyntaxError("expected " + ";" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt29(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt30(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("---", __off))) { state.off = __off; throw new SyntaxError("expected " + "---" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt31(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  let first = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 124) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      first = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    first = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  let second = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 124) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      second = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    second = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 124)) { state.off = __off; throw new SyntaxError("expected " + "|" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt32(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91)) { state.off = __off; throw new SyntaxError("expected " + "[" + " at position " + __off); }
-  __off += 1;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt33(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 58)) { state.off = __off; throw new SyntaxError("expected " + ":" + " at position " + __off); }
-  __off += 1;
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 10) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt34(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 91 && __input.charCodeAt(__off + 1) === 94)) { state.off = __off; throw new SyntaxError("expected " + "[^" + " at position " + __off); }
-  __off += 2;
-  let id = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 93) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      id = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    id = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 93)) { state.off = __off; throw new SyntaxError("expected " + "]" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt35(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "div" || __tag_lc === "span" || __tag_lc === "p" || __tag_lc === "pre" || __tag_lc === "code" || __tag_lc === "blockquote" || __tag_lc === "a" || __tag_lc === "img" || __tag_lc === "br" || __tag_lc === "hr" || __tag_lc === "ul" || __tag_lc === "ol" || __tag_lc === "li" || __tag_lc === "dl" || __tag_lc === "dt" || __tag_lc === "dd" || __tag_lc === "table" || __tag_lc === "thead" || __tag_lc === "tbody" || __tag_lc === "tfoot" || __tag_lc === "tr" || __tag_lc === "td" || __tag_lc === "th" || __tag_lc === "caption" || __tag_lc === "figure" || __tag_lc === "figcaption" || __tag_lc === "section" || __tag_lc === "article" || __tag_lc === "header" || __tag_lc === "footer" || __tag_lc === "nav" || __tag_lc === "aside" || __tag_lc === "main" || __tag_lc === "address" || __tag_lc === "details" || __tag_lc === "summary" || __tag_lc === "h1" || __tag_lc === "h2" || __tag_lc === "h3" || __tag_lc === "h4" || __tag_lc === "h5" || __tag_lc === "h6" || __tag_lc === "em" || __tag_lc === "strong" || __tag_lc === "i" || __tag_lc === "b" || __tag_lc === "u" || __tag_lc === "s" || __tag_lc === "small" || __tag_lc === "sub" || __tag_lc === "sup" || __tag_lc === "kbd" || __tag_lc === "var" || __tag_lc === "samp" || __tag_lc === "cite" || __tag_lc === "q" || __tag_lc === "dfn" || __tag_lc === "abbr" || __tag_lc === "time" || __tag_lc === "mark" || __tag_lc === "ruby" || __tag_lc === "rt" || __tag_lc === "rp" || __tag_lc === "bdi" || __tag_lc === "bdo" || __tag_lc === "wbr" || __tag_lc === "form" || __tag_lc === "input" || __tag_lc === "button" || __tag_lc === "select" || __tag_lc === "option" || __tag_lc === "optgroup" || __tag_lc === "textarea" || __tag_lc === "label" || __tag_lc === "fieldset" || __tag_lc === "legend" || __tag_lc === "datalist" || __tag_lc === "output" || __tag_lc === "progress" || __tag_lc === "meter" || __tag_lc === "video" || __tag_lc === "audio" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "canvas" || __tag_lc === "svg" || __tag_lc === "math" || __tag_lc === "iframe" || __tag_lc === "embed" || __tag_lc === "object" || __tag_lc === "param" || __tag_lc === "picture" || __tag_lc === "script" || __tag_lc === "style" || __tag_lc === "noscript" || __tag_lc === "template" || __tag_lc === "html" || __tag_lc === "head" || __tag_lc === "body" || __tag_lc === "title" || __tag_lc === "meta" || __tag_lc === "link" || __tag_lc === "base")) { state.off = __off; throw new SyntaxError("expected one of div, span, p, pre, code, blockquote, a, img, br, hr, ul, ol, li, dl, dt, dd, table, thead, tbody, tfoot, tr, td, th, caption, figure, figcaption, section, article, header, footer, nav, aside, main, address, details, summary, h1, h2, h3, h4, h5, h6, em, strong, i, b, u, s, small, sub, sup, kbd, var, samp, cite, q, dfn, abbr, time, mark, ruby, rt, rp, bdi, bdo, wbr, form, input, button, select, option, optgroup, textarea, label, fieldset, legend, datalist, output, progress, meter, video, audio, source, track, canvas, svg, math, iframe, embed, object, param, picture, script, style, noscript, template, html, head, body, title, meta, link, base at position " + __tag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let body = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    body = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closingTag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closingTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf__alt36(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  let url = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 62) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      url = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    url = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateMarkdownLeaf(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    if (__input.startsWith("######", __peek)) {
-      return validateMarkdownLeaf__alt0(state);
-    }
-    else if (__input.startsWith("#####", __peek)) {
-      return validateMarkdownLeaf__alt1(state);
-    }
-    else if (__input.startsWith("####", __peek)) {
-      return validateMarkdownLeaf__alt2(state);
-    }
-    else if (__input.startsWith("###", __peek)) {
-      return validateMarkdownLeaf__alt3(state);
-    }
-    else if (__input.charCodeAt(__peek) === 35 && __input.charCodeAt(__peek + 1) === 35) {
-      return validateMarkdownLeaf__alt4(state);
-    }
-    else {
-      return validateMarkdownLeaf__alt5(state);
-    }
-  } else if (__byte0 === 45) {
-    if (__input.startsWith("- [x]", __peek)) {
-      return validateMarkdownLeaf__alt11(state);
-    }
-    else if (__input.startsWith("- [ ]", __peek)) {
-      return validateMarkdownLeaf__alt12(state);
-    }
-    else if (__input.startsWith("---", __peek)) {
-      return validateMarkdownLeaf__alt10(state);
-    }
-    else if (__input.charCodeAt(__peek) === 45 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt15(state);
-    }
-  } else if (__byte0 === 96) {
-    if (__input.startsWith("```\n", __peek)) {
-      return validateMarkdownLeaf__alt19(state);
-    }
-    else if (__input.startsWith("```", __peek)) {
-      return validateMarkdownLeaf__alt18(state);
-    }
-    else {
-      return validateMarkdownLeaf__alt23(state);
-    }
-  } else if (__byte0 === 42) {
-    if (__input.startsWith("***", __peek)) {
-      return validateMarkdownLeaf__alt8(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt14(state);
-    }
-    else if (__input.charCodeAt(__peek) === 42 && __input.charCodeAt(__peek + 1) === 42) {
-      return validateMarkdownLeaf__alt20(state);
-    }
-    else {
-      return validateMarkdownLeaf__alt21(state);
-    }
-  } else if (__byte0 === 95) {
-    if (__input.startsWith("___", __peek)) {
-      return validateMarkdownLeaf__alt9(state);
-    }
-  } else if (__byte0 === 43) {
-    if (__input.charCodeAt(__peek) === 43 && __input.charCodeAt(__peek + 1) === 32) {
-      return validateMarkdownLeaf__alt13(state);
-    }
-  } else if (__byte0 === 126) {
-    if (__input.charCodeAt(__peek) === 126 && __input.charCodeAt(__peek + 1) === 126) {
-      return validateMarkdownLeaf__alt22(state);
-    }
-  } else if (__byte0 === 91) {
-    if (__input.charCodeAt(__peek) === 91 && __input.charCodeAt(__peek + 1) === 94) {
-      state.off = __peek;
-      { const r = trySpeculate(state, validateMarkdownLeaf__alt33); if (r !== null) return r; }
-      return validateMarkdownLeaf__alt34(state);
-    }
-    else {
-      state.off = __peek;
-      { const r = trySpeculate(state, validateMarkdownLeaf__alt24); if (r !== null) return r; }
-      { const r = trySpeculate(state, validateMarkdownLeaf__alt25); if (r !== null) return r; }
-      return validateMarkdownLeaf__alt32(state);
-    }
-  } else if (__byte0 === 62) {
-    return validateMarkdownLeaf__alt17(state);
-  } else if (__byte0 === 33) {
-    state.off = __peek;
-    { const r = trySpeculate(state, validateMarkdownLeaf__alt26); if (r !== null) return r; }
-    return validateMarkdownLeaf__alt27(state);
-  } else if (__byte0 === 38) {
-    return validateMarkdownLeaf__alt28(state);
-  } else if (__byte0 === 124) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 124)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.startsWith("---", __peek)) {
-      return validateMarkdownLeaf__alt29(state);
-    }
-    if (__input.charCodeAt(__peek) === 58) {
-      return validateMarkdownLeaf__alt30(state);
-    }
-    return validateMarkdownLeaf__alt31(state);
-  } else if (__byte0 === 60) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return validateMarkdownLeaf__alt36(state);
-    {
-      const __identStart = __peek;
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      const __tagOrig = __input.slice(__identStart, __peek);
-      const __ident = __tagOrig.toLowerCase();
-      if (__ident === "div") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "span") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "p") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "pre") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "code") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "blockquote") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "a") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "img") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "br") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "hr") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ul") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ol") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "li") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dl") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dt") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dd") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "table") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "thead") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tbody") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tfoot") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "tr") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "td") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "th") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "caption") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "figure") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "figcaption") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "section") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "article") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "header") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "footer") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "nav") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "aside") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "main") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "address") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "details") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "summary") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h1") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h2") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h3") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h4") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h5") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "h6") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "em") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "strong") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "i") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "b") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "u") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "s") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "small") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "sub") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "sup") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "kbd") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "var") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "samp") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "cite") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "q") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "dfn") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "abbr") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "time") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "mark") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "ruby") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "rt") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "rp") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "bdi") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "bdo") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "wbr") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "form") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "input") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "button") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "select") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "option") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "optgroup") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "textarea") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "label") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "fieldset") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "legend") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "datalist") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "output") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "progress") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "meter") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "video") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "audio") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "source") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "track") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "canvas") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "svg") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "math") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "iframe") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "embed") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "object") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "param") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "picture") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "script") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "style") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "noscript") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "template") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "html") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "head") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "body") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "title") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "meta") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "link") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      if (__ident === "base") {
-      state.off = __peek; return validateMarkdownLeaf__alt35__body(state, __tagOrig);
-    }
-      return validateMarkdownLeaf__alt36(state);
-    }
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-    return validateMarkdownLeaf__alt16(state);
-  }
-  { state.off = __peek; const r = validateMarkdownLeaf__alt6(state); if (r !== null) return r; }
-  { state.off = __peek; const r = validateMarkdownLeaf__alt7(state); if (r !== null) return r; }
-  state.off = __peek;
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function validateMarkdownParagraph(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let text = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __c2 = -1;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if ((__c === 10 && ((__c2 = __off + 1 < __len ? __input.charCodeAt(__off + 1) : -1), ((__c2 === 96 && (__input.startsWith("\n```", __off))) || (__c2 === 45 && (__input.startsWith("\n---", __off) || __input.startsWith("\n- ", __off) || __input.startsWith("\n-\n", __off))) || (__c2 === 42 && (__input.startsWith("\n***", __off) || __input.startsWith("\n* ", __off))) || (__c2 === 95 && (__input.startsWith("\n___", __off))) || (__c2 === 61 && (__input.startsWith("\n===", __off))) || (__c2 === 43 && (__input.startsWith("\n+ ", __off))) || __c2 === 10 || __c2 === 35 || __c2 === 62 || __c2 === 124 || __c2 === 91)))) break;
-      __off++;
-    }
-    let __lastNonWs = __off;
-    while (__lastNonWs > __startOff) {
-      const __tc = __input.charCodeAt(__lastNonWs - 1);
-      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
-      __lastNonWs--;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      text = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    text = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function parseMarkdownLeafFast__alt35__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let body = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    body = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closingTag_s = __off;
-  let closingTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closingTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closingTag = __input.slice(__closingTag_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "MarkdownLeaf#35", tag: __pre_tag, body: body, closingTag: closingTag };
-}
-
-function validateMarkdownLeaf__alt35__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let body = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    body = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closingTag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closingTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
 }
 
 const __defaultTarget: string | undefined = undefined;
@@ -14177,59 +5845,37 @@ export function stringify(value: unknown, options?: { type?: string }): string {
 
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode,
-    lineStarts,
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
+    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
   };
-  try {
-    const result = mode === 'raws' ? parseMarkdownDocument(state) : parseMarkdownDocumentFast(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-    return result;
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseMarkdownDocument(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
+  return result;
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  if (options?.validate === true && false) {
-    __parse(input, options);
-    return;
-  }
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode: 'fast',
     lineStarts: [],
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
   };
-  try {
-    validateMarkdownDocument(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseMarkdownDocument(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
 }
 
-// Attach package identity so another package's validation metadata can refer
-// to this generated validator while codegen still emits static imports.
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
   module: "@parser2/markdown",
   exportName: 'validate',
 };
-

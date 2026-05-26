@@ -835,3 +835,33 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   const result2 = __parse('p: { a; b; c; };') as { prop: string; value: string };
   assert.equal(result2.value, '{ a; b; c; }');
 });
+
+test('v2 inter-span ws skip also skips /* */ comments when schema declares comment token', async () => {
+  // Repro for css `between.css` / `prop.css` / `semicolons.css`:
+  // Between two spans of the SAME production, v1's emit skips both whitespace
+  // and `/* */` comments. v2 only skipped ws, so a comment between a captured
+  // selector and its `{` left `off` parked on `/`, failing the literal match.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Rule',
+    tokens: ['comment'],
+    examples: [
+      ex('a { }').as('Rule')
+        .span('selector', 'a').until(['{', ';'])
+        .span('{')
+        .span('}')
+        .render('ast', { selector: $.selector })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  // No comments: baseline.
+  assert.deepEqual(__parse('a {}'), { selector: 'a' });
+  // Trailing /* */ comment between selector trim boundary and `{` must be
+  // consumed by the inter-span skip.
+  assert.deepEqual(__parse('a/**/{}'), { selector: 'a' });
+  assert.deepEqual(__parse('a /* note */ {}'), { selector: 'a' });
+  assert.deepEqual(__parse('a/**/\n{}'), { selector: 'a' });
+});

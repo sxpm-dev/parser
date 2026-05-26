@@ -1,18 +1,9 @@
 // Auto-generated from packages/html/src/schema.ts
 // Do not edit by hand. Re-run `npm run generate` to refresh.
+// (v2 scannerless emit — see docs/scannerless-emit-v2.md)
 /* eslint-disable */
 // @ts-nocheck
 
-
-
-type State = {
-  readonly input: string;
-  off: number;
-  readonly mode: ParseMode;
-  readonly lineStarts: number[];
-  __lastCaptureStart: number;
-  __lastCaptureEnd: number;
-};
 
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
@@ -23,6 +14,15 @@ export type ParseOptions = {
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
 type SourceRange = { readonly start: SourcePos; readonly end: SourcePos };
 
+type State = {
+  readonly input: string;
+  readonly len: number;
+  pos: number;
+  maxOff: number;
+  readonly mode: ParseMode;
+  readonly lineStarts: number[];
+};
+
 function computeLineStarts(input: string): number[] {
   const starts = [0];
   for (let i = 0; i < input.length; i++) {
@@ -31,7 +31,7 @@ function computeLineStarts(input: string): number[] {
   return starts;
 }
 
-function offsetToPos(state: State, offset: number): SourcePos {
+function posAt(state: State, offset: number): SourcePos {
   const starts = state.lineStarts;
   let lo = 0, hi = starts.length - 1;
   while (lo < hi) {
@@ -42,10616 +42,1737 @@ function offsetToPos(state: State, offset: number): SourcePos {
 }
 
 function makeSource(state: State, startOff: number, endOff: number): SourceRange {
-  const start = offsetToPos(state, startOff);
+  const start = posAt(state, startOff);
   const end = endOff > startOff
-    ? { ...offsetToPos(state, endOff - 1), offset: endOff }
-    : { ...offsetToPos(state, startOff), offset: endOff };
+    ? { ...posAt(state, endOff - 1), offset: endOff }
+    : { ...posAt(state, startOff), offset: endOff };
   return { start, end };
 }
 
-function isAsciiWs(c: number): boolean {
+function isWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
 
-function isDigit(c: number): boolean {
-  return c >= 48 && c <= 57;
-}
-
+function isDigit(c: number): boolean { return c >= 48 && c <= 57; }
 function isHexDigit(c: number): boolean {
   return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
 }
-
 function isCssIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
 }
-
 function isCssIdentPart(c: number): boolean {
   return isCssIdentStart(c) || (c >= 48 && c <= 57);
 }
-
 function isJsIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36;
 }
-
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
-// Skip whitespace. Always emitted; called between every span where
-// whitespace is allowed (default for whitespace: 'standard' schemas).
-function skipWs(state: State): void {
-  const input = state.input;
-  const len = input.length;
-  let off = state.off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    break;
-  }
-  state.off = off;
-}
-
-function isHexString(value: string): boolean {
-  if (value.length === 0) return false;
-  for (let i = 0; i < value.length; i++) {
-    if (!isHexDigit(value.charCodeAt(i))) return false;
-  }
-  return true;
-}
-
-// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
-// .text and the leading/trailing whitespace inside the comment in raws.
-function commentInterior(text: string): string {
-  return text.slice(2, -2).trim();
-}
-
-function commentLeft(raw: string): string {
-  const inner = raw.slice(2, -2);
-  const match = inner.match(/^\s*/);
-  return match ? match[0] : '';
-}
-
-function commentRight(raw: string): string {
-  const inner = raw.slice(2, -2);
-  if (inner.trim() === '') return '';
-  const match = inner.match(/\s*$/);
-  return match ? match[0] : '';
-}
-
-// Speculate: try fn; on throw rewind state.off and return null. Used for
-// .optional() recursive spans and multi-role dispatch.
-function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
-  const start = state.off;
-  try {
-    return fn(state);
-  } catch {
-    state.off = start;
-    return null;
-  }
-}
-
-function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  let lastError: unknown;
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new SyntaxError('no role matched');
-}
-
-function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch {
-      // try next
-    }
-  }
-  state.off = start;
-  return null;
-}
-
-// Attach raws.before to a parsed child. Used in raws mode for repeated
-// children — the body loop knows where the previous sibling ended (or where
-// the body's opening token ended for the first child); raws.before is the
-// source slice from that point up to this child's source.start.offset.
-function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
-  if (!child || typeof child !== 'object') return;
-  const node = child as { raws?: Record<string, unknown>; source?: { start?: { offset?: number } } };
-  const childStart = node.source?.start?.offset;
-  if (typeof childStart !== 'number') return;
-  if (!node.raws) node.raws = {};
-  const slice = state.input.slice(prevEnd, childStart);
-  if (prevEnd === 0 && /^\s*$/.test(slice)) {
-    node.raws.before = '';
-  } else {
-    node.raws.before = slice;
-  }
-}
-
-function decorateSyntaxError(input: string, error: unknown, state?: State): never {
-  if (!(error instanceof SyntaxError)) throw error;
-  if (hasSourceFrame(error.message)) throw error;
-  const messageOffset = offsetFromMessage(error.message, -1);
-  const offset = messageOffset >= 0
-    ? messageOffset
-    : state !== undefined
-    ? state.off
-    : offsetFromMessage(error.message, input.length);
-  throw syntaxErrorWithFrame(input, error.message, offset);
-}
-
-function syntaxErrorWithFrame(input: string, message: string, offset: number): SyntaxError {
-  const cleanMessage = stripPositionSuffix(message);
+function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
-  while (lineStart > 0) {
-    const c = input.charCodeAt(lineStart - 1);
-    if (c === 0x0a || c === 0x0d) break;
-    lineStart--;
-  }
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
   let lineEnd = offset;
-  while (lineEnd < input.length) {
-    const c = input.charCodeAt(lineEnd);
-    if (c === 0x0a || c === 0x0d) break;
-    lineEnd++;
-  }
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
   let line = 1;
   for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`${cleanMessage} at position ${offset}
+  return new SyntaxError(`parse failed at position ${offset}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
-function stripPositionSuffix(message: string): string {
-  const marker = ' at position ';
-  const index = message.lastIndexOf(marker);
-  if (index < 0) return message;
-  let pos = index + marker.length;
-  if (pos >= message.length) return message;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) return message;
-    pos++;
-  }
-  return message.slice(0, index);
-}
-
-function hasSourceFrame(message: string): boolean {
-  return message.includes('\n') && message.includes(' | ');
-}
-
-function offsetFromMessage(message: string, fallback: number): number {
-  const marker = 'position ';
-  const index = message.indexOf(marker);
-  if (index < 0) return fallback;
-  let pos = index + marker.length;
-  let value = 0;
-  let found = false;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
-    found = true;
-    value = value * 10 + c - 48;
-    pos++;
-  }
-  return found ? value : fallback;
-}
-
 function parseHtmlDocument(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
   const children: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__off >= __len) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_0(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlDocument#0", children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseDoctype__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Doctype#0", keyword: keyword, name: name };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseDoctype__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Doctype#1", keyword: keyword, name: name };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseDoctype(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return parseDoctype__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, parseDoctype__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
-  }
-}
-
-function parseComment(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.startsWith("<!--", __off))) { state.off = __off; throw new SyntaxError("expected " + "<!--" + " at position " + __off); }
-  __off += 4;
-  __consumedEnd = __off;
-  let data = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    const __loopStart = off;
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
       }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      data = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    data = __input.slice(__startOff, __lastNonWs);
-    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlDocument#0", children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("-->", __off))) { state.off = __off; throw new SyntaxError("expected " + "-->" + " at position " + __off); }
-  __off += 3;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Comment#0", data: data };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let children = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
-    children = __input.slice(__startOff, __earliest);
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  const __closeTag_lc = closeTag.toLowerCase();
-  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#0", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#1", tag: tag, attrs: attrs };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#2", tag: tag, attrs: attrs };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</li>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
-      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_1(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#4", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</dt>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_2(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#5", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tr>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_3(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#6", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</td>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_4(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#7", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</p>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
-      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
-      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
-      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
-      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
-      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
-      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
-      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_5(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#8", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</option>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_6(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#9", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</html>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_7(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#10", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</head>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_8(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#11", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tbody>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_9(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#12", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</thead>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_10(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#13", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tfoot>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_11(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#14", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</body>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_12(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#15", tag: tag, attrs: attrs, children: children };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __children_startOff = __off;
-  let __prevEnd_children = __children_startOff;
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_13(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_children);
-    children.push(__child);
-    if (__off === __before) break;
-    __prevEnd_children = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_children;
-  }
-  __consumedEnd = __prevEnd_children;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#16", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek += 1;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseHtmlElement__valid__alt15(state);
-  {
-    const __identStart = __peek;
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-    const __ident = __input.slice(__identStart, __peek).toLowerCase();
-    if (__ident === "script") {
-    return parseHtmlElement__valid__alt0(state);
-  }
-    if (__ident === "style") {
-    return parseHtmlElement__valid__alt0(state);
-  }
-    if (__ident === "textarea") {
-    return parseHtmlElement__valid__alt0(state);
-  }
-    if (__ident === "title") {
-    return parseHtmlElement__valid__alt0(state);
-  }
-    if (__ident === "area") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "base") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "br") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "col") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "embed") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "hr") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "img") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "input") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "link") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "meta") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "param") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "source") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "track") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "wbr") {
-    { const r = trySpeculate(state, parseHtmlElement__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "li") {
-    return parseHtmlElement__valid__alt3(state);
-  }
-    if (__ident === "dt") {
-    return parseHtmlElement__valid__alt4(state);
-  }
-    if (__ident === "dd") {
-    return parseHtmlElement__valid__alt4(state);
-  }
-    if (__ident === "tr") {
-    return parseHtmlElement__valid__alt5(state);
-  }
-    if (__ident === "td") {
-    return parseHtmlElement__valid__alt6(state);
-  }
-    if (__ident === "th") {
-    return parseHtmlElement__valid__alt6(state);
-  }
-    if (__ident === "p") {
-    return parseHtmlElement__valid__alt7(state);
-  }
-    if (__ident === "option") {
-    return parseHtmlElement__valid__alt8(state);
-  }
-    if (__ident === "optgroup") {
-    return parseHtmlElement__valid__alt8(state);
-  }
-    if (__ident === "html") {
-    return parseHtmlElement__valid__alt9(state);
-  }
-    if (__ident === "head") {
-    return parseHtmlElement__valid__alt10(state);
-  }
-    if (__ident === "tbody") {
-    return parseHtmlElement__valid__alt11(state);
-  }
-    if (__ident === "thead") {
-    return parseHtmlElement__valid__alt12(state);
-  }
-    if (__ident === "tfoot") {
-    return parseHtmlElement__valid__alt13(state);
-  }
-    if (__ident === "body") {
-    return parseHtmlElement__valid__alt14(state);
-  }
-    return parseHtmlElement__valid__alt15(state);
-  }
-}
-
-function parseHtmlElement__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  __consumedEnd = __off;
-  const __attrs_startOff = __off;
-  let __prevEnd_attrs = __attrs_startOff;
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttribute(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_attrs);
-    attrs.push(__child);
-    if (__off === __before) break;
-    __prevEnd_attrs = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_attrs;
-  }
-  __consumedEnd = __prevEnd_attrs;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "HtmlElement#3", tag: tag, attrs: attrs };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseHtmlElement(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return parseHtmlElement__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, parseHtmlElement__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
-  }
-}
-
-function parseTextNode(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  let value = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
-    value = __input.slice(__startOff, __earliest);
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "TextNode#0", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseAttribute__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 34)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Attribute#0", name: name, value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseAttribute__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 39)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Attribute#1", name: name, value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseAttribute__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let value = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
-      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    state.__lastCaptureStart = __startOff;
-    state.__lastCaptureEnd = __earliest;
-    value = __input.slice(__startOff, __earliest);
-  }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Attribute#2", name: name, value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseAttribute__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "Attribute#3", name: name };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseAttribute(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (__input.charCodeAt(__peek) === 61) {
-    __peek = state.off;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 61)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 34) {
-      return parseAttribute__alt0(state);
-    }
-    if (__input.charCodeAt(__peek) === 39) {
-      return parseAttribute__alt1(state);
-    }
-    return parseAttribute__alt2(state);
-  }
-  return parseAttribute__alt3(state);
-}
-
-function parseHtmlDocumentFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__off >= __len) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_14(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "HtmlDocument#0", children: children };
 }
 
-function parseDoctypeFast__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseDoctype__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __keyword_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __keyword_end = off;
+  const keyword = input.slice(__keyword_start, __keyword_end);
+  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Doctype#0", keyword: keyword, name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Doctype#0", keyword: keyword, name: name };
 }
 
-function parseDoctypeFast__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseDoctype__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __keyword_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __keyword_end = off;
+  const keyword = input.slice(__keyword_start, __keyword_end);
+  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Doctype#1", keyword: keyword, name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Doctype#1", keyword: keyword, name: name };
 }
 
-function parseDoctypeFast(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return parseDoctypeFast__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, parseDoctypeFast__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
-  }
+function parseDoctype(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if (input.charCodeAt(off) === 60) {
+  { const r = parseDoctype__alt0(state); if (r !== null) return r; }
+  return parseDoctype__alt1(state);
+}
+  return null;
 }
 
-function parseCommentFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("<!--", __off))) { state.off = __off; throw new SyntaxError("expected " + "<!--" + " at position " + __off); }
-  __off += 4;
-  let data = '';
+function parseComment(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("<!--", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let data: string = '';
+  let __data_start = off;
+  let __data_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
+    __data_start = off;
     let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && ((__c === 45 && input.startsWith("-->", off)))) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
         continue;
       }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        off += 2;
+        continue;
+      }
+      off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __data_start;
+    if (off === __data_start) {
+      off = __emptyAnchor;
       data = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    data = __input.slice(__startOff, __lastNonWs);
+      off = off;
+      data = input.slice(__data_start, off);
     }
+    __data_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("-->", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Comment#0", data: data };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.startsWith("-->", __off))) { state.off = __off; throw new SyntaxError("expected " + "-->" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Comment#0", data: data };
 }
 
-function parseHtmlElementFast__valid__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
-
+function parseHtmlElement__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
   const attrs: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
   }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let children = '';
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let children: string = '';
+  let __children_start = off;
+  let __children_end = off;
   {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    __children_start = off;
+    let __earliest = len;
+    for (let __i = __children_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
     }
-    __off = __earliest;
-    children = __input.slice(__startOff, __earliest);
+    off = __earliest;
+    __children_end = off;
+    children = input.slice(__children_start, __children_end);
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closeTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closeTag_end = off;
+  const closeTag = input.slice(__closeTag_start, __closeTag_end);
+  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#0", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  const __closeTag_lc = closeTag.toLowerCase();
-  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "HtmlElement#0", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
 }
 
-function parseHtmlElementFast__valid__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-
+function parseHtmlElement__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
   const attrs: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
   }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#1", tag: tag, attrs: attrs };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "HtmlElement#1", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElementFast__valid__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-
+function parseHtmlElement__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
   const attrs: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
   }
-    if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#2", tag: tag, attrs: attrs };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "HtmlElement#2", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElementFast__valid__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
-  __consumedEnd = __off;
-
+function parseHtmlElement__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
   const attrs: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#3", tag: tag, attrs: attrs };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</li>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
-      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_28(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#4", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</dt>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_29(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#5", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tr>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_30(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#6", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</td>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_31(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#7", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</p>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
-      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
-      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
-      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
-      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
-      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
-      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
-      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_32(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#8", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</option>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_33(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#9", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</html>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_34(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#10", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</head>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_35(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#11", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tbody>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_36(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#12", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</thead>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_37(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#13", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tfoot>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_38(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#14", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
-  __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</body>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_39(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#15", tag: tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_40(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#16", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
-}
-
-function parseHtmlElementFast__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek += 1;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return parseHtmlElementFast__valid__alt15(state);
-  {
-    const __identStart = __peek;
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-    const __tagOrig = __input.slice(__identStart, __peek);
-    const __ident = __tagOrig.toLowerCase();
-    if (__ident === "script") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "style") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "textarea") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "title") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "area") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "base") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "br") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "col") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "embed") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "hr") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "img") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "input") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "link") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "meta") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "param") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "source") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "track") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "wbr") {
-    { const r = trySpeculate(state, parseHtmlElementFast__valid__alt1); if (r !== null) return r; }
-    return parseHtmlElementFast__valid__alt2(state);
-  }
-    if (__ident === "li") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt3__body(state, __tagOrig);
-  }
-    if (__ident === "dt") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt4__body(state, __tagOrig);
-  }
-    if (__ident === "dd") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt4__body(state, __tagOrig);
-  }
-    if (__ident === "tr") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt5__body(state, __tagOrig);
-  }
-    if (__ident === "td") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt6__body(state, __tagOrig);
-  }
-    if (__ident === "th") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt6__body(state, __tagOrig);
-  }
-    if (__ident === "p") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt7__body(state, __tagOrig);
-  }
-    if (__ident === "option") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt8__body(state, __tagOrig);
-  }
-    if (__ident === "optgroup") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt8__body(state, __tagOrig);
-  }
-    if (__ident === "html") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt9__body(state, __tagOrig);
-  }
-    if (__ident === "head") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt10__body(state, __tagOrig);
-  }
-    if (__ident === "tbody") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt11__body(state, __tagOrig);
-  }
-    if (__ident === "thead") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt12__body(state, __tagOrig);
-  }
-    if (__ident === "tfoot") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt13__body(state, __tagOrig);
-  }
-    if (__ident === "body") {
-    state.off = __peek; return parseHtmlElementFast__valid__alt14__body(state, __tagOrig);
-  }
-    state.off = __peek; return parseHtmlElementFast__valid__alt15__body(state, __tagOrig);
-  }
-}
-
-function parseHtmlElementFast__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "HtmlElement#3", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElementFast(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return parseHtmlElementFast__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, parseHtmlElementFast__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
+function parseHtmlElement__alt4(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "li")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
   }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</menu>", off) || input.startsWith("</li>", off) || input.startsWith("</ol>", off) || input.startsWith("</ul>", off) || input.startsWith("<li>", off) || input.startsWith("<li ", off) || input.startsWith("<li/", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</li>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#4", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#4", tag: tag, attrs: attrs, children: children };
 }
 
-function parseTextNodeFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseHtmlElement__alt5(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
   }
-  let value = '';
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</dt>", off) || input.startsWith("</dd>", off) || input.startsWith("</dl>", off) || input.startsWith("<dt>", off) || input.startsWith("<dt ", off) || input.startsWith("<dt/", off) || input.startsWith("<dd>", off) || input.startsWith("<dd ", off) || input.startsWith("<dd/", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</dt>", off)) { off += 5; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</dd>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#5", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#5", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt6(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</thead>", off) || input.startsWith("</tfoot>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<thead>", off) || input.startsWith("<thead ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off) || input.startsWith("</tr>", off) || input.startsWith("<tr>", off) || input.startsWith("<tr ", off) || input.startsWith("<tr/", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tr>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#6", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#6", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt7(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</thead>", off) || input.startsWith("</tfoot>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<thead>", off) || input.startsWith("<thead ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off) || input.startsWith("</td>", off) || input.startsWith("</th>", off) || input.startsWith("</tr>", off) || input.startsWith("<td>", off) || input.startsWith("<td ", off) || input.startsWith("<td/", off) || input.startsWith("<th>", off) || input.startsWith("<th ", off) || input.startsWith("<th/", off) || input.startsWith("<tr>", off) || input.startsWith("<tr ", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</td>", off)) { off += 5; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</th>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#7", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#7", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt8(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "p")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("<blockquote>", off) || input.startsWith("<blockquote ", off) || input.startsWith("<section>", off) || input.startsWith("<section ", off) || input.startsWith("<article>", off) || input.startsWith("<article ", off) || input.startsWith("<address>", off) || input.startsWith("<address ", off) || input.startsWith("<header>", off) || input.startsWith("<header ", off) || input.startsWith("<footer>", off) || input.startsWith("<footer ", off) || input.startsWith("<table>", off) || input.startsWith("<table ", off) || input.startsWith("<aside>", off) || input.startsWith("<aside ", off) || input.startsWith("<form>", off) || input.startsWith("<form ", off) || input.startsWith("<div>", off) || input.startsWith("<div ", off) || input.startsWith("<pre>", off) || input.startsWith("<pre ", off) || input.startsWith("<nav>", off) || input.startsWith("<nav ", off) || input.startsWith("</p>", off) || input.startsWith("<ul>", off) || input.startsWith("<ul ", off) || input.startsWith("<ol>", off) || input.startsWith("<ol ", off) || input.startsWith("<dl>", off) || input.startsWith("<dl ", off) || input.startsWith("<h1>", off) || input.startsWith("<h1 ", off) || input.startsWith("<h2>", off) || input.startsWith("<h2 ", off) || input.startsWith("<h3>", off) || input.startsWith("<h3 ", off) || input.startsWith("<h4>", off) || input.startsWith("<h4 ", off) || input.startsWith("<h5>", off) || input.startsWith("<h5 ", off) || input.startsWith("<h6>", off) || input.startsWith("<h6 ", off) || input.startsWith("<hr>", off) || input.startsWith("<hr ", off) || input.startsWith("<hr/", off) || input.startsWith("<p>", off) || input.startsWith("<p ", off) || input.startsWith("<p/", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</p>", off)) { off += 4; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#8", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#8", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt9(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</optgroup>", off) || input.startsWith("</datalist>", off) || input.startsWith("<optgroup>", off) || input.startsWith("<optgroup ", off) || input.startsWith("</option>", off) || input.startsWith("</select>", off) || input.startsWith("<option>", off) || input.startsWith("<option ", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</option>", off)) { off += 9; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</optgroup>", off)) { off += 11; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#9", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#9", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt10(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "html")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</html>", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</html>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#10", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#10", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt11(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "head")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</head>", off) || input.startsWith("<body>", off) || input.startsWith("<body ", off) || input.startsWith("<body/", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</head>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#11", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#11", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt12(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tbody")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tbody>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#12", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#12", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt13(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "thead")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</thead>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</thead>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#13", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#13", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt14(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tfoot")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</tfoot>", off) || input.startsWith("</table>", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tfoot>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#14", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#14", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt15(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "body")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && (input.startsWith("</body>", off) || input.startsWith("</html>", off))) break;
+    }
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</body>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#15", tag: tag, attrs: attrs, children: children };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#15", tag: tag, attrs: attrs, children: children };
+}
+
+function parseHtmlElement__alt16(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __attrs_start = off;
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseAttribute(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __attrs_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __children_start = off;
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
+    while (off < len) {
+      const __wc = input.charCodeAt(off);
+      if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
+      break;
+    }
+    state.pos = off;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = parseComment(state);
+        if (__cand === null) { __cand = parseDoctype(state); }
+        if (__cand === null) { __cand = parseHtmlElement(state); }
+      } else {
+        __cand = parseTextNode(state);
+      }
+    }
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    children.push(__cand);
+    if (off === __loopStart) break;
+  }
+  const __children_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closeTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closeTag_end = off;
+  const closeTag = input.slice(__closeTag_start, __closeTag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "HtmlElement#16", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "HtmlElement#16", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
+}
+
+function parseHtmlElement(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if (input.charCodeAt(off) === 60) {
+  { const r = parseHtmlElement__alt0(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt5(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt7(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt9(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt4(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt6(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt8(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt10(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt11(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt12(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt13(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt14(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt15(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt1(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt2(state); if (r !== null) return r; }
+  return parseHtmlElement__alt3(state);
+}
+  return null;
+}
+
+function parseTextNode(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
   {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
+    __value_start = off;
+    let __earliest = len;
+    for (let __i = __value_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
       if (__c === 60) { __earliest = __i; break; }
     }
-    __off = __earliest;
-    value = __input.slice(__startOff, __earliest);
+    off = __earliest;
+    __value_end = off;
+    value = input.slice(__value_start, __value_end);
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "TextNode#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "TextNode#0", value: value };
 }
 
-function parseAttributeFast__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  let value = '';
+function parseAttribute__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
+    __value_start = off;
+    let __lastNonWs = off;
     let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 34)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
         continue;
       }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
       value = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      value = input.slice(__value_start, __lastNonWs);
     }
+    __value_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Attribute#0", name: name, value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Attribute#0", name: name, value: value };
 }
 
-function parseAttributeFast__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  let value = '';
+function parseAttribute__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
+    __value_start = off;
+    let __lastNonWs = off;
     let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 39)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
         continue;
       }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
       value = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      value = input.slice(__value_start, __lastNonWs);
     }
+    __value_end = off;
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Attribute#1", name: name, value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Attribute#1", name: name, value: value };
 }
 
-function parseAttributeFast__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let value = '';
+function parseAttribute__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
   {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
+    __value_start = off;
+    let __earliest = len;
+    for (let __i = __value_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
       if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
-      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
+      if (__c === 47 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
     }
-    __off = __earliest;
-    value = __input.slice(__startOff, __earliest);
+    off = __earliest;
+    __value_end = off;
+    value = input.slice(__value_start, __value_end);
   }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Attribute#2", name: name, value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "Attribute#2", name: name, value: value };
 }
 
-function parseAttributeFast__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseAttribute__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Attribute#3", name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __name_s = __off;
-  let name;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  name = __input.slice(__name_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "Attribute#3", name: name };
 }
 
-function parseAttributeFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (__input.charCodeAt(__peek) === 61) {
-    __peek = state.off;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 61)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 34) {
-      return parseAttributeFast__alt0(state);
-    }
-    if (__input.charCodeAt(__peek) === 39) {
-      return parseAttributeFast__alt1(state);
-    }
-    return parseAttributeFast__alt2(state);
-  }
-  return parseAttributeFast__alt3(state);
-}
-
-function validateHtmlDocument(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __count_children = 0;
-  while (!(__off >= __len)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateDoctype__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateDoctype__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33)) { state.off = __off; throw new SyntaxError("expected " + "<!" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __keyword_s = __off;
-  let keyword;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __keyword_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __keyword_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__keyword_s) | 32) === 0x75
-        && (__input.charCodeAt(__keyword_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__keyword_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  keyword = __input.slice(__keyword_s, __off);
-  const __keyword_lc = keyword.toLowerCase();
-  if (!(__keyword_lc === "doctype")) { state.off = __off; throw new SyntaxError("expected one of DOCTYPE at position " + __keyword_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateDoctype(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return validateDoctype__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, validateDoctype__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
-  }
-}
-
-function validateComment(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("<!--", __off))) { state.off = __off; throw new SyntaxError("expected " + "<!--" + " at position " + __off); }
-  __off += 4;
-  let data = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && ((__c === 45 && __input.startsWith("-->", __off)))) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      data = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    data = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.startsWith("-->", __off))) { state.off = __off; throw new SyntaxError("expected " + "-->" + " at position " + __off); }
-  __off += 3;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "script" || __tag_lc === "style" || __tag_lc === "textarea" || __tag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __tag_s); }
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let children = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    children = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  const __closeTag_lc = closeTag.toLowerCase();
-  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "area" || __tag_lc === "base" || __tag_lc === "br" || __tag_lc === "col" || __tag_lc === "embed" || __tag_lc === "hr" || __tag_lc === "img" || __tag_lc === "input" || __tag_lc === "link" || __tag_lc === "meta" || __tag_lc === "param" || __tag_lc === "source" || __tag_lc === "track" || __tag_lc === "wbr")) { state.off = __off; throw new SyntaxError("expected one of area, base, br, col, embed, hr, img, input, link, meta, param, source, track, wbr at position " + __tag_s); }
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "li")) { state.off = __off; throw new SyntaxError("expected one of li at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</li>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
-      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_55(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "dt" || __tag_lc === "dd")) { state.off = __off; throw new SyntaxError("expected one of dt, dd at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</dt>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_56(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tr")) { state.off = __off; throw new SyntaxError("expected one of tr at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tr>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_57(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "td" || __tag_lc === "th")) { state.off = __off; throw new SyntaxError("expected one of td, th at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</td>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_58(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "p")) { state.off = __off; throw new SyntaxError("expected one of p at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</p>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
-      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
-      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
-      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
-      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
-      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
-      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
-      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_59(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "option" || __tag_lc === "optgroup")) { state.off = __off; throw new SyntaxError("expected one of option, optgroup at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</option>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_60(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "html")) { state.off = __off; throw new SyntaxError("expected one of html at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</html>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_61(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "head")) { state.off = __off; throw new SyntaxError("expected one of head at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</head>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_62(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tbody")) { state.off = __off; throw new SyntaxError("expected one of tbody at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tbody>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_63(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "thead")) { state.off = __off; throw new SyntaxError("expected one of thead at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</thead>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_64(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "tfoot")) { state.off = __off; throw new SyntaxError("expected one of tfoot at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tfoot>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_65(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-  let tag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  tag = __input.slice(__tag_s, __off);
-  const __tag_lc = tag.toLowerCase();
-  if (!(__tag_lc === "body")) { state.off = __off; throw new SyntaxError("expected one of body at position " + __tag_s); }
-  __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</body>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_66(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  let __count_children = 0;
-  while (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__input.charCodeAt(__peek) === 60)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek += 1;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (!(isCssIdentStart(__input.charCodeAt(__peek)))) return validateHtmlElement__valid__alt15(state);
-  {
-    const __identStart = __peek;
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-    const __tagOrig = __input.slice(__identStart, __peek);
-    const __ident = __tagOrig.toLowerCase();
-    if (__ident === "script") {
-    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "style") {
-    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "textarea") {
-    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "title") {
-    state.off = __peek; return validateHtmlElement__valid__alt0__body(state, __tagOrig);
-  }
-    if (__ident === "area") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "base") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "br") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "col") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "embed") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "hr") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "img") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "input") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "link") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "meta") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "param") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "source") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "track") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "wbr") {
-    { const r = trySpeculate(state, validateHtmlElement__valid__alt1); if (r !== null) return r; }
-    return validateHtmlElement__valid__alt2(state);
-  }
-    if (__ident === "li") {
-    state.off = __peek; return validateHtmlElement__valid__alt3__body(state, __tagOrig);
-  }
-    if (__ident === "dt") {
-    state.off = __peek; return validateHtmlElement__valid__alt4__body(state, __tagOrig);
-  }
-    if (__ident === "dd") {
-    state.off = __peek; return validateHtmlElement__valid__alt4__body(state, __tagOrig);
-  }
-    if (__ident === "tr") {
-    state.off = __peek; return validateHtmlElement__valid__alt5__body(state, __tagOrig);
-  }
-    if (__ident === "td") {
-    state.off = __peek; return validateHtmlElement__valid__alt6__body(state, __tagOrig);
-  }
-    if (__ident === "th") {
-    state.off = __peek; return validateHtmlElement__valid__alt6__body(state, __tagOrig);
-  }
-    if (__ident === "p") {
-    state.off = __peek; return validateHtmlElement__valid__alt7__body(state, __tagOrig);
-  }
-    if (__ident === "option") {
-    state.off = __peek; return validateHtmlElement__valid__alt8__body(state, __tagOrig);
-  }
-    if (__ident === "optgroup") {
-    state.off = __peek; return validateHtmlElement__valid__alt8__body(state, __tagOrig);
-  }
-    if (__ident === "html") {
-    state.off = __peek; return validateHtmlElement__valid__alt9__body(state, __tagOrig);
-  }
-    if (__ident === "head") {
-    state.off = __peek; return validateHtmlElement__valid__alt10__body(state, __tagOrig);
-  }
-    if (__ident === "tbody") {
-    state.off = __peek; return validateHtmlElement__valid__alt11__body(state, __tagOrig);
-  }
-    if (__ident === "thead") {
-    state.off = __peek; return validateHtmlElement__valid__alt12__body(state, __tagOrig);
-  }
-    if (__ident === "tfoot") {
-    state.off = __peek; return validateHtmlElement__valid__alt13__body(state, __tagOrig);
-  }
-    if (__ident === "body") {
-    state.off = __peek; return validateHtmlElement__valid__alt14__body(state, __tagOrig);
-  }
-    state.off = __peek; return validateHtmlElement__valid__alt15__body(state, __tagOrig);
-  }
-}
-
-function validateHtmlElement__recovery0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60)) { state.off = __off; throw new SyntaxError("expected " + "<" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __tag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __tag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47 && __input.charCodeAt(__off + 1) === 62)) { state.off = __off; throw new SyntaxError("expected " + "/>" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement(state: State): unknown {
-  const __recoverStart = state.off;
-  try {
-    return validateHtmlElement__valid(state);
-  } catch (__validErr) {
-    state.off = __recoverStart;
-    const __r0 = trySpeculate(state, validateHtmlElement__recovery0);
-    if (__r0 !== null) return __r0;
-    state.off = __recoverStart;
-    throw __validErr;
-  }
-}
-
-function validateTextNode(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let value = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    value = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateAttribute__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 34)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 34)) { state.off = __off; throw new SyntaxError("expected " + "\"" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateAttribute__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 39)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 39)) { state.off = __off; throw new SyntaxError("expected " + "'" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateAttribute__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 61)) { state.off = __off; throw new SyntaxError("expected " + "=" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let value = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
-      if (__c === 47 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    value = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateAttribute__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __name_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateAttribute(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-    __peek++;
-    while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-  // Skip ws before the discriminator.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-  if (__input.charCodeAt(__peek) === 61) {
-    __peek = state.off;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isCssIdentStart(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isCssIdentPart(__input.charCodeAt(__peek))) __peek++;
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__input.charCodeAt(__peek) === 61)) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek += 1;
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 34) {
-      return validateAttribute__alt0(state);
-    }
-    if (__input.charCodeAt(__peek) === 39) {
-      return validateAttribute__alt1(state);
-    }
-    return validateAttribute__alt2(state);
-  }
-  return validateAttribute__alt3(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_6(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_7(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_8(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_9(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_10(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_11(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_12(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_raws_Doctype_Comment_HtmlElement_TextNode_13(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElement(state);
-  return parseTextNode(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_14(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_15(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_16(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_17(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_18(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_19(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_20(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_21(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_22(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_23(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_24(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_25(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_26(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_27(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function parseHtmlElementFast__valid__alt0__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let children = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    children = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  const __closeTag_lc = closeTag.toLowerCase();
-  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#0", tag: __pre_tag, attrs: attrs, children: children, closeTag: closeTag };
-}
-
-function parseHtmlElementFast__valid__alt3__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</li>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
-      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_15(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#4", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt4__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</dt>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_16(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#5", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt5__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tr>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_17(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#6", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt6__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</td>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_18(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#7", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt7__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</p>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
-      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
-      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
-      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
-      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
-      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
-      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
-      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_19(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#8", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt8__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</option>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_20(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#9", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt9__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</html>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_21(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#10", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt10__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</head>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_22(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#11", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt11__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tbody>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_23(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#12", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt12__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</thead>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_24(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#13", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt13__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</tfoot>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_25(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#14", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt14__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.startsWith("</body>", __off)) {  break; }
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
-    }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_26(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#15", tag: __pre_tag, attrs: attrs, children: children };
-}
-
-function parseHtmlElementFast__valid__alt15__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-
-  const attrs: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 62) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseAttributeFast(state); __off = state.off;
-    attrs.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-
-  const children: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_27(state); __off = state.off;
-    children.push(__child);
-    if (__off === __before) break;
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return { __production: "HtmlElement#16", tag: __pre_tag, attrs: attrs, children: children, closeTag: closeTag };
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_28(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_29(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_30(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_31(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_32(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_33(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_34(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_35(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_36(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_37(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_38(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_39(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_fast_Doctype_Comment_HtmlElement_TextNode_40(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return parseCommentFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return parseDoctypeFast(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return parseHtmlElementFast(state);
-  return parseTextNodeFast(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_41(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_42(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_43(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_44(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_45(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_46(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_47(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_48(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_49(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_50(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_51(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_52(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_53(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_54(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function validateHtmlElement__valid__alt0__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  let children = '';
-  {
-    const __startOff = __off;
-    let __earliest = __len;
-    for (let __i = __startOff; __i < __len; __i++) {
-      const __c = __input.charCodeAt(__i);
-      if (__c === 60 && ((__i + 1 < __len && __input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
-    }
-    __off = __earliest;
-    children = __input.slice(__startOff, __earliest);
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-  let closeTag;
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-  closeTag = __input.slice(__closeTag_s, __off);
-  const __closeTag_lc = closeTag.toLowerCase();
-  if (!(__closeTag_lc === "script" || __closeTag_lc === "style" || __closeTag_lc === "textarea" || __closeTag_lc === "title")) { state.off = __off; throw new SyntaxError("expected one of script, style, textarea, title at position " + __closeTag_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt3__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</li>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</menu>", __off) || __input.startsWith("</li>", __off) || __input.startsWith("</ol>", __off) || __input.startsWith("</ul>", __off))) break;
-      if (__c2 === 108 && (__input.startsWith("<li>", __off) || __input.startsWith("<li ", __off) || __input.startsWith("<li/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_42(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</li>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt4__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</dt>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</dt>", __off) || __input.startsWith("</dd>", __off) || __input.startsWith("</dl>", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<dt>", __off) || __input.startsWith("<dt ", __off) || __input.startsWith("<dt/", __off) || __input.startsWith("<dd>", __off) || __input.startsWith("<dd ", __off) || __input.startsWith("<dd/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_43(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dt>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</dd>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt5__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tr>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off) || __input.startsWith("<tr/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_44(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tr>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt6__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</td>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</thead>", __off) || __input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off) || __input.startsWith("</td>", __off) || __input.startsWith("</th>", __off) || __input.startsWith("</tr>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<thead>", __off) || __input.startsWith("<thead ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off) || __input.startsWith("<td>", __off) || __input.startsWith("<td ", __off) || __input.startsWith("<td/", __off) || __input.startsWith("<th>", __off) || __input.startsWith("<th ", __off) || __input.startsWith("<th/", __off) || __input.startsWith("<tr>", __off) || __input.startsWith("<tr ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_45(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</td>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</th>", __off)) { __off += 5; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt7__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</p>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</p>", __off))) break;
-      if (__c2 === 97 && (__input.startsWith("<article>", __off) || __input.startsWith("<article ", __off) || __input.startsWith("<address>", __off) || __input.startsWith("<address ", __off) || __input.startsWith("<aside>", __off) || __input.startsWith("<aside ", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<blockquote>", __off) || __input.startsWith("<blockquote ", __off))) break;
-      if (__c2 === 100 && (__input.startsWith("<div>", __off) || __input.startsWith("<div ", __off) || __input.startsWith("<dl>", __off) || __input.startsWith("<dl ", __off))) break;
-      if (__c2 === 102 && (__input.startsWith("<footer>", __off) || __input.startsWith("<footer ", __off) || __input.startsWith("<form>", __off) || __input.startsWith("<form ", __off))) break;
-      if (__c2 === 104 && (__input.startsWith("<header>", __off) || __input.startsWith("<header ", __off) || __input.startsWith("<h1>", __off) || __input.startsWith("<h1 ", __off) || __input.startsWith("<h2>", __off) || __input.startsWith("<h2 ", __off) || __input.startsWith("<h3>", __off) || __input.startsWith("<h3 ", __off) || __input.startsWith("<h4>", __off) || __input.startsWith("<h4 ", __off) || __input.startsWith("<h5>", __off) || __input.startsWith("<h5 ", __off) || __input.startsWith("<h6>", __off) || __input.startsWith("<h6 ", __off) || __input.startsWith("<hr>", __off) || __input.startsWith("<hr ", __off) || __input.startsWith("<hr/", __off))) break;
-      if (__c2 === 110 && (__input.startsWith("<nav>", __off) || __input.startsWith("<nav ", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<ol>", __off) || __input.startsWith("<ol ", __off))) break;
-      if (__c2 === 112 && (__input.startsWith("<pre>", __off) || __input.startsWith("<pre ", __off) || __input.startsWith("<p>", __off) || __input.startsWith("<p ", __off) || __input.startsWith("<p/", __off))) break;
-      if (__c2 === 115 && (__input.startsWith("<section>", __off) || __input.startsWith("<section ", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<table>", __off) || __input.startsWith("<table ", __off))) break;
-      if (__c2 === 117 && (__input.startsWith("<ul>", __off) || __input.startsWith("<ul ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_46(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</p>", __off)) { __off += 4; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt8__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</option>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</optgroup>", __off) || __input.startsWith("</datalist>", __off) || __input.startsWith("</option>", __off) || __input.startsWith("</select>", __off))) break;
-      if (__c2 === 111 && (__input.startsWith("<optgroup>", __off) || __input.startsWith("<optgroup ", __off) || __input.startsWith("<option>", __off) || __input.startsWith("<option ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_47(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</option>", __off)) { __off += 9; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  const __beforeSpan6 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</optgroup>", __off)) { __off += 11; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan6) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt9__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</html>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</html>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_48(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</html>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt10__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</head>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</head>", __off))) break;
-      if (__c2 === 98 && (__input.startsWith("<body>", __off) || __input.startsWith("<body ", __off) || __input.startsWith("<body/", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_49(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</head>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt11__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tbody>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</tbody>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_50(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tbody>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt12__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</thead>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60) {
-      const __c2 = __input.charCodeAt(__off + 1);
-      if (__c2 === 47 && (__input.startsWith("</thead>", __off) || __input.startsWith("</table>", __off))) break;
-      if (__c2 === 116 && (__input.startsWith("<tbody>", __off) || __input.startsWith("<tbody ", __off) || __input.startsWith("<tfoot>", __off) || __input.startsWith("<tfoot ", __off))) break;
-    }
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_51(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</thead>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt13__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</tfoot>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</tfoot>", __off) || __input.startsWith("</table>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_52(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</tfoot>", __off)) { __off += 8; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt14__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __consumedEnd = __off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let __count_children = 0;
-  while (!(__input.startsWith("</body>", __off))) {
-    {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 60 && (__input.startsWith("</body>", __off) || __input.startsWith("</html>", __off))) break;
-    }
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_53(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  __consumedEnd = __off;
-  const __beforeSpan5 = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (__input.startsWith("</body>", __off)) { __off += 7; } else { __off = __consumedEnd; }
-  if (__off > __beforeSpan5) __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateHtmlElement__valid__alt15__body(state: State, __pre_tag: string): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  let __count_attrs = 0;
-  while (!(__input.charCodeAt(__off) === 62)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateAttribute(state); __off = state.off;
-    __count_attrs++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  let __count_children = 0;
-  while (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_54(state); __off = state.off;
-    __count_children++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 47)) { state.off = __off; throw new SyntaxError("expected " + "</" + " at position " + __off); }
-  __off += 2;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __closeTag_s = __off;
-
-  if (!(isCssIdentStart(__input.charCodeAt(__off)))) throw new SyntaxError("expected ident at position " + __closeTag_s);
-    __off++;
-    while (__off < __len && isCssIdentPart(__input.charCodeAt(__off))) __off++;
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 62)) { state.off = __off; throw new SyntaxError("expected " + ">" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_55(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_56(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_57(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_58(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_59(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_60(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_61(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_62(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_63(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_64(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_65(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_66(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
-}
-
-function __roleDispatch_validate_Doctype_Comment_HtmlElement_TextNode_67(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  // Skip ws to first non-ws byte for dispatch.
-  let __off = state.off;
-  while (__off < __len) {
-    const __c = __input.charCodeAt(__off);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  if (__input.startsWith("<!--", __off)) return validateComment(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) === 33) return validateDoctype(state);
-  if (__input.charCodeAt(__off) === 60 && __input.charCodeAt(__off + 1) !== 47) return validateHtmlElement(state);
-  return validateTextNode(state);
+function parseAttribute(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if ((isCssIdentStart(input.charCodeAt(off)))) {
+  { const r = parseAttribute__alt0(state); if (r !== null) return r; }
+  { const r = parseAttribute__alt1(state); if (r !== null) return r; }
+  { const r = parseAttribute__alt2(state); if (r !== null) return r; }
+  return parseAttribute__alt3(state);
+}
+  return null;
 }
 
 const __defaultTarget: string | undefined = undefined;
@@ -12861,59 +3982,37 @@ export function stringify(value: unknown, options?: { type?: string }): string {
 
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode,
-    lineStarts,
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
+    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
   };
-  try {
-    const result = mode === 'raws' ? parseHtmlDocument(state) : parseHtmlDocumentFast(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-    return result;
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseHtmlDocument(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
+  return result;
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  if (options?.validate === true && false) {
-    __parse(input, options);
-    return;
-  }
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode: 'fast',
     lineStarts: [],
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
   };
-  try {
-    validateHtmlDocument(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseHtmlDocument(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
 }
 
-// Attach package identity so another package's validation metadata can refer
-// to this generated validator while codegen still emits static imports.
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
   module: "@parser2/html",
   exportName: 'validate',
 };
-

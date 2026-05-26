@@ -64,14 +64,20 @@ export function emitProduction(
   lines.push(`const len = state.len;`);
   lines.push(`let off = state.pos;`);
   lines.push(`const entryOff = off;`);
-  // Skip leading ws — required by 'standard' whitespace policy. Always emit;
-  // a refined emit could omit when the schema declares no-ws policy.
-  lines.push(skipWsBlock());
+  // Inter-span gap also consumes `/* */` comments when the schema declares
+  // `comment` as a token class. Mirrors v1 scannerless emit (which inserts a
+  // ws+comment skip between every consecutive pair of spans). Without this,
+  // a comment between a captured value and its following literal (e.g. CSS
+  // `a/**/{}`) would leave `off` parked on `/`, breaking the literal match.
+  const skipGap = tokenClasses.has('comment') ? skipWsAndCommentsBlock() : skipWsBlock();
+  // Skip leading ws (+ leading comments) — required by 'standard' whitespace
+  // policy.
+  lines.push(skipGap);
 
   const spans = production.spans;
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]!;
-    if (i > 0) lines.push(skipWsBlock());
+    if (i > 0) lines.push(skipGap);
     lines.push(emitSpan(span, ctx, bindings));
   }
   // No trailing ws skip — a production owns its captured range. WS after
@@ -119,4 +125,20 @@ function toCapturesBindings(b: SpanBindings): CapturesBindings {
 
 function skipWsBlock(): string {
   return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+}
+
+function skipWsAndCommentsBlock(): string {
+  // ws OR `/* ... */` comment — repeats. Matches the v1 inter-span gap when
+  // the schema's token-set includes `comment`.
+  return `while (off < len) {
+  const c = input.charCodeAt(off);
+  if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+  if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+    off += 2;
+    while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+    if (off < len) off += 2;
+    continue;
+  }
+  break;
+}`;
 }

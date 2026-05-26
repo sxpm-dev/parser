@@ -125,41 +125,54 @@ git add packages/<pkg>/package.json packages/<pkg>/src/_generated/parser.ts
 git commit -m "chore(<pkg>): migrate to v2 emit"
 ```
 
-### Task 1.3: Fix v2 emit bugs surfaced by any failing target package
+### Task 1.3: Implement the missing v2 emit features (re-scoped 2026-05-26)
 
-For each of `{css, html, markdown}` still failing on the migration-status checklist:
+**Re-scope reason:** Task 1.1 recon revealed v2 was built only against `cron`. To emit css/html/markdown the v2 backend needs ≥5 features built. Each feature is its own TDD cycle, so the original single-bug Task 1.3 splits into 1.3a–1.3e. Order is dependency-driven: foundational primitives first, dispatcher refinements after, narrow refinements last.
 
-- [ ] **Step 1: Write a minimal failing test** in `packages/compiler/test/v2-regressions.test.ts` (create file if absent) that reproduces the failure with the smallest possible schema example. Example:
+**Shared workflow for each of 1.3a–1.3e:**
 
-```ts
-import { test } from 'node:test';
-import { strict as assert } from 'node:assert';
-import { generateParser, inferSchema } from '../src/index.ts';
-import { defineSchema, ex } from '@parser2/parser';
+1. **Write the minimal failing test** in `packages/compiler/test/v2-regressions.test.ts` (create if absent) — synthesize the smallest schema example that triggers the feature.
+2. **Run it, confirm it fails** with the expected `v2: <feature> not yet supported` error.
+3. **Implement the feature** in the appropriate `packages/compiler/src/emit/v2/*.ts` file. Stay within the existing v2 design contract (`docs/scannerless-emit-v2.md`).
+4. **Run the failing test, confirm pass.** Rerun the full compiler suite: `npm run test -w @parser2/compiler`.
+5. **Re-run v2 codegen for the affected in-scope packages.** Where the feature now unblocks a package, update `docs/v2-migration-status.md` (move the package from `- [ ]` to `- [x]` and note what changed).
+6. **Commit**:
+   ```bash
+   git add packages/compiler/src/emit/v2/ packages/compiler/test/v2-regressions.test.ts docs/v2-migration-status.md
+   git commit -m "feat(v2): <one-line summary of the feature>"
+   ```
 
-test('v2 emits correct dispatcher for two-prod node with shared first-byte punctuator', () => {
-  const schema = defineSchema({
-    rootType: 'Doc',
-    examples: [
-      ex('===title===').as('Doc').span('===').span('text','title').until('===').span('===').render('ast', { kind: 'h' }).build(),
-      ex('==subtitle==').as('Doc').span('==' ).span('text','subtitle').until('==' ).span('==' ).render('ast', { kind: 'h2' }).build(),
-    ],
-  });
-  const code = generateParser(schema, undefined, { v2: true });
-  assert.ok(code.includes('=== '), 'longest-match dispatcher should peek for === before ==');
-});
-```
+#### Task 1.3a: `until` / `rawUntil` span emit
 
-- [ ] **Step 2: Run test, verify failure** — `npm run test -w @parser2/compiler -- --grep "v2-regressions"`.
-- [ ] **Step 3: Fix the bug** in the appropriate v2 file under `packages/compiler/src/emit/v2/`. Bug categories observed in this codebase to watch for: (a) dispatcher first-byte miss on multi-char punctuators, (b) `.until()` AC failure on overlapping stops, (c) `recovers()` not yet wired in v2, (d) raws mode allocation differences.
-- [ ] **Step 4: Run test, verify pass.** Then rerun the full compiler suite: `npm run test -w @parser2/compiler`.
-- [ ] **Step 5: Regenerate the affected parser package, run its tests, run its gates.**
-- [ ] **Step 6: Commit** and tick the item off `docs/v2-migration-status.md`:
+**File touched:** `packages/compiler/src/emit/v2/span.ts:60`
+**Blocks:** css (immediately); html and markdown likely also touch this in their `.until(...)` captures.
+**Acceptance:** v2 codegen no longer throws on `until`/`rawUntil`; produces straight-line scan code matching the contract in `docs/scannerless-emit-v2.md` (`scan-until(stop-set)` primitive — tight byte loop respecting strings/brackets/escapes; advances `off` to first un-nested stop). Run the v2-regression test added in Step 1 and the existing compiler suite — both green. Then attempt `npx tsx packages/compiler/src/cli.ts packages/css/src/schema.ts --v2`; ratchet to next failure (next feature).
 
-```bash
-git add packages/compiler/src/emit/v2/<file>.ts packages/compiler/test/v2-regressions.test.ts packages/<pkg>/src/_generated/parser.ts docs/v2-migration-status.md
-git commit -m "fix(v2): <one-line summary>"
-```
+#### Task 1.3b: Multi-role non-repeats span emit
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts:171`
+**Blocks:** any production with a single recursive span listing >1 role (e.g. `['Comment', 'Rule']`).
+**Acceptance:** v2 emits a `tryRoles`-style ladder for multi-role non-repeats spans — for each role, peek the first-byte signature, dispatch to its parser, fall through on mismatch. The emitted code must NOT use throw/try-catch for backtracking (per v2 design: "no exceptions"); use null returns. Tests green; codegen ratchet.
+
+#### Task 1.3c: Multi-role repeats span emit
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts:216`
+**Blocks:** html and markdown (Element body, Document body — both loop multi-role children).
+**Acceptance:** v2 emits a repeated multi-role child loop. Each iteration: try each role's first-byte dispatch; if any matches, consume and append to the children array; if none match, exit the loop. Supports `sep` / `min` / `max` / `trailing` modifiers per the existing `repeats` modifier contract. Tests green; codegen ratchet — html and markdown should generate fully after 1.3a + 1.3c are done.
+
+#### Task 1.3d: Discriminator peek-scan dispatcher (ladder rung 2)
+
+**File touched:** `packages/compiler/src/emit/v2/dispatch.ts:5`
+**Blocks:** css (Rule vs Declaration disambiguation; both can start with an identifier byte, so first-byte dispatch alone can't separate them — needs a bounded peek-scan for `:` before `;`/`{`).
+**Acceptance:** dispatcher ladder gains rung 2: when two productions share a first-byte signature, emit a bounded peek-scan over a small set of discriminating bytes (capped at, say, 64 bytes of lookahead). The discriminator set is inferred from the differing structural patterns in the two productions. No backtracking via throw; either rung 2 conclusively picks a production or falls through to rung 3 (sentinel speculation). Tests green; css codegen succeeds.
+
+#### Task 1.3e: `number` class refinements (`float`, `scientific`, others CSS needs)
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts:303` (and any other places where number scanning is emitted)
+**Blocks:** css (which has `100%`, `1.5em`, etc — float-shaped numbers).
+**Acceptance:** v2's number scanner honors refinements declared on number spans. At minimum: `float` (digits + optional `.` + optional fractional digits), `scientific` (float + optional `[eE][+-]?digits`), `separator` (allow `_` between digit runs). Tests green; css codegen + tests succeed end-to-end.
+
+**Exit criteria for combined Task 1.3:** all three of css/html/markdown generate cleanly with `--v2`; their tests pass against the v2-generated parser; their perf/size gates run (regressions OK at this stage — recovered in Phase 4). `docs/v2-migration-status.md` shows all three checked.
 
 ### Task 1.4: Retire v1 scannerless emit + direct-fast
 

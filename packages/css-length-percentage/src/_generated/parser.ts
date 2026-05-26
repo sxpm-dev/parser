@@ -419,8 +419,8 @@ state.pos = off;
 }
   if (isDigit(input.charCodeAt(off))) {
   { const r = parseLengthPercentageItem__alt0(state); if (r !== null) return r; }
-  { const r = parseLengthPercentageItem__alt2(state); if (r !== null) return r; }
-  return parseLengthPercentageItem__alt4(state);
+  { const r = parseLengthPercentageItem__alt4(state); if (r !== null) return r; }
+  return parseLengthPercentageItem__alt2(state);
 }
   if ((isCssIdentStart(input.charCodeAt(off)))) {
   { const r = parseLengthPercentageItem__alt5(state); if (r !== null) return r; }
@@ -622,8 +622,8 @@ state.pos = off;
 }
   if (isDigit(input.charCodeAt(off))) {
   { const r = parseLengthFunctionToken__alt0(state); if (r !== null) return r; }
-  { const r = parseLengthFunctionToken__alt1(state); if (r !== null) return r; }
-  return parseLengthFunctionToken__alt2(state);
+  { const r = parseLengthFunctionToken__alt2(state); if (r !== null) return r; }
+  return parseLengthFunctionToken__alt1(state);
 }
   return null;
 }

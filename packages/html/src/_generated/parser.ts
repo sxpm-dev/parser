@@ -1499,7 +1499,6 @@ state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 60) {
   { const r = parseHtmlElement__alt0(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt5(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt7(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt9(state); if (r !== null) return r; }
@@ -1514,6 +1513,7 @@ state.pos = off;
   { const r = parseHtmlElement__alt15(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt1(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt2(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
   return parseHtmlElement__alt3(state);
 }
   return null;

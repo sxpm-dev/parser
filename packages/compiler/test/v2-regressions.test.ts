@@ -836,6 +836,63 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   assert.equal(result2.value, '{ a; b; c; }');
 });
 
+test('v2 byte-prefix group orders tag-restricted (.oneOf) alts before unrestricted catch-all', async () => {
+  // Repro for html implicit-close tests (<ol><li>a<li>b</ol>, <table>…, <p>…).
+  // The catch-all `<tag>…</closeTag>` alt and the tag-restricted alts (`<li>`,
+  // `<dt>`, `<tr>`, `<p>`, etc.) all begin with the same literal `<`. v2's
+  // group speculation was tie-breaking by span count, which put the
+  // catch-all (8 spans incl. closeTag) BEFORE the implicit-close `<li>` alt
+  // (6 spans, optional close). That caused inputs like `<ol><li>a</ol>` to
+  // be eagerly mis-parsed: the inner `<li>a</ol>` matched the catch-all
+  // with tag=li/closeTag=ol, leaving the outer `<ol>` without its `</ol>`.
+  //
+  // The fix prioritizes alts whose spans contain a `.oneOf(...)` refinement
+  // — these signal a tag-name discriminator and must be tried first so the
+  // catch-all only sees inputs no specific alt can claim.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      // li implicit-close form, declared SECOND. Has `.oneOf(['li'])`.
+      ex('<li></li>').as('El')
+        .span('<')
+        .span('tag', 'li').ident().oneOf(['li'])
+        .span('>')
+        .span('children', '', ['El']).repeats({ min: 0, stopBefore: ['<li>', '</ol>'] })
+        .span('</li>').optional()
+        .render('ast', { type: 'li', tag: $.tag })
+        .build(),
+      // Catch-all regular form, declared FIRST so we can verify reorder.
+      ex('<x></x>').as('El')
+        .span('<')
+        .span('tag', 'x').ident()
+        .span('>')
+        .span('children', '', ['El']).repeats({ min: 0 })
+        .span('</')
+        .span('closeTag', 'x').ident()
+        .span('>')
+        .render('ast', { type: 'el', tag: $.tag, closeTag: $.closeTag })
+        .build(),
+      ex('<x></x>').as('Doc')
+        .span('items', '<x></x>', ['El']).repeats({ min: 0 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: any[] };
+  // `<li></li>` must dispatch to the tag-restricted alt (type:'li'),
+  // not the catch-all (type:'el', closeTag:'li').
+  assert.equal(__parse('<li></li>').items[0]!.type, 'li');
+  // Implicit-close: `<ol><li></ol>` — outer must be el, inner must
+  // be li. The inner stopBefore catches `</ol>` before the catch-all
+  // alt eats `</ol>` as the inner's close tag.
+  const r = __parse('<ol><li></ol>');
+  assert.equal(r.items[0]!.type, 'el');
+  assert.equal(r.items[0]!.tag, 'ol');
+});
+
 test('v2 speculation chain orders same-first-byte literals by descending prefix length', async () => {
   // Repro for markdown fenced code blocks: two alts share a leading byte
   // (`'`'`) but one literal is "```\\n" and the other is "```". When the

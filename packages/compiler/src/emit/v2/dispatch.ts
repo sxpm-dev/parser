@@ -123,9 +123,32 @@ function emitGroupSpeculation(prodIdxs: ReadonlyArray<number>, fnName: string, p
     if (s0 && s0.class === 'literal' && typeof s0.text === 'string') return s0.text.length;
     return 0;
   };
+  // True when SOME span in the production has a class refinement that
+  // restricts its match to a fixed set of literal values (`.oneOf(...)`).
+  // Used as a "tag-restricted" signal: in HtmlElement, every implicit-close
+  // alt has `.span('tag', ...).ident().html().oneOf(['li', 'dt', …])`
+  // restricting the open-tag ident, while the catch-all regular form
+  // does NOT have a oneOf. Tag-restricted alts must be tried first so the
+  // tag-name discriminator wins before the catch-all happily accepts any
+  // tag and mis-parses the body with its non-implicit-close grammar.
+  const isRestricted = (idx: number): boolean => {
+    for (const span of prods[idx]!.spans) {
+      if (span.refinements.some((r) => r.name === 'oneOf')) return true;
+    }
+    return false;
+  };
   const ordered = [...prodIdxs].sort((a, b) => {
+    // 1. Tag-restricted alts (have `.oneOf(...)` refinement somewhere) win
+    //    over unrestricted ones. Mirrors v1's tag-name peek-discriminator
+    //    that routes a `<li>` input directly to the li alt instead of the
+    //    catch-all `<tag>…</tag>` alt.
+    const restA = isRestricted(a);
+    const restB = isRestricted(b);
+    if (restA !== restB) return restA ? -1 : 1;
+    // 2. Longest first-span literal prefix wins (e.g. "```\\n" > "```").
     const lenDelta = litLen(b) - litLen(a);
     if (lenDelta !== 0) return lenDelta;
+    // 3. Span count descending — more spans = more structural commitment.
     return prods[b]!.spans.length - prods[a]!.spans.length;
   });
   const lines: string[] = [];

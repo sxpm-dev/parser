@@ -8,7 +8,7 @@
 // All raws-mode extras are extra fields on the same object literal at end of
 // body — never post-construct mutation.
 
-import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production } from '../../model.ts';
+import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../model.ts';
 import { emitInverse } from '../inverse.ts';
 import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
@@ -63,14 +63,17 @@ export function emitV2Parser(schema: InferredSchema): string {
 function emitFusion(schema: InferredSchema): string {
   const fns: string[] = [];
   // Per-target dispatch tables. Each map is keyed by the production routing
-  // string (`<NodeType>#<prodIdx>`) and yields the fused function. Tables
-  // for targets with zero eligible productions are still emitted (empty
-  // record) so Task 5.2's lookup site doesn't have to guard for presence.
+  // string (`<NodeType>#<prodIdx>`) and yields the fused function. A target
+  // appears in the output ONLY when at least one production fused
+  // successfully — targets where every production is ineligible (non-template
+  // body, recursive slots, ast) are absent from the emitted file. Task 5.2's
+  // wiring must therefore guard for table presence (`typeof
+  // __fusedRenderDispatch_<id> !== 'undefined'`) before consulting it.
   const targetDispatchEntries = new Map<string, string[]>();
   for (const info of schema.nodeTypes.values()) {
     for (let i = 0; i < info.productions.length; i++) {
       const production = info.productions[i]!;
-      for (const target of collectProductionTargets(production)) {
+      for (const target of production.renders.keys()) {
         if (target === 'ast') continue;
         const src = emitFusedRender(production, schema, {
           nodeName: info.name,
@@ -100,10 +103,6 @@ ${entries.join('\n')}
   });
   if (fns.length === 0 && tables.length === 0) return '';
   return [fns.join('\n\n'), tables.join('\n\n')].filter((p) => p !== '').join('\n\n');
-}
-
-function collectProductionTargets(production: Production): ReadonlyArray<string> {
-  return [...production.renders.keys()];
 }
 
 function emitHeader(schema: InferredSchema, validatorImports: string): string {

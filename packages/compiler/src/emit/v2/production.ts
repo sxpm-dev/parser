@@ -22,6 +22,15 @@ import { productionRoutingKey } from '../render.ts';
 import { indent } from '../strings.ts';
 import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
 
+// Class kinds whose presence (alongside `unknownChars: 'reject'`) justifies
+// emitting the depth-0 byte-class guard in .until() bodies. A schema with
+// only comment / whitespace classes does not constrain what bytes may
+// legitimately appear at depth 0, so the guard would over-reject; gate on
+// at least one of these.
+const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
+  'ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+]);
+
 export type EmitProductionOptions = {
   readonly fnName: string;
   readonly prodIdx: number;
@@ -51,13 +60,8 @@ export function emitProduction(
     }
   }
   // The unknownChars guard is only emitted when the schema BOTH declares
-  // 'reject' AND has at least one "content" class — ident, keyword, number,
-  // hex, string, regex, template, or operator. A comment-only or
-  // whitespace-only class set doesn't constrain what content bytes can appear
-  // at depth 0 inside a .until() body, so the guard would fire on legitimate
-  // content (letters, digits, etc.) and is suppressed in that case. Schemas
-  // without any class declarations produce a similarly trivial knownBytes set.
-  const CONTENT_CLASSES = new Set(['ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator']);
+  // 'reject' AND has at least one CONTENT_CLASSES class. See module-level
+  // CONTENT_CLASSES constant for the rationale.
   const hasContentClass = schema.classes.some((cls) => CONTENT_CLASSES.has(cls.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
   const ctx: SpanContext = {

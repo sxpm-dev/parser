@@ -54,10 +54,14 @@ export function computeKnownLeadingBytes(schema: InferredSchema): Uint8Array {
       bits[0x22] = 1; bits[0x27] = 1; // " '
     } else if (cls.class === 'comment') {
       bits[0x2f] = 1; // '/'
+    } else if (cls.class === 'regex') {
+      bits[0x2f] = 1; // '/'
+    } else if (cls.class === 'template') {
+      bits[0x60] = 1; // '`'
     }
-    // Other class kinds (regex, template, whitespace, operator) are left
-    // permissive — the guard's job is to catch obviously-undeclared bytes,
-    // not to be byte-exhaustive.
+    // Other class kinds (whitespace, operator) are left permissive — their
+    // leading bytes arrive via the literalTypeByText loop above when used as
+    // tokens in productions.
   }
   return bits;
 }

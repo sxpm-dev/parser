@@ -160,17 +160,33 @@ git commit -m "chore(<pkg>): migrate to v2 emit"
 **Blocks:** html and markdown (Element body, Document body — both loop multi-role children).
 **Acceptance:** v2 emits a repeated multi-role child loop. Each iteration: try each role's first-byte dispatch; if any matches, consume and append to the children array; if none match, exit the loop. Supports `sep` / `min` / `max` / `trailing` modifiers per the existing `repeats` modifier contract. Tests green; codegen ratchet — html and markdown should generate fully after 1.3a + 1.3c are done.
 
-#### Task 1.3d: Discriminator peek-scan dispatcher (ladder rung 2)
+#### Task 1.3d: Fallthrough role handling (rescoped after 1.3c)
 
-**File touched:** `packages/compiler/src/emit/v2/dispatch.ts:5`
-**Blocks:** css (Rule vs Declaration disambiguation; both can start with an identifier byte, so first-byte dispatch alone can't separate them — needs a bounded peek-scan for `:` before `;`/`{`).
-**Acceptance:** dispatcher ladder gains rung 2: when two productions share a first-byte signature, emit a bounded peek-scan over a small set of discriminating bytes (capped at, say, 64 bytes of lookahead). The discriminator set is inferred from the differing structural patterns in the two productions. No backtracking via throw; either rung 2 conclusively picks a production or falls through to rung 3 (sentinel speculation). Tests green; css codegen succeeds.
+**Rescope reason (2026-05-26):** Task 1.3c's ratchet revealed that the actual blocker for all 3 in-scope packages is **not** same-first-byte conflict (the original 1.3d scope) but **roles with no first-byte signature** — specifically, roles whose first production's first span is `.until(...)`, `.rawUntil()`, `.repeats()`, or `.optional()`. These productions match arbitrary content as a catch-all and have no fixed byte to dispatch on. Markdown's `Paragraph`, HTML's `TextNode`, and CSS's `Rule`/`Declaration` all fit this shape. The original "two roles share a first byte" case is now Task 1.3f.
+
+**File touched:** `packages/compiler/src/emit/v2/role-ladder.ts` (`computeRoleFirstBytes` currently throws on this case).
+**Blocks:** markdown (Paragraph as catch-all in MarkdownLeaf), html (TextNode as catch-all in Element children), css (Rule and Declaration both catch-all — only PARTIALLY unblocked; same-first-byte resolution requires 1.3f).
+**Acceptance:** the role-ladder accepts at most ONE "fallthrough role" per role list — a role with no fixed first-byte signature. Emitted code tries all byte-signatured roles first; on no match, calls the fallthrough role's parse function unconditionally as the catch-all. If two roles in the same list have no signature, raise `CompilerError` pointing at Task 1.3f. Tests green; markdown and html codegen + tests pass against v2; css ratchets past this error to the same-first-byte conflict (Task 1.3f).
+
+**Prerequisites from 1.3c quality review** (do these as a small prelude before the feature):
+1. Extract `findSpanModifier`/`hasSpanModifier` from `span.ts` + `role-ladder.ts` into a shared `packages/compiler/src/emit/v2/modifiers.ts`. Update both files to import from it. Pure refactor; tests must stay green.
+2. Drop the comment-as-code emit at `span.ts:355` (when no sep, emit empty string instead of a comment).
+3. Add tests in `v2-regressions.test.ts` for `trailing: 'forbidden'`, `trailing: 'required'`, and `max:` overflow.
+Commit these as a single chore commit before the 1.3d feature commit.
 
 #### Task 1.3e: `number` class refinements (`float`, `scientific`, others CSS needs)
 
 **File touched:** `packages/compiler/src/emit/v2/span.ts:303` (and any other places where number scanning is emitted)
 **Blocks:** css (which has `100%`, `1.5em`, etc — float-shaped numbers).
-**Acceptance:** v2's number scanner honors refinements declared on number spans. At minimum: `float` (digits + optional `.` + optional fractional digits), `scientific` (float + optional `[eE][+-]?digits`), `separator` (allow `_` between digit runs). Tests green; css codegen + tests succeed end-to-end.
+**Acceptance:** v2's number scanner honors refinements declared on number spans. At minimum: `float` (digits + optional `.` + optional fractional digits), `scientific` (float + optional `[eE][+-]?digits`), `separator` (allow `_` between digit runs). Tests green; css codegen succeeds end-to-end.
+
+#### Task 1.3f: Discriminator peek-scan for same-signature roles (added 2026-05-26)
+
+**Added in response to 1.3c ratchet finding.** When two roles in the same role-list both have first-byte conflicts (either both fallthrough, or sharing a literal first byte like CSS Rule vs Declaration both starting with ident), the role-ladder needs a bounded peek-scan over a small set of discriminating bytes to pick the right one.
+
+**File touched:** `packages/compiler/src/emit/v2/role-ladder.ts` (extend `emitRoleLadder` / `computeRoleFirstBytes`); possibly new `packages/compiler/src/emit/v2/peek-scan.ts`.
+**Blocks:** css final unblock (Rule vs Declaration disambiguation; both start with ident, distinguished structurally by `:` appearing before `;`/`{`/end-of-input).
+**Acceptance:** when two roles can't be separated by first byte (either both fallthrough or sharing signatures), the role-ladder emits a bounded peek-scan (cap at ~64 bytes of lookahead) over inferred discriminating bytes. Discriminator set is derived from the differing structural patterns in each role's productions (e.g. Rule has `{` somewhere ahead; Declaration has `:` before `;`/`}`). No throw-backtracking; conclusive pick or codegen error if discriminators can't be derived statically. Tests green; css codegen succeeds end-to-end.
 
 **Exit criteria for combined Task 1.3:** all three of css/html/markdown generate cleanly with `--v2`; their tests pass against the v2-generated parser; their perf/size gates run (regressions OK at this stage — recovered in Phase 4). `docs/v2-migration-status.md` shows all three checked.
 

@@ -463,29 +463,122 @@ test('v2 role-ladder treats until-leading role as fallthrough catch-all', async 
   assert.equal(plain.item.text, 'plain text');
 });
 
-test('v2 role-ladder rejects multiple fallthrough roles', async () => {
+test('v2 role-ladder uses sentinel speculation for multiple fallthrough roles', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Two roles, both with `.until(...)` first spans — neither has a fixed
-  // first byte. The ladder cannot disambiguate by byte peek; we expect a
-  // CompilerError pointing at Task 1.3f.
+  // first byte. Task 1.3f resolves this via sentinel speculation in author
+  // declaration order: Left is tried first, and Right fires only when Left's
+  // parse returns null (because Left's terminator `:` is missing).
+  //
+  // No throws, no try/catch — pure null-return + state.pos rewind.
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('foo').as('Left')
+      ex('foo:').as('Left')
         .span('text', 'foo').until([':'])
+        .span(':')
         .render('ast', { kind: 'left', text: $.text }).build(),
-      ex('bar').as('Right')
+      ex('bar;').as('Right')
         .span('text', 'bar').until([';'])
+        .span(';')
         .render('ast', { kind: 'right', text: $.text }).build(),
-      ex('foo').as('Doc')
-        .span('item', 'foo', ['Left', 'Right'])
+      ex('foo:').as('Doc')
+        .span('item', 'foo:', ['Left', 'Right'])
         .render('ast', { item: $.item }).build(),
     ],
   });
-  assert.throws(
-    () => generateParser(schema, undefined, { v2: true }),
-    /Task 1\.3f/,
-  );
+  const code = generateParser(schema, undefined, { v2: true });
+  // The ladder must NOT use throw/catch for speculation.
+  assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const left = __parse('foo:') as { item: { kind: string; text: string } };
+  assert.equal(left.item.kind, 'left');
+  assert.equal(left.item.text, 'foo');
+  // `bar;` doesn't match Left (no `:`); Right picks it up via speculation.
+  const right = __parse('bar;') as { item: { kind: string; text: string } };
+  assert.equal(right.item.kind, 'right');
+  assert.equal(right.item.text, 'bar');
+});
+
+test('v2 role-ladder uses sentinel speculation for same-byte literal roles', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Mirrors HTML's Doctype-vs-Comment conflict: both roles start with the
+  // same byte `<` but have different literal prefixes (`<!` vs `<!--`). The
+  // ladder groups them under one byte-dispatch arm and emits sentinel
+  // speculation — longest-prefix role (Comment, `<!--`) is tried first.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('<!DOCTYPE>').as('Doctype')
+        .span('<!')
+        .span('keyword', 'DOCTYPE').ident().html().oneOf(['DOCTYPE'])
+        .span('>')
+        .render('ast', { kind: 'doctype', keyword: $.keyword })
+        .build(),
+      ex('<!--hi-->').as('Comment')
+        .span('<!--')
+        .span('text', 'hi').until('-->', { trim: false })
+        .span('-->')
+        .render('ast', { kind: 'comment', text: $.text })
+        .build(),
+      ex('<!DOCTYPE>').as('Doc')
+        .span('item', '<!DOCTYPE>', ['Doctype', 'Comment'])
+        .render('ast', { item: $.item })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  // Both roles share byte 0x3c — they live in the same `if (__c0 === 60)`
+  // group with speculation between them.
+  assert.match(code, /__c0 === 60/);
+  assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const doc = __parse('<!DOCTYPE>') as { item: { kind: string; keyword: string } };
+  assert.equal(doc.item.kind, 'doctype');
+  assert.equal(doc.item.keyword, 'DOCTYPE');
+  const cmt = __parse('<!--hi-->') as { item: { kind: string; text: string } };
+  assert.equal(cmt.item.kind, 'comment');
+  assert.equal(cmt.item.text, 'hi');
+});
+
+test('v2 role-ladder fallthrough speculation respects author declaration order', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Two fallthrough roles with overlapping shapes; the second only matches
+  // when the first would fail. The schema must list the more-specific role
+  // first — that's the contract sentinel speculation rests on.
+  //
+  // Specific role (Underlined) needs both a text capture and a trailing
+  // `===` underline. Catch-all (Paragraph) is plain text to EOF.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('hi===').as('Underlined')
+        .span('text', 'hi').until('===')
+        .span('===')
+        .render('ast', { kind: 'heading', text: $.text }).build(),
+      ex('hello').as('Paragraph')
+        .span('text', 'hello').until([])
+        .render('ast', { kind: 'paragraph', text: $.text }).build(),
+      ex('hi===').as('Doc')
+        .span('item', 'hi===', ['Underlined', 'Paragraph'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  // Speculation chain shape: Underlined tried first, Paragraph on null-return.
+  assert.match(code, /parseUnderlined\(state\)[\s\S]*?if \(__r === null\) \{ __r = parseParagraph/);
+  assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const heading = __parse('hi===') as { item: { kind: string; text: string } };
+  assert.equal(heading.item.kind, 'heading');
+  assert.equal(heading.item.text, 'hi');
+  // No `===` underline — Underlined fails, Paragraph picks up.
+  const paragraph = __parse('hello') as { item: { kind: string; text: string } };
+  assert.equal(paragraph.item.kind, 'paragraph');
+  assert.equal(paragraph.item.text, 'hello');
 });
 
 test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {

@@ -3,6 +3,8 @@
 // (v2 scannerless emit — see docs/scannerless-emit-v2.md)
 /* eslint-disable */
 // @ts-nocheck
+import { validate as __validator_0 } from "@parser2/css-color";
+import { validate as __validator_1 } from "@parser2/css-length-percentage";
 
 
 export type ParseMode = 'fast' | 'raws';
@@ -68,6 +70,21 @@ function isJsIdentStart(c: number): boolean {
 }
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function validatorErrorAt(input: string, offset: number): SyntaxError {
+  let lineStart = offset;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
+  let lineEnd = offset;
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  return new SyntaxError(`Invalid value at position ${offset}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
@@ -2302,17 +2319,46 @@ function __parse(input: string, options?: ParseOptions): unknown {
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode: 'fast',
-    lineStarts: [],
-  };
-  const result = parseStylesheet(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  // Syntax check: parse in fast mode first (will throw SyntaxError on bad syntax).
+  __parse(input, { mode: 'fast' });
+  // Validation check: only runs when opt-in.
+  if (!options?.validate) return;
+  // Parse in raws mode to get source offsets for error reporting.
+  const __rawsAst = __parse(input, { mode: 'raws' });
+  __walkAndValidate(input, __rawsAst);
+}
+
+function __walkAndValidate(input: string, node: unknown): void {
+  if (node === null || node === undefined) return;
+  if (Array.isArray(node)) {
+    for (const child of node) __walkAndValidate(input, child);
+    return;
+  }
+  if (typeof node !== 'object') return;
+  const __n = node as Record<string, unknown>;
+  const __prod = typeof __n['__production'] === 'string' ? __n['__production'] : '';
+  if (__prod === "Declaration" || __prod.startsWith("Declaration#")) {
+    if (["accent-color", "border-block-color", "border-block-end-color", "border-block-start-color", "border-bottom-color", "border-color", "border-inline-color", "border-inline-end-color", "border-inline-start-color", "border-left-color", "border-right-color", "border-top-color", "caret-color", "color", "column-rule-color", "fill", "flood-color", "lighting-color", "outline-color", "stop-color", "stroke", "text-decoration-color"].includes(__n["prop"])) {
+      try { __validator_0(String(__n["value"] ?? '')); }
+      catch (e) {
+        const __off = (__n.source && __n.source.start && typeof __n.source.start.offset === 'number')
+          ? __n.source.start.offset : 0;
+        throw validatorErrorAt(input, __off);
+      }
+    }
+    if (["block-size", "border-block-end-width", "border-block-start-width", "border-block-width", "border-bottom-width", "border-inline-end-width", "border-inline-start-width", "border-inline-width", "border-left-width", "border-right-width", "border-spacing", "border-top-width", "border-width", "bottom", "column-gap", "column-width", "flex-basis", "font-size", "gap", "height", "inline-size", "inset", "inset-block", "inset-block-end", "inset-block-start", "inset-inline", "inset-inline-end", "inset-inline-start", "left", "letter-spacing", "margin", "margin-block", "margin-block-end", "margin-block-start", "margin-bottom", "margin-inline", "margin-inline-end", "margin-inline-start", "margin-left", "margin-right", "margin-top", "max-block-size", "max-height", "max-inline-size", "max-width", "min-block-size", "min-height", "min-inline-size", "min-width", "outline-offset", "outline-width", "padding", "padding-block", "padding-block-end", "padding-block-start", "padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left", "padding-right", "padding-top", "right", "row-gap", "scroll-margin", "scroll-padding", "top", "width", "word-spacing"].includes(__n["prop"])) {
+      try { __validator_1(String(__n["value"] ?? '')); }
+      catch (e) {
+        const __off = (__n.source && __n.source.start && typeof __n.source.start.offset === 'number')
+          ? __n.source.start.offset : 0;
+        throw validatorErrorAt(input, __off);
+      }
+    }
+  }
+  // Recurse into all object-valued children.
+  for (const __key in __n) {
+    const __child = __n[__key];
+    if (__child !== null && typeof __child === 'object') __walkAndValidate(input, __child);
   }
 }
 

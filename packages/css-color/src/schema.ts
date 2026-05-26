@@ -96,7 +96,7 @@ export default defineSchema({
     ex('#00ff99')
       .as('CssColorValue')
       .span('#').noWhitespaceAfter()
-      .span('value', '00ff99').until([')', ',', '/']).hexString().lengths([3, 4, 6, 8])
+      .span('value', '00ff99').hex()
       .render('ast', { type: 'hash-color', value: $.value })
       .build(),
 
@@ -129,14 +129,14 @@ export default defineSchema({
 
     ex('60%')
       .as('NumericColorFunctionToken')
-      .span('value', '60').number().noWhitespaceAfter()
+      .span('value', '60').number().float().noWhitespaceAfter()
       .span('%')
       .render('ast', { type: 'percentage', value: $.value })
       .build(),
 
     ex('255')
       .as('NumericColorFunctionToken')
-      .span('value', '255').number()
+      .span('value', '255').number().float()
       .render('ast', { type: 'number', value: $.value })
       .build(),
 
@@ -154,14 +154,14 @@ export default defineSchema({
 
     ex('60%')
       .as('ColorFunctionToken')
-      .span('value', '60').number().noWhitespaceAfter()
+      .span('value', '60').number().float().noWhitespaceAfter()
       .span('%')
       .render('ast', { type: 'percentage', value: $.value })
       .build(),
 
     ex('255')
       .as('ColorFunctionToken')
-      .span('value', '255').number()
+      .span('value', '255').number().float()
       .render('ast', { type: 'number', value: $.value })
       .build(),
 

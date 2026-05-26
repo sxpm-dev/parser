@@ -8,7 +8,7 @@
 // test catches regressions in the emit shape — not just runtime behavior.
 
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -1472,4 +1472,23 @@ test('v2 .until() with requireStop fails on EOF without stop match', async () =>
   const src = generateParser(schema, undefined, {});
   // The emitted until body should test for EOF after the scan and fail.
   assert.match(src, /off >= len/);
+});
+
+test('v2 validate() invokes per-field validators from ValidationDef', () => {
+  // Use the real CSS generated parser since the validation infrastructure lives there.
+  // This is a code-shape check, not a runtime check — we assert the emitted
+  // validate() function imports the validator modules and dispatches by
+  // __production nodeType + matchField.
+  //
+  // The test file lives at packages/compiler/test/v2-regressions.test.ts;
+  // navigate up two levels to reach the monorepo root, then into css/_generated.
+  const cssParserPath = new URL('../../../packages/css/src/_generated/parser.ts', import.meta.url).pathname;
+  const parserSrc = readFileSync(cssParserPath, 'utf8');
+  // Generated parser should import the validator modules.
+  assert.match(parserSrc, /from ['"]@parser2\/css-color['"]/);
+  assert.match(parserSrc, /from ['"]@parser2\/css-length-percentage['"]/);
+  // Generated validate() should reference the imported validators by name.
+  assert.match(parserSrc, /__validator_\d+/);
+  // The validate function should dispatch based on __production field.
+  assert.match(parserSrc, /__production/);
 });

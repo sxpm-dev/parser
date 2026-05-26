@@ -12,13 +12,14 @@ import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../mod
 import { emitInverse } from '../inverse.ts';
 import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
-import { jsString } from '../strings.ts';
 import { emitDispatcher } from './dispatch.ts';
 import { emitProduction } from './production.ts';
 import { V2_RUNTIME } from './runtime.ts';
+import { emitValidate } from './validate-emit.ts';
 
 export function emitV2Parser(schema: InferredSchema): string {
-  const header = emitHeader(schema);
+  const { imports: validatorImports, body: validateBody } = emitValidate(schema, parseFnName(schema.rootType));
+  const header = emitHeader(schema, validatorImports);
   const runtime = V2_RUNTIME;
   const nodeFns: string[] = [];
   for (const info of schema.nodeTypes.values()) {
@@ -29,17 +30,18 @@ export function emitV2Parser(schema: InferredSchema): string {
   const render = emitRender(schema);
   const rebuild = emitRebuild(schema);
   const inverse = emitInverse(schema);
-  const api = emitPublicApi(schema);
+  const api = emitPublicApi(schema, validateBody);
   return [header, runtime, nodeFns.join('\n\n'), render, REBUILD_SLOT_RUNTIME, rebuild, inverse, api].join('\n\n') + '\n';
 }
 
-function emitHeader(schema: InferredSchema): string {
+function emitHeader(schema: InferredSchema, validatorImports: string): string {
+  const importBlock = validatorImports ? `${validatorImports}\n` : '';
   return `// Auto-generated from packages/${schema.packageName}/src/schema.ts
 // Do not edit by hand. Re-run \`npm run generate\` to refresh.
 // (v2 scannerless emit — see docs/scannerless-emit-v2.md)
 /* eslint-disable */
 // @ts-nocheck
-`;
+${importBlock}`;
 }
 
 function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
@@ -65,7 +67,7 @@ export function parseFnName(nodeType: string): string {
   return `parse${nodeType}`;
 }
 
-function emitPublicApi(schema: InferredSchema): string {
+function emitPublicApi(schema: InferredSchema, validateBody: string): string {
   const rootFn = parseFnName(schema.rootType);
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
@@ -84,23 +86,5 @@ function emitPublicApi(schema: InferredSchema): string {
   return result;
 }
 
-export function validate(input: string, options?: ParseOptions): void {
-  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode: 'fast',
-    lineStarts: [],
-  };
-  const result = ${rootFn}(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
-  }
-}
-
-(validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
-  module: ${jsString(`@parser2/${schema.packageName}`)},
-  exportName: 'validate',
-};`;
+${validateBody}`;
 }

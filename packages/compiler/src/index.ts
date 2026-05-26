@@ -6,6 +6,7 @@ import { attachRenderTargets } from './infer/render-targets.ts';
 import { deriveInverses } from './infer/invert.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
+import { checkRoundTrip } from './check/round-trip.ts';
 import { emitV2Parser } from './emit/v2/index.ts';
 import type { InferredSchema } from './model.ts';
 
@@ -31,7 +32,7 @@ export function inferSchema(
   attachRenderTargets(nodeTypes);
   deriveInverses(nodeTypes);
   const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
-  return {
+  const inferred: InferredSchema = {
     packageName: options.packageName ?? 'parser',
     rootType: root.rootType,
     nodeTypes,
@@ -44,6 +45,11 @@ export function inferSchema(
     defaultTarget: root.defaultTarget,
     validation,
   };
+  // Theorem check: the schema must encode a round-trippable language. Done
+  // after deriveInverses so the inverse IR is in place. See
+  // check/round-trip.ts for the property statement.
+  checkRoundTrip(inferred);
+  return inferred;
 }
 
 export function generateParser(

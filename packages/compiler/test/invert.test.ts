@@ -133,6 +133,12 @@ test('inverse derivation: template body -> InverseIR.template with segments+capt
 
 test('inverse derivation: explicit options.inverse overrides body-derived inverse', async () => {
   const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  // The override path: the schema author explicitly supplies an inverse
+  // template via `options.inverse`. The derived InverseIR carries the
+  // override's segments, not the body's. When body and override are not
+  // mutually round-trippable, the codegen's round-trip closure check
+  // (Task 3.1) skips this entry — see check/round-trip.ts header — but
+  // the override IS still derived into the IR (this test pins that).
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [

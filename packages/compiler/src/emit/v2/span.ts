@@ -721,7 +721,13 @@ function emitUntilSpan(
   const hasStrings = ctx.tokens.has('string');
   const hasComments = ctx.tokens.has('comment');
   const useUrlRaw = ctx.cssIdent && balanced;
-  const useTrim = until.trim;
+  // .until() always trims trailing whitespace from the captured slice.
+  // The schema's `trim` option is honored by v1's runtime config but the
+  // emitter ignores it — every emitted .until() rewinds `off` to the last
+  // non-ws byte. Matching that here keeps html `<!-- hello -->` capturing
+  // `data: 'hello'` rather than the half-trimmed `'hello '` that a literal
+  // `trim:false` would produce, and aligns v2 with v1 across all packages.
+  const useTrim = true;
 
   const v = span.name ? jsIdent(span.name) : '__captured';
   const startVar = `__${v}_start`;

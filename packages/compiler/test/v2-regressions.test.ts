@@ -836,6 +836,33 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   assert.equal(result2.value, '{ a; b; c; }');
 });
 
+test('v2 .until() always trims trailing whitespace from the captured slice', async () => {
+  // Repro for html comment fixtures: a schema like
+  //   .span('data', ' hello ').until('-->', { trim: false })
+  // declares trim:false but v1's emitter ignores the option (always trims).
+  // The AST shape expects the trimmed interior (data === 'hello'), not the
+  // raw ' hello '. v2 must match.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'C',
+    examples: [
+      ex('<!-- hello -->').as('C')
+        .span('<!--')
+        .span('data', ' hello ').until('-->', { trim: false })
+        .span('-->')
+        .render('ast', { data: $.data })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { data: string };
+  assert.equal(__parse('<!-- hello -->').data, 'hello');
+  assert.equal(__parse('<!--   hello   -->').data, 'hello');
+  assert.equal(__parse('<!---->').data, '');
+  assert.equal(__parse('<!--\n  multi\n-->').data, 'multi');
+});
+
 test('v2 comment-class span returns interior text and trims surrounding ws', async () => {
   // Repro for css `comments.css` / html `comments.html` / huge-page fixtures.
   // Schema declares `.span('text', '/* foo */').comment()` — the AST surface

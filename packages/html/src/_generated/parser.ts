@@ -230,32 +230,37 @@ function parseComment(state: State): unknown {
       break;
     }
     __data_start = off;
+    let __lastNonWs = off;
     let __depth = 0;
     while (off < len) {
       const __c = input.charCodeAt(off);
       if (__depth === 0 && ((__c === 45 && input.startsWith("-->", off)))) break;
       if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
         __depth++; off++;
+        __lastNonWs = off;
         continue;
       }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
         __depth--; off++;
+        __lastNonWs = off;
         continue;
       }
       if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
         off += 2;
         continue;
       }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
       off++;
     }
     const __emptyAnchor = __data_start;
-    if (off === __data_start) {
+    if (__lastNonWs === __data_start) {
       off = __emptyAnchor;
       data = '';
     } else {
-      off = off;
-      data = input.slice(__data_start, off);
+      off = __lastNonWs;
+      data = input.slice(__data_start, __lastNonWs);
     }
     __data_end = off;
   }

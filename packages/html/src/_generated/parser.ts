@@ -4019,6 +4019,629 @@ export function stringify(value: unknown, options?: { type?: string }): string {
   return fn(value);
 }
 
+function __fusedRender_Doctype_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 2;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __keyword_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __keyword_end = off;
+    const keyword = input.slice(__keyword_start, __keyword_end);
+    if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<!");
+    out.push(String(keyword ?? ""));
+    out.push(" ");
+    out.push(String(name ?? ""));
+    out.push(">");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Doctype_1_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 2;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __keyword_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __keyword_end = off;
+    const keyword = input.slice(__keyword_start, __keyword_end);
+    if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<!");
+    out.push(String(keyword ?? ""));
+    out.push(" ");
+    out.push(String(name ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Comment_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.startsWith("<!--", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 4;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let data: string = '';
+    let __data_start = off;
+    let __data_end = off;
+    {
+      while (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+        break;
+      }
+      __data_start = off;
+      let __lastNonWs = off;
+      let __depth = 0;
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__depth === 0 && ((__c === 45 && input.startsWith("-->", off)))) break;
+        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+          __depth++; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+          if (__depth === 0) break;
+          __depth--; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x5c && off + 1 < len) {
+          __lastNonWs = off + 2;
+          off += 2;
+          continue;
+        }
+        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+        off++;
+      }
+      const __emptyAnchor = __data_start;
+      if (__lastNonWs === __data_start) {
+        off = __emptyAnchor;
+        data = '';
+      } else {
+        off = __lastNonWs;
+        data = input.slice(__data_start, __lastNonWs);
+      }
+      __data_end = off;
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.startsWith("-->", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 3;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<!--");
+    out.push(String(data ?? ""));
+    out.push("-->");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_HtmlElement_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __tag_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __tag_end = off;
+    const tag = input.slice(__tag_start, __tag_end);
+    if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __attrs_start = off;
+    const attrs: unknown[] = [];
+    while (true) {
+      const __loopStart = off;
+      let __cand: unknown = null;
+      state.pos = off;
+      __cand = parseAttribute(state);
+      if (__cand !== null) { off = state.pos; }
+      if (__cand === null) break;
+      attrs.push(__cand);
+      if (off === __loopStart) break;
+    }
+    const __attrs_end = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let children: string = '';
+    let __children_start = off;
+    let __children_end = off;
+    {
+      __children_start = off;
+      let __earliest = len;
+      for (let __i = __children_start; __i < len; __i++) {
+        const __c = input.charCodeAt(__i);
+        if (__c === 60 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+      }
+      off = __earliest;
+      __children_end = off;
+      children = input.slice(__children_start, __children_end);
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 2;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __closeTag_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __closeTag_end = off;
+    const closeTag = input.slice(__closeTag_start, __closeTag_end);
+    if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<");
+    out.push(String(tag ?? ""));
+    out.push(">");
+    out.push(String(children ?? ""));
+    out.push("</");
+    out.push(String(closeTag ?? ""));
+    out.push(">");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_HtmlElement_1_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __tag_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __tag_end = off;
+    const tag = input.slice(__tag_start, __tag_end);
+    if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __attrs_start = off;
+    const attrs: unknown[] = [];
+    while (true) {
+      const __loopStart = off;
+      let __cand: unknown = null;
+      state.pos = off;
+      __cand = parseAttribute(state);
+      if (__cand !== null) { off = state.pos; }
+      if (__cand === null) break;
+      attrs.push(__cand);
+      if (off === __loopStart) break;
+    }
+    const __attrs_end = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<");
+    out.push(String(tag ?? ""));
+    out.push(">");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_HtmlElement_2_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __tag_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __tag_end = off;
+    const tag = input.slice(__tag_start, __tag_end);
+    if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __attrs_start = off;
+    const attrs: unknown[] = [];
+    while (true) {
+      const __loopStart = off;
+      let __cand: unknown = null;
+      state.pos = off;
+      __cand = parseAttribute(state);
+      if (__cand !== null) { off = state.pos; }
+      if (__cand === null) break;
+      attrs.push(__cand);
+      if (off === __loopStart) break;
+    }
+    const __attrs_end = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 2;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<");
+    out.push(String(tag ?? ""));
+    out.push(" />");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_HtmlElement_3_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __tag_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __tag_end = off;
+    const tag = input.slice(__tag_start, __tag_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __attrs_start = off;
+    const attrs: unknown[] = [];
+    while (true) {
+      const __loopStart = off;
+      let __cand: unknown = null;
+      state.pos = off;
+      __cand = parseAttribute(state);
+      if (__cand !== null) { off = state.pos; }
+      if (__cand === null) break;
+      attrs.push(__cand);
+      if (off === __loopStart) break;
+    }
+    const __attrs_end = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 2;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("<");
+    out.push(String(tag ?? ""));
+    out.push("/>");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_TextNode_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let value: string = '';
+    let __value_start = off;
+    let __value_end = off;
+    {
+      __value_start = off;
+      let __earliest = len;
+      for (let __i = __value_start; __i < len; __i++) {
+        const __c = input.charCodeAt(__i);
+        if (__c === 60) { __earliest = __i; break; }
+      }
+      off = __earliest;
+      __value_end = off;
+      value = input.slice(__value_start, __value_end);
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(value ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Attribute_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let value: string = '';
+    let __value_start = off;
+    let __value_end = off;
+    {
+      while (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+        break;
+      }
+      __value_start = off;
+      let __lastNonWs = off;
+      let __depth = 0;
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__depth === 0 && (__c === 34)) break;
+        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+          __depth++; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+          if (__depth === 0) break;
+          __depth--; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x5c && off + 1 < len) {
+          __lastNonWs = off + 2;
+          off += 2;
+          continue;
+        }
+        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+        off++;
+      }
+      if (off >= len || __depth !== 0) {
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
+      const __emptyAnchor = __value_start;
+      if (__lastNonWs === __value_start) {
+        off = __emptyAnchor;
+        value = '';
+      } else {
+        off = __lastNonWs;
+        value = input.slice(__value_start, __lastNonWs);
+      }
+      __value_end = off;
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(name ?? ""));
+    out.push("=\"");
+    out.push(String(value ?? ""));
+    out.push("\"");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Attribute_1_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let value: string = '';
+    let __value_start = off;
+    let __value_end = off;
+    {
+      while (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+        break;
+      }
+      __value_start = off;
+      let __lastNonWs = off;
+      let __depth = 0;
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__depth === 0 && (__c === 39)) break;
+        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+          __depth++; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+          if (__depth === 0) break;
+          __depth--; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x5c && off + 1 < len) {
+          __lastNonWs = off + 2;
+          off += 2;
+          continue;
+        }
+        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+        off++;
+      }
+      if (off >= len || __depth !== 0) {
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
+      const __emptyAnchor = __value_start;
+      if (__lastNonWs === __value_start) {
+        off = __emptyAnchor;
+        value = '';
+      } else {
+        off = __lastNonWs;
+        value = input.slice(__value_start, __lastNonWs);
+      }
+      __value_end = off;
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(name ?? ""));
+    out.push("='");
+    out.push(String(value ?? ""));
+    out.push("'");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Attribute_2_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let value: string = '';
+    let __value_start = off;
+    let __value_end = off;
+    {
+      __value_start = off;
+      let __earliest = len;
+      for (let __i = __value_start; __i < len; __i++) {
+        const __c = input.charCodeAt(__i);
+        if (__c === 34 || __c === 39 || __c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+        if (__c === 47 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
+      }
+      off = __earliest;
+      __value_end = off;
+      value = input.slice(__value_start, __value_end);
+      if (value.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(name ?? ""));
+    out.push("=");
+    out.push(String(value ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Attribute_3_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(name ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "Doctype#0": __fusedRender_Doctype_0_source,
+  "Doctype#1": __fusedRender_Doctype_1_source,
+  "Comment#0": __fusedRender_Comment_0_source,
+  "HtmlElement#0": __fusedRender_HtmlElement_0_source,
+  "HtmlElement#1": __fusedRender_HtmlElement_1_source,
+  "HtmlElement#2": __fusedRender_HtmlElement_2_source,
+  "HtmlElement#3": __fusedRender_HtmlElement_3_source,
+  "TextNode#0": __fusedRender_TextNode_0_source,
+  "Attribute#0": __fusedRender_Attribute_0_source,
+  "Attribute#1": __fusedRender_Attribute_1_source,
+  "Attribute#2": __fusedRender_Attribute_2_source,
+  "Attribute#3": __fusedRender_Attribute_3_source,
+};
+
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {

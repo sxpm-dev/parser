@@ -836,6 +836,75 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   assert.equal(result2.value, '{ a; b; c; }');
 });
 
+test('v2 comment-class span returns interior text and trims surrounding ws', async () => {
+  // Repro for css `comments.css` / html `comments.html` / huge-page fixtures.
+  // Schema declares `.span('text', '/* foo */').comment()` — the AST surface
+  // expects the INTERIOR text (no `/*` `*/` delimiters, leading/trailing
+  // whitespace trimmed). v2 had been returning the raw byte slice
+  // including the delimiters. The fix lives in emitClassSpanValueExpr.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'C',
+    tokens: ['comment'],
+    examples: [
+      ex('/* foo */').as('C')
+        .span('text', '/* foo */').comment()
+        .render('ast', { type: 'comment', text: $.text })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { text: string };
+  assert.equal(__parse('/* foo */').text, 'foo');
+  assert.equal(__parse('/*foo*/').text, 'foo');
+  assert.equal(__parse('/* hello world */').text, 'hello world');
+  assert.equal(__parse('/* */').text, '');
+  assert.equal(__parse('/**/').text, '');
+  // Leading/trailing whitespace inside `/* */` is trimmed but interior
+  // whitespace is preserved as-is.
+  assert.equal(__parse('/*  spaced  */').text, 'spaced');
+  assert.equal(__parse('/*\n  multi\n  line\n*/').text, 'multi\n  line');
+});
+
+test('v2 inter-span gap before optional literal is ws-only (preserve trailing comments)', async () => {
+  // Repro for css `comments.css`: a Declaration like `border-radius: 3px / 7px`
+  // followed by a trailing `/* end */` comment and a `}` close. v2's
+  // inter-span gap was eating the comment before the optional `;` span,
+  // so the body loop never got a chance to emit a Comment node. v1 saves
+  // the offset before the gap and rewinds when the optional doesn't
+  // match — v2 just suppresses the comment-skip before an optional span
+  // so the comment stays available for the parent's repeats body.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Body',
+    tokens: ['comment'],
+    examples: [
+      ex('/* foo */').as('Comment')
+        .span('text', '/* foo */').comment()
+        .render('ast', { type: 'comment', text: $.text })
+        .build(),
+      ex('a').as('Decl')
+        .span('prop', 'a').ident()
+        .span(';').optional()
+        .render('ast', { type: 'decl', prop: $.prop })
+        .build(),
+      ex('a /* x */').as('Body')
+        .span('items', 'a', ['Comment', 'Decl'])
+        .repeats({ min: 0 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: { type: string }[] };
+  // The trailing /* */ comment must surface as a separate Comment node, not
+  // be silently absorbed by the gap before the optional `;`.
+  const r = __parse('a /* trailing */');
+  assert.deepEqual(r.items.map((it) => it.type), ['decl', 'comment']);
+});
+
 test('v2 repeats sweeps LEADING separators before the first item', async () => {
   // Repro for css `semicolons.css` first rule `a {;;\n    color: black;\n}`:
   // v1's emit ran the sep-sweep on every iteration; v2 gated it on

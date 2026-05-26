@@ -97,7 +97,19 @@ function parseComment(state: State): unknown {
   while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
   if (off < len) off += 2;
   const __text_end = off;
-  const text = input.slice(__text_start, __text_end);
+  let __text_ts = __text_start + 2;
+  let __text_te = __text_end - 2;
+  while (__text_ts < __text_te) {
+    const __lc = input.charCodeAt(__text_ts);
+    if (__lc !== 0x20 && __lc !== 0x09 && __lc !== 0x0a && __lc !== 0x0d) break;
+    __text_ts++;
+  }
+  while (__text_te > __text_ts) {
+    const __tc = input.charCodeAt(__text_te - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __text_te--;
+  }
+  const text = input.slice(__text_ts, __text_te);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
@@ -410,17 +422,7 @@ function parseDeclaration__alt0(state: State): unknown {
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __important_end = off;
   const important = input.slice(__important_start, __important_end);
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (input.charCodeAt(off) === 59) { off += 1; }
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
@@ -704,17 +706,7 @@ function parseDeclaration__alt1(state: State): unknown {
     }
     __value_end = off;
   }
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (input.charCodeAt(off) === 59) { off += 1; }
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
@@ -872,17 +864,7 @@ function parseRule(state: State): unknown {
   }
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
@@ -1116,17 +1098,7 @@ function parseAtRule__alt0(state: State): unknown {
   }
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
@@ -1347,17 +1319,7 @@ function parseAtRule__alt1(state: State): unknown {
     }
     __params_end = off;
   }
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (input.charCodeAt(off) === 59) { off += 1; }
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;

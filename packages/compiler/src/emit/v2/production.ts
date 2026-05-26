@@ -16,11 +16,11 @@
 // Failure paths inside the body do `state.pos = entryOff; return null;` and
 // update state.maxOff so the top-level error reports the deepest position.
 
-import type { InferredSchema, Production } from '../../model.ts';
+import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { emitCapturesExpr, type CapturesBindings } from '../captures.ts';
 import { productionRoutingKey } from '../render.ts';
 import { indent } from '../strings.ts';
-import { emitSpan, type SpanBindings, type SpanContext } from './span.ts';
+import { emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
 
 export type EmitProductionOptions = {
   readonly fnName: string;
@@ -64,27 +64,38 @@ export function emitProduction(
   lines.push(`const len = state.len;`);
   lines.push(`let off = state.pos;`);
   lines.push(`const entryOff = off;`);
-  // Inter-span gap (between consecutive spans of the SAME production) also
-  // consumes `/* */` comments when the schema declares `comment` as a token
-  // class. Mirrors v1 scannerless emit (which inserts a ws+comment skip
-  // between every consecutive pair of spans). Without this, a comment
-  // between a captured value and its following literal (e.g. CSS `a/**/{}`)
-  // would leave `off` parked on `/`, breaking the literal match.
-  //
-  // The LEADING ws skip (before the FIRST span) is ws-only — never
-  // comment-aware. Otherwise productions whose first span is a comment-class
-  // span would consume the comment they're meant to capture. v1 emits the
-  // same shape (leading skip = ws only; inter-span skip = ws + comments).
-  const interSpanSkip = tokenClasses.has('comment')
-    ? skipWsAndCommentsBlock()
-    : skipWsBlock();
-  // Skip leading ws — required by 'standard' whitespace policy.
+  // Skip leading ws — required by 'standard' whitespace policy. The leading
+  // skip is ALWAYS ws-only (never comment-aware). Otherwise productions whose
+  // first span captures a /* … */ comment would consume the comment they're
+  // meant to capture. v1 emits the same shape.
   lines.push(skipWsBlock());
 
   const spans = production.spans;
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]!;
-    if (i > 0) lines.push(interSpanSkip);
+    if (i > 0) {
+      // Inter-span gap skip strategy. Three conditions must hold for the
+      // gap to eat `/* */` comments alongside whitespace:
+      //   (a) the schema declares `comment` as a token class
+      //   (b) the upcoming span isn't itself a comment-capturing span (a
+      //       comment-class span, or a recursive span whose roles include
+      //       a Comment-style production) — otherwise we'd eat the comment
+      //       the next span is meant to capture
+      //   (c) the upcoming span is REQUIRED, not optional — v1's emit saves
+      //       the offset before the gap and rewinds when the optional span
+      //       doesn't match, leaving the comment available for the
+      //       parent's next span. v2's optional spans don't rewind through
+      //       the gap, so suppress comment-eating here to leave the comment
+      //       for whoever follows. Matches the CSS Declaration alt where a
+      //       trailing `/* */` comment lives between the value's trim
+      //       boundary and the rule body's next iteration.
+      const consumesData = spanConsumesComments(span, schema);
+      const isOptional = hasModifier(span, 'optional');
+      const interSpanSkip = tokenClasses.has('comment') && !consumesData && !isOptional
+        ? skipWsAndCommentsBlock()
+        : skipWsBlock();
+      lines.push(interSpanSkip);
+    }
     lines.push(emitSpan(span, ctx, bindings));
   }
   // No trailing ws skip — a production owns its captured range. WS after
@@ -132,6 +143,27 @@ function toCapturesBindings(b: SpanBindings): CapturesBindings {
 
 function skipWsBlock(): string {
   return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
+}
+
+// True iff this span is meant to capture `/* */` comments as data. Covers:
+//   1. a class-`comment` span on the span itself (e.g. .span('text', '/* x */').comment())
+//   2. a recursive span (repeats / non-repeats) whose roles include any
+//      production whose first non-empty span is a comment-class span.
+// Used by the inter-span gap to decide whether to skip comments before this
+// span. v1 mirrors the same idea by not emitting a comment-skip before a
+// repeats body when one of its roles is a Comment-producing production.
+function spanConsumesComments(span: ResolvedSpan, schema: InferredSchema): boolean {
+  if (span.class === 'comment') return true;
+  if (span.recursiveRoles.length === 0) return false;
+  for (const roleName of span.recursiveRoles) {
+    const info = schema.nodeTypes.get(roleName);
+    if (!info) continue;
+    for (const prod of info.productions) {
+      const firstSpan = prod.spans[0];
+      if (firstSpan && firstSpan.class === 'comment') return true;
+    }
+  }
+  return false;
 }
 
 function skipWsAndCommentsBlock(): string {

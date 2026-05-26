@@ -168,7 +168,7 @@ if (${startPredicate}) {
 const ${startVar} = off;
 ${scanBody}
 const ${endVar} = off;
-const ${v} = input.slice(${startVar}, ${endVar});${emitRefinementChecks(span, v, ctx.entryOffVar)}`;
+${emitClassSpanValueExpr(span, v, startVar, endVar)}${emitRefinementChecks(span, v, ctx.entryOffVar)}`;
   }
   return `if (!(${startPredicate})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 ${scanBody}`;
@@ -649,6 +649,39 @@ if (off < len) off += 2;`,
     };
   }
   throw new Error(`v2: class '${cls}' not yet supported`);
+}
+
+// Build the captured value expression for a class span. For 'comment'
+// class with the `.comment()` refinement (the schema author explicitly
+// asked for the comment's INTERIOR), strip `/* ... */` delimiters and
+// trim surrounding whitespace — matches v1's commentInterior() runtime
+// helper. Other class spans return the raw byte slice.
+function emitClassSpanValueExpr(
+  span: ResolvedSpan,
+  captureVar: string,
+  startVar: string,
+  endVar: string,
+): string {
+  if (span.class === 'comment') {
+    // .comment() refinement is implicit for comment-class spans (the
+    // schema's .span(...).comment() call sets class='comment' AND
+    // refinement={name:'comment'}). Strip the wrapping `/*` and `*/`
+    // and trim interior whitespace.
+    return `let __${captureVar}_ts = ${startVar} + 2;
+let __${captureVar}_te = ${endVar} - 2;
+while (__${captureVar}_ts < __${captureVar}_te) {
+  const __lc = input.charCodeAt(__${captureVar}_ts);
+  if (__lc !== 0x20 && __lc !== 0x09 && __lc !== 0x0a && __lc !== 0x0d) break;
+  __${captureVar}_ts++;
+}
+while (__${captureVar}_te > __${captureVar}_ts) {
+  const __tc = input.charCodeAt(__${captureVar}_te - 1);
+  if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+  __${captureVar}_te--;
+}
+const ${captureVar} = input.slice(__${captureVar}_ts, __${captureVar}_te);`;
+  }
+  return `const ${captureVar} = input.slice(${startVar}, ${endVar});`;
 }
 
 function emitRefinementChecks(span: ResolvedSpan, captureVar: string, entryOffVar: string): string {

@@ -90,17 +90,7 @@ function parseComment(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __text_start = off;
   off += 2;
@@ -123,17 +113,7 @@ function parseDeclaration__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   let prop: string = '';
   let __prop_start = off;
   let __prop_end = off;
@@ -457,17 +437,7 @@ function parseDeclaration__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   let prop: string = '';
   let __prop_start = off;
   let __prop_end = off;
@@ -766,17 +736,7 @@ function parseRule(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   let selector: string = '';
   let __selector_start = off;
   let __selector_end = off;
@@ -929,17 +889,15 @@ function parseRule(state: State): unknown {
   let __preSweep = off;
   while (true) {
     const __loopStart = off;
-    if (nodes.length > 0) {
-      __preSweep = off;
-      __sepConsumed = false;
-      // Skip ws before the separator. v1 always allows ws around seps.
+    __preSweep = off;
+    __sepConsumed = false;
+    // Skip ws before the separator. v1 always allows ws around seps.
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 59) {
+      __sepConsumed = true;
+      off += 1;
+      // Skip ws after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      while (input.charCodeAt(off) === 59) {
-        __sepConsumed = true;
-        off += 1;
-        // Skip ws after the separator.
-        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      }
     }
     let __cand: unknown = null;
     while (off < len) {
@@ -993,17 +951,7 @@ function parseAtRule__alt0(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.charCodeAt(off) === 64)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) {
@@ -1185,17 +1133,15 @@ function parseAtRule__alt0(state: State): unknown {
   let __preSweep = off;
   while (true) {
     const __loopStart = off;
-    if (nodes.length > 0) {
-      __preSweep = off;
-      __sepConsumed = false;
-      // Skip ws before the separator. v1 always allows ws around seps.
+    __preSweep = off;
+    __sepConsumed = false;
+    // Skip ws before the separator. v1 always allows ws around seps.
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 59) {
+      __sepConsumed = true;
+      off += 1;
+      // Skip ws after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      while (input.charCodeAt(off) === 59) {
-        __sepConsumed = true;
-        off += 1;
-        // Skip ws after the separator.
-        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      }
     }
     let __cand: unknown = null;
     while (off < len) {
@@ -1249,17 +1195,7 @@ function parseAtRule__alt1(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.charCodeAt(off) === 64)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) {
@@ -1452,34 +1388,22 @@ function parseStylesheet(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   const entryOff = off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
-      off += 2;
-      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
-      if (off < len) off += 2;
-      continue;
-    }
-    break;
-  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
   while (true) {
     const __loopStart = off;
-    if (nodes.length > 0) {
-      __preSweep = off;
-      __sepConsumed = false;
-      // Skip ws before the separator. v1 always allows ws around seps.
+    __preSweep = off;
+    __sepConsumed = false;
+    // Skip ws before the separator. v1 always allows ws around seps.
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 59) {
+      __sepConsumed = true;
+      off += 1;
+      // Skip ws after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      while (input.charCodeAt(off) === 59) {
-        __sepConsumed = true;
-        off += 1;
-        // Skip ws after the separator.
-        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-      }
     }
     let __cand: unknown = null;
     while (off < len) {

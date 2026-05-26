@@ -64,20 +64,27 @@ export function emitProduction(
   lines.push(`const len = state.len;`);
   lines.push(`let off = state.pos;`);
   lines.push(`const entryOff = off;`);
-  // Inter-span gap also consumes `/* */` comments when the schema declares
-  // `comment` as a token class. Mirrors v1 scannerless emit (which inserts a
-  // ws+comment skip between every consecutive pair of spans). Without this,
-  // a comment between a captured value and its following literal (e.g. CSS
-  // `a/**/{}`) would leave `off` parked on `/`, breaking the literal match.
-  const skipGap = tokenClasses.has('comment') ? skipWsAndCommentsBlock() : skipWsBlock();
-  // Skip leading ws (+ leading comments) — required by 'standard' whitespace
-  // policy.
-  lines.push(skipGap);
+  // Inter-span gap (between consecutive spans of the SAME production) also
+  // consumes `/* */` comments when the schema declares `comment` as a token
+  // class. Mirrors v1 scannerless emit (which inserts a ws+comment skip
+  // between every consecutive pair of spans). Without this, a comment
+  // between a captured value and its following literal (e.g. CSS `a/**/{}`)
+  // would leave `off` parked on `/`, breaking the literal match.
+  //
+  // The LEADING ws skip (before the FIRST span) is ws-only — never
+  // comment-aware. Otherwise productions whose first span is a comment-class
+  // span would consume the comment they're meant to capture. v1 emits the
+  // same shape (leading skip = ws only; inter-span skip = ws + comments).
+  const interSpanSkip = tokenClasses.has('comment')
+    ? skipWsAndCommentsBlock()
+    : skipWsBlock();
+  // Skip leading ws — required by 'standard' whitespace policy.
+  lines.push(skipWsBlock());
 
   const spans = production.spans;
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i]!;
-    if (i > 0) lines.push(skipGap);
+    if (i > 0) lines.push(interSpanSkip);
     lines.push(emitSpan(span, ctx, bindings));
   }
   // No trailing ws skip — a production owns its captured range. WS after

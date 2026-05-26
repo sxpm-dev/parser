@@ -836,6 +836,77 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   assert.equal(result2.value, '{ a; b; c; }');
 });
 
+test('v2 repeats sweeps LEADING separators before the first item', async () => {
+  // Repro for css `semicolons.css` first rule `a {;;\n    color: black;\n}`:
+  // v1's emit ran the sep-sweep on every iteration; v2 gated it on
+  // list.length > 0, which made the body fail on a leading `;` before any
+  // declaration. After the fix, leading seps are absorbed silently on the
+  // first iteration without affecting trailing-policy state.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Body',
+    examples: [
+      ex('a')
+        .as('Item')
+        .span('name', 'a').ident()
+        .render('ast', { name: $.name })
+        .build(),
+      ex('{ a; b }')
+        .as('Body')
+        .span('{')
+        .span('items', 'a; b', ['Item'])
+        .repeats({ min: 0, sep: ';', trailing: 'allowed' })
+        .span('}')
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: unknown[] };
+  // Leading seps before any item.
+  assert.equal(__parse('{;}').items.length, 0);
+  assert.equal(__parse('{;;}').items.length, 0);
+  assert.equal(__parse('{; a}').items.length, 1);
+  assert.equal(__parse('{; ; a}').items.length, 1);
+  // Regular cases still work.
+  assert.equal(__parse('{a; b; c}').items.length, 3);
+});
+
+test('v2 leading skip is ws-only when first span is a comment-class span', async () => {
+  // Repro for the regression introduced when the inter-span skip became
+  // ws+comment-aware: a Comment production's leading skip was eating the
+  // comment it was supposed to capture. Fix: only the INTER-span gap
+  // (between consecutive spans of the same production) skips comments;
+  // the LEADING skip stays ws-only so a `/* … */` body remains available
+  // for the comment span to consume.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Doc',
+    tokens: ['comment'],
+    examples: [
+      ex('/* x */').as('Comment')
+        .span('text', '/* x */').comment()
+        .render('ast', { type: 'comment', text: $.text })
+        .build(),
+      ex('a').as('Word')
+        .span('name', 'a').ident()
+        .render('ast', { type: 'word', name: $.name })
+        .build(),
+      ex('a').as('Doc')
+        .span('items', 'a', ['Comment', 'Word'])
+        .repeats({ min: 0 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: { type: string }[] };
+  const r = __parse('/* x */ a /* y */');
+  assert.deepEqual(r.items.map((it) => it.type), ['comment', 'word', 'comment']);
+});
+
 test('v2 inter-span ws skip also skips /* */ comments when schema declares comment token', async () => {
   // Repro for css `between.css` / `prop.css` / `semicolons.css`:
   // Between two spans of the SAME production, v1's emit skips both whitespace

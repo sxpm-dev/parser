@@ -427,12 +427,15 @@ while (${literalMatchExpr(sep, 'off')}) {
   // is an optional that didn't match.
   lines.push(`  const __loopStart = off;`);
   if (sep !== undefined) {
-    // Top-of-loop sep-sweep, executed after the first item has been pushed.
-    // On the first iteration the list is empty so we skip the sweep entirely
-    // (no leading separator allowed before the first item).
-    lines.push(`  if (${listVar}.length > 0) {`);
-    lines.push(indent(sepBlock, 2));
-    lines.push(`  }`);
+    // Top-of-loop sep-sweep, executed on EVERY iteration (including the
+    // first). Mirrors v1 emitRepeatedSpan which sweeps leading separators
+    // before each item attempt — e.g. CSS `a {;;\n  color: red; ;}` where
+    // a Rule body opens with `;;` before any declaration is parsed. v1
+    // absorbs them silently as separator noise. We do the same: on the
+    // first iteration the absorbed seps don't count toward `__sepConsumed`
+    // for trailing policy (because no item has been pushed yet, a leading
+    // sep cannot be "trailing").
+    lines.push(indent(sepBlock, 1));
   }
   if (stopBeforeCheck) {
     lines.push(indent(stopBeforeCheck, 1));

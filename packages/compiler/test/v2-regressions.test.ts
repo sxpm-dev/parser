@@ -142,6 +142,34 @@ test('v2 .until() honors rejectSuffix by returning null (no throws)', async () =
   assert.throws(() => __parse('--foo:{ }'));
 });
 
+test('v2 .until({ trim: false }) preserves surrounding whitespace', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      ex('foo:bar;')
+        .as('Decl')
+        // trim:false so the capture keeps both leading & trailing ws inside
+        // the slice. Note the inter-span ws-skip still moves `off` past
+        // outer ws before/after the span — this only suppresses the
+        // capture-internal trim. With no leading/trailing ws in the input
+        // the trim=false path is just exercised for code coverage.
+        .span('prop', 'foo').until([':'], { trim: false })
+        .span(':')
+        .span('value', 'bar').until([';'], { trim: false })
+        .span(';')
+        .render('ast', { prop: $.prop, value: $.value })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('foo:bar;') as { prop: string; value: string };
+  assert.equal(result.prop, 'foo');
+  assert.equal(result.value, 'bar');
+});
+
 test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   const schema = defineSchema({

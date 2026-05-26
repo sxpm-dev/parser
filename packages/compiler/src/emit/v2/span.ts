@@ -1072,6 +1072,14 @@ function emitRawUntilSpan(
 ): string {
   // Plain literal-stop scan. No bracket / string / comment awareness. The
   // capture does NOT advance past the stop — the next span consumes it.
+  //
+  // unknownChars policy not enforced here: rawUntil's semantic intent is
+  // "capture arbitrary bytes until a stop literal" (script/style bodies,
+  // tag-soup content). Today none of the in-scope schemas combine
+  // rawUntil with unknownChars:'reject' — html and markdown both declare
+  // 'tolerate'. If a future schema needs this combination, add a
+  // post-scan byte-walk that checks each captured byte against
+  // ctx.knownBytes and rewinds on miss.
   const stops = rawUntil.stops;
   const ci = rawUntil.caseInsensitive;
   const v = span.name ? jsIdent(span.name) : '__rawCaptured';

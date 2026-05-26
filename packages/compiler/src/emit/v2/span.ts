@@ -7,6 +7,7 @@
 import type { Refinement, SpanModifier } from '@parser2/parser';
 import { type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
+import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import { emitRoleLadder } from './role-ladder.ts';
 
 export type SpanContext = {
@@ -42,17 +43,11 @@ export type SpanBindings = {
   readonly endOffExpr: Map<string, string>;
 };
 
-export function findModifier<K extends SpanModifier['kind']>(
-  span: ResolvedSpan,
-  kind: K,
-): Extract<SpanModifier, { kind: K }> | undefined {
-  for (const m of span.modifiers) if (m.kind === kind) return m as Extract<SpanModifier, { kind: K }>;
-  return undefined;
-}
-
-export function hasModifier(span: ResolvedSpan, kind: SpanModifier['kind']): boolean {
-  return findModifier(span, kind) !== undefined;
-}
+// Re-exported under the legacy names so existing imports (`dispatch.ts`) keep
+// resolving. Implementations live in `./modifiers.ts` to avoid duplication
+// between this file and `./role-ladder.ts`.
+export const findModifier = findSpanModifier;
+export const hasModifier = hasSpanModifier;
 
 // Emit the JS that handles one span in sequence. Returns the source code
 // block to splice into the production body (no trailing newline).
@@ -351,8 +346,10 @@ while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __w
     //   - multi-role: the role-ladder skips ws before its first-byte peek
     //   - single-role: the called parse fn skips its own leading ws
     // The break-on-no-match condition (__cand === null) handles loop exit
-    // when no role's first byte matches the next non-ws byte.
-    : `// No explicit separator — inter-item ws is absorbed by the inner parse step.`;
+    // when no role's first byte matches the next non-ws byte. We emit an
+    // empty string (not a comment) so the resulting source carries no dead
+    // text into the generated parser.
+    : ``;
 
   // Trailing-separator policy. When sep is set and trailing === 'forbidden',
   // we must rewind `off` to before the trailing separator on a failed

@@ -25,8 +25,8 @@
 // reject the ambiguity here so the bug surfaces at codegen rather than as a
 // silent first-wins runtime behavior.
 
-import type { SpanModifier } from '@parser2/parser';
 import { CompilerError, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
+import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import type { SpanContext } from './span.ts';
 
 export type RoleLadderOptions = {
@@ -244,19 +244,3 @@ export function classFirstBytes(span: ResolvedSpan): ReadonlySet<number> {
   );
 }
 
-// Local copies of the span-modifier helpers from `./span.ts`. Duplicating two
-// small functions here keeps `role-ladder.ts` free of a circular dependency on
-// `./span.ts` (which imports `SpanContext` from there as a type only — types
-// are erased so no runtime cycle, but pulling in the runtime helpers would
-// create one).
-function findSpanModifier<K extends SpanModifier['kind']>(
-  span: ResolvedSpan,
-  kind: K,
-): Extract<SpanModifier, { kind: K }> | undefined {
-  for (const m of span.modifiers) if (m.kind === kind) return m as Extract<SpanModifier, { kind: K }>;
-  return undefined;
-}
-
-function hasSpanModifier(span: ResolvedSpan, kind: SpanModifier['kind']): boolean {
-  return findSpanModifier(span, kind) !== undefined;
-}

@@ -354,6 +354,78 @@ test('v2 multi-role repeats with separator threads items together', async () => 
   assert.equal(result.items[1]?.v, '42');
 });
 
+test('v2 multi-role repeats honors trailing: "forbidden"', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Trailing comma must NOT be consumed: `off` rewinds to before the last
+  // sep when the post-sep slot has no item. Surrounding `[ ... ]` brackets
+  // let us assert the parser left the comma in place for the outer `]`.
+  const schema = defineSchema({
+    rootType: 'List',
+    examples: [
+      ex('a').as('Word').span('value', 'a').ident().css()
+        .render('ast', { v: $.value }).build(),
+      ex('[a]').as('List')
+        .span('[')
+        .span('items', 'a', ['Word']).repeats({ min: 0, sep: ',', trailing: 'forbidden' })
+        .span(']')
+        .render('ast', { items: $.items }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  // Plain non-trailing case still works.
+  const ok = __parse('[a]') as { items: Array<{ v: string }> };
+  assert.equal(ok.items.length, 1);
+  // Trailing comma — parser must reject because `]` doesn't follow a sep.
+  assert.throws(() => __parse('[a,]'));
+});
+
+test('v2 multi-role repeats honors trailing: "required"', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Each item MUST be followed by a sep, even the last one. So `a;b;` parses
+  // but `a;b` does not.
+  const schema = defineSchema({
+    rootType: 'List',
+    examples: [
+      ex('a').as('Word').span('value', 'a').ident().css()
+        .render('ast', { v: $.value }).build(),
+      ex('a;').as('List')
+        .span('items', 'a', ['Word']).repeats({ min: 0, sep: ';', trailing: 'required' })
+        .render('ast', { items: $.items }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const ok = __parse('a;b;') as { items: Array<{ v: string }> };
+  assert.equal(ok.items.length, 2);
+  // Missing trailing sep — fails.
+  assert.throws(() => __parse('a;b'));
+});
+
+test('v2 multi-role repeats honors max by failing when count too high', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Cap at 2 items. 2 ok, 3 fails.
+  const schema = defineSchema({
+    rootType: 'List',
+    examples: [
+      ex('a').as('Word').span('value', 'a').ident().css()
+        .render('ast', { v: $.value }).build(),
+      ex('a,b').as('List')
+        .span('items', 'a,b', ['Word']).repeats({ min: 0, max: 2, sep: ',' })
+        .render('ast', { items: $.items }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const ok = __parse('a,b') as { items: Array<{ v: string }> };
+  assert.equal(ok.items.length, 2);
+  // 3 items exceeds max:2 — fails.
+  assert.throws(() => __parse('a,b,c'));
+});
+
 test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Doc wraps a single child that can be either a Comment (starts with `/`)

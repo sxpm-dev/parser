@@ -90,7 +90,11 @@ function syntaxErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(\`parse failed at position \${offset}
+  const ch = offset < input.length ? input[offset] : 'EOF';
+  const headline = ch === 'EOF'
+    ? \`Unexpected end of input at position \${offset}\`
+    : \`Unexpected '\${ch}' at position \${offset}\`;
+  return new SyntaxError(\`\${headline}
 \${gutter} | \${source}
 \${' '.repeat(gutter.length)} | \${' '.repeat(column)}^\`);
 }`;

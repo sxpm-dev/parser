@@ -1320,6 +1320,29 @@ test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
   assert.equal(__parse('+plus').item.kind, 'plus');
 });
 
+test('v2 syntaxErrorAt: includes unexpected byte and position in headline', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // A minimal schema — just enough for generateParser to emit the v2 runtime
+  // preamble (which contains syntaxErrorAt). We only check the emitted source.
+  const schema = defineSchema({
+    rootType: 'R',
+    examples: [
+      ex('a { }')
+        .as('R')
+        .span('selector', 'a').until(['{'], { rejectSuffix: ':' })
+        .span('{')
+        .span('}')
+        .render('ast', { sel: $.selector })
+        .build(),
+    ],
+  });
+  const source = generateParser(schema, undefined, {});
+  // The emitted syntaxErrorAt must construct a headline of the form
+  //   Unexpected '<ch>' at position <offset>
+  // (These are JS template literal expressions inside the emitted source.)
+  assert.match(source, /Unexpected '\$\{.*?\}' at position \$\{offset\}/);
+});
+
 test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Four byte-arm roles where two share the same first byte (`<`). The

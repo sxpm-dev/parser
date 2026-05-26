@@ -56,6 +56,7 @@ export function emitProduction(
     raws: false /* per-call-site */,
     tokens: tokenClasses,
     cssIdent,
+    nodeTypes: schema.nodeTypes,
   };
 
   const lines: string[] = [];

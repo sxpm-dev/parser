@@ -190,3 +190,45 @@ test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
   const result = __parse('<script>x=1</script>') as { body: string };
   assert.equal(result.body, 'x=1');
 });
+
+test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Doc wraps a single child that can be either a Comment (starts with `/`)
+  // or a Hash (starts with `#`). The two roles have distinct first bytes so
+  // byte-prefix dispatch is unambiguous — exactly the case 1.3b targets.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('/foo')
+        .as('Comment')
+        .span('/')
+        .span('text', 'foo').until(['\n', '@'])
+        .render('ast', { type: 'comment', text: $.text })
+        .build(),
+      ex('#bar')
+        .as('Hash')
+        .span('#')
+        .span('text', 'bar').until(['\n', '@'])
+        .render('ast', { type: 'hash', text: $.text })
+        .build(),
+      ex('/foo')
+        .as('Doc')
+        .span('item', '/foo', ['Comment', 'Hash'])
+        .render('ast', { item: $.item })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  assert.match(code, /function parseDoc\(/);
+  // The ladder must NOT call tryRoles or use any throw/catch for backtracking.
+  assert.doesNotMatch(code, /tryRoles\b/);
+
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const commentResult = __parse('/foo') as { item: { type: string; text: string } };
+  assert.equal(commentResult.item.type, 'comment');
+  assert.equal(commentResult.item.text, 'foo');
+  const hashResult = __parse('#bar') as { item: { type: string; text: string } };
+  assert.equal(hashResult.item.type, 'hash');
+  assert.equal(hashResult.item.text, 'bar');
+});

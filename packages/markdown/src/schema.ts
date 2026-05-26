@@ -245,12 +245,8 @@ export default defineSchema({
     // Listed BEFORE setext-with-`---` so the dispatcher's byte-prefix path
     // routes a bare `---` line to the break, not setext (which would
     // require a preceding text line we don't have).
-    //
-    // ORDER NOTE: more-specific productions (`***` with marker='*', `___`
-    // with marker='_') come BEFORE the catch-all `---` so the inverse AST
-    // dispatcher matches the marker-bearing predicates first. The forward
-    // dispatcher's longest-match peek still routes input bytes correctly
-    // regardless of declaration order.
+    // (Dispatch order enforced mechanically by `checkDispatch` in
+    // packages/compiler/src/check/dispatch.ts.)
     ex('***')
       .as('MarkdownLeaf')
       .span('***')
@@ -300,10 +296,8 @@ export default defineSchema({
     // ---- Unordered list items --------------------------------------------
     // The `- ` / `+ ` / `* ` punctuators include the required space so
     // they don't collide with the thematic-break or bold/italic prefixes.
-    //
-    // ORDER NOTE: more-specific marker-bearing productions (`+ ` -> '+',
-    // `* ` -> '*') come BEFORE the catch-all dash form so the inverse AST
-    // dispatcher's predicate-chain matches the marker first.
+    // (Dispatch order enforced mechanically by `checkDispatch` in
+    // packages/compiler/src/check/dispatch.ts.)
     ex('+ alternate marker')
       .as('MarkdownLeaf')
       .span('+ ')

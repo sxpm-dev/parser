@@ -1,18 +1,9 @@
 // Auto-generated from packages/css-color/src/schema.ts
 // Do not edit by hand. Re-run `npm run generate` to refresh.
+// (v2 scannerless emit — see docs/scannerless-emit-v2.md)
 /* eslint-disable */
 // @ts-nocheck
 
-
-
-type State = {
-  readonly input: string;
-  off: number;
-  readonly mode: ParseMode;
-  readonly lineStarts: number[];
-  __lastCaptureStart: number;
-  __lastCaptureEnd: number;
-};
 
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
@@ -23,6 +14,15 @@ export type ParseOptions = {
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
 type SourceRange = { readonly start: SourcePos; readonly end: SourcePos };
 
+type State = {
+  readonly input: string;
+  readonly len: number;
+  pos: number;
+  maxOff: number;
+  readonly mode: ParseMode;
+  readonly lineStarts: number[];
+};
+
 function computeLineStarts(input: string): number[] {
   const starts = [0];
   for (let i = 0; i < input.length; i++) {
@@ -31,7 +31,7 @@ function computeLineStarts(input: string): number[] {
   return starts;
 }
 
-function offsetToPos(state: State, offset: number): SourcePos {
+function posAt(state: State, offset: number): SourcePos {
   const starts = state.lineStarts;
   let lo = 0, hi = starts.length - 1;
   while (lo < hi) {
@@ -42,3714 +42,682 @@ function offsetToPos(state: State, offset: number): SourcePos {
 }
 
 function makeSource(state: State, startOff: number, endOff: number): SourceRange {
-  const start = offsetToPos(state, startOff);
+  const start = posAt(state, startOff);
   const end = endOff > startOff
-    ? { ...offsetToPos(state, endOff - 1), offset: endOff }
-    : { ...offsetToPos(state, startOff), offset: endOff };
+    ? { ...posAt(state, endOff - 1), offset: endOff }
+    : { ...posAt(state, startOff), offset: endOff };
   return { start, end };
 }
 
-function isAsciiWs(c: number): boolean {
+function isWs(c: number): boolean {
   return c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
 }
 
-function isDigit(c: number): boolean {
-  return c >= 48 && c <= 57;
-}
-
+function isDigit(c: number): boolean { return c >= 48 && c <= 57; }
 function isHexDigit(c: number): boolean {
   return (c >= 48 && c <= 57) || (c >= 65 && c <= 70) || (c >= 97 && c <= 102);
 }
-
 function isCssIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 45;
 }
-
 function isCssIdentPart(c: number): boolean {
   return isCssIdentStart(c) || (c >= 48 && c <= 57);
 }
-
 function isJsIdentStart(c: number): boolean {
   return (c >= 97 && c <= 122) || (c >= 65 && c <= 90) || c === 95 || c === 36;
 }
-
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
-// Skip whitespace. Always emitted; called between every span where
-// whitespace is allowed (default for whitespace: 'standard' schemas).
-function skipWs(state: State): void {
-  const input = state.input;
-  const len = input.length;
-  let off = state.off;
-  while (off < len) {
-    const c = input.charCodeAt(off);
-    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
-    break;
-  }
-  state.off = off;
-}
-
-function isHexString(value: string): boolean {
-  if (value.length === 0) return false;
-  for (let i = 0; i < value.length; i++) {
-    if (!isHexDigit(value.charCodeAt(i))) return false;
-  }
-  return true;
-}
-
-// Strip /* */ delimiters and trim. PostCSS stores the trimmed interior in
-// .text and the leading/trailing whitespace inside the comment in raws.
-function commentInterior(text: string): string {
-  return text.slice(2, -2).trim();
-}
-
-function commentLeft(raw: string): string {
-  const inner = raw.slice(2, -2);
-  const match = inner.match(/^\s*/);
-  return match ? match[0] : '';
-}
-
-function commentRight(raw: string): string {
-  const inner = raw.slice(2, -2);
-  if (inner.trim() === '') return '';
-  const match = inner.match(/\s*$/);
-  return match ? match[0] : '';
-}
-
-// Speculate: try fn; on throw rewind state.off and return null. Used for
-// .optional() recursive spans and multi-role dispatch.
-function trySpeculate(state: State, fn: (state: State) => unknown): unknown {
-  const start = state.off;
-  try {
-    return fn(state);
-  } catch {
-    state.off = start;
-    return null;
-  }
-}
-
-function tryRoles(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  let lastError: unknown;
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new SyntaxError('no role matched');
-}
-
-function tryRolesOrNull(state: State, fns: readonly ((state: State) => unknown)[]): unknown {
-  const start = state.off;
-  for (const fn of fns) {
-    state.off = start;
-    try {
-      return fn(state);
-    } catch {
-      // try next
-    }
-  }
-  state.off = start;
-  return null;
-}
-
-// Attach raws.before to a parsed child. Used in raws mode for repeated
-// children — the body loop knows where the previous sibling ended (or where
-// the body's opening token ended for the first child); raws.before is the
-// source slice from that point up to this child's source.start.offset.
-function attachRawsBefore(state: State, child: unknown, prevEnd: number): void {
-  if (!child || typeof child !== 'object') return;
-  const node = child as { raws?: Record<string, unknown>; source?: { start?: { offset?: number } } };
-  const childStart = node.source?.start?.offset;
-  if (typeof childStart !== 'number') return;
-  if (!node.raws) node.raws = {};
-  const slice = state.input.slice(prevEnd, childStart);
-  if (prevEnd === 0 && /^\s*$/.test(slice)) {
-    node.raws.before = '';
-  } else {
-    node.raws.before = slice;
-  }
-}
-
-function decorateSyntaxError(input: string, error: unknown, state?: State): never {
-  if (!(error instanceof SyntaxError)) throw error;
-  if (hasSourceFrame(error.message)) throw error;
-  const messageOffset = offsetFromMessage(error.message, -1);
-  const offset = messageOffset >= 0
-    ? messageOffset
-    : state !== undefined
-    ? state.off
-    : offsetFromMessage(error.message, input.length);
-  throw syntaxErrorWithFrame(input, error.message, offset);
-}
-
-function syntaxErrorWithFrame(input: string, message: string, offset: number): SyntaxError {
-  const cleanMessage = stripPositionSuffix(message);
+function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
-  while (lineStart > 0) {
-    const c = input.charCodeAt(lineStart - 1);
-    if (c === 0x0a || c === 0x0d) break;
-    lineStart--;
-  }
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
   let lineEnd = offset;
-  while (lineEnd < input.length) {
-    const c = input.charCodeAt(lineEnd);
-    if (c === 0x0a || c === 0x0d) break;
-    lineEnd++;
-  }
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
   let line = 1;
   for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`${cleanMessage} at position ${offset}
+  return new SyntaxError(`parse failed at position ${offset}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
-function stripPositionSuffix(message: string): string {
-  const marker = ' at position ';
-  const index = message.lastIndexOf(marker);
-  if (index < 0) return message;
-  let pos = index + marker.length;
-  if (pos >= message.length) return message;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) return message;
-    pos++;
-  }
-  return message.slice(0, index);
-}
-
-function hasSourceFrame(message: string): boolean {
-  return message.includes('\n') && message.includes(' | ');
-}
-
-function offsetFromMessage(message: string, fallback: number): number {
-  const marker = 'position ';
-  const index = message.indexOf(marker);
-  if (index < 0) return fallback;
-  let pos = index + marker.length;
-  let value = 0;
-  let found = false;
-  while (pos < message.length) {
-    const c = message.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
-    found = true;
-    value = value * 10 + c - 48;
-    pos++;
-  }
-  return found ? value : fallback;
-}
-
 function parseCssColorValue__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  if (!(value.toLowerCase() === "aliceblue" || value.toLowerCase() === "black" || value.toLowerCase() === "blue" || value.toLowerCase() === "currentcolor" || value.toLowerCase() === "green" || value.toLowerCase() === "inherit" || value.toLowerCase() === "initial" || value.toLowerCase() === "red" || value.toLowerCase() === "revert" || value.toLowerCase() === "revert-layer" || value.toLowerCase() === "transparent" || value.toLowerCase() === "unset" || value.toLowerCase() === "white" || value.toLowerCase() === "yellow")) { state.pos = entryOff; return null; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColorValue#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  const __value_lc = value.toLowerCase();
-  if (!(__value_lc === "aliceblue" || __value_lc === "black" || __value_lc === "blue" || __value_lc === "currentcolor" || __value_lc === "green" || __value_lc === "inherit" || __value_lc === "initial" || __value_lc === "red" || __value_lc === "revert" || __value_lc === "revert-layer" || __value_lc === "transparent" || __value_lc === "unset" || __value_lc === "white" || __value_lc === "yellow")) { state.off = __off; throw new SyntaxError("expected one of aliceblue, black, blue, currentcolor, green, inherit, initial, red, revert, revert-layer, transparent, unset, white, yellow at position " + __value_s); }
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColorValue#0", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValue__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after literal at position " + __off); }
-  __consumedEnd = __off;
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41 || __c === 44 || __c === 47)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x22 || __c === 0x27) {
-        const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
-          if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  if (!isHexString(value)) { state.off = __off; throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart); }
-  if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) { state.off = __off; throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart); }
-  __consumedEnd = state.__lastCaptureEnd;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColorValue#1", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValue__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "rgb" || __name_lc === "rgba")) { state.off = __off; throw new SyntaxError("expected one of rgb, rgba at position " + __name_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __args_startOff = __off;
-  let __prevEnd_args = __args_startOff;
-  const args: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 41) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseNumericColorFunctionToken(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_args);
-    args.push(__child);
-    if (__off === __before) break;
-    __prevEnd_args = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_args;
-  }
-  if (args.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 NumericColorFunctionToken"); }
-  __consumedEnd = __prevEnd_args;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColorValue#2", name: name, args: args };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValue__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "color" || __name_lc === "color-mix" || __name_lc === "hsl" || __name_lc === "hsla" || __name_lc === "hwb" || __name_lc === "lab" || __name_lc === "lch" || __name_lc === "light-dark" || __name_lc === "oklab" || __name_lc === "oklch")) { state.off = __off; throw new SyntaxError("expected one of color, color-mix, hsl, hsla, hwb, lab, lch, light-dark, oklab, oklch at position " + __name_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __args_startOff = __off;
-  let __prevEnd_args = __args_startOff;
-  const args: unknown[] = [];
-  while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    if (__input.charCodeAt(__off) === 41) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseColorFunctionToken(state); __off = state.off;
-    attachRawsBefore(state, __child, __prevEnd_args);
-    args.push(__child);
-    if (__off === __before) break;
-    __prevEnd_args = (__child as { source?: { end?: { offset?: number } } })?.source?.end?.offset ?? __prevEnd_args;
-  }
-  if (args.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 ColorFunctionToken"); }
-  __consumedEnd = __prevEnd_args;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColorValue#3", name: name, args: args };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValue__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "var")) { state.off = __off; throw new SyntaxError("expected one of var at position " + __name_s); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  let args = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x22 || __c === 0x27) {
-        const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
-          if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      args = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    args = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  if (args.endsWith(",")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ','"); }
-  __consumedEnd = state.__lastCaptureEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColorValue#4", name: name, args: args };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValue(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    return parseCssColorValue__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseCssColorValue__alt0); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseCssColorValue__alt2); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseCssColorValue__alt3); if (r !== null) return r; }
-    return parseCssColorValue__alt4(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function parseNumericColorFunctionToken__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "NumericColorFunctionToken#0", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseNumericColorFunctionToken__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "NumericColorFunctionToken#1", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseNumericColorFunctionToken__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "NumericColorFunctionToken#2" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseNumericColorFunctionToken__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "NumericColorFunctionToken#3" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseNumericColorFunctionToken(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return parseNumericColorFunctionToken__alt2(state);
-  } else if (__byte0 === 44) {
-    return parseNumericColorFunctionToken__alt3(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return parseNumericColorFunctionToken__alt0(state);
-    }
-    return parseNumericColorFunctionToken__alt1(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function parseColorFunctionToken__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  __consumedEnd = __off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#0", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#1", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#2", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  const __value_s = __off;
-  let value;
-  if (!((__input.charCodeAt(__off) === 0x22 || __input.charCodeAt(__off) === 0x27))) throw new SyntaxError("expected string at position " + __value_s);
-    {
-      const __quote = __input.charCodeAt(__off);
-      __off++;
-      while (__off < __len) {
-        const __ch = __input.charCodeAt(__off);
-        if (__ch === 0x5c) { __off += 2; continue; }
-        if (__ch === __quote) { __off++; break; }
-        if (__ch === 0x0a || __ch === 0x0d) break;
-        __off++;
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#3", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#4" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "ColorFunctionToken#5" };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseColorFunctionToken(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return parseColorFunctionToken__alt4(state);
-  } else if (__byte0 === 44) {
-    return parseColorFunctionToken__alt5(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return parseColorFunctionToken__alt0(state);
-    }
-    return parseColorFunctionToken__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    return parseColorFunctionToken__alt2(state);
-  } else if ((__input.charCodeAt(__peek) === 0x22 || __input.charCodeAt(__peek) === 0x27)) {
-    return parseColorFunctionToken__alt3(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function parseCssColor(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __startOff = __off;
-  let __consumedEnd = __off;
-  state.off = __off;
-  const value = parseCssColorValue(state);
-  __off = state.off;
-  __consumedEnd = __off;
-  const __endOff = __consumedEnd;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  const __captures: Record<string, unknown> = { __production: "CssColor#0", value: value };
-  __captures.source = makeSource(state, __startOff, __endOff);
-  return __captures;
-}
-
-function parseCssColorValueFast__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-  let value;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  const __value_lc = value.toLowerCase();
-  if (!(__value_lc === "aliceblue" || __value_lc === "black" || __value_lc === "blue" || __value_lc === "currentcolor" || __value_lc === "green" || __value_lc === "inherit" || __value_lc === "initial" || __value_lc === "red" || __value_lc === "revert" || __value_lc === "revert-layer" || __value_lc === "transparent" || __value_lc === "unset" || __value_lc === "white" || __value_lc === "yellow")) { state.off = __off; throw new SyntaxError("expected one of aliceblue, black, blue, currentcolor, green, inherit, initial, red, revert, revert-layer, transparent, unset, white, yellow at position " + __value_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "CssColorValue#0", value: value };
 }
 
-function parseCssColorValueFast__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after literal at position " + __off); }
-  let value = '';
+function parseCssColorValue__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
+    __value_start = off;
+    let __lastNonWs = off;
     let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 41 || __c === 44 || __c === 47)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
       }
       if (__c === 0x22 || __c === 0x27) {
         const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
+        off++;
+        while (off < len) {
+          const __sc = input.charCodeAt(off);
+          if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__sc === __q) { off++; break; }
           if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
+          off++;
         }
-        __lastNonWs = __off;
+        __lastNonWs = off;
         continue;
       }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+        && off + 3 < len
+        && (input.charCodeAt(off + 1) | 32) === 0x72
+        && (input.charCodeAt(off + 2) | 32) === 0x6c
+        && input.charCodeAt(off + 3) === 0x28) {
+        off += 4;
+        while (off < len) {
+          const __uc = input.charCodeAt(off);
+          if (__uc === 0x29) { off++; break; }
+          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
           if (__uc === 0x22 || __uc === 0x27) {
             const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
+            off++;
+            while (off < len) {
+              const __usc = input.charCodeAt(off);
+              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+              if (__usc === __uq) { off++; break; }
               if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
+              off++;
             }
             continue;
           }
-          __off++;
+          off++;
         }
-        __lastNonWs = __off;
+        __lastNonWs = off;
         continue;
       }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
         continue;
       }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
       value = '';
     } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      value = input.slice(__value_start, __lastNonWs);
     }
+    __value_end = off;
   }
-  if (!isHexString(value)) { state.off = __off; throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart); }
-  if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) { state.off = __off; throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColorValue#1", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
   return { __production: "CssColorValue#1", value: value };
 }
 
-function parseCssColorValueFast__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "rgb" || __name_lc === "rgba")) { state.off = __off; throw new SyntaxError("expected one of rgb, rgba at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-
+function parseCssColorValue__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  if (!(name.toLowerCase() === "rgb" || name.toLowerCase() === "rgba")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __args_start = off;
   const args: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseNumericColorFunctionToken(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    args.push(__cand);
+    if (off === __loopStart) break;
   }
-    if (__input.charCodeAt(__off) === 41) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseNumericColorFunctionTokenFast(state); __off = state.off;
-    args.push(__child);
-    if (__off === __before) break;
+  if (args.length < 1) { state.pos = entryOff; return null; }
+  const __args_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColorValue#2", name: name, args: args };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (args.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 NumericColorFunctionToken"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "CssColorValue#2", name: name, args: args };
 }
 
-function parseCssColorValueFast__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "color" || __name_lc === "color-mix" || __name_lc === "hsl" || __name_lc === "hsla" || __name_lc === "hwb" || __name_lc === "lab" || __name_lc === "lch" || __name_lc === "light-dark" || __name_lc === "oklab" || __name_lc === "oklch")) { state.off = __off; throw new SyntaxError("expected one of color, color-mix, hsl, hsla, hwb, lab, lch, light-dark, oklab, oklch at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-
+function parseCssColorValue__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  if (!(name.toLowerCase() === "color" || name.toLowerCase() === "color-mix" || name.toLowerCase() === "hsl" || name.toLowerCase() === "hsla" || name.toLowerCase() === "hwb" || name.toLowerCase() === "lab" || name.toLowerCase() === "lch" || name.toLowerCase() === "light-dark" || name.toLowerCase() === "oklab" || name.toLowerCase() === "oklch")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __args_start = off;
   const args: unknown[] = [];
   while (true) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+    const __loopStart = off;
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseColorFunctionToken(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    args.push(__cand);
+    if (off === __loopStart) break;
   }
-    if (__input.charCodeAt(__off) === 41) {  break; }
-    const __before = __off;
-    state.off = __off; const __child = parseColorFunctionTokenFast(state); __off = state.off;
-    args.push(__child);
-    if (__off === __before) break;
+  if (args.length < 1) { state.pos = entryOff; return null; }
+  const __args_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColorValue#3", name: name, args: args };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (args.length < 1) { state.off = __off; throw new SyntaxError("expected at least 1 ColorFunctionToken"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "CssColorValue#3", name: name, args: args };
 }
 
-function parseCssColorValueFast__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "var")) { state.off = __off; throw new SyntaxError("expected one of var at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let args = '';
+function parseCssColorValue__alt4(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  if (!(name.toLowerCase() === "var")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let args: string = '';
+  let __args_start = off;
+  let __args_end = off;
   {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
       break;
     }
-    const __startOff = __off;
-    let __lastNonWs = __off;
+    __args_start = off;
+    let __lastNonWs = off;
     let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
+    while (off < len) {
+      const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
       if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
         if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
       }
       if (__c === 0x22 || __c === 0x27) {
         const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
+        off++;
+        while (off < len) {
+          const __sc = input.charCodeAt(off);
+          if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+          if (__sc === __q) { off++; break; }
           if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
+          off++;
         }
-        __lastNonWs = __off;
+        __lastNonWs = off;
         continue;
       }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
+      if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+        && off + 3 < len
+        && (input.charCodeAt(off + 1) | 32) === 0x72
+        && (input.charCodeAt(off + 2) | 32) === 0x6c
+        && input.charCodeAt(off + 3) === 0x28) {
+        off += 4;
+        while (off < len) {
+          const __uc = input.charCodeAt(off);
+          if (__uc === 0x29) { off++; break; }
+          if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
           if (__uc === 0x22 || __uc === 0x27) {
             const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
+            off++;
+            while (off < len) {
+              const __usc = input.charCodeAt(off);
+              if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+              if (__usc === __uq) { off++; break; }
               if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
+              off++;
             }
             continue;
           }
-          __off++;
+          off++;
         }
-        __lastNonWs = __off;
+        __lastNonWs = off;
         continue;
       }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
         continue;
       }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
     }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
+    const __emptyAnchor = __args_start;
+    if (__lastNonWs === __args_start) {
+      off = __emptyAnchor;
       args = '';
     } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    args = __input.slice(__startOff, __lastNonWs);
+      off = __lastNonWs;
+      args = input.slice(__args_start, __lastNonWs);
     }
+    __args_end = off;
+    if (args.endsWith(",")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
-  if (args.endsWith(",")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ','"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColorValue#4", name: name, args: args };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "CssColorValue#4", name: name, args: args };
 }
 
-function parseCssColorValueFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    return parseCssColorValueFast__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, parseCssColorValueFast__alt0); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseCssColorValueFast__alt2); if (r !== null) return r; }
-    { const r = trySpeculate(state, parseCssColorValueFast__alt3); if (r !== null) return r; }
-    return parseCssColorValueFast__alt4(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
+function parseCssColorValue(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if (input.charCodeAt(off) === 35) {
+  return parseCssColorValue__alt1(state);
+}
+  if ((isCssIdentStart(input.charCodeAt(off)))) {
+  { const r = parseCssColorValue__alt2(state); if (r !== null) return r; }
+  { const r = parseCssColorValue__alt3(state); if (r !== null) return r; }
+  { const r = parseCssColorValue__alt4(state); if (r !== null) return r; }
+  return parseCssColorValue__alt0(state);
+}
+  return null;
 }
 
-function parseNumericColorFunctionTokenFast__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseNumericColorFunctionToken__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "NumericColorFunctionToken#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "NumericColorFunctionToken#0", value: value };
 }
 
-function parseNumericColorFunctionTokenFast__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseNumericColorFunctionToken__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "NumericColorFunctionToken#1", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "NumericColorFunctionToken#1", value: value };
 }
 
-function parseNumericColorFunctionTokenFast__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseNumericColorFunctionToken__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "NumericColorFunctionToken#2" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "NumericColorFunctionToken#2" };
 }
 
-function parseNumericColorFunctionTokenFast__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseNumericColorFunctionToken__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 44)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "NumericColorFunctionToken#3" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "NumericColorFunctionToken#3" };
 }
 
-function parseNumericColorFunctionTokenFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return parseNumericColorFunctionTokenFast__alt2(state);
-  } else if (__byte0 === 44) {
-    return parseNumericColorFunctionTokenFast__alt3(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return parseNumericColorFunctionTokenFast__alt0(state);
-    }
-    return parseNumericColorFunctionTokenFast__alt1(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
+function parseNumericColorFunctionToken(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if (input.charCodeAt(off) === 47) {
+  return parseNumericColorFunctionToken__alt2(state);
+}
+  if (input.charCodeAt(off) === 44) {
+  return parseNumericColorFunctionToken__alt3(state);
+}
+  if (isDigit(input.charCodeAt(off))) {
+  { const r = parseNumericColorFunctionToken__alt0(state); if (r !== null) return r; }
+  return parseNumericColorFunctionToken__alt1(state);
+}
+  return null;
 }
 
-function parseColorFunctionTokenFast__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseColorFunctionToken__alt0(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "ColorFunctionToken#0", value: value };
 }
 
-function parseColorFunctionTokenFast__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseColorFunctionToken__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#1", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __value_s = __off;
-  let value;
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "ColorFunctionToken#1", value: value };
 }
 
-function parseColorFunctionTokenFast__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseColorFunctionToken__alt2(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#2", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  const __value_s = __off;
-  let value;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "ColorFunctionToken#2", value: value };
 }
 
-function parseColorFunctionTokenFast__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-  let value;
-  if (!((__input.charCodeAt(__off) === 0x22 || __input.charCodeAt(__off) === 0x27))) throw new SyntaxError("expected string at position " + __value_s);
-    {
-      const __quote = __input.charCodeAt(__off);
-      __off++;
-      while (__off < __len) {
-        const __ch = __input.charCodeAt(__off);
-        if (__ch === 0x5c) { __off += 2; continue; }
-        if (__ch === __quote) { __off++; break; }
-        if (__ch === 0x0a || __ch === 0x0d) break;
-        __off++;
-      }
+function parseColorFunctionToken__alt3(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  {
+    const __q = input.charCodeAt(off);
+    off++;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+      if (__c === __q) { off++; break; }
+      if (__c === 0x0a || __c === 0x0d) break;
+      off++;
     }
-  value = __input.slice(__value_s, __off);
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
   }
-  state.off = __off;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#3", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
   return { __production: "ColorFunctionToken#3", value: value };
 }
 
-function parseColorFunctionTokenFast__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseColorFunctionToken__alt4(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#4" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "ColorFunctionToken#4" };
 }
 
-function parseColorFunctionTokenFast__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseColorFunctionToken__alt5(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 44)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "ColorFunctionToken#5" };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "ColorFunctionToken#5" };
 }
 
-function parseColorFunctionTokenFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return parseColorFunctionTokenFast__alt4(state);
-  } else if (__byte0 === 44) {
-    return parseColorFunctionTokenFast__alt5(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return parseColorFunctionTokenFast__alt0(state);
-    }
-    return parseColorFunctionTokenFast__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    return parseColorFunctionTokenFast__alt2(state);
-  } else if ((__input.charCodeAt(__peek) === 0x22 || __input.charCodeAt(__peek) === 0x27)) {
-    return parseColorFunctionTokenFast__alt3(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
+function parseColorFunctionToken(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if (input.charCodeAt(off) === 47) {
+  return parseColorFunctionToken__alt4(state);
+}
+  if (input.charCodeAt(off) === 44) {
+  return parseColorFunctionToken__alt5(state);
+}
+  if (isDigit(input.charCodeAt(off))) {
+  { const r = parseColorFunctionToken__alt0(state); if (r !== null) return r; }
+  return parseColorFunctionToken__alt1(state);
+}
+  if ((isCssIdentStart(input.charCodeAt(off)))) {
+  return parseColorFunctionToken__alt2(state);
+}
+  if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
+  return parseColorFunctionToken__alt3(state);
+}
+  return null;
 }
 
-function parseCssColorFast(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
+function parseCssColor(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  state.pos = off;
+  const __value_start = off;
+  const value = parseCssColorValue(state);
+  if (value === null) { state.pos = entryOff; return null; }
+  off = state.pos;
+  const __value_end = off;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "CssColor#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
   }
-  state.off = __off;
-  const value = parseCssColorValueFast(state);
-  __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
   return { __production: "CssColor#0", value: value };
-}
-
-function validateCssColorValue__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-  let value;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  value = __input.slice(__value_s, __off);
-  const __value_lc = value.toLowerCase();
-  if (!(__value_lc === "aliceblue" || __value_lc === "black" || __value_lc === "blue" || __value_lc === "currentcolor" || __value_lc === "green" || __value_lc === "inherit" || __value_lc === "initial" || __value_lc === "red" || __value_lc === "revert" || __value_lc === "revert-layer" || __value_lc === "transparent" || __value_lc === "unset" || __value_lc === "white" || __value_lc === "yellow")) { state.off = __off; throw new SyntaxError("expected one of aliceblue, black, blue, currentcolor, green, inherit, initial, red, revert, revert-layer, transparent, unset, white, yellow at position " + __value_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateCssColorValue__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 35)) { state.off = __off; throw new SyntaxError("expected " + "#" + " at position " + __off); }
-  __off += 1;
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after literal at position " + __off); }
-  let value = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41 || __c === 44 || __c === 47)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x22 || __c === 0x27) {
-        const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
-          if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      state.__lastCaptureStart = __emptyAnchor;
-      state.__lastCaptureEnd = __emptyAnchor;
-      __off = __emptyAnchor;
-      value = '';
-    } else {
-      state.__lastCaptureStart = __startOff;
-      state.__lastCaptureEnd = __lastNonWs;
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    value = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  if (!isHexString(value)) { state.off = __off; throw new SyntaxError("expected hex string at position " + state.__lastCaptureStart); }
-  if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) { state.off = __off; throw new SyntaxError("expected length 3, 4, 6, 8 at position " + state.__lastCaptureStart); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateCssColorValue__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "rgb" || __name_lc === "rgba")) { state.off = __off; throw new SyntaxError("expected one of rgb, rgba at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let __count_args = 0;
-  while (!(__input.charCodeAt(__off) === 41)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateNumericColorFunctionToken(state); __off = state.off;
-    __count_args++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  if (__count_args < 1) { state.off = __off; throw new SyntaxError("expected at least 1 NumericColorFunctionToken"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateCssColorValue__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "color" || __name_lc === "color-mix" || __name_lc === "hsl" || __name_lc === "hsla" || __name_lc === "hwb" || __name_lc === "lab" || __name_lc === "lch" || __name_lc === "light-dark" || __name_lc === "oklab" || __name_lc === "oklch")) { state.off = __off; throw new SyntaxError("expected one of color, color-mix, hsl, hsla, hwb, lab, lch, light-dark, oklab, oklch at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let __count_args = 0;
-  while (!(__input.charCodeAt(__off) === 41)) {
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-    const __before = __off;
-    state.off = __off; validateColorFunctionToken(state); __off = state.off;
-    __count_args++;
-    if (__off === __before) break;
-    while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  }
-  if (__count_args < 1) { state.off = __off; throw new SyntaxError("expected at least 1 ColorFunctionToken"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateCssColorValue__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __name_s = __off;
-  let name;
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __name_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __name_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__name_s) | 32) === 0x75
-        && (__input.charCodeAt(__name_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__name_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-  name = __input.slice(__name_s, __off);
-  const __name_lc = name.toLowerCase();
-  if (!(__name_lc === "var")) { state.off = __off; throw new SyntaxError("expected one of var at position " + __name_s); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 40)) { state.off = __off; throw new SyntaxError("expected " + "(" + " at position " + __off); }
-  __off += 1;
-  let args = '';
-  {
-    // __preWsOff captures the offset at entry — used (with leading-comment
-    // tracking) to rewind __lastCaptureStart/End when the until captures
-    // nothing. Anchor = end of the last leading comment if any, else
-    // __preWsOff (matches tokenized's state.ends[state.pos - 1] anchor).
-    const __preWsOff = __off;
-    // Skip leading whitespace and comments from the capture's view.
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __off++; continue; }
-      break;
-    }
-    const __startOff = __off;
-    let __lastNonWs = __off;
-    let __depth = 0;
-    while (__off < __len) {
-      const __c = __input.charCodeAt(__off);
-      if (__depth === 0 && (__c === 41)) break;
-      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue; }
-      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-        if (__depth === 0) break;
-        __depth--; __off++; if (!isAsciiWs(__c)) __lastNonWs = __off; continue;
-      }
-      if (__c === 0x22 || __c === 0x27) {
-        const __q = __c;
-        __off++;
-        while (__off < __len) {
-          const __sc = __input.charCodeAt(__off);
-          if (__sc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__sc === __q) { __off++; break; }
-          if (__sc === 0x0a || __sc === 0x0d) break;
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__depth === 0
-        && (__c === 0x75 || __c === 0x55)
-        && __off + 3 < __len
-        && (__input.charCodeAt(__off + 1) | 32) === 0x72
-        && (__input.charCodeAt(__off + 2) | 32) === 0x6c
-        && __input.charCodeAt(__off + 3) === 0x28) {
-        __off += 4;
-        while (__off < __len) {
-          const __uc = __input.charCodeAt(__off);
-          if (__uc === 0x29) { __off++; break; }
-          if (__uc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__uc === 0x22 || __uc === 0x27) {
-            const __uq = __uc;
-            __off++;
-            while (__off < __len) {
-              const __usc = __input.charCodeAt(__off);
-              if (__usc === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__usc === __uq) { __off++; break; }
-              if (__usc === 0x0a || __usc === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-        __lastNonWs = __off;
-        continue;
-      }
-      if (__c === 0x5c && __off + 1 < __len) {
-        __lastNonWs = __off + 2;
-        __off += 2;
-        continue;
-      }
-      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = __off + 1;
-      __off++;
-    }
-    if (__lastNonWs === __startOff) {
-      const __emptyAnchor = __preWsOff;
-      __off = __emptyAnchor;
-      args = '';
-    } else {
-      // Rewind __off to the trim boundary so trailing whitespace and
-      // trailing comments (which were consumed during the scan) remain
-      // available for the parent's next iteration. Matches tokenized's
-      // captureUntil which rewinds state.pos past trailing comment tokens.
-      __off = __lastNonWs;
-    args = __input.slice(__startOff, __lastNonWs);
-    }
-  }
-  if (args.endsWith(",")) { state.off = __off; throw new SyntaxError("captured value ends with rejected suffix ','"); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 41)) { state.off = __off; throw new SyntaxError("expected " + ")" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateCssColorValue(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 35) {
-    return validateCssColorValue__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    state.off = __peek;
-    { const r = trySpeculate(state, validateCssColorValue__alt0); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateCssColorValue__alt2); if (r !== null) return r; }
-    { const r = trySpeculate(state, validateCssColorValue__alt3); if (r !== null) return r; }
-    return validateCssColorValue__alt4(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function validateNumericColorFunctionToken__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateNumericColorFunctionToken__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateNumericColorFunctionToken__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateNumericColorFunctionToken__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateNumericColorFunctionToken(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return validateNumericColorFunctionToken__alt2(state);
-  } else if (__byte0 === 44) {
-    return validateNumericColorFunctionToken__alt3(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return validateNumericColorFunctionToken__alt0(state);
-    }
-    return validateNumericColorFunctionToken__alt1(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function validateColorFunctionToken__alt0(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-
-  if (__off < __len && isAsciiWs(__input.charCodeAt(__off))) { state.off = __off; throw new SyntaxError("expected no whitespace after token at position " + __off); }
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 37)) { state.off = __off; throw new SyntaxError("expected " + "%" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken__alt1(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!(isDigit(__input.charCodeAt(__off)))) throw new SyntaxError("expected number at position " + __value_s);
-    __off++;
-    while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    if (__off < __len && __input.charCodeAt(__off) === 0x2e && __off + 1 < __len && isDigit(__input.charCodeAt(__off + 1))) {
-      __off++;
-      while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-    }
-    {
-      const __ec = __off < __len ? __input.charCodeAt(__off) : 0;
-      if (__ec === 0x65 || __ec === 0x45) {
-        let __j = __off + 1;
-        if (__j < __len && (__input.charCodeAt(__j) === 0x2b || __input.charCodeAt(__j) === 0x2d)) __j++;
-        if (__j < __len && isDigit(__input.charCodeAt(__j))) {
-          __off = __j;
-          while (__off < __len && isDigit(__input.charCodeAt(__off))) __off++;
-        }
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken__alt2(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!((isCssIdentStart(__input.charCodeAt(__off)) || __input.charCodeAt(__off) === 0x5c))) throw new SyntaxError("expected ident at position " + __value_s);
-    {
-      const __c0 = __input.charCodeAt(__off);
-      __off++;
-      if (__c0 === 0x5c) {
-        if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-          let __n = 0;
-          while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-          if (__off < __len) {
-            const __w = __input.charCodeAt(__off);
-            if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-          }
-        } else if (__off < __len) {
-          __off++;
-        }
-      }
-      while (__off < __len) {
-        const __c2 = __input.charCodeAt(__off);
-        if (__c2 === 0x5c) {
-          __off++;
-          if (__off < __len && isHexDigit(__input.charCodeAt(__off))) {
-            let __n = 0;
-            while (__off < __len && __n < 6 && isHexDigit(__input.charCodeAt(__off))) { __off++; __n++; }
-            if (__off < __len) {
-              const __w = __input.charCodeAt(__off);
-              if (__w === 0x20 || __w === 0x09 || __w === 0x0a || __w === 0x0d) __off++;
-            }
-          } else if (__off < __len) {
-            __off++;
-          }
-          continue;
-        }
-        if (!isCssIdentPart(__c2)) break;
-        __off++;
-      }
-      // Raw url(...) tokenization (matches tokenized backend).
-      if (
-        __off - __value_s === 3
-        && __off < __len
-        && __input.charCodeAt(__off) === 0x28
-        && (__input.charCodeAt(__value_s) | 32) === 0x75
-        && (__input.charCodeAt(__value_s + 1) | 32) === 0x72
-        && (__input.charCodeAt(__value_s + 2) | 32) === 0x6c
-      ) {
-        __off++;
-        while (__off < __len) {
-          const __cu = __input.charCodeAt(__off);
-          if (__cu === 0x29) { __off++; break; }
-          if (__cu === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-          if (__cu === 0x22 || __cu === 0x27) {
-            const __q = __cu;
-            __off++;
-            while (__off < __len) {
-              const __ch = __input.charCodeAt(__off);
-              if (__ch === 0x5c && __off + 1 < __len) { __off += 2; continue; }
-              if (__ch === __q) { __off++; break; }
-              if (__ch === 0x0a || __ch === 0x0d) break;
-              __off++;
-            }
-            continue;
-          }
-          __off++;
-        }
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken__alt3(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  const __value_s = __off;
-
-  if (!((__input.charCodeAt(__off) === 0x22 || __input.charCodeAt(__off) === 0x27))) throw new SyntaxError("expected string at position " + __value_s);
-    {
-      const __quote = __input.charCodeAt(__off);
-      __off++;
-      while (__off < __len) {
-        const __ch = __input.charCodeAt(__off);
-        if (__ch === 0x5c) { __off += 2; continue; }
-        if (__ch === __quote) { __off++; break; }
-        if (__ch === 0x0a || __ch === 0x0d) break;
-        __off++;
-      }
-    }
-
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken__alt4(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 47)) { state.off = __off; throw new SyntaxError("expected " + "/" + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken__alt5(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  if (!(__input.charCodeAt(__off) === 44)) { state.off = __off; throw new SyntaxError("expected " + "," + " at position " + __off); }
-  __off += 1;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
-}
-
-function validateColorFunctionToken(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __peek = state.off;
-  // Skip leading ws before discriminating on first span.
-  while (__peek < __len) {
-    const __c = __input.charCodeAt(__peek);
-    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-    break;
-  }
-    const __byte0 = __input.charCodeAt(__peek);
-  if (__byte0 === 47) {
-    return validateColorFunctionToken__alt4(state);
-  } else if (__byte0 === 44) {
-    return validateColorFunctionToken__alt5(state);
-  } else if (isDigit(__input.charCodeAt(__peek))) {
-      while (__peek < __len) {
-        const __c = __input.charCodeAt(__peek);
-        if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-        break;
-      }
-      if (!(__peek < __len && isDigit(__input.charCodeAt(__peek)))) throw new SyntaxError('peek-scan: prefix mismatch at ' + __peek);
-      __peek++;
-      while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      if (__peek < __len && __input.charCodeAt(__peek) === 0x2e && __peek + 1 < __len && isDigit(__input.charCodeAt(__peek + 1))) {
-        __peek++;
-        while (__peek < __len && isDigit(__input.charCodeAt(__peek))) __peek++;
-      }
-    // Skip ws before the discriminator.
-    while (__peek < __len) {
-      const __c = __input.charCodeAt(__peek);
-      if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { __peek++; continue; }
-      break;
-    }
-    if (__input.charCodeAt(__peek) === 37) {
-      return validateColorFunctionToken__alt0(state);
-    }
-    return validateColorFunctionToken__alt1(state);
-  } else if ((isCssIdentStart(__input.charCodeAt(__peek)) || __input.charCodeAt(__peek) === 0x5c)) {
-    return validateColorFunctionToken__alt2(state);
-  } else if ((__input.charCodeAt(__peek) === 0x22 || __input.charCodeAt(__peek) === 0x27)) {
-    return validateColorFunctionToken__alt3(state);
-  }
-  throw new SyntaxError('no production matched at position ' + __peek);
-}
-
-function validateCssColor(state: State): unknown {
-  const __input = state.input;
-  const __len = __input.length;
-  let __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  validateCssColorValue(state);
-  __off = state.off;
-  while (__off < __len) {
-    const __ws_c = __input.charCodeAt(__off);
-    if (__ws_c === 0x20 || __ws_c === 0x09 || __ws_c === 0x0a || __ws_c === 0x0d) { __off++; continue; }
-    break;
-  }
-  state.off = __off;
-  return;
 }
 
 const __defaultTarget: string | undefined = undefined;
@@ -4297,59 +1265,37 @@ export function stringify(value: unknown, options?: { type?: string }): string {
 
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  const lineStarts = mode === 'raws' ? computeLineStarts(input) : [];
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode,
-    lineStarts,
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
+    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
   };
-  try {
-    const result = mode === 'raws' ? parseCssColor(state) : parseCssColorFast(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-    return result;
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseCssColor(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
+  return result;
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  if (options?.validate === true && false) {
-    __parse(input, options);
-    return;
-  }
   const state: State = {
     input,
-    off: 0,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
     mode: 'fast',
     lineStarts: [],
-    __lastCaptureStart: 0,
-    __lastCaptureEnd: 0,
   };
-  try {
-    validateCssColor(state);
-    if (state.off !== input.length) {
-      throw syntaxErrorWithFrame(input, `unexpected trailing input at position ${state.off}`, state.off);
-    }
-  } catch (error) {
-    if (error instanceof SyntaxError && !hasSourceFrame(error.message)) {
-      throw decorateSyntaxError(input, error, state);
-    }
-    throw error;
+  const result = parseCssColor(state);
+  if (result === null || state.pos !== input.length) {
+    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }
 }
 
-// Attach package identity so another package's validation metadata can refer
-// to this generated validator while codegen still emits static imports.
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
   module: "@parser2/css-color",
   exportName: 'validate',
 };
-

@@ -836,6 +836,53 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   assert.equal(result2.value, '{ a; b; c; }');
 });
 
+test('v2 speculation chain orders same-first-byte literals by descending prefix length', async () => {
+  // Repro for markdown fenced code blocks: two alts share a leading byte
+  // (`'`'`) but one literal is "```\\n" and the other is "```". When the
+  // dispatcher falls back to speculation (because some OTHER alt has a
+  // first span with no fixed byte — e.g. a leading .until()), the
+  // longer-literal alt must be tried first within the same-first-byte
+  // group. v1 does this via its byte-prefix dispatcher; v2 now mirrors
+  // the order inside emitSpeculationChain.
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Leaf',
+    examples: [
+      // Decoy alt with no fixed first byte — forces emitDispatcher to
+      // fall through to emitSpeculationChain. Use a leading non-backtick
+      // anchor so this alt never matches a `'```...'` input.
+      ex('Setext\n===').as('Leaf')
+        .span('text', 'Setext').until('\n===', { balanced: false })
+        .span('\n===')
+        .render('ast', { type: 'setext', text: $.text })
+        .build(),
+      // Alt with shorter literal prefix.
+      ex('```js\nsample\n```').as('Leaf')
+        .span('```')
+        .span('lang', 'js').ident().css()
+        .span('body', 'sample').until('```', { balanced: false })
+        .span('```')
+        .render('ast', { type: 'code-lang', lang: $.lang, body: $.body })
+        .build(),
+      // Alt with longer literal prefix — declared SECOND but should be
+      // tried first against `'```\\n...'`-shaped input.
+      ex('```\nplain\n```').as('Leaf')
+        .span('```\n')
+        .span('body', 'plain').until('```', { balanced: false })
+        .span('```')
+        .render('ast', { type: 'code-plain', body: $.body })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' }) as { type: string };
+  // The "```\\n…" alt must win on the no-lang input.
+  assert.equal(__parse('```\nplain\n```').type, 'code-plain');
+  // The shorter "```" alt still wins when followed by an ident.
+  assert.equal(__parse('```js\nsample\n```').type, 'code-lang');
+});
+
 test('v2 .until() always trims trailing whitespace from the captured slice', async () => {
   // Repro for html comment fixtures: a schema like
   //   .span('data', ' hello ').until('-->', { trim: false })

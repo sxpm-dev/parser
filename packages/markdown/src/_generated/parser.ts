@@ -2007,31 +2007,31 @@ function parseMarkdownLeaf(state: State): unknown {
   { const r = parseMarkdownLeaf__alt7(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt8(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt9(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt10(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt11(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt12(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt10(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt13(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt14(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt15(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt16(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt17(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt18(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt19(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt18(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt20(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt21(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt22(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt23(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt24(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt25(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt33(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt34(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt26(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt27(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt28(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt29(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt30(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt31(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt24(state); if (r !== null) return r; }
+  { const r = parseMarkdownLeaf__alt25(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt32(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt33(state); if (r !== null) return r; }
-  { const r = parseMarkdownLeaf__alt34(state); if (r !== null) return r; }
   { const r = parseMarkdownLeaf__alt35(state); if (r !== null) return r; }
   return parseMarkdownLeaf__alt36(state);
 }

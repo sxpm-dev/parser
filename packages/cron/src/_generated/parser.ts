@@ -242,7 +242,6 @@ function parseCommand(state: State): unknown {
     if (__cand === null) break;
     words.push(__cand);
     if (off === __loopStart) break;
-
   }
   if (words.length < 1) { state.pos = entryOff; return null; }
   const __words_end = off;

@@ -106,10 +106,28 @@ state.pos = off;`;
 function emitGroupSpeculation(prodIdxs: ReadonlyArray<number>, fnName: string, prods: ReadonlyArray<Production>): string {
   // For each candidate, call its alt; if null, try the next. State.pos is
   // already rewound by the alt's own failure path, so this composes.
-  // Order: longest-prefix first (more spans = more specific). This prevents
-  // a shorter alt from succeeding on a longer alt's prefix (e.g., wildcard
-  // '*' consuming the '*' of '*/N' before '*/N' is tried).
-  const ordered = [...prodIdxs].sort((a, b) => prods[b]!.spans.length - prods[a]!.spans.length);
+  //
+  // Order within a same-first-byte group:
+  //   1. Longest first-span LITERAL prefix wins. Two alts whose first span
+  //      both start with the same byte but one is "```\\n" and the other is
+  //      "```" need the longer match tried first — otherwise a `'```\\n…'`
+  //      input would be claimed by "```" and consume the LF into the next
+  //      span (e.g. an ident scan eating the lang line below the fence).
+  //      Matches v1's prefix-discriminator behavior.
+  //   2. Fall back to span count descending — more spans = more structural
+  //      commitment, useful when prefix lengths tie (e.g. two same-text
+  //      literal first spans).
+  //   3. Stable on author declaration order otherwise.
+  const litLen = (idx: number): number => {
+    const s0 = prods[idx]!.spans[0];
+    if (s0 && s0.class === 'literal' && typeof s0.text === 'string') return s0.text.length;
+    return 0;
+  };
+  const ordered = [...prodIdxs].sort((a, b) => {
+    const lenDelta = litLen(b) - litLen(a);
+    if (lenDelta !== 0) return lenDelta;
+    return prods[b]!.spans.length - prods[a]!.spans.length;
+  });
   const lines: string[] = [];
   for (let i = 0; i < ordered.length - 1; i++) {
     lines.push(`{ const r = ${fnName}__alt${ordered[i]}(state); if (r !== null) return r; }`);
@@ -123,14 +141,88 @@ function emitSpeculationChain(
   prods: ReadonlyArray<Production>,
   fnName: string,
 ): string {
+  // Stable reorder: any group of alts whose first span is a literal with
+  // the SAME first byte gets reordered so the longer literal prefix is
+  // tried first within that group. Other alts keep their declared order.
+  // Matches v1's byte-prefix dispatcher behavior for the cases where v2
+  // falls back to speculation (some alt has a first-span with no fixed
+  // first byte — e.g. `.until()` on its first span).
+  //
+  // Concrete example: markdown's MarkdownLeaf has many setext / paragraph
+  // alts that begin with `.until()` (no fixed byte), so the whole node
+  // uses speculation. Within speculation, the fenced-code alts
+  //   alt18: ```<lang>\n<body>```
+  //   alt19: ```\n<body>```
+  // both start with '`' but alt19's literal `"\`\`\`\n"` is longer than
+  // alt18's `"\`\`\`"`. Trying alt19 first ensures `'\`\`\`\nplain\n\`\`\`'`
+  // parses as the no-lang form (lang absent) instead of alt18 eating the
+  // newline as inter-span ws and then matching `plain` as the ident-lang.
+  const order = computeSpeculationOrder(prods);
   const lines: string[] = [];
-  for (let i = 0; i < prods.length - 1; i++) {
-    lines.push(`  { const r = ${fnName}__alt${i}(state); if (r !== null) return r; }`);
+  for (let i = 0; i < order.length - 1; i++) {
+    lines.push(`  { const r = ${fnName}__alt${order[i]}(state); if (r !== null) return r; }`);
   }
-  lines.push(`  return ${fnName}__alt${prods.length - 1}(state);`);
+  lines.push(`  return ${fnName}__alt${order[order.length - 1]}(state);`);
   return `function ${fnName}(state: State): unknown {
 ${lines.join('\n')}
 }`;
+}
+
+function computeSpeculationOrder(prods: ReadonlyArray<Production>): number[] {
+  // For each alt, compute its first-byte (if any) and first-literal length.
+  const meta = prods.map((p, idx) => {
+    const s0 = p.spans[0];
+    if (s0 && s0.class === 'literal' && typeof s0.text === 'string' && s0.text.length > 0) {
+      // First span must NOT be optional / recursive / until-modified to
+      // be a stable byte-discriminator.
+      if (!hasModifier(s0, 'optional')
+          && !findModifier(s0, 'until')
+          && !findModifier(s0, 'rawUntil')
+          && !findModifier(s0, 'repeats')
+          && s0.recursiveRoles.length === 0) {
+        return { idx, firstByte: s0.text.charCodeAt(0), literalLen: s0.text.length };
+      }
+    }
+    return { idx, firstByte: -1, literalLen: 0 };
+  });
+  // Group by firstByte. For groups with firstByte >= 0 (literal-prefix
+  // group) and >1 member, sort by literalLen descending (stable: equal
+  // lengths keep declared order). All other alts retain their declared
+  // order. Rebuild the global order by walking the original index list
+  // and substituting the next alt from each group's reordered queue when
+  // we encounter an index in that group.
+  const groups = new Map<number, number[]>();
+  for (const m of meta) {
+    if (m.firstByte < 0) continue;
+    const arr = groups.get(m.firstByte) ?? [];
+    arr.push(m.idx);
+    groups.set(m.firstByte, arr);
+  }
+  for (const [byte, idxs] of groups) {
+    if (idxs.length < 2) continue;
+    // Stable longest-literal-first sort.
+    idxs.sort((a, b) => {
+      const la = prods[a]!.spans[0]!.text!.length;
+      const lb = prods[b]!.spans[0]!.text!.length;
+      if (la !== lb) return lb - la;
+      return a - b;
+    });
+    groups.set(byte, idxs);
+  }
+  // Walk meta in declared order, substituting reordered group members.
+  const consumed = new Map<number, number>();
+  const order: number[] = [];
+  for (const m of meta) {
+    if (m.firstByte < 0) {
+      order.push(m.idx);
+      continue;
+    }
+    const idxs = groups.get(m.firstByte)!;
+    const k = consumed.get(m.firstByte) ?? 0;
+    order.push(idxs[k]!);
+    consumed.set(m.firstByte, k + 1);
+  }
+  return order;
 }
 
 // --- first-token analysis --------------------------------------------------

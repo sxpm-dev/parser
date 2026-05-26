@@ -1,0 +1,7 @@
+# schema=css
+# kind=ast-mismatch
+# target=-
+# mutator=replace-byte@16
+# seed="@import \"foo.css\";"
+# detail=interp parse produced different AST than v2 parse
+@import "foo.cssS;

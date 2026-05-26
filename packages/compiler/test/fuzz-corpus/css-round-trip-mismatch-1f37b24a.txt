@@ -1,0 +1,7 @@
+# schema=css
+# kind=round-trip-mismatch
+# target=source
+# mutator=repeat-delim@7x2
+# seed="@media (min-width: 600px) { a { color: blue; } }"
+# detail=round-trip via interp stringify+v2 reparse changed the rendered value
+@media ((min-width: 600px) { a { color: blue; } }

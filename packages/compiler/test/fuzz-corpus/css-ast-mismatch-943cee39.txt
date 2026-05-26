@@ -1,0 +1,7 @@
+# schema=css
+# kind=ast-mismatch
+# target=-
+# mutator=random-14
+# seed="<random>"
+# detail=interp parse produced different AST than v2 parse
+`4J:ck$s:" pR;

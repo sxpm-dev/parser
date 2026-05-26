@@ -1,0 +1,7 @@
+# schema=css
+# kind=parse-divergence-interp-threw
+# target=-
+# mutator=random-12
+# seed="<random>"
+# detail=interp threw, v2 accepted
+-Y:J'XTKd.}*

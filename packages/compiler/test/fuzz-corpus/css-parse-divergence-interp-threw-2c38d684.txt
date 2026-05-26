@@ -1,0 +1,7 @@
+# schema=css
+# kind=parse-divergence-interp-threw
+# target=-
+# mutator=replace-byte@15
+# seed="@import \"foo.css\";"
+# detail=interp threw, v2 accepted
+@import "foo.cs]";

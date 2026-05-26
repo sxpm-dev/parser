@@ -1,0 +1,7 @@
+# schema=css
+# kind=round-trip-mismatch
+# target=source
+# mutator=insert-noise@3+1
+# seed="@import \"foo.css\";"
+# detail=round-trip via interp stringify+v2 reparse changed the rendered value
+@im(port "foo.css";

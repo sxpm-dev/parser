@@ -1,0 +1,7 @@
+# schema=css
+# kind=parse-divergence-v2-threw
+# target=-
+# mutator=random-8
+# seed="<random>"
+# detail=v2 threw, interp accepted
+uQ7Ef':X

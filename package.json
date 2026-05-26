@@ -9,6 +9,8 @@
   "scripts": {
     "build": "npm run generate && tsc -b",
     "build:tools": "tsc -b packages/parser packages/compiler",
+    "fuzz": "npm run fuzz -w @parser2/compiler",
+    "fuzz:60s": "npm run fuzz:60s -w @parser2/compiler",
     "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css-color/src/schema.ts && tsx packages/compiler/src/cli.ts packages/css-length-percentage/src/schema.ts && tsc -b packages/css-color packages/css-length-percentage && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts packages/html/src/schema.ts",
     "test": "npm run generate && npm run test --workspaces --if-present",
     "conformance:fetch": "npm run fetch -w @parser2/css",

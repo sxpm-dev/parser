@@ -1,0 +1,7 @@
+# schema=css
+# kind=parse-divergence-v2-threw
+# target=-
+# mutator=insert-noise@3+1
+# seed="a { color: red; }"
+# detail=v2 threw, interp accepted
+a {' color: red; }

@@ -188,6 +188,34 @@ Commit these as a single chore commit before the 1.3d feature commit.
 **Blocks:** css final unblock (Rule vs Declaration disambiguation; both start with ident, distinguished structurally by `:` appearing before `;`/`{`/end-of-input).
 **Acceptance:** when two roles can't be separated by first byte (either both fallthrough or sharing signatures), the role-ladder emits a bounded peek-scan (cap at ~64 bytes of lookahead) over inferred discriminating bytes. Discriminator set is derived from the differing structural patterns in each role's productions (e.g. Rule has `{` somewhere ahead; Declaration has `:` before `;`/`}`). No throw-backtracking; conclusive pick or codegen error if discriminators can't be derived statically. Tests green; css codegen succeeds end-to-end.
 
+#### Task 1.3g–i: Runtime emit gaps surfaced after 1.3f (added 2026-05-26)
+
+After 1.3f landed (v2 codegen succeeds for all three packages), running the existing test suites against v2-generated parsers exposed 58 failures (css 46, html 7, markdown 5). Spot-check by the 1.3f reviewer identified three discrete v2 emit gaps:
+
+##### Task 1.3g: `.until()` balanced `{}` support
+
+**Symptom:** CSS custom-property values like `--zero-size: { width: 0 };` get their value capture overshot to EOF. The `.until([';', '}'])` modifier with `balanced: true` (the default) should track `{}` braces — currently doesn't.
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts` (the until-span emit added in 1.3a).
+
+**Acceptance:** when `balanced: true` is set on a `.until()`, the bracket-tracking loop tracks `()` `[]` AND `{}` depth. Stops only fire at depth 0. Regression test covers nested-block-in-value. CSS test count improves; full css test count ≥ ~76/77 (was 76 on v1; the 1 skipped test stays skipped).
+
+##### Task 1.3h: `.until()` trailing-whitespace trim consistency
+
+**Symptom:** HTML comment body captures with trailing space (`'hello '` instead of `'hello'`). The trim policy added in 1.3a may not be firing on all captured slices, or interacts incorrectly with token-class skips inside the loop.
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts`.
+
+**Acceptance:** captured slices honor `trim: true` (default) consistently, regardless of whether the loop skipped over a string/comment/url-raw token. Regression tests pin the previously-failing HTML comment shape and any related CSS cases.
+
+##### Task 1.3i: `stopBefore` parent-level implicit-close
+
+**Symptom:** HTML `<li>` / `<p>` / `<tr>` auto-closing doesn't work — when one `<li>` is followed by another `<li>` (without explicit `</li>`), the parent's repeats loop should exit early. The `stopBefore` modifier on the repeats span is meant to signal this; v2 doesn't honor it correctly.
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts` (the repeats-span emit in 1.3c).
+
+**Acceptance:** when `stopBefore: ['<li>', '<p>', ...]` is set on a repeats span, the loop exits without consuming when the upcoming source starts with any of those prefixes. Regression tests pin the implicit-close cases. HTML test count improves to 30/30.
+
 **Exit criteria for combined Task 1.3:** all three of css/html/markdown generate cleanly with `--v2`; their tests pass against the v2-generated parser; their perf/size gates run (regressions OK at this stage — recovered in Phase 4). `docs/v2-migration-status.md` shows all three checked.
 
 ### Task 1.4: Retire v1 scannerless emit + direct-fast

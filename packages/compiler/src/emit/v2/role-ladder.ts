@@ -40,6 +40,7 @@
 // schema must list the more-specific role first.
 
 import { CompilerError, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
+import { indent } from '../strings.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
 import type { SpanContext } from './span.ts';
 
@@ -236,11 +237,6 @@ function emitSpeculationGroup(roles: ReadonlyArray<string>, resultVar: string): 
     lines.push(`if (${resultVar} === null) { ${resultVar} = parse${roles[i]!}(state); }`);
   }
   return lines.join('\n');
-}
-
-function indent(s: string, level: number): string {
-  const pad = '  '.repeat(level);
-  return s.split('\n').map((l) => (l ? pad + l : l)).join('\n');
 }
 
 // Compute the set of valid first bytes for any production of a role, plus a

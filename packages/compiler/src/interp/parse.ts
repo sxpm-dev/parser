@@ -665,7 +665,7 @@ function parseRawUntilSpan(
   }
   // requireStop: fail the production when no stop was found (earliest === len).
   if (rawUntil.requireStop && earliest >= len) {
-    if (state.pos > state.maxOff) state.maxOff = earliest;
+    if (earliest > state.maxOff) state.maxOff = earliest;
     return false;
   }
   state.pos = earliest;

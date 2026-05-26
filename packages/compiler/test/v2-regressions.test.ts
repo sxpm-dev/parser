@@ -729,3 +729,67 @@ test('v2 number scanner honors .separator("_") — allows underscores between di
   // Leading underscore isn't a digit — must fail at start.
   assert.throws(() => __parse('_1'));
 });
+
+// --- Task 1.3g: .until() balanced {} support -------------------------------
+//
+// The user-facing semantics: `.until([...], { balanced: true })` (default)
+// tracks `()`, `[]`, AND `{}` nesting. Stops only fire at depth 0. This
+// matches v1 (see scannerless/parse.ts balancedBlock). Two regression tests
+// cover the brace-tracking path: shallow `{ nested }`, and deeper
+// `{ a: { b: c } }` to exercise depth > 1.
+
+test('v2 .until() balanced:true tracks {} depth (not just () and [])', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // The `;` and the inner `}` inside `{ nested }` must NOT terminate the
+  // capture — the balanced-bracket tracking keeps depth > 0 while inside
+  // `{...}`. The outer `;` (depth 0) is the stop that fires.
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      ex('prop: { nested };').as('Decl')
+        .span('prop', 'prop').until(':')
+        .span(':')
+        .span('value', '{ nested }').until([';', '}'])
+        .span(';')
+        .render('ast', { prop: $.prop, value: $.value })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('prop: { nested };') as { prop: string; value: string };
+  assert.equal(result.prop, 'prop');
+  // Without {} brace tracking, the inner `}` would be treated as a stop and
+  // the value would close at `{ nested ` (or empty) — assert the full braced
+  // capture is preserved.
+  assert.equal(result.value, '{ nested }');
+});
+
+test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Doubly-nested `{ a: { b: c } }`. Inner `}` decrements to depth=1, outer
+  // `}` decrements to depth=0. The next char after the outer `}` is `;` at
+  // depth=0 — that's the stop that fires.
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      ex('p: { a: { b: c } };').as('Decl')
+        .span('prop', 'p').until(':')
+        .span(':')
+        .span('value', '{ a: { b: c } }').until([';', '}'])
+        .span(';')
+        .render('ast', { prop: $.prop, value: $.value })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('p: { a: { b: c } };') as { prop: string; value: string };
+  assert.equal(result.prop, 'p');
+  assert.equal(result.value, '{ a: { b: c } }');
+  // Semicolons INSIDE the braces must not stop the scan either.
+  const result2 = __parse('p: { a; b; c; };') as { prop: string; value: string };
+  assert.equal(result2.value, '{ a; b; c; }');
+});

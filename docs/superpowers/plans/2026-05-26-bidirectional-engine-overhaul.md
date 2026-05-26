@@ -192,13 +192,45 @@ Commit these as a single chore commit before the 1.3d feature commit.
 
 After 1.3f landed (v2 codegen succeeds for all three packages), running the existing test suites against v2-generated parsers exposed 58 failures (css 46, html 7, markdown 5). Spot-check by the 1.3f reviewer identified three discrete v2 emit gaps:
 
-##### Task 1.3g: `.until()` balanced `{}` support
+##### Task 1.3g: `.until()` balanced `{}` support — investigated 2026-05-26
 
-**Symptom:** CSS custom-property values like `--zero-size: { width: 0 };` get their value capture overshot to EOF. The `.until([';', '}'])` modifier with `balanced: true` (the default) should track `{}` braces — currently doesn't.
+**Premise (from 1.3f reviewer):** v2's `.until([';', '}'])` capture doesn't respect `{}` balanced brackets while consuming a custom-property value, so the value scanner runs to EOF on `--zero-size: { width: 0; ... };`.
 
-**File touched:** `packages/compiler/src/emit/v2/span.ts` (the until-span emit added in 1.3a).
+**Investigation finding (1.3g executor):** the premise is incorrect. The v2 until-span emit added in 1.3a already tracks `()`, `[]`, AND `{}` depth (see `packages/compiler/src/emit/v2/span.ts` lines 723-735 — `0x7b` / `0x7d` are in the open- and close-bracket arms). Two new regression tests pin the brace-tracking behavior:
+- `v2 .until() balanced:true tracks {} depth (not just () and [])` — `prop: { nested };` captures `{ nested }` correctly.
+- `v2 .until() balanced:true tracks deeply-nested {} depth` — `p: { a: { b: c } };` captures the full nested value, semicolons inside braces don't stop the scan.
 
-**Acceptance:** when `balanced: true` is set on a `.until()`, the bracket-tracking loop tracks `()` `[]` AND `{}` depth. Stops only fire at depth 0. Regression test covers nested-block-in-value. CSS test count improves; full css test count ≥ ~76/77 (was 76 on v1; the 1 skipped test stays skipped).
+Both pass without code changes.
+
+**Actual root cause of the apply.css failure:** v2's `emitRepeatsSpan` (added in 1.3c) requires an explicit separator between items, while v1's `emitRepeatedSpan` sweeps any leading separator at the top of each iteration. The CSS Declaration production's last span is `.span(';').optional()` — so when a Decl already consumed its trailing `;`, the parent Rule's `repeats({ sep: ';', trailing: 'allowed' })` finds NO separator before the next decl and breaks the loop. That leaves the body un-closed, parseRule returns null, and the top-level dispatch falls through to parseDeclaration which gobbles the whole `:root {...}` as a single empty-prop decl.
+
+v1 generated for the same schema (line 1147 in old parser.ts):
+```js
+while (input.charCodeAt(off) === 59) { off += 1; <skipWs>; }
+```
+v2 generated (line 815):
+```js
+if (!(input.charCodeAt(off) === 59)) { off = __sepStart; break; }
+```
+
+v2 should adopt v1's leading-sep sweep semantics so optional-`;`-suffix items don't break the parent's separator contract. This is properly a **repeats-emit fix**, not an until-emit fix.
+
+**Status:** Closed without span.ts changes. The apply.css fixture failure (and a meaningful chunk of the 46 css failures the 1.3f reviewer attributed to {} tracking) is moved to a new task focused on the actual culprit — repeats-sep handling. CSS v2 test counts stay at 10/57 (1 skipped, 46 fail) — see Task 1.3j below.
+
+**Acceptance (met):**
+- Two regression tests added pinning balanced `{}` depth tracking (single + deep nesting + semicolons inside braces).
+- Confirmed the v2 emit at span.ts:723-735 already handles `{}` correctly.
+- Determined actual cause of the visible apply.css symptom and opened Task 1.3j.
+
+##### Task 1.3j: repeats-sep tolerates items that consumed their own optional sep (added 2026-05-26)
+
+**Symptom:** CSS apply.css fixture (and several other CSS cases) fail because v2's `emitRepeatsSpan` requires an explicit `sep` literal between items even when the item production already consumed an optional `;`. v1's emit sweeps leading seps at the top of each loop iteration, tolerating either form.
+
+**File touched:** `packages/compiler/src/emit/v2/span.ts` — the `sepBlock` in `emitRepeatsSpan`.
+
+**Investigation pointer:** compare v1's `emitRepeatedSpan` in `packages/compiler/src/emit/scannerless/parse.ts` (lines 2227-2238, especially the `while (sepMatch) { off += sep.length; skipWs; }` at the TOP of the loop) with v2's `if (!(sepMatch)) { off = __sepStart; break; }` at the BOTTOM (after each item).
+
+**Acceptance:** apply.css fixture passes under v2-generated CSS parser. CSS failure count drops significantly (1.3f reviewer estimated ~30 of 46 css failures fall in this category, originally misattributed to `{}` tracking). Regression test added covering the `Decl with optional ';'` + `Rule with repeats({ sep: ';' })` shape.
 
 ##### Task 1.3h: `.until()` trailing-whitespace trim consistency
 

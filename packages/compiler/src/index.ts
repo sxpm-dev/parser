@@ -7,6 +7,7 @@ import { deriveInverses } from './infer/invert.ts';
 import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
 import { checkRoundTrip } from './check/round-trip.ts';
+import { checkDispatch } from './check/dispatch.ts';
 import { emitV2Parser } from './emit/v2/index.ts';
 import type { InferredSchema } from './model.ts';
 
@@ -49,6 +50,12 @@ export function inferSchema(
   // after deriveInverses so the inverse IR is in place. See
   // check/round-trip.ts for the property statement.
   checkRoundTrip(inferred);
+  // Theorem check: every multi-production node-type's productions must be
+  // statically distinguishable by the parse-time dispatcher (either by
+  // disjoint first-byte signatures or by bounded peek/longest-prefix
+  // discriminators), and the root node's dispatch must be total. See
+  // check/dispatch.ts for the property statement.
+  checkDispatch(inferred);
   return inferred;
 }
 

@@ -30,7 +30,7 @@ export type EmitProductionOptions = {
 export function emitProduction(
   _nodeName: string,
   production: Production,
-  _schema: InferredSchema,
+  schema: InferredSchema,
   opts: EmitProductionOptions,
 ): string {
   const bindings: SpanBindings = {
@@ -39,7 +39,24 @@ export function emitProduction(
     startOffExpr: new Map(),
     endOffExpr: new Map(),
   };
-  const ctx: SpanContext = { entryOffVar: 'entryOff', raws: false /* per-call-site */ };
+  // Derive scan-kernel feature flags from the schema's declared token classes
+  // and ident refinement. These teach .until() captures how to handle strings
+  // / comments / CSS url() as opaque units. Matches the v1 ctx.tokens /
+  // ctx.cssIdent derivation in emit/scannerless/parse.ts.
+  const tokenClasses = new Set<string>();
+  let cssIdent = false;
+  for (const usage of schema.classes) {
+    tokenClasses.add(usage.class);
+    if (usage.class === 'ident' && usage.refinements.some((r) => r.name === 'css')) {
+      cssIdent = true;
+    }
+  }
+  const ctx: SpanContext = {
+    entryOffVar: 'entryOff',
+    raws: false /* per-call-site */,
+    tokens: tokenClasses,
+    cssIdent,
+  };
 
   const lines: string[] = [];
   lines.push(`const input = state.input;`);

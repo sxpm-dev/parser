@@ -70,10 +70,14 @@ export type SpanModifier =
       // captured source slice.
       readonly trim: boolean;
       // If set, the production fails when the captured value (after
-      // trimming) ends with this string. Used to discriminate ambiguous
-      // productions — e.g. a Rule's selector should not end with `:`
-      // (which signals a custom-property Declaration like `--foo: ...`).
-      readonly rejectSuffix?: string;
+      // trimming) ends with ANY of these strings. Used to discriminate
+      // ambiguous productions — e.g. a Rule's selector should not end
+      // with `:` (custom-property Declaration), `,` / `>` / `+` / `~`
+      // (trailing CSS combinator).
+      readonly rejectSuffix?: ReadonlyArray<string>;
+      // If true, the production fails when the captured value (after
+      // trimming) is empty (zero-length). Used for required captures.
+      readonly nonEmpty?: boolean;
     }
   | { readonly kind: 'noLineTerminatorAfter' }
   | { readonly kind: 'noWhitespaceAfter' }

@@ -1437,3 +1437,21 @@ test("v2 .until() with unknownChars:'reject' rejects undeclared bytes at depth 0
   // bitset check.
   assert.match(src, /unknown char/);
 });
+
+test('v2 .until() honors nonEmpty + rejectSuffix array', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'R',
+    examples: [
+      ex('.foo{')
+        .as('R')
+        .span('s', '.foo').until(['{'], { rejectSuffix: [':', ',', '>'], nonEmpty: true })
+        .span('{')
+        .render('ast', { s: $.s })
+        .build(),
+    ],
+  });
+  const src = generateParser(schema, undefined, {});
+  assert.match(src, /endsWith\(.*"[,:>]".*\)/);
+  assert.match(src, /\.length === 0/);
+});

@@ -140,16 +140,30 @@ class SpanBuilder {
     opts: {
       readonly balanced?: boolean;
       readonly trim?: boolean;
-      readonly rejectSuffix?: string;
+      // Accepts a single string (normalized to single-element array) or an
+      // array of strings. The production fails when the captured value ends
+      // with ANY of them.
+      readonly rejectSuffix?: string | ReadonlyArray<string>;
+      // When true, the production fails when the captured value is empty.
+      readonly nonEmpty?: boolean;
     } = {},
   ): this {
     const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
+    const rs = opts.rejectSuffix;
+    const rejectSuffix =
+      rs === undefined
+        ? undefined
+        : typeof rs === 'string'
+          ? [rs]
+          : [...rs];
+    const nonEmpty = opts.nonEmpty ?? false;
     return this.addModifier({
       kind: 'until',
       stops: stopArr,
       balanced: opts.balanced ?? true,
       trim: opts.trim ?? true,
-      rejectSuffix: opts.rejectSuffix,
+      ...(rejectSuffix ? { rejectSuffix } : {}),
+      ...(nonEmpty ? { nonEmpty: true } : {}),
     });
   }
 

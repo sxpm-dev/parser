@@ -265,7 +265,10 @@ const cssSchema = defineSchema({
     ex(".foo:hover { color: red }")
       .as("Rule")
       .span("selector", ".foo:hover")
-      .until(["{", ";"], { rejectSuffix: ":" })
+      .until(["{", ";"], {
+        rejectSuffix: [":", ",", ">", "+", "~"],
+        nonEmpty: true,
+      })
       // `{` / `}` are UNNAMED literal spans so the rebuild emits them as
       // string literals rather than slot reads. Named brace spans land in
       // captures, but the AST body doesn't surface them — AST→source

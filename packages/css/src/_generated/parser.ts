@@ -888,7 +888,8 @@ function parseRule(state: State): unknown {
       }
     }
     __selector_end = off;
-    if (selector.endsWith(":")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (selector.endsWith(":") || selector.endsWith(",") || selector.endsWith(">") || selector.endsWith("+") || selector.endsWith("~")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (selector.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
   while (off < len) {
     const c = input.charCodeAt(off);

@@ -1051,10 +1051,17 @@ function emitUntilSpan(
   }
   lines.push(`  ${endVar} = off;`);
   // rejectSuffix: production fails (null-return) when the captured value
-  // ends with the rejected suffix. v2 design contract — never throw for
-  // speculative failure.
-  if (until.rejectSuffix) {
-    lines.push(`  if (${v}.endsWith(${jsString(until.rejectSuffix)})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
+  // ends with ANY of the rejected suffixes. v2 design contract — never
+  // throw for speculative failure.
+  if (until.rejectSuffix && until.rejectSuffix.length > 0) {
+    const conds = until.rejectSuffix
+      .map((s) => `${v}.endsWith(${jsString(s)})`)
+      .join(' || ');
+    lines.push(`  if (${conds}) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
+  }
+  // nonEmpty: production fails when the captured value is zero-length.
+  if (until.nonEmpty) {
+    lines.push(`  if (${v}.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
   }
   lines.push(`}`);
 

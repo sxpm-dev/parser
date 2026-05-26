@@ -609,7 +609,11 @@ function parseUntilSpan(
     endOff = trimEnd;
   }
 
-  if (until.rejectSuffix && value.endsWith(until.rejectSuffix)) {
+  if (until.rejectSuffix && until.rejectSuffix.some((s) => value.endsWith(s))) {
+    if (state.pos > state.maxOff) state.maxOff = state.pos;
+    return false;
+  }
+  if (until.nonEmpty && value.length === 0) {
     if (state.pos > state.maxOff) state.maxOff = state.pos;
     return false;
   }

@@ -96,6 +96,9 @@ export default defineSchema({
     ex('#00ff99')
       .as('CssColorValue')
       .span('#').noWhitespaceAfter()
+      // TODO: restore .lengths([3, 4, 6, 8]) once the v2 compiler emits the
+      // refinement. Without it, malformed hex like `#12` or `#123456789` is
+      // accepted. Tracked alongside Phase 1.5 closeout.
       .span('value', '00ff99').hex()
       .render('ast', { type: 'hash-color', value: $.value })
       .build(),

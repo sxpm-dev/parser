@@ -21,7 +21,7 @@ export function emitValidate(
   if (rules.length === 0) {
     return {
       imports: '',
-      body: emitValidateStub(rootFn),
+      body: emitValidateStub(rootFn, schema.packageName),
     };
   }
 
@@ -65,10 +65,10 @@ export function emitValidate(
       inner.push(
         `    if (${valuesArr}.includes(__n[${jsString(r.matchField)}])) {`,
         `      try { ${alias}(String(__n[${jsString(r.field)}] ?? '')); }`,
-        `      catch (e) {`,
+        `      catch (__e) {`,
         `        const __off = (__n.source && __n.source.start && typeof __n.source.start.offset === 'number')`,
         `          ? __n.source.start.offset : 0;`,
-        `        throw validatorErrorAt(input, __off);`,
+        `        throw validatorErrorAt(input, __off, __e);`,
         `      }`,
         `    }`,
       );
@@ -117,7 +117,7 @@ ${switchCases.join('\n')}
   return { imports: importLines.join('\n'), body };
 }
 
-function emitValidateStub(rootFn: string): string {
+function emitValidateStub(rootFn: string, packageName: string): string {
   return `export function validate(input: string, options?: ParseOptions): void {
   const __state: State = {
     input,
@@ -134,7 +134,7 @@ function emitValidateStub(rootFn: string): string {
 }
 
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
-  module: 'unknown',
+  module: ${jsString(`@parser2/${packageName}`)},
   exportName: 'validate',
 };`;
 }

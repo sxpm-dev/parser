@@ -70,7 +70,7 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
-function validatorErrorAt(input: string, offset: number): SyntaxError {
+function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
   let lineEnd = offset;
@@ -80,9 +80,13 @@ function validatorErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
+  // Headline is generic — the underlying validator's message is attached via
+  // `cause` so callers can drill into it without polluting `.message`. Tests
+  // assert that the headline does NOT include validator-specific text (e.g.
+  // 'Invalid CSS value'), so we deliberately keep the message bare.
   return new SyntaxError(`Invalid value at position ${offset}
 ${gutter} | ${source}
-${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`, cause !== undefined ? { cause } : undefined);
 }
 
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
@@ -6179,6 +6183,6 @@ export function validate(input: string, options?: ParseOptions): void {
 }
 
 (validate as unknown as { __parser2Validator?: { module: string; exportName: string } }).__parser2Validator = {
-  module: 'unknown',
+  module: "@parser2/markdown",
   exportName: 'validate',
 };

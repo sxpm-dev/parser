@@ -72,7 +72,7 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
-function validatorErrorAt(input: string, offset: number): SyntaxError {
+function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
   let lineEnd = offset;
@@ -82,9 +82,13 @@ function validatorErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
+  // Headline is generic — the underlying validator's message is attached via
+  // `cause` so callers can drill into it without polluting `.message`. Tests
+  // assert that the headline does NOT include validator-specific text (e.g.
+  // 'Invalid CSS value'), so we deliberately keep the message bare.
   return new SyntaxError(`Invalid value at position ${offset}
 ${gutter} | ${source}
-${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`, cause !== undefined ? { cause } : undefined);
 }
 
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
@@ -2340,18 +2344,18 @@ function __walkAndValidate(input: string, node: unknown): void {
   if (__prod === "Declaration" || __prod.startsWith("Declaration#")) {
     if (["accent-color", "border-block-color", "border-block-end-color", "border-block-start-color", "border-bottom-color", "border-color", "border-inline-color", "border-inline-end-color", "border-inline-start-color", "border-left-color", "border-right-color", "border-top-color", "caret-color", "color", "column-rule-color", "fill", "flood-color", "lighting-color", "outline-color", "stop-color", "stroke", "text-decoration-color"].includes(__n["prop"])) {
       try { __validator_0(String(__n["value"] ?? '')); }
-      catch (e) {
+      catch (__e) {
         const __off = (__n.source && __n.source.start && typeof __n.source.start.offset === 'number')
           ? __n.source.start.offset : 0;
-        throw validatorErrorAt(input, __off);
+        throw validatorErrorAt(input, __off, __e);
       }
     }
     if (["block-size", "border-block-end-width", "border-block-start-width", "border-block-width", "border-bottom-width", "border-inline-end-width", "border-inline-start-width", "border-inline-width", "border-left-width", "border-right-width", "border-spacing", "border-top-width", "border-width", "bottom", "column-gap", "column-width", "flex-basis", "font-size", "gap", "height", "inline-size", "inset", "inset-block", "inset-block-end", "inset-block-start", "inset-inline", "inset-inline-end", "inset-inline-start", "left", "letter-spacing", "margin", "margin-block", "margin-block-end", "margin-block-start", "margin-bottom", "margin-inline", "margin-inline-end", "margin-inline-start", "margin-left", "margin-right", "margin-top", "max-block-size", "max-height", "max-inline-size", "max-width", "min-block-size", "min-height", "min-inline-size", "min-width", "outline-offset", "outline-width", "padding", "padding-block", "padding-block-end", "padding-block-start", "padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left", "padding-right", "padding-top", "right", "row-gap", "scroll-margin", "scroll-padding", "top", "width", "word-spacing"].includes(__n["prop"])) {
       try { __validator_1(String(__n["value"] ?? '')); }
-      catch (e) {
+      catch (__e) {
         const __off = (__n.source && __n.source.start && typeof __n.source.start.offset === 'number')
           ? __n.source.start.offset : 0;
-        throw validatorErrorAt(input, __off);
+        throw validatorErrorAt(input, __off, __e);
       }
     }
   }

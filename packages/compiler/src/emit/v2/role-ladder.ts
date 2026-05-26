@@ -38,6 +38,15 @@
 // the ladder emits sentinel speculation across the fallthrough roles in
 // author declaration order. The author's ordering encodes priority — the
 // schema must list the more-specific role first.
+//
+// Switch-based dispatch (Task 4.4): when the byte-dispatch fanout is wide
+// (≥ DISPATCH_SWITCH_MIN_BYTES distinct first-bytes across all groups),
+// the ladder emits a `switch (__c0)` statement instead of a chain of
+// `if (__c0 === N) ... else if (__c0 === M)` blocks. The JIT lowers a
+// switch with ≥4 cases on a small integer to a jump table on hot paths,
+// avoiding the per-arm branch-prediction overhead of the chained form.
+// For narrow fanouts (2-3 arms) the chain is kept since the JIT predicts
+// it well and the dispatch is rarely the bottleneck.
 
 import { CompilerError, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
 import { indent } from '../strings.ts';
@@ -159,26 +168,8 @@ export function emitRoleLadder(
   lines.push(`if (off < len) {`);
   lines.push(`  const __c0 = input.charCodeAt(off);`);
 
-  // Emit byte-dispatched branches per group. Singleton group → direct call;
-  // multi-role group → sentinel speculation across roles. Each branch is
-  // emitted as a block:
-  //   if (<cond>) {
-  //     <body>           // single line OR speculation chain
-  //   }
-  // The blocks chain with ` else ` and an optional ` else { <fallthrough> }`
-  // at the end. Lines are produced fully formatted (already indented) so
-  // the final join('\n') yields a parseable, readably-indented output.
-  const branchTexts: string[] = [];
-  for (const group of groups) {
-    const cond = [...group.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
-    const body = group.roles.length === 1
-      ? `${resultVar} = parse${group.roles[0]!.role}(state);`
-      : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar);
-    branchTexts.push(`if (${cond}) {\n${indent(body, 2)}\n  }`);
-  }
-
   // Fallthrough handling — tried after all byte-dispatch branches missed.
-  // 0 fallthroughs: no else clause.
+  // 0 fallthroughs: no else / default clause.
   // 1 fallthrough: unconditional dispatch (current 1.3d behavior).
   // 2+ fallthroughs: sentinel speculation across them in declaration order.
   let fallthroughBody: string | null = null;
@@ -191,22 +182,89 @@ export function emitRoleLadder(
     );
   }
 
-  if (branchTexts.length > 0 && fallthroughBody !== null) {
-    // Chain byte-branches with `else if` for compactness, then an unconditional
-    // `else { <fallthrough> }`. The fallthrough body is a sentinel chain when
-    // multiple fallthrough roles exist.
-    lines.push(`  ${branchTexts.join(' else ')} else {\n${indent(fallthroughBody, 2)}\n  }`);
-  } else if (branchTexts.length > 0) {
-    // Byte branches only — no fallthrough. Plain ladder, chained with `else if`.
-    lines.push(`  ${branchTexts.join(' else ')}`);
-  } else if (fallthroughBody !== null) {
-    // Only fallthrough(s), no byte branches.
-    lines.push(`${indent(fallthroughBody, 1)}`);
+  // Total distinct first-byte arms across all byte-dispatch groups. When
+  // wide enough (≥ DISPATCH_SWITCH_MIN_BYTES) we emit a `switch (__c0)`
+  // jump table — JITs lower a small-int switch with ≥4 cases to a direct
+  // jump table on hot paths, avoiding the per-arm branch-prediction
+  // overhead of the chained `if (__c0 === N) ... else if ...` form. For
+  // narrow fanouts the chain is kept since the JIT predicts it well and
+  // generates equivalent code.
+  let totalBytes = 0;
+  for (const group of groups) totalBytes += group.bytes.size;
+
+  if (groups.length > 0 && totalBytes >= DISPATCH_SWITCH_MIN_BYTES) {
+    // Switch form: emit one `case N:` per byte in each group, all sharing
+    // the same body (a direct call or a speculation chain). Multiple bytes
+    // for the same group are emitted as stacked case labels — the JIT
+    // compiles all labels to a single jump-table entry.
+    //
+    //   switch (__c0) {
+    //     case 35: case 36:
+    //       __r = parseHash(state);
+    //       break;
+    //     case 64:
+    //       __r = parseAt(state);
+    //       break;
+    //     default:
+    //       <fallthrough>
+    //       break;
+    //   }
+    lines.push(`  switch (__c0) {`);
+    for (const group of groups) {
+      const sortedBytes = [...group.bytes].sort((a, b) => a - b);
+      const caseLabels = sortedBytes.map((b) => `case ${b}:`).join(' ');
+      const body = group.roles.length === 1
+        ? `${resultVar} = parse${group.roles[0]!.role}(state);`
+        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar);
+      lines.push(`    ${caseLabels}`);
+      lines.push(`${indent(body, 3)}`);
+      lines.push(`      break;`);
+    }
+    if (fallthroughBody !== null) {
+      lines.push(`    default:`);
+      lines.push(`${indent(fallthroughBody, 3)}`);
+      lines.push(`      break;`);
+    }
+    lines.push(`  }`);
+  } else {
+    // Chained-if form (≤3 arms): emit byte-dispatched branches per group as
+    // a chain of `if (<cond>) { <body> } else if ...`. Singleton group →
+    // direct call; multi-role group → sentinel speculation across roles.
+    const branchTexts: string[] = [];
+    for (const group of groups) {
+      const cond = [...group.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
+      const body = group.roles.length === 1
+        ? `${resultVar} = parse${group.roles[0]!.role}(state);`
+        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar);
+      branchTexts.push(`if (${cond}) {\n${indent(body, 2)}\n  }`);
+    }
+
+    if (branchTexts.length > 0 && fallthroughBody !== null) {
+      // Chain byte-branches with `else if` for compactness, then an unconditional
+      // `else { <fallthrough> }`. The fallthrough body is a sentinel chain when
+      // multiple fallthrough roles exist.
+      lines.push(`  ${branchTexts.join(' else ')} else {\n${indent(fallthroughBody, 2)}\n  }`);
+    } else if (branchTexts.length > 0) {
+      // Byte branches only — no fallthrough. Plain ladder, chained with `else if`.
+      lines.push(`  ${branchTexts.join(' else ')}`);
+    } else if (fallthroughBody !== null) {
+      // Only fallthrough(s), no byte branches.
+      lines.push(`${indent(fallthroughBody, 1)}`);
+    }
   }
 
   lines.push(`}`);
   return lines.join('\n');
 }
+
+// Threshold for switch-based dispatch (Task 4.4). When the total number of
+// distinct first-byte arms across all byte-dispatch groups reaches this
+// value, the ladder emits a `switch (__c0)` jump table instead of a chain
+// of `if (__c0 === N) ... else if (__c0 === M)` blocks. JITs (V8/SpiderMonkey)
+// lower a small-int switch with ≥4 cases to a direct jump-table on hot paths,
+// while chained ifs rely on branch prediction. 4 is the spec'd Task 4.4
+// threshold and matches the AC_MIN_STOPS pattern used by .until() scans.
+export const DISPATCH_SWITCH_MIN_BYTES = 4;
 
 // Emit a sentinel-speculation chain over `roles`, writing the first non-null
 // parse result to `resultVar`. Pure null-return + state.pos rewind — no

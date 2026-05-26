@@ -1217,3 +1217,166 @@ test('v2 .until() with <3 stops still uses per-stop compare chain (no AC)', asyn
   // shows up in the byte-walk loop's `if (...) break;` line.
   assert.match(code, /if \(__c === 10 \|\| __c === 64\)/);
 });
+
+// Task 4.4: switch-based dispatch jump table for wide first-byte fanout.
+// The role-ladder emits a `switch (__c0)` statement instead of a chain of
+// `if (__c0 === N) ... else if ...` blocks when there are ≥4 distinct
+// first-byte arms. JITs compile small-int switches with ≥4 cases to a
+// jump table; chained ifs rely on branch prediction. See role-ladder.ts.
+
+test('v2 role-ladder emits switch dispatch for ≥4 byte-arm roles', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Five roles, each with a distinct literal first byte — Hash `#`, At `@`,
+  // Plus `+`, Star `*`, Minus `-`. Above the DISPATCH_SWITCH_MIN_BYTES
+  // threshold (4) so the ladder must emit a `switch (__c0)` jump table
+  // with one `case N:` per byte and a `default:` for the fallthrough.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('#h').as('Hash')
+        .span('#').span('text', 'h').until(['\n'])
+        .render('ast', { kind: 'hash', text: $.text }).build(),
+      ex('@a').as('At')
+        .span('@').span('text', 'a').until(['\n'])
+        .render('ast', { kind: 'at', text: $.text }).build(),
+      ex('+p').as('Plus')
+        .span('+').span('text', 'p').until(['\n'])
+        .render('ast', { kind: 'plus', text: $.text }).build(),
+      ex('*s').as('Star')
+        .span('*').span('text', 's').until(['\n'])
+        .render('ast', { kind: 'star', text: $.text }).build(),
+      ex('-m').as('Minus')
+        .span('-').span('text', 'm').until(['\n'])
+        .render('ast', { kind: 'minus', text: $.text }).build(),
+      ex('#h').as('Doc')
+        .span('item', '#h', ['Hash', 'At', 'Plus', 'Star', 'Minus'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // The switch dispatch must be present.
+  assert.match(code, /switch \(__c0\) \{/);
+  // All five byte arms appear as case labels (# = 35, @ = 64, + = 43,
+  // * = 42, - = 45).
+  assert.match(code, /case 35:/);
+  assert.match(code, /case 64:/);
+  assert.match(code, /case 43:/);
+  assert.match(code, /case 42:/);
+  assert.match(code, /case 45:/);
+  // No chained `if (__c0 === N) ... else if (__c0 === M)` should remain
+  // for this node — the switch replaced it.
+  assert.doesNotMatch(code, /if \(__c0 === 35\)[\s\S]{0,80}else if \(__c0 === 64\)/);
+
+  // Runtime correctness across every case + the absence of any byte arm.
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) =>
+    render(input, { type: 'ast' }) as { item: { kind: string; text: string } };
+  assert.equal(__parse('#hello').item.kind, 'hash');
+  assert.equal(__parse('#hello').item.text, 'hello');
+  assert.equal(__parse('@user').item.kind, 'at');
+  assert.equal(__parse('+plus').item.kind, 'plus');
+  assert.equal(__parse('*star').item.kind, 'star');
+  assert.equal(__parse('-minus').item.kind, 'minus');
+});
+
+test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Three roles with distinct first bytes — below the threshold. The
+  // ladder must NOT emit a switch; the chained `if (__c0 === N) else if
+  // (__c0 === M)` shape stays so the JIT keeps using branch prediction.
+  // Mirrors today's CSS Stylesheet body (Comment 0x2f / AtRule 0x40 /
+  // fallthrough Rule|Declaration), which is the narrow-fanout shape we
+  // explicitly do NOT want to lower to a switch.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('#h').as('Hash')
+        .span('#').span('text', 'h').until(['\n'])
+        .render('ast', { kind: 'hash', text: $.text }).build(),
+      ex('@a').as('At')
+        .span('@').span('text', 'a').until(['\n'])
+        .render('ast', { kind: 'at', text: $.text }).build(),
+      ex('+p').as('Plus')
+        .span('+').span('text', 'p').until(['\n'])
+        .render('ast', { kind: 'plus', text: $.text }).build(),
+      ex('#h').as('Doc')
+        .span('item', '#h', ['Hash', 'At', 'Plus'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // No switch statement — the chained-if path stayed.
+  assert.doesNotMatch(code, /switch \(__c0\) \{/);
+  // The chained-if shape — at least one `if (__c0 === N)` followed by
+  // `else if (__c0 === M)`.
+  assert.match(code, /if \(__c0 === 35\)/);
+  assert.match(code, /else if \(__c0 === 64\)/);
+
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) =>
+    render(input, { type: 'ast' }) as { item: { kind: string; text: string } };
+  assert.equal(__parse('#hi').item.kind, 'hash');
+  assert.equal(__parse('@me').item.kind, 'at');
+  assert.equal(__parse('+plus').item.kind, 'plus');
+});
+
+test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Four byte-arm roles where two share the same first byte (`<`). The
+  // ladder must:
+  //   1. Group the two `<`-leading roles under a single `case 60:` arm
+  //      with sentinel speculation (longest-prefix first).
+  //   2. Emit case labels for the other byte-distinct roles.
+  //   3. Emit a `default:` for the fallthrough text role.
+  // This exercises every code path of the switch emitter in one schema.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('<!--c-->').as('Comment')
+        .span('<!--').span('text', 'c').until(['-->'], { trim: false }).span('-->')
+        .render('ast', { kind: 'comment', text: $.text }).build(),
+      ex('<tag>').as('Tag')
+        .span('<').span('name', 'tag').ident().html().span('>')
+        .render('ast', { kind: 'tag', name: $.name }).build(),
+      ex('#h').as('Hash')
+        .span('#').span('text', 'h').until(['\n'])
+        .render('ast', { kind: 'hash', text: $.text }).build(),
+      ex('@a').as('At')
+        .span('@').span('text', 'a').until(['\n'])
+        .render('ast', { kind: 'at', text: $.text }).build(),
+      ex('+p').as('Plus')
+        .span('+').span('text', 'p').until(['\n'])
+        .render('ast', { kind: 'plus', text: $.text }).build(),
+      ex('text').as('Text')
+        .span('text', 'text').until(['\n'])
+        .render('ast', { kind: 'text', text: $.text }).build(),
+      ex('<tag>').as('Doc')
+        .span('item', '<tag>', ['Comment', 'Tag', 'Hash', 'At', 'Plus', 'Text'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // Switch present (5 distinct byte arms: 60, 35, 64, 43).
+  assert.match(code, /switch \(__c0\) \{/);
+  assert.match(code, /case 60:/);
+  assert.match(code, /case 35:/);
+  assert.match(code, /case 64:/);
+  assert.match(code, /case 43:/);
+  // Default arm dispatches the fallthrough Text role.
+  assert.match(code, /default:[\s\S]{0,160}parseText\(state\)/);
+  // The 0x3c shared-byte group uses speculation within the case: Comment
+  // (longer literal `<!--`) is tried first, Tag second.
+  assert.match(code, /parseComment\(state\)[\s\S]{0,120}parseTag\(state\)/);
+
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) =>
+    render(input, { type: 'ast' }) as { item: { kind: string; text?: string; name?: string } };
+  assert.equal(__parse('<!--hi-->').item.kind, 'comment');
+  assert.equal(__parse('<div>').item.kind, 'tag');
+  assert.equal(__parse('<div>').item.name, 'div');
+  assert.equal(__parse('#hash').item.kind, 'hash');
+  assert.equal(__parse('@user').item.kind, 'at');
+  assert.equal(__parse('+plus').item.kind, 'plus');
+  // No byte arm matches → fallthrough default.
+  assert.equal(__parse('plain text').item.kind, 'text');
+});

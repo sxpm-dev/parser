@@ -999,6 +999,24 @@ function emitUntilSpan(
   lines.push(`  }`);
   }
 
+  // --- requireStop check ----------------------------------------------------
+  // Post-loop, pre-trim: if requireStop is set, fail the production when the
+  // scan exited via EOF rather than a stop match. The kernel above breaks out
+  // on a stop match (off < len) OR on the while-guard (off === len). So
+  // `off >= len` unambiguously means no stop was found.
+  // For balanced scans also fail if __depth !== 0 (unmatched bracket).
+  if (until.requireStop) {
+    if (balanced) {
+      lines.push(`  if (off >= len || __depth !== 0) {`);
+    } else {
+      lines.push(`  if (off >= len) {`);
+    }
+    lines.push(`    if (off > state.maxOff) state.maxOff = off;`);
+    lines.push(`    state.pos = ${ctx.entryOffVar};`);
+    lines.push(`    return null;`);
+    lines.push(`  }`);
+  }
+
   // --- finalize capture -----------------------------------------------------
   const trimEnd = useTrim ? '__lastNonWs' : 'off';
   // Empty-anchor: when the captured slice is empty we rewind `off` to the
@@ -1195,8 +1213,21 @@ function emitRawUntilSpan(
     lines.push(`  off = __earliest;`);
   }
 
+  // requireStop check: fail production if no stop was found (off reached len).
+  if (rawUntil.requireStop) {
+    lines.push(`  if (off >= len) {`);
+    lines.push(`    if (off > state.maxOff) state.maxOff = off;`);
+    lines.push(`    state.pos = ${ctx.entryOffVar};`);
+    lines.push(`    return null;`);
+    lines.push(`  }`);
+  }
+
   lines.push(`  ${endVar} = off;`);
   lines.push(`  ${v} = input.slice(${startVar}, ${endVar});`);
+  // nonEmpty check: fail production when captured value is empty.
+  if (rawUntil.nonEmpty) {
+    lines.push(`  if (${v}.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
+  }
   lines.push(`}`);
 
   if (span.name) {

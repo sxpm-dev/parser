@@ -146,6 +146,11 @@ class SpanBuilder {
       readonly rejectSuffix?: string | ReadonlyArray<string>;
       // When true, the production fails when the captured value is empty.
       readonly nonEmpty?: boolean;
+      // When true, the production fails if the scan reaches end of input
+      // without matching any stop. Default false: EOF is treated as a
+      // successful stop (the common case for declaration-style scans where
+      // the terminator may be absent on the last item).
+      readonly requireStop?: boolean;
     } = {},
   ): this {
     const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
@@ -157,6 +162,7 @@ class SpanBuilder {
           ? [rs]
           : [...rs];
     const nonEmpty = opts.nonEmpty ?? false;
+    const requireStop = opts.requireStop ?? false;
     return this.addModifier({
       kind: 'until',
       stops: stopArr,
@@ -164,18 +170,28 @@ class SpanBuilder {
       trim: opts.trim ?? true,
       ...(rejectSuffix ? { rejectSuffix } : {}),
       ...(nonEmpty ? { nonEmpty: true } : {}),
+      ...(requireStop ? { requireStop: true } : {}),
     });
   }
 
   rawUntil(
     stops: string | ReadonlyArray<string>,
-    opts: { readonly caseInsensitive?: boolean } = {},
+    opts: {
+      readonly caseInsensitive?: boolean;
+      readonly requireStop?: boolean;
+      // When true, the production fails when the captured value is empty.
+      readonly nonEmpty?: boolean;
+    } = {},
   ): this {
     const stopArr = Array.isArray(stops) ? [...stops] : [stops as string];
+    const requireStop = opts.requireStop ?? false;
+    const nonEmpty = opts.nonEmpty ?? false;
     return this.addModifier({
       kind: 'rawUntil',
       stops: stopArr,
       caseInsensitive: opts.caseInsensitive ?? false,
+      ...(requireStop ? { requireStop: true } : {}),
+      ...(nonEmpty ? { nonEmpty: true } : {}),
     });
   }
 

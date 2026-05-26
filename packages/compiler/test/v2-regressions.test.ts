@@ -1455,3 +1455,21 @@ test('v2 .until() honors nonEmpty + rejectSuffix array', async () => {
   assert.match(src, /endsWith\(.*"[,:>]".*\)/);
   assert.match(src, /\.length === 0/);
 });
+
+test('v2 .until() with requireStop fails on EOF without stop match', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'R',
+    examples: [
+      ex('value"')
+        .as('R')
+        .span('v', 'value').until(['"'], { requireStop: true })
+        .span('"')
+        .render('ast', { v: $.v })
+        .build(),
+    ],
+  });
+  const src = generateParser(schema, undefined, {});
+  // The emitted until body should test for EOF after the scan and fail.
+  assert.match(src, /off >= len/);
+});

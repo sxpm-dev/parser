@@ -1606,6 +1606,11 @@ function parseAttribute__alt0(state: State): unknown {
       if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
       off++;
     }
+    if (off >= len || __depth !== 0) {
+      if (off > state.maxOff) state.maxOff = off;
+      state.pos = entryOff;
+      return null;
+    }
     const __emptyAnchor = __value_start;
     if (__lastNonWs === __value_start) {
       off = __emptyAnchor;
@@ -1682,6 +1687,11 @@ function parseAttribute__alt1(state: State): unknown {
       if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
       off++;
     }
+    if (off >= len || __depth !== 0) {
+      if (off > state.maxOff) state.maxOff = off;
+      state.pos = entryOff;
+      return null;
+    }
     const __emptyAnchor = __value_start;
     if (__lastNonWs === __value_start) {
       off = __emptyAnchor;
@@ -1729,12 +1739,13 @@ function parseAttribute__alt2(state: State): unknown {
     let __earliest = len;
     for (let __i = __value_start; __i < len; __i++) {
       const __c = input.charCodeAt(__i);
-      if (__c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+      if (__c === 34 || __c === 39 || __c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
       if (__c === 47 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
     }
     off = __earliest;
     __value_end = off;
     value = input.slice(__value_start, __value_end);
+    if (value.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;

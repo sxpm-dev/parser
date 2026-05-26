@@ -14,7 +14,11 @@ const TEXT_STOPS = ['<', '</', '<!--'] as const;
 // Stops for unquoted attribute values: any whitespace ends the value, as
 // does the tag close `>` or self-close `/>`. Raw-source scan handles chars
 // like `/`, `:`, `?`, `&` that aren't in our ident class.
-const UNQUOTED_VALUE_STOPS = [' ', '\t', '\n', '\r', '\f', '>', '/>'] as const;
+// Per WHATWG, `"` and `'` also stop the scan — an unquoted value must not
+// start with a quote character (otherwise it would be a malformed quoted
+// attribute). Using them as stops and requiring nonEmpty lets the production
+// fail cleanly when the input starts with a quote.
+const UNQUOTED_VALUE_STOPS = ['"', "'", ' ', '\t', '\n', '\r', '\f', '>', '/>'] as const;
 const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
 // Per WHATWG, certain elements can have their close tag omitted. When the
@@ -600,7 +604,7 @@ export default defineSchema({
       .span('name', 'class').ident().html()
       .span('=')
       .span('"')
-      .span('value', 'hero').until('"')
+      .span('value', 'hero').until('"', { requireStop: true })
       .span('"')
       .render('ast', { _quote: 'double', name: $.name, value: $.value })
       .render('source', tpl`${$.name}="${$.value}"`)
@@ -612,7 +616,7 @@ export default defineSchema({
       .span('name', 'class').ident().html()
       .span('=')
       .span("'")
-      .span('value', 'hero').until("'")
+      .span('value', 'hero').until("'", { requireStop: true })
       .span("'")
       .render('ast', { _quote: 'single', name: $.name, value: $.value })
       .render('source', tpl`${$.name}='${$.value}'`)
@@ -624,7 +628,7 @@ export default defineSchema({
       .as('Attribute')
       .span('name', 'class').ident().html()
       .span('=')
-      .span('value', 'hero').rawUntil(UNQUOTED_VALUE_STOPS)
+      .span('value', 'hero').rawUntil(UNQUOTED_VALUE_STOPS, { nonEmpty: true })
       .render('ast', { _quote: 'none', name: $.name, value: $.value })
       .render('source', tpl`${$.name}=${$.value}`)
       .build(),

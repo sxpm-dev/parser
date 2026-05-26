@@ -57,6 +57,13 @@ export type SpanModifier =
       // unquoted attribute values that may contain non-token characters.
       readonly stops: ReadonlyArray<string>;
       readonly caseInsensitive: boolean;
+      // When true, the production fails if the scan reaches end of input
+      // without matching any stop. Default false: EOF is treated as a
+      // successful stop.
+      readonly requireStop?: boolean;
+      // When true, the production fails when the captured value is empty
+      // (zero-length). Used for productions where the value must be non-trivial.
+      readonly nonEmpty?: boolean;
     }
   | {
       readonly kind: 'until';
@@ -78,6 +85,11 @@ export type SpanModifier =
       // If true, the production fails when the captured value (after
       // trimming) is empty (zero-length). Used for required captures.
       readonly nonEmpty?: boolean;
+      // When true, the production fails if the scan reaches end of input
+      // without matching any stop. Default false: EOF is treated as a
+      // successful stop (the common case for declaration-style scans where
+      // the terminator may be absent on the last item).
+      readonly requireStop?: boolean;
     }
   | { readonly kind: 'noLineTerminatorAfter' }
   | { readonly kind: 'noWhitespaceAfter' }

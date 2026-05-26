@@ -591,6 +591,16 @@ function parseUntilSpan(
     state.pos++;
   }
 
+  // requireStop: fail the production when the scan exited via EOF (no stop
+  // was matched). The loop above exits either on a stop match (state.pos < len)
+  // or on the while-guard (state.pos >= len). Also fail on unmatched bracket.
+  if (until.requireStop) {
+    if (state.pos >= len || depth !== 0) {
+      if (state.pos > state.maxOff) state.maxOff = state.pos;
+      return false;
+    }
+  }
+
   // Trim trailing whitespace from the captured slice (v2 always trims, even
   // when the schema's `until.trim` is false — see comment in emitUntilSpan).
   const trimEnd = lastNonWs;
@@ -653,8 +663,18 @@ function parseRawUntilSpan(
       }
     }
   }
+  // requireStop: fail the production when no stop was found (earliest === len).
+  if (rawUntil.requireStop && earliest >= len) {
+    if (state.pos > state.maxOff) state.maxOff = earliest;
+    return false;
+  }
   state.pos = earliest;
   const value = input.slice(start, earliest);
+  // nonEmpty: fail the production when the captured value is zero-length.
+  if (rawUntil.nonEmpty && value.length === 0) {
+    if (state.pos > state.maxOff) state.maxOff = state.pos;
+    return false;
+  }
   bindSpan(span, value, start, earliest, captures, ranges);
   return true;
 }

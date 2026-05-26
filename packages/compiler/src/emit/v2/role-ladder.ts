@@ -19,11 +19,18 @@
 // decides how to treat `<resultVar> === null` (rewind+return null for
 // non-optional, no-op for optional, break loop for repeats).
 //
-// Failure mode for ambiguous role sets: when two roles share their first-byte
-// signature, this helper raises CompilerError at codegen time. Proper
-// disambiguation needs the peek-scan dispatcher in Task 1.3d; we explicitly
-// reject the ambiguity here so the bug surfaces at codegen rather than as a
-// silent first-wins runtime behavior.
+// Fallthrough role (Task 1.3d): a role whose first span has no fixed first
+// byte (until/rawUntil/repeats/optional first span, or recursive into another
+// fallthrough role) is treated as the catch-all. At most ONE fallthrough role
+// per role list is allowed. The ladder emits byte-dispatched branches for the
+// other roles, then unconditionally calls the fallthrough role's parse fn
+// when no byte branch matched.
+//
+// Failure mode for ambiguous role sets:
+//   - two byte-signatured roles share a first byte: CompilerError (Task 1.3f
+//     adds peek-scan dispatch).
+//   - two fallthrough roles in the same list: CompilerError (Task 1.3f adds
+//     peek-scan to disambiguate same-signature roles).
 
 import { CompilerError, type NodeTypeInfo, type ResolvedSpan } from '../../model.ts';
 import { findSpanModifier, hasSpanModifier } from './modifiers.ts';
@@ -46,10 +53,11 @@ export function emitRoleLadder(
   }
 
   // Build per-role first-byte signature. Each role's signature is the union
-  // of first-byte sets across all its productions' first spans. A role with
-  // an indeterminate first byte (until/repeats first span, optional first
-  // span, or recursive first span pointing at another multi-role decision)
-  // cannot be byte-dispatched — reject as a 1.3d concern.
+  // of first-byte sets across all its productions' first spans, plus a
+  // `fallthrough` flag set when at least one production has a first span
+  // with no fixed first byte (until/rawUntil/repeats/optional/recursive into
+  // a fallthrough role). A fallthrough role is dispatched as the catch-all
+  // after the byte-signatured branches.
   const signatures = roles.map((role) => {
     const info = ctx.nodeTypes.get(role);
     if (!info) {
@@ -60,9 +68,22 @@ export function emitRoleLadder(
     return computeRoleFirstBytes(role, info, ctx.nodeTypes);
   });
 
+  // Fallthrough check: at most one fallthrough role per list. Two would need
+  // the peek-scan dispatcher in Task 1.3f.
+  const fallthroughRoles = roles.filter((_, i) => signatures[i]!.fallthrough);
+  if (fallthroughRoles.length > 1) {
+    throw new CompilerError(
+      `v2: role list [${roles.join(', ')}] has multiple fallthrough roles ` +
+        `(${fallthroughRoles.join(' and ')} both have until/rawUntil/repeats/optional first spans); ` +
+        `peek-scan dispatch required (Task 1.3f)`,
+    );
+  }
+  const fallthroughRole = fallthroughRoles[0];
+
   // First-byte conflict detection: if any byte appears in two roles'
-  // signature, byte-prefix dispatch can't tell them apart. 1.3d will add
-  // peek-scan / speculation handling; until then, raise at codegen.
+  // signature, byte-prefix dispatch can't tell them apart. Same-signature
+  // disambiguation needs the peek-scan dispatcher in Task 1.3f; until then,
+  // raise at codegen.
   const seen = new Map<number, string>();
   for (let i = 0; i < roles.length; i++) {
     const sig = signatures[i]!;
@@ -71,7 +92,7 @@ export function emitRoleLadder(
       if (prior !== undefined && prior !== roles[i]) {
         throw new CompilerError(
           `v2: multi-role span has roles sharing first byte 0x${byte.toString(16)} ` +
-            `('${prior}' and '${roles[i]}'); peek-scan dispatch not yet supported (Task 1.3d)`,
+            `('${prior}' and '${roles[i]}'); peek-scan dispatch not yet supported (Task 1.3f)`,
         );
       }
       seen.set(byte, roles[i]!);
@@ -93,33 +114,52 @@ export function emitRoleLadder(
   lines.push(`if (off < len) {`);
   lines.push(`  const __c0 = input.charCodeAt(off);`);
 
-  // Emit one if-branch per role, ordered by descending signature byte-set
-  // size — keeps the most-discriminating branch closest to the top.
+  // Emit one if-branch per byte-signatured role, ordered by descending
+  // signature byte-set size — keeps the most-discriminating branch closest
+  // to the top. Fallthrough roles never appear in the byte-dispatch ladder;
+  // they're emitted as the catch-all `else` below.
   const ordered = roles
     .map((role, i) => ({ role, sig: signatures[i]! }))
+    .filter(({ sig }) => !sig.fallthrough && sig.bytes.size > 0)
     .sort((a, b) => b.sig.bytes.size - a.sig.bytes.size);
 
-  for (const { role, sig } of ordered) {
-    if (sig.bytes.size === 0) continue;
-    const cond = [...sig.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
-    lines.push(`  if (${cond}) {`);
-    lines.push(`    ${resultVar} = parse${role}(state);`);
-    // On null-return, leave resultVar = null and state.pos rewound — caller
-    // decides what to do (non-optional rewinds parent's entry; optional
-    // treats as "absent"; repeats breaks the loop).
-    lines.push(`  }`);
+  if (fallthroughRole !== undefined) {
+    // Byte-signatured branches as `if … else if … else { parseFallthrough }`.
+    // The else clause is unconditional — there's no byte test it could fail
+    // on, since the fallthrough role's first span has no fixed first byte.
+    const branches = ordered.map(({ role, sig }) => {
+      const cond = [...sig.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
+      return `if (${cond}) {\n    ${resultVar} = parse${role}(state);\n  }`;
+    });
+    const chained = branches.length > 0
+      ? `  ${branches.join(' else ')} else {\n    ${resultVar} = parse${fallthroughRole}(state);\n  }`
+      : `  ${resultVar} = parse${fallthroughRole}(state);`;
+    lines.push(chained);
+  } else {
+    for (const { role, sig } of ordered) {
+      const cond = [...sig.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
+      lines.push(`  if (${cond}) {`);
+      lines.push(`    ${resultVar} = parse${role}(state);`);
+      // On null-return, leave resultVar = null and state.pos rewound — caller
+      // decides what to do (non-optional rewinds parent's entry; optional
+      // treats as "absent"; repeats breaks the loop).
+      lines.push(`  }`);
+    }
   }
 
   lines.push(`}`);
   return lines.join('\n');
 }
 
-// Compute the set of valid first bytes for any production of a role. Returns
-// `bytes` empty when the role's first-byte set can't be determined statically
-// (e.g. first span is until / repeats / optional / recursive). Multi-byte
-// signatures (peek-ahead) are out of scope here — they belong to Task 1.3d.
+// Compute the set of valid first bytes for any production of a role, plus a
+// `fallthrough` flag set when at least one production's first span has no
+// fixed first byte (until/rawUntil/repeats/optional/recursive-into-fallthrough).
+// Fallthrough roles are the catch-all branch in `emitRoleLadder` — at most
+// one per role list. Multi-byte signatures (peek-ahead disambiguation of
+// same-signature roles) belong to Task 1.3f.
 type RoleFirstBytes = {
   readonly bytes: ReadonlySet<number>;
+  readonly fallthrough: boolean;
 };
 
 export function computeRoleFirstBytes(
@@ -129,14 +169,18 @@ export function computeRoleFirstBytes(
   visiting: Set<string> = new Set(),
 ): RoleFirstBytes {
   if (visiting.has(role)) {
-    // Left-recursive role chain — not statically dispatchable. Returning an
-    // empty set causes the caller's downstream conflict / dispatch-failure
-    // check to fire.
-    return { bytes: new Set() };
+    // Left-recursive role chain — not statically dispatchable. We mark this
+    // as fallthrough so the caller treats it as the catch-all (the only
+    // sensible behavior for a self-referential role: the ONLY way to enter
+    // it from outside is via a literal/class first span on a different
+    // production, which we've already accounted for in the non-recursive
+    // path).
+    return { bytes: new Set(), fallthrough: true };
   }
   visiting.add(role);
 
   const bytes = new Set<number>();
+  let fallthrough = false;
   for (const prod of info.productions) {
     const span0 = prod.spans[0];
     if (!span0) {
@@ -145,22 +189,20 @@ export function computeRoleFirstBytes(
         `v2: multi-role span dispatch: role '${role}' has a production with no spans`,
       );
     }
-    // Disqualifying first-span modifiers (the production's first token is not
-    // a single peek-able byte).
+    // First-span shapes with no fixed first byte mark this role as
+    // fallthrough. The ladder dispatches it unconditionally as the catch-all.
     if (
       findSpanModifier(span0, 'until') ||
       findSpanModifier(span0, 'rawUntil') ||
       findSpanModifier(span0, 'repeats') ||
       hasSpanModifier(span0, 'optional')
     ) {
-      visiting.delete(role);
-      throw new CompilerError(
-        `v2: multi-role span dispatch: role '${role}' has a production whose first span ` +
-          `is until/rawUntil/repeats/optional — byte-prefix dispatch not yet supported (Task 1.3d)`,
-      );
+      fallthrough = true;
+      continue;
     }
     // Recursive first span — descend into the referenced role(s). The
-    // dispatch byte for the outer role is whatever the inner role accepts.
+    // dispatch byte for the outer role is whatever the inner role accepts;
+    // if any inner role is fallthrough, this production propagates that.
     if (span0.recursiveRoles.length > 0) {
       for (const innerRole of span0.recursiveRoles) {
         const innerInfo = nodeTypes.get(innerRole);
@@ -172,6 +214,7 @@ export function computeRoleFirstBytes(
         }
         const inner = computeRoleFirstBytes(innerRole, innerInfo, nodeTypes, visiting);
         for (const b of inner.bytes) bytes.add(b);
+        if (inner.fallthrough) fallthrough = true;
       }
       continue;
     }
@@ -198,7 +241,7 @@ export function computeRoleFirstBytes(
     classFirstBytes(span0).forEach((b) => bytes.add(b));
   }
   visiting.delete(role);
-  return { bytes };
+  return { bytes, fallthrough };
 }
 
 export function classFirstBytes(span: ResolvedSpan): ReadonlySet<number> {

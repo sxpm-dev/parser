@@ -426,6 +426,68 @@ test('v2 multi-role repeats honors max by failing when count too high', async ()
   assert.throws(() => __parse('a,b,c'));
 });
 
+test('v2 role-ladder treats until-leading role as fallthrough catch-all', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Hash starts with `#` so its first-byte signature is { 0x23 }. Text has
+  // a `.until('\n')` first span so it has no fixed first byte — the ladder
+  // must treat it as the fallthrough catch-all and dispatch to it whenever
+  // the next non-ws byte isn't `#`.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('#hi').as('Hash')
+        .span('#')
+        .span('text', 'hi').until(['\n'])
+        .render('ast', { type: 'hash', text: $.text }).build(),
+      ex('plain').as('Text')
+        .span('text', 'plain').until(['\n'])
+        .render('ast', { type: 'text', text: $.text }).build(),
+      ex('#hi').as('Doc')
+        .span('item', '#hi', ['Hash', 'Text'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  assert.match(code, /function parseDoc\(/);
+  // Hash branches on `#` (0x23 = 35); fallthrough Text is the else.
+  assert.match(code, /__c0 === 35/);
+  assert.match(code, /parseText\(state\)/);
+
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const hash = __parse('#hi') as { item: { type: string; text: string } };
+  assert.equal(hash.item.type, 'hash');
+  assert.equal(hash.item.text, 'hi');
+  const plain = __parse('plain text') as { item: { type: string; text: string } };
+  assert.equal(plain.item.type, 'text');
+  assert.equal(plain.item.text, 'plain text');
+});
+
+test('v2 role-ladder rejects multiple fallthrough roles', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Two roles, both with `.until(...)` first spans — neither has a fixed
+  // first byte. The ladder cannot disambiguate by byte peek; we expect a
+  // CompilerError pointing at Task 1.3f.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('foo').as('Left')
+        .span('text', 'foo').until([':'])
+        .render('ast', { kind: 'left', text: $.text }).build(),
+      ex('bar').as('Right')
+        .span('text', 'bar').until([';'])
+        .render('ast', { kind: 'right', text: $.text }).build(),
+      ex('foo').as('Doc')
+        .span('item', 'foo', ['Left', 'Right'])
+        .render('ast', { item: $.item }).build(),
+    ],
+  });
+  assert.throws(
+    () => generateParser(schema, undefined, { v2: true }),
+    /Task 1\.3f/,
+  );
+});
+
 test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Doc wraps a single child that can be either a Comment (starts with `/`)

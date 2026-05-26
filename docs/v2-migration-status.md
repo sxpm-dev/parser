@@ -1,4 +1,4 @@
-# v2 emit migration status (captured 2026-05-26, updated after Task 1.3c)
+# v2 emit migration status (captured 2026-05-26, updated after Task 1.3d)
 
 Status of `--v2` codegen + tests for the 3 in-scope parser packages.
 Captured by running `npx tsx packages/compiler/src/cli.ts packages/<pkg>/src/schema.ts --v2`
@@ -9,27 +9,44 @@ Baseline (default v1 scannerless emit): css 56/57 (1 skip), html 30/30,
 markdown 76/76. None of these are affected — only `--v2` codegen is exercised
 here.
 
-Tasks 1.3a/b/c (until/rawUntil span emit + multi-role non-repeats + multi-
-role repeats) all landed. Every package now ratchets past the multi-role
-repeats throw and into the role-ladder's first-byte conflict check — the
-next blocker is Task 1.3d (peek-scan dispatcher).
+Tasks 1.3a/b/c/d landed. Every package now ratchets past the role-ladder's
+indeterminate-first-byte rejection (1.3d added "fallthrough role" handling)
+and into Task 1.3f's peek-scan dispatcher territory — the remaining blockers
+are all same-signature role disambiguation.
 
-- [ ] css — codegen fails: `v2: multi-role span dispatch: role 'Rule' has a production whose first span is until/rawUntil/repeats/optional — byte-prefix dispatch not yet supported (Task 1.3d)` (Stylesheet `nodes` repeats over [Comment, AtRule, Rule, Declaration] — Rule's first span is `.until(...)`, so no first-byte signature is computable).
-- [ ] html — codegen fails: `v2: multi-role span dispatch: role 'TextNode' has a production whose first span is until/rawUntil/repeats/optional — byte-prefix dispatch not yet supported (Task 1.3d)` (HtmlDocument `children` repeats over [Doctype, Comment, HtmlElement, TextNode] — TextNode opens with `.until('<')`).
-- [ ] markdown — codegen fails: `v2: multi-role span dispatch: role 'MarkdownLeaf' has a production whose first span is until/rawUntil/repeats/optional — byte-prefix dispatch not yet supported (Task 1.3d)` (Document children repeats over multi-role; MarkdownLeaf has an until-leading production).
+- [ ] css — codegen fails: `v2: role list [Comment, AtRule, Rule, Declaration]
+  has multiple fallthrough roles (Rule and Declaration both have until/
+  rawUntil/repeats/optional first spans); peek-scan dispatch required
+  (Task 1.3f)`. (Stylesheet `nodes` repeats over [Comment, AtRule, Rule,
+  Declaration] — Rule starts with `.until(['{', ';'])`, Declaration starts
+  with `.until([':', ';', '}'])`; the dispatcher needs to look past the
+  first byte to decide which to try.)
+- [ ] html — codegen fails: `v2: multi-role span has roles sharing first
+  byte 0x3c ('Doctype' and 'Comment'); peek-scan dispatch not yet supported
+  (Task 1.3f)`. (HtmlDocument `children` repeats over [Doctype, Comment,
+  HtmlElement, TextNode] — TextNode is now treated as the fallthrough
+  catch-all, but Doctype and Comment both start with `<` so byte-peek can't
+  pick between them.)
+- [ ] markdown — codegen fails: `v2: role list [MarkdownLeaf,
+  MarkdownParagraph] has multiple fallthrough roles (MarkdownLeaf and
+  MarkdownParagraph both have until/rawUntil/repeats/optional first spans);
+  peek-scan dispatch required (Task 1.3f)`. (MarkdownLeaf has byte-fixed
+  productions for `#`, `-`, `>`, etc., AND setext productions whose first
+  span is `.until(HEADING_LINE_STOPS)` — that makes MarkdownLeaf itself a
+  fallthrough role, conflicting with MarkdownParagraph's fallthrough.)
 
 ## v2 design TODOs / not-yet markers remaining in `emit/v2/`
 
-These constrain what the remaining Task 1.3 slices (d/e) need to implement
+These constrain what the remaining Task 1.3 slices (e/f) need to implement
 before any of the 3 packages can migrate:
 
-- `emit/v2/dispatch.ts:5` — discriminator peek-scan (ladder rung 2) is "not
-  yet implemented in v2 first slice". Currently only byte-prefix dispatch
-  (rung 1) and sentinel speculation (rung 3) are wired. Required for CSS
-  Rule/Declaration discrimination per the design doc. The role-ladder's
-  current `computeRoleFirstBytes` rejects roles whose first span has no
-  single-byte signature (until/rawUntil/repeats/optional first span) — 1.3d
-  must add a longer-prefix or peek-scan path to disambiguate. (Task 1.3d.)
+- `emit/v2/role-ladder.ts` — DONE (Task 1.3d). Roles whose first span has no
+  fixed first byte are now treated as the catch-all fallthrough; at most one
+  per role list. Two fallthrough roles raise CompilerError pointing at
+  Task 1.3f (peek-scan dispatcher).
+- `emit/v2/dispatch.ts:5` — discriminator peek-scan (ladder rung 2) still
+  "not yet implemented in v2 first slice". Needed for same-byte and multi-
+  fallthrough disambiguation. (Task 1.3f.)
 - `emit/v2/span.ts:60` — DONE (Task 1.3a). `until` / `rawUntil` spans emit
   straight-line scan code; balanced/trim/rejectSuffix all honored.
 - `emit/v2/span.ts:184` — DONE (Task 1.3b). Multi-role non-repeats spans emit
@@ -46,8 +63,9 @@ before any of the 3 packages can migrate:
 ## Phase 1 implication
 
 Task 1.2 ("migrate packages that already pass v2 cleanly") still has zero
-candidates — every in-scope package now hits the role-ladder first-byte
-conflict at the multi-role repeats site. Task 1.3d is the next gating item;
-once it lands, all three packages should progress further. (Markdown and
-HTML may then succeed; CSS likely needs 1.3e for `.float()`/`.scientific()`
-support too.)
+candidates — every in-scope package now hits a Task 1.3f issue (same-byte
+roles in html, multi-fallthrough in markdown/css). Task 1.3f peek-scan
+dispatcher is the next gating item. Once 1.3f lands, html should succeed
+end-to-end, markdown likely will too (its setext-vs-paragraph case is a
+peek-scan target), and css may still need 1.3e for `.float()`/`.scientific()`
+support.

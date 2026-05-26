@@ -529,3 +529,110 @@ test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () =
   assert.equal(hashResult.item.type, 'hash');
   assert.equal(hashResult.item.text, 'bar');
 });
+
+// --- Task 1.3e: number-class refinements ----------------------------------
+//
+// The v2 number scanner historically defaulted to integer-only and ignored
+// declared refinements (.float() / .scientific() / .separator()). These tests
+// pin the per-refinement behavior so codegen honors what the schema declares.
+
+test('v2 number scanner with .int() (default) accepts only digits', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      ex('42px')
+        .as('Decl')
+        .span('value', '42').number().int()
+        .span('unit', 'px').ident().css()
+        .render('ast', { value: $.value, unit: $.unit })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const ok = __parse('42px') as { value: string; unit: string };
+  assert.equal(ok.value, '42');
+  assert.equal(ok.unit, 'px');
+  // `1.5` must fail: '.' is not part of an int scan, and the trailing `.5px`
+  // can't be a valid unit.
+  assert.throws(() => __parse('1.5px'));
+});
+
+test('v2 number scanner honors .float() — accepts digits and digits.fraction', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      ex('1.5px')
+        .as('Decl')
+        .span('value', '1.5').number().float()
+        .span('unit', 'px').ident().css()
+        .render('ast', { value: $.value, unit: $.unit })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  // float with fraction
+  const a = __parse('1.5px') as { value: string; unit: string };
+  assert.equal(a.value, '1.5');
+  assert.equal(a.unit, 'px');
+  // float without fraction (integer form must still parse — float scanners
+  // historically accept the integer subset).
+  const b = __parse('42px') as { value: string; unit: string };
+  assert.equal(b.value, '42');
+  assert.equal(b.unit, 'px');
+  // dot with no following digit isn't consumed by the float scanner: `1.px`
+  // captures `1` and leaves `.px` for the ident, which fails since `.` isn't
+  // an ident start byte.
+  assert.throws(() => __parse('1.px'));
+});
+
+test('v2 number scanner honors .scientific() — float + optional exponent', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Lit',
+    examples: [
+      ex('1.5e10')
+        .as('Lit')
+        .span('value', '1.5e10').number().scientific()
+        .render('ast', { value: $.value })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  assert.equal((__parse('1.5e10') as { value: string }).value, '1.5e10');
+  assert.equal((__parse('2E-3') as { value: string }).value, '2E-3');
+  assert.equal((__parse('1e+5') as { value: string }).value, '1e+5');
+  // Integer form (no exponent, no fraction) is still accepted.
+  assert.equal((__parse('42') as { value: string }).value, '42');
+  // Float form (no exponent) is accepted by scientific (super-set of float).
+  assert.equal((__parse('3.14') as { value: string }).value, '3.14');
+});
+
+test('v2 number scanner honors .separator("_") — allows underscores between digits', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Lit',
+    examples: [
+      ex('1_000')
+        .as('Lit')
+        .span('value', '1_000').number().separator('_')
+        .render('ast', { value: $.value })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  assert.equal((__parse('1_000') as { value: string }).value, '1_000');
+  assert.equal((__parse('42') as { value: string }).value, '42');
+  assert.equal((__parse('1_000_000') as { value: string }).value, '1_000_000');
+  // Leading underscore isn't a digit — must fail at start.
+  assert.throws(() => __parse('_1'));
+});

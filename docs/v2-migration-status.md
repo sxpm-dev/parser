@@ -1,4 +1,4 @@
-# v2 emit migration status (captured 2026-05-26, updated after Task 1.3d)
+# v2 emit migration status (captured 2026-05-26, updated after Task 1.3e)
 
 Status of `--v2` codegen + tests for the 3 in-scope parser packages.
 Captured by running `npx tsx packages/compiler/src/cli.ts packages/<pkg>/src/schema.ts --v2`
@@ -9,10 +9,12 @@ Baseline (default v1 scannerless emit): css 56/57 (1 skip), html 30/30,
 markdown 76/76. None of these are affected — only `--v2` codegen is exercised
 here.
 
-Tasks 1.3a/b/c/d landed. Every package now ratchets past the role-ladder's
+Tasks 1.3a/b/c/d/e landed. Every package now ratchets past the role-ladder's
 indeterminate-first-byte rejection (1.3d added "fallthrough role" handling)
-and into Task 1.3f's peek-scan dispatcher territory — the remaining blockers
-are all same-signature role disambiguation.
+and the number-class refinement gap (1.3e added float/scientific/separator/
+binary/octal/bigint refinement handling). The remaining blockers are all
+same-signature role disambiguation, gated on Task 1.3f's peek-scan
+dispatcher.
 
 - [ ] css — codegen fails: `v2: role list [Comment, AtRule, Rule, Declaration]
   has multiple fallthrough roles (Rule and Declaration both have until/
@@ -55,10 +57,13 @@ before any of the 3 packages can migrate:
   while-loop wrapping the role-dispatch ladder; sep/min/max/trailing/
   stopBefore modifiers all honored. Test coverage in
   `packages/compiler/test/v2-regressions.test.ts`.
-- `emit/v2/span.ts:352` — class '<cls>' not yet supported. `.float()` /
-  `.scientific()` refinements on number class are accepted by the schema
-  parser but not honored by the v2 scanner. CSS uses float numbers
-  (length-percentage etc). (Task 1.3e.)
+- `emit/v2/span.ts` — DONE (Task 1.3e). Number-class refinements (`.float()`,
+  `.scientific()`, `.separator()`, `.bigint()`, `.binary()`, `.octal()`) are
+  now honored by `numberScanCode`; bare `.number()` / `.int()` still defaults
+  to integer-only. None of the 3 in-scope schemas hit the new branches (css
+  captures floats via `.until(...)` and the css token list, not via
+  `.number().float()` on a span), but the surface is now consistent with the
+  builder API and unblocks downstream schemas that opt into refinements.
 
 ## Phase 1 implication
 
@@ -67,5 +72,7 @@ candidates — every in-scope package now hits a Task 1.3f issue (same-byte
 roles in html, multi-fallthrough in markdown/css). Task 1.3f peek-scan
 dispatcher is the next gating item. Once 1.3f lands, html should succeed
 end-to-end, markdown likely will too (its setext-vs-paragraph case is a
-peek-scan target), and css may still need 1.3e for `.float()`/`.scientific()`
-support.
+peek-scan target), and css should also succeed (its float-shaped numbers are
+captured via `.until(...)`, not via `.number().float()`, so 1.3e doesn't
+move the css ratchet on its own — it lands the API surface so future
+schemas can opt into float/scientific without further compiler work).

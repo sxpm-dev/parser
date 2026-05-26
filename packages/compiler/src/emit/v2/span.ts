@@ -477,6 +477,106 @@ function literalMatchExpr(text: string, offVar: string): string {
   return `input.startsWith(${jsString(text)}, ${offVar})`;
 }
 
+// Emit the lead-byte predicate + body for a number-class scan, honoring the
+// span's refinement set. The default (no refinement, or `.int()`) is a plain
+// integer scan — matches v2's pre-1.3e behavior. Other refinements widen or
+// narrow what bytes the scanner consumes:
+//
+//   .float()       — digits, optional `.fractional` (no exponent)
+//   .scientific()  — float + optional `[eE][+-]?digits` exponent (superset of .float())
+//   .separator(c)  — allow the given separator character between digit runs
+//                    (and within fraction/exponent if those are enabled)
+//   .bigint()      — integer + trailing `n` suffix
+//   .binary()      — `0b` / `0B` prefix + binary digits
+//   .octal()       — `0o` / `0O` prefix + octal digits
+//
+// Refinements stack: e.g. `.float().separator('_')` allows `1_000.5`.
+// Prefix-based refinements (.binary / .octal) take priority — when present,
+// they emit a prefix-locked scan that ignores .float/.scientific (binary
+// floats aren't part of any current schema).
+function numberScanCode(span: ResolvedSpan): { startPredicate: string; scanBody: string } {
+  const refSet = new Set(span.refinements.map((r) => r.name));
+  const isFloat = refSet.has('float') || refSet.has('scientific');
+  const isScientific = refSet.has('scientific');
+  const isBigint = refSet.has('bigint');
+  const isBinary = refSet.has('binary');
+  const isOctal = refSet.has('octal');
+
+  // Find the separator character (if any). The builder stores it as
+  // refinements[i] = { name: 'separator', args: [ch] }.
+  let sepChar: string | undefined;
+  for (const ref of span.refinements) {
+    if (ref.name === 'separator' && Array.isArray(ref.args) && typeof ref.args[0] === 'string') {
+      sepChar = ref.args[0] as string;
+      break;
+    }
+  }
+  const sepCode = sepChar !== undefined && sepChar.length === 1 ? sepChar.charCodeAt(0) : undefined;
+  // Build "advance past one digit-or-separator" pattern. Separators are only
+  // allowed BETWEEN digits — never leading or trailing — but the scan-time
+  // check enforces that via the start predicate (must be a digit) and the
+  // post-scan slice (consumers can validate further). This matches v1's lax
+  // behavior: schemas that need stricter separator placement should layer a
+  // `.oneOf` or similar value check on top.
+  const digitOrSep = sepCode !== undefined
+    ? `(isDigit(input.charCodeAt(off)) || input.charCodeAt(off) === ${sepCode})`
+    : `isDigit(input.charCodeAt(off))`;
+
+  // .binary() / .octal() — prefix-locked scan. These ignore .float/.scientific
+  // because no current schema mixes them.
+  if (isBinary) {
+    return {
+      startPredicate: `off + 1 < len && input.charCodeAt(off) === 0x30 && (input.charCodeAt(off + 1) === 0x62 || input.charCodeAt(off + 1) === 0x42)`,
+      scanBody: `off += 2;
+while (off < len && (input.charCodeAt(off) === 0x30 || input.charCodeAt(off) === 0x31${sepCode !== undefined ? ` || input.charCodeAt(off) === ${sepCode}` : ''})) off++;`,
+    };
+  }
+  if (isOctal) {
+    return {
+      startPredicate: `off + 1 < len && input.charCodeAt(off) === 0x30 && (input.charCodeAt(off + 1) === 0x6f || input.charCodeAt(off + 1) === 0x4f)`,
+      scanBody: `off += 2;
+while (off < len && ((input.charCodeAt(off) >= 0x30 && input.charCodeAt(off) <= 0x37)${sepCode !== undefined ? ` || input.charCodeAt(off) === ${sepCode}` : ''})) off++;`,
+    };
+  }
+
+  // Integer / float / scientific share the same shape — extra branches are
+  // gated by refinement flags. Trailing `n` (.bigint) consumed after the
+  // mantissa+exponent if both float and bigint are mixed; current schemas
+  // don't combine them but the emitter is tolerant.
+  const lines: string[] = [];
+  // Integer (or mantissa) digit run.
+  lines.push(`off++;\nwhile (off < len && ${digitOrSep}) off++;`);
+  if (isFloat) {
+    // Optional fractional part. Require at least one digit after the `.` so
+    // `1.` doesn't consume the dot (v1's number scanner has the same rule;
+    // see emitNumberScan in scannerless/scan-class.ts).
+    lines.push(`if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+  off++;
+  while (off < len && ${digitOrSep}) off++;
+}`);
+  }
+  if (isScientific) {
+    // Optional exponent. Only consumed when followed by a digit (with an
+    // optional `+`/`-` sign in between) — mirrors v1's emit.
+    lines.push(`if (off < len && (input.charCodeAt(off) === 0x65 || input.charCodeAt(off) === 0x45)) {
+  let __expProbe = off + 1;
+  if (__expProbe < len && (input.charCodeAt(__expProbe) === 0x2b || input.charCodeAt(__expProbe) === 0x2d)) __expProbe++;
+  if (__expProbe < len && isDigit(input.charCodeAt(__expProbe))) {
+    off = __expProbe;
+    while (off < len && ${digitOrSep}) off++;
+  }
+}`);
+  }
+  if (isBigint) {
+    // Trailing `n` suffix.
+    lines.push(`if (off < len && input.charCodeAt(off) === 0x6e) off++;`);
+  }
+  return {
+    startPredicate: `off < len && isDigit(input.charCodeAt(off))`,
+    scanBody: lines.join('\n'),
+  };
+}
+
 function classScanCode(span: ResolvedSpan): { startPredicate: string; scanBody: string } {
   const cls = span.class;
   const refSet = new Set(span.refinements.map((r) => r.name));
@@ -498,12 +598,7 @@ function classScanCode(span: ResolvedSpan): { startPredicate: string; scanBody: 
     };
   }
   if (cls === 'number') {
-    // Default: integer; .float() / .scientific() refinements are accepted by
-    // schema but cron uses .int() so we emit integer-only for now.
-    return {
-      startPredicate: `off < len && isDigit(input.charCodeAt(off))`,
-      scanBody: `off++;\nwhile (off < len && isDigit(input.charCodeAt(off))) off++;`,
-    };
+    return numberScanCode(span);
   }
   if (cls === 'hex') {
     return {
@@ -539,9 +634,10 @@ if (off < len) off += 2;`,
 }
 
 function emitRefinementChecks(span: ResolvedSpan, captureVar: string, entryOffVar: string): string {
-  // .int() / .float() / .scientific() on number are accepted; current cron uses
-  // .int() which already matches an integer scan, so no extra check.
-  // .oneOf([...]) — emit a value test.
+  // Number-shape refinements (.int / .float / .scientific / .separator / .bigint
+  // / .binary / .octal) are handled at scan time by numberScanCode below — they
+  // change which bytes the scanner accepts. This function only emits post-scan
+  // value tests: currently `.oneOf([...])`.
   const checks: string[] = [];
   for (const ref of span.refinements) {
     if (ref.name === 'oneOf') {

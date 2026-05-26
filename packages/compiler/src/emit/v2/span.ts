@@ -288,12 +288,16 @@ function emitRepeatsSpan(
   ctx: SpanContext,
   bindings: SpanBindings,
 ): string {
-  if (span.recursiveRoles.length !== 1) {
-    throw new Error(`v2: multi-role repeats not yet supported (span '${span.name ?? '?'}')`);
+  const roles = span.recursiveRoles;
+  if (roles.length === 0) {
+    throw new Error(`v2: repeats span has no recursive roles (span '${span.name ?? '?'}')`);
   }
-  const role = span.recursiveRoles[0]!;
   const repeats = findModifier(span, 'repeats')!;
   const min = repeats.min ?? 0;
+  const max = repeats.max;
+  const sep = repeats.sep;
+  const stopBefore = repeats.stopBefore;
+  const trailing = repeats.trailing ?? 'allowed';
   const listVar = span.name ? jsIdent(span.name) : '__repeated';
   const startVar = `__${listVar}_start`, endVar = `__${listVar}_end`;
 
@@ -303,43 +307,165 @@ function emitRepeatsSpan(
     bindings.endOffExpr.set(span.name, endVar);
   }
 
-  // Repeats with separator
-  const sep = repeats.sep;
-  const sepBlock = sep
-    ? `// Consume the separator if present, then ws.
-  if (!(${literalMatchExpr(sep, 'off')})) break;
-  off += ${sep.length};
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`
-    : `// Required ws between children when no explicit separator.
-  const __wsStart = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (off === __wsStart) break;`;
+  // Build the inner "try one role" code block. Single role: direct call.
+  // Multi-role: use the byte-prefix ladder (returns null when no role's
+  // first byte matched OR the matched role's parse returned null).
+  //
+  // Both forms write the result into the caller-named local `__cand`.
+  // `__cand === null` means "no match at this position" — the loop breaks.
+  const tryItemBlock = roles.length === 1
+    ? `state.pos = off;
+__cand = parse${roles[0]!}(state);
+if (__cand !== null) { off = state.pos; }`
+    // emitRoleLadder skips inter-role ws, peeks the first byte, dispatches.
+    // On success it sets __cand and updates state.pos; the next line aligns
+    // `off` with that. On no-match it leaves __cand === null and off
+    // unchanged (the ladder's leading ws-skip DID advance `off` past inter-
+    // item whitespace — that's fine; we don't rewind a no-match's ws because
+    // the parent body's outer ws-skip / next-span won't be confused by it).
+    : `${emitRoleLadder(roles, ctx, { resultVar: '__cand' })}
+if (__cand !== null) { off = state.pos; }`;
 
+  // Optional stopBefore: before attempting an item, check whether the
+  // upcoming source starts with any literal prefix in stopBefore. If so,
+  // exit the loop without consuming anything. Mirrors v1's emitStopBeforeCheck
+  // (compact byte-bucketed form).
+  const stopBeforeCheck = emitStopBeforeCheck(stopBefore);
+
+  // Build the separator block. Used between items. Returns "consumed" /
+  // "absent" via control flow:
+  //   - if sep matched: advance past sep + inter-sep ws, continue
+  //   - if sep missing: break the loop (rewind off to pre-sep so the parent's
+  //     next span sees the original position — required for trailing:forbidden
+  //     to not have eaten extra ws).
+  const sepBlock = sep
+    ? `const __sepStart = off;
+// Skip ws before the separator. v1 always allows ws around seps.
+while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+if (!(${literalMatchExpr(sep, 'off')})) { off = __sepStart; break; }
+off += ${sep.length};
+// Skip ws after the separator.
+while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`
+    // No explicit separator. Inter-item whitespace is absorbed by the inner
+    // `try one role` block:
+    //   - multi-role: the role-ladder skips ws before its first-byte peek
+    //   - single-role: the called parse fn skips its own leading ws
+    // The break-on-no-match condition (__cand === null) handles loop exit
+    // when no role's first byte matches the next non-ws byte.
+    : `// No explicit separator — inter-item ws is absorbed by the inner parse step.`;
+
+  // Trailing-separator policy. When sep is set and trailing === 'forbidden',
+  // we must rewind `off` to before the trailing separator on a failed
+  // post-sep item parse. When 'required', we fail if the last item wasn't
+  // followed by a sep. We track this via __sepConsumed (1 = sep, 0 = item).
+  const needsTrailingTrack = sep !== undefined && trailing !== 'allowed';
+  const trailingChecks: string[] = [];
+  if (sep !== undefined && trailing === 'forbidden') {
+    // Rewind off to before the trailing sep — re-tracked by __preLastSep.
+    trailingChecks.push(`if (__sawTrailingSep) { off = __preLastSep; }`);
+  }
+  if (sep !== undefined && trailing === 'required') {
+    trailingChecks.push(
+      `if (${listVar}.length > 0 && !__sawTrailingSep) { state.pos = ${ctx.entryOffVar}; return null; }`,
+    );
+  }
+
+  // min/max enforcement. We treat min as a hard fail (rewind + null);
+  // max same. v1 throws SyntaxError on these but v2's contract is to return
+  // null and let the dispatcher surface the deepest position via state.maxOff.
   const minCheck = min > 0
     ? `if (${listVar}.length < ${min}) { state.pos = ${ctx.entryOffVar}; return null; }`
     : '';
+  const maxCheck = max !== undefined
+    ? `if (${listVar}.length > ${max}) { state.pos = ${ctx.entryOffVar}; return null; }`
+    : '';
 
-  return `const ${startVar} = off;
-const ${listVar}: unknown[] = [];
-{
-  state.pos = off;
-  const __first = parse${role}(state);
-  if (__first !== null) {
-    ${listVar}.push(__first);
-    off = state.pos;
-    while (true) {
-      const __sepStart = off;
-      ${sepBlock}
-      state.pos = off;
-      const __next = parse${role}(state);
-      if (__next === null) { off = __sepStart; break; }
-      ${listVar}.push(__next);
-      off = state.pos;
-    }
+  // Compose the loop. The structure:
+  //
+  //   start = off
+  //   list = []
+  //   loop:
+  //     (stopBefore? check; break)
+  //     __cand = null; <try-one-item>
+  //     if (__cand === null) break
+  //     list.push(__cand)
+  //     if (sep) { consume sep or break }
+  //     (else: nothing; ladder's ws-skip handles inter-item separation)
+  //   trailing checks
+  //   min/max checks
+  //   end = off
+  const lines: string[] = [];
+  lines.push(`const ${startVar} = off;`);
+  lines.push(`const ${listVar}: unknown[] = [];`);
+  if (needsTrailingTrack) {
+    lines.push(`let __sawTrailingSep = false;`);
+    if (trailing === 'forbidden') lines.push(`let __preLastSep = off;`);
   }
+  lines.push(`while (true) {`);
+  if (stopBeforeCheck) {
+    lines.push(indent(stopBeforeCheck, 1));
+  }
+  // Track the off at loop entry. If a successful child parse returns without
+  // advancing `off`, we break to avoid an infinite loop. Matches v1
+  // emitRepeatedSpan's `if (__off === __before) break;` guard. This can fire
+  // on truly empty productions (no spans) or on productions whose only span
+  // is an optional that didn't match.
+  lines.push(`  const __loopStart = off;`);
+  lines.push(`  let __cand: unknown = null;`);
+  lines.push(indent(tryItemBlock, 1));
+  lines.push(`  if (__cand === null) break;`);
+  lines.push(`  ${listVar}.push(__cand);`);
+  lines.push(`  if (off === __loopStart) break;`);
+  if (needsTrailingTrack) lines.push(`  __sawTrailingSep = false;`);
+  if (sep !== undefined) {
+    // After pushing the item, attempt to consume the separator. If absent,
+    // break the loop (we exit on the unseparated last item). For
+    // trailing:forbidden we track the pre-sep offset so we can rewind off
+    // if the post-sep slot turns out to be empty (no further item).
+    if (trailing === 'forbidden') {
+      lines.push(`  __preLastSep = off;`);
+    }
+    lines.push(indent(sepBlock, 1));
+    if (needsTrailingTrack) lines.push(`  __sawTrailingSep = true;`);
+  } else {
+    lines.push(indent(sepBlock, 1));
+  }
+  lines.push(`}`);
+  for (const c of trailingChecks) lines.push(c);
+  if (minCheck) lines.push(minCheck);
+  if (maxCheck) lines.push(maxCheck);
+  lines.push(`const ${endVar} = off;`);
+  return lines.join('\n');
 }
-const ${endVar} = off;
-${minCheck}`;
+
+// stopBefore handling — emit a check that breaks the repeats loop when the
+// upcoming bytes start with any of the listed literal prefixes. Bucketed by
+// first byte for cheap dispatch. Used by HTML's `<li>`/`<dt>`/etc. implicit-
+// close idioms (see packages/html/src/schema.ts).
+function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
+  if (!stopBefore || stopBefore.length === 0) return '';
+  const stops = stopBefore.filter((s) => s.length > 0);
+  if (stops.length === 0) return '';
+  const byFirstByte = new Map<number, string[]>();
+  for (const s of stops) {
+    const c = s.charCodeAt(0);
+    const bucket = byFirstByte.get(c) ?? [];
+    bucket.push(s);
+    byFirstByte.set(c, bucket);
+  }
+  const branches: string[] = [];
+  for (const [code, bucket] of [...byFirstByte.entries()].sort(([a], [b]) => a - b)) {
+    bucket.sort((a, b) => b.length - a.length);
+    const tests = bucket.map((s) => {
+      if (s.length === 1) return 'true';
+      return `input.startsWith(${jsString(s)}, off)`;
+    });
+    branches.push(`if (__sb === ${code} && (${tests.join(' || ')})) break;`);
+  }
+  return `if (off < len) {
+  const __sb = input.charCodeAt(off);
+  ${branches.join('\n  ')}
+}`;
 }
 
 // --- helpers ---------------------------------------------------------------

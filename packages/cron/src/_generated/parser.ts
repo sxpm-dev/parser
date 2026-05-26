@@ -233,28 +233,19 @@ function parseCommand(state: State): unknown {
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __words_start = off;
   const words: unknown[] = [];
-  {
+  while (true) {
+    const __loopStart = off;
+    let __cand: unknown = null;
     state.pos = off;
-    const __first = parseCommandWord(state);
-    if (__first !== null) {
-      words.push(__first);
-      off = state.pos;
-      while (true) {
-        const __sepStart = off;
-        // Required ws between children when no explicit separator.
-    const __wsStart = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (off === __wsStart) break;
-        state.pos = off;
-        const __next = parseCommandWord(state);
-        if (__next === null) { off = __sepStart; break; }
-        words.push(__next);
-        off = state.pos;
-      }
-    }
+    __cand = parseCommandWord(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    words.push(__cand);
+    if (off === __loopStart) break;
+    // No explicit separator — inter-item ws is absorbed by the inner parse step.
   }
-  const __words_end = off;
   if (words.length < 1) { state.pos = entryOff; return null; }
+  const __words_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {

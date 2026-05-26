@@ -191,6 +191,169 @@ test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
   assert.equal(result.body, 'x=1');
 });
 
+test('v2 emits multi-role repeats loop using role-dispatch ladder', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Doc collects 0..N children, each of which is either a SlashItem or
+  // HashItem — distinct first bytes so the ladder can dispatch unambiguously.
+  // The repeats span has no separator and no min — the loop just keeps
+  // dispatching until neither role's first byte matches the next non-ws byte.
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('/foo')
+        .as('SlashItem')
+        .span('/')
+        .span('text', 'foo').until(['\n', '@'])
+        .render('ast', { type: 'slash', text: $.text })
+        .build(),
+      ex('#bar')
+        .as('HashItem')
+        .span('#')
+        .span('text', 'bar').until(['\n', '@'])
+        .render('ast', { type: 'hash', text: $.text })
+        .build(),
+      ex('/foo\n#bar\n')
+        .as('Doc')
+        .span('items', '/foo\n#bar\n', ['SlashItem', 'HashItem']).repeats({ min: 0 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  // Until Task 1.3c lands, this throws `v2: multi-role repeats not yet
+  // supported`. After 1.3c, codegen succeeds and the generated parser
+  // collects mixed-role children into an array.
+  const code = generateParser(schema, undefined, { v2: true });
+  assert.match(code, /function parseDoc\(/);
+  // No tryRoles fallback — the loop must use the byte-prefix ladder.
+  assert.doesNotMatch(code, /tryRoles\b/);
+
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('/foo\n#bar\n') as { items: Array<{ type: string; text: string }> };
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.type, 'slash');
+  assert.equal(result.items[0]?.text, 'foo');
+  assert.equal(result.items[1]?.type, 'hash');
+  assert.equal(result.items[1]?.text, 'bar');
+
+  // Empty input — min:0 — must yield an empty list, not fail.
+  const empty = __parse('') as { items: unknown[] };
+  assert.equal(empty.items.length, 0);
+});
+
+test('v2 multi-role repeats honors min by failing when count too low', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Doc',
+    examples: [
+      ex('/foo')
+        .as('SlashItem')
+        .span('/')
+        .span('text', 'foo').until(['\n', '@'])
+        .render('ast', { type: 'slash', text: $.text })
+        .build(),
+      ex('#bar')
+        .as('HashItem')
+        .span('#')
+        .span('text', 'bar').until(['\n', '@'])
+        .render('ast', { type: 'hash', text: $.text })
+        .build(),
+      ex('/foo\n')
+        .as('Doc')
+        .span('items', '/foo\n', ['SlashItem', 'HashItem']).repeats({ min: 1 })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  // 1 item satisfies min:1.
+  const ok = __parse('/foo\n') as { items: Array<{ type: string }> };
+  assert.equal(ok.items.length, 1);
+  // 0 items violates min:1 — the production fails, top-level parse throws.
+  assert.throws(() => __parse(''));
+});
+
+test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Mimics HTML <li> implicit-close: a Container holds 0..N items where each
+  // item is either a SlashItem or HashItem. When the upcoming source begins
+  // with `</`, the children loop must stop without consuming — the parent
+  // will handle that close token. This exercises the stopBefore code path.
+  const schema = defineSchema({
+    rootType: 'Container',
+    examples: [
+      ex('/foo')
+        .as('SlashItem')
+        .span('/')
+        .span('text', 'foo').until(['\n', '<'])
+        .render('ast', { type: 'slash', text: $.text })
+        .build(),
+      ex('#bar')
+        .as('HashItem')
+        .span('#')
+        .span('text', 'bar').until(['\n', '<'])
+        .render('ast', { type: 'hash', text: $.text })
+        .build(),
+      ex('[/foo\n#bar\n</>]')
+        .as('Container')
+        .span('[')
+        .span('items', '/foo\n#bar\n', ['SlashItem', 'HashItem'])
+          .repeats({ min: 0, stopBefore: ['</'] })
+        .span('</>')
+        .span(']')
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  // The generated code must contain a stopBefore byte-bucketed check.
+  // `<` is 0x3c = 60 in decimal.
+  assert.match(code, /__sb === 60/);
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('[/foo\n#bar\n</>]') as { items: Array<{ type: string }> };
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.type, 'slash');
+  assert.equal(result.items[1]?.type, 'hash');
+});
+
+test('v2 multi-role repeats with separator threads items together', async () => {
+  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  // Comma-separated list of (Word | Number) items. Sep=',' splits children;
+  // when the next non-ws char isn't a comma, the loop breaks.
+  const schema = defineSchema({
+    rootType: 'List',
+    examples: [
+      ex('abc')
+        .as('Word')
+        .span('value', 'abc').ident().css()
+        .render('ast', { kind: 'word', v: $.value })
+        .build(),
+      ex('42')
+        .as('Number')
+        .span('value', '42').number().int()
+        .render('ast', { kind: 'num', v: $.value })
+        .build(),
+      ex('abc,42')
+        .as('List')
+        .span('items', 'abc,42', ['Word', 'Number']).repeats({ min: 0, sep: ',' })
+        .render('ast', { items: $.items })
+        .build(),
+    ],
+  });
+  const code = generateParser(schema, undefined, { v2: true });
+  const { render } = await loadV2Parser(code);
+  const __parse = (input: string) => render(input, { type: 'ast' });
+  const result = __parse('abc,42') as { items: Array<{ kind: string; v: string }> };
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.kind, 'word');
+  assert.equal(result.items[0]?.v, 'abc');
+  assert.equal(result.items[1]?.kind, 'num');
+  assert.equal(result.items[1]?.v, '42');
+});
+
 test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {
   const { defineSchema, ex, $ } = await import('@parser2/parser');
   // Doc wraps a single child that can be either a Comment (starts with `/`)

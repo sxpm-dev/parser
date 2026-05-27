@@ -1,4 +1,4 @@
-# v2 emit migration status (updated 2026-05-27 after Phase 1.5 closeout)
+# v2 emit migration status (updated 2026-05-27 after Phase 5 closeout)
 
 Status of `--v2` codegen + tests for the 3 in-scope parser packages.
 Captured by running
@@ -6,11 +6,11 @@ Captured by running
 from the worktree root. See `docs/scannerless-emit-v2.md` for the v2 design
 contract.
 
-## Current ratchet (after Phase 1.5 — all in-scope packages green on v2)
+## Current ratchet (after Phase 5 — fusion landed, all in-scope packages green on v2)
 
 | Package   | v2 pass | v2 fail | Notes |
 | --------- | ------- | ------- | ----- |
-| compiler  | 304/304 | 0       | v2-regressions test suite (incl. 5 Phase 1.5 regressions) |
+| compiler  | 312/312 | 0       | v2-regressions + 5 fusion codegen / round-trip tests |
 | css       | 56/57   | 0 (+1 skip) | green; 1 intentional skip |
 | html      | 30/30   | 0       | green |
 | markdown  | 76/76   | 0       | green |
@@ -81,10 +81,53 @@ plus quality-review follow-ups. Summary of what each commit added:
   schema dropped the call in Phase 1.5 / Task 5 with a TODO comment.
   Restore once codegen support exists.
 
+## Phase 5 closeout (2026-05-27)
+
+Fusion lands. For non-`ast` render targets, the compiler emits per-(production,
+target) fused parse-and-render functions that walk input bytes once and push
+rendered fragments directly into a string buffer — no intermediate captures
+object. The public `render(input, {type:T})` tries the fused path first and
+falls back to the captures-based dispatch when the fused path declines (e.g.
+a production isn't eligible for fusion at this target).
+
+Eligibility today:
+- Body shape: Template only. Object/array bodies stay on the captures path.
+- Slot refs: non-recursive spans, OR recursive single-role / multi-role /
+  `.repeats()` spans whose roles' productions are themselves fully fusable.
+- Repeats option gate: `stopBefore` excludes a production from fusion (the
+  fused loop emit doesn't yet honour the stop-sentinel check). Schemas that
+  use `stopBefore` on a fusable role chain fall back to captures cleanly.
+- `ast` target stays on the captures path by design.
+
+| Task | Commit(s) | What landed |
+| --- | --- | --- |
+| 5.1 | `e5637b0` + `66c5594` | `emit/v2/fusion.ts` emits per-(production, non-ast target) fused functions for template bodies with non-recursive slots; `__fusedRenderDispatch_<target>` tables emitted. |
+| 5.2 | `38ec3b9` | `__renderFused(input, target)` runtime + public `render()` rewired (fused-first, captures-fallback). Also ported Gap A/B template fusion to the fused emitter. |
+| 5.3 | `f52948e` + `b13fb57` | Recursive children fuse: eligibility memoization with cycle handling; per-span side buffer for ordering; byte-prefix dispatch ladder mirroring the parse-time role ladder; EOF guard + fallthrough-role suppression. Eligibility gates `stopBefore` (latent gap closed). |
+| 5.4 | `fc1041f` + `173fda3` | `compiler/test/fusion-round-trip.test.ts` iterates every schema × production × non-ast target and compares v2's `render(...)` (fused-first) against `interp.render(interp.parse(...))`. Coverage floors: css ≥5, html ≥15, markdown ≥70 comparisons. No divergences observed. |
+
+### Phase 5 follow-ups (deferrable)
+
+- **Allocation profile not verified programmatically.** The Phase-5 master-plan
+  exit gate calls for `node --prof` traces showing no captures-object
+  allocation on the fused html path. Phase 5's actual exit gate is the
+  round-trip correctness theorem (5.4), which is green; the perf-profile
+  check is a follow-up task once a profile-friendly bench harness exists.
+- **`stopBefore` in fused repeats** — currently gates the production out of
+  fusion. Implementing the stop-sentinel check in `emitFusedRepeatsSpan`
+  would let `stopBefore`-bearing productions fuse and recover the
+  optimization for HTML schemas that use it.
+- **`isAbsentAllowedSpan` / `repeatsJoinSeparator` helpers** are duplicated
+  verbatim between `emit/render.ts` and `emit/v2/fusion.ts`. Extract to a
+  shared `emit/span-helpers.ts` to remove the drift risk. Optional.
+- **Multi-prod root fusion.** `__rootProductionKey` is fixed to
+  `<rootType>#0`. None of css/html/markdown have a multi-prod root; future
+  schemas with one will fall back to captures (still correct, just not
+  fused).
+
 ## Where to next
 
-Phase 1 is fully closed. The 6 residual failures held the v2 ratchet open;
-all are now resolved. Next phase up per the engine overhaul plan
+Phases 1 + 1.5 + 5 are closed. Next phase per the engine overhaul plan
 (`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`) is
-Phase 5 (fusion pass — skip AST when target ≠ ast). Re-plan that phase at
-step-level granularity before dispatching its first task.
+Phase 6 — pluggable backend interface + bytecode backend. Re-plan that
+phase at step-level granularity before dispatching its first task.

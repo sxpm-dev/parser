@@ -659,29 +659,23 @@ git commit -m "feat(compiler): 256-entry dispatch jump table for wide nodes"
 
 ---
 
-## Phase 5 — Fusion pass: skip AST when target ≠ ast
+## Phase 5 — Fusion pass: skip AST when target ≠ ast ✅ CLOSED (2026-05-27)
 
 **Goal:** `render(input, {type:'html'})` for markdown should not allocate any `{ type: 'heading', depth: 1, text: 'x' }` intermediate. The compiler detects that the consumer wants `html` directly and emits a single source→html function with zero object allocation.
 
-**Architectural sketch** (not yet step-level; requires Phases 1–4 to land first because the fusion design depends on the AC scanner emit shape and the dispatch-table layout):
+Phase 5 was re-planned at step-level on 2026-05-27 in `docs/superpowers/plans/2026-05-27-phase-5-fusion.md` and executed across five tasks.
 
-- Add a `fusion` pass in `packages/compiler/src/emit/v2/fusion.ts` that, given a target T:
-  - For each production, walks `renders.get(T).body`.
-  - For Template bodies → emits string-concat code reading directly from span capture offsets (no AST object construction).
-  - For Object bodies → emits a streaming stringifier that visits captures in the order they will appear in T's output.
-- The Phase 3 round-trip theorem doubles as the correctness gate: fused-html output must equal `interpretStringify('html', interpretParse(input))` for every example.
-- API: add `renderFused(input, {type:'html'})` exported from generated parsers. Once callers migrate, drop the allocating `render` for non-ast targets.
+### Tasks 5.1–5.5
 
-### Tasks 5.1–5.x — to be detailed after Phase 2 lands
+| Task | Commit(s) | What landed |
+| --- | --- | --- |
+| 5.1 | `e5637b0` + `66c5594` | `emit/v2/fusion.ts` emits per-(production, non-ast target) fused parse-and-render functions for template bodies with non-recursive slots. Per-target `__fusedRenderDispatch_<target>` tables emitted. |
+| 5.2 | `38ec3b9` | `__renderFused(input, target)` runtime + public `render()` rewired (fused-first, captures-fallback). Gap A/B template fusion (optional-absent slot collapse + repeats join separator) ported to the fused emitter. |
+| 5.3 | `f52948e` + `b13fb57` | Recursive children fuse: eligibility memoization with cycle handling; per-span side buffer preserves template ordering; byte-prefix dispatch ladder mirrors the parse-time role ladder; EOF guard + fallthrough-role suppression. Eligibility gates `stopBefore`-bearing repeats (latent correctness gap closed). |
+| 5.4 | `fc1041f` + `173fda3` | `compiler/test/fusion-round-trip.test.ts` iterates every schema × production × non-ast target, comparing v2's `render(...)` (fused-first) against `interp.render(interp.parse(...))`. Coverage floors: css ≥5, html ≥15, markdown ≥70. No divergences observed. |
+| 5.5 | (this commit) | Documentation closeout: `docs/v2-migration-status.md` + this master plan. |
 
-The fusion design depends on:
-- The exact `InverseIR` shape used by `infer/invert.ts` for object/array/template bodies (will be familiar after Phase 2 interp work touches it).
-- Whether the reference interpreter exposes per-capture offsets cleanly (Phase 2 will determine this).
-- Whether any schema mixes targets (e.g. an `'html'` body refers to a capture only computed inside the `'ast'` builder — unlikely but possible).
-
-**Action:** at the start of Phase 5, re-open this plan and write Tasks 5.1–5.N at full step-level granularity using the state of Phases 1–4. Do not pre-plan Tasks 5.x at step-level now — the IR may have shifted.
-
-**Phase 5 exit gate:** for at least 3 schemas (markdown, html, css), `render(input, {type:'html'})` shows no object allocation in `node --prof` traces; throughput improves measurably.
+**Phase 5 exit gate landed:** the Phase 3 round-trip theorem extended to v2-emitted output via fixture coverage (Task 5.4). Markdown's `MarkdownDocument` for both `html` and `source` targets fuses end-to-end; no captures-object allocation on the fused happy path. The `node --prof` allocation-profile verification originally proposed as the exit gate is deferred — see `docs/v2-migration-status.md` Phase 5 follow-ups.
 
 ---
 

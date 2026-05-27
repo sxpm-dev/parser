@@ -35,10 +35,14 @@
 
 import type {
   InferredSchema,
+  InverseField,
+  InverseIR,
   NodeTypeInfo,
   Production,
   ResolvedSpan,
 } from '../../model.ts';
+import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
+import { syntheticKey } from '../captures.ts';
 import { productionKey } from '../render.ts';
 import { Op, OPERAND_SIZES, ScanClassKind } from './ops.ts';
 
@@ -51,7 +55,19 @@ export type EncodedSchema = {
   // block. The root entry is `${rootType}#dispatch` (if the root has
   // multiple alts) or `${rootType}#0` (single-alt root).
   readonly productionOffsets: ReadonlyMap<string, number>;
+  // Keyed by '<NodeType>#<N>:<target>'. Points at the per-(production,
+  // target) render block. Produced by Task 6.4.
+  readonly renderOffsets: ReadonlyMap<string, number>;
+  // Keyed by '<NodeType>#<N>:<target>'. Points at the per-(production,
+  // target) inverse stringify block. Produced by Task 6.4 Commit 3.
+  readonly stringifyOffsets: ReadonlyMap<string, number>;
+  // Keyed by target name. Points at the per-target stringify dispatcher
+  // (chain-try over each production of the root NodeType). Used by
+  // runStringify as the entry point.
+  readonly stringifyDispatcherOffsets: ReadonlyMap<string, number>;
   readonly rootProductionKey: string;
+  // Sorted list of declared render targets (e.g. ['ast', 'source']).
+  readonly targets: ReadonlyArray<string>;
 };
 
 // Internal: mutable encoder state. Kept out of EncodedSchema (which is the
@@ -71,6 +87,13 @@ type EncoderState = {
   // for a CALL_PRODUCTION operand that we patched with 0xFFFFFFFF at emit
   // time. End-of-pass fixup walks this list and writes the resolved offset.
   pendingCalls: Array<{ readonly site: number; readonly targetKey: string }>;
+  // Resolved per-(production, target) render block offsets. Key:
+  // '<NodeType>#<idx>:<target>'.
+  renderOffsets: Map<string, number>;
+  // Resolved per-(production, target) inverse stringify block offsets.
+  stringifyOffsets: Map<string, number>;
+  // Resolved per-target stringify dispatcher offsets.
+  stringifyDispatcherOffsets: Map<string, number>;
 };
 
 // Public entry point. Walks every node type, emits one block per production,
@@ -84,6 +107,9 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     numbers: new Map(),
     productionOffsets: new Map(),
     pendingCalls: [],
+    renderOffsets: new Map(),
+    stringifyOffsets: new Map(),
+    stringifyDispatcherOffsets: new Map(),
   };
 
   // Pre-intern frequently used strings (production routing keys) so the
@@ -114,20 +140,86 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     }
   }
 
+  // Collect render targets, sorted for determinism.
+  const targets = collectTargets(schema);
+
+  // Emit per-(production, target) render blocks.
+  for (const info of schema.nodeTypes.values()) {
+    for (let i = 0; i < info.productions.length; i++) {
+      const prod = info.productions[i]!;
+      for (const target of targets) {
+        const entry = prod.renders.get(target);
+        if (!entry) {
+          // Defensive — validate.ts enforces per-target completeness in
+          // the TS backend's render emitter; we mirror that contract.
+          throw new Error(`bytecode encoder: production '${productionKey(info.name, i)}' missing render target '${target}'`);
+        }
+        const key = `${productionKey(info.name, i)}:${target}`;
+        state.renderOffsets.set(key, state.len);
+        emitRenderBlock(state, entry.body, target, prod);
+      }
+    }
+  }
+
+  // Emit per-(production, target) inverse stringify blocks + per-target
+  // dispatcher (chain-tries every root production).
+  //
+  // Only IR shapes the encoder supports are emitted (object-form with
+  // string scalars / ref population — cron's AST target). Unsupported
+  // shapes (template, array, non-string scalars) are simply skipped at
+  // encode time, leaving stringifyOffsets empty for those keys. The
+  // public runStringify path checks for missing entries before dispatching.
+  for (const info of schema.nodeTypes.values()) {
+    for (let i = 0; i < info.productions.length; i++) {
+      const prod = info.productions[i]!;
+      for (const target of targets) {
+        const entry = prod.renders.get(target);
+        if (!entry || !entry.inverseDerived) continue;
+        if (!canEncodeInverse(entry.inverseDerived)) continue;
+        const key = `${productionKey(info.name, i)}:${target}`;
+        state.stringifyOffsets.set(key, state.len);
+        emitStringifyBlock(state, entry.inverseDerived, target, prod, i);
+      }
+    }
+  }
+
+  // Per-target stringify dispatcher (sits over the ROOT type's productions).
+  // Layout per target: chain-try each root production, taking the first
+  // whose discriminator block succeeds. Only emit a dispatcher if at least
+  // one production has an encodable inverse.
+  const rootInfo0 = schema.nodeTypes.get(schema.rootType);
+  if (rootInfo0) {
+    for (const target of targets) {
+      const hasAny = rootInfo0.productions.some((p) => {
+        const ir = p.renders.get(target)?.inverseDerived;
+        return ir !== undefined && canEncodeInverse(ir);
+      });
+      if (!hasAny) continue;
+      state.stringifyDispatcherOffsets.set(target, state.len);
+      emitStringifyDispatcher(state, rootInfo0, target);
+    }
+  }
+
   // Patch forward references. Every pendingCalls entry resolves to either
-  // a `#dispatch` entry (multi-prod target) or `#0` (single-prod target).
-  // We try the dispatch key first and fall back to alt-0 when no dispatch
-  // exists. This lets the encoder emit one canonical CALL_PRODUCTION target
-  // per recursive role and stay agnostic about the target's prod count.
+  // a `#dispatch` entry (multi-prod target) or `#0` (single-prod target),
+  // OR a per-(production, target) render/stringify block (key contains a
+  // `:<target>` suffix). We try maps in order: productionOffsets (with
+  // #dispatch fallback to #0), then renderOffsets, then stringifyOffsets.
   for (const { site, targetKey } of state.pendingCalls) {
-    let target = state.productionOffsets.get(targetKey);
-    if (target === undefined && targetKey.endsWith('#dispatch')) {
-      const fallback = targetKey.replace(/#dispatch$/, '#0');
-      target = state.productionOffsets.get(fallback);
+    let target: number | undefined;
+    if (targetKey.includes(':')) {
+      target = state.renderOffsets.get(targetKey);
+      if (target === undefined) target = state.stringifyOffsets.get(targetKey);
+    } else {
+      target = state.productionOffsets.get(targetKey);
+      if (target === undefined && targetKey.endsWith('#dispatch')) {
+        const fallback = targetKey.replace(/#dispatch$/, '#0');
+        target = state.productionOffsets.get(fallback);
+      }
     }
     if (target === undefined) {
       throw new Error(
-        `bytecode encoder: unresolved CALL_PRODUCTION target '${targetKey}' (no production or dispatch entry was emitted under that key)`,
+        `bytecode encoder: unresolved CALL_PRODUCTION target '${targetKey}' (no production, render, or stringify entry was emitted under that key)`,
       );
     }
     writeU32At(state, site, target);
@@ -147,8 +239,22 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     stringPool: [...state.strings.keys()],
     numberPool: [...state.numbers.keys()],
     productionOffsets: state.productionOffsets,
+    renderOffsets: state.renderOffsets,
+    stringifyOffsets: state.stringifyOffsets,
+    stringifyDispatcherOffsets: state.stringifyDispatcherOffsets,
     rootProductionKey: rootKey,
+    targets,
   };
+}
+
+function collectTargets(schema: InferredSchema): ReadonlyArray<string> {
+  const set = new Set<string>();
+  for (const info of schema.nodeTypes.values()) {
+    for (const prod of info.productions) {
+      for (const t of prod.renders.keys()) set.add(t);
+    }
+  }
+  return [...set].sort();
 }
 
 // --- per-production emit ---------------------------------------------------
@@ -526,6 +632,394 @@ function emitDispatchBlock(state: EncoderState, info: NodeTypeInfo): void {
   }
   void patches; // patches were back-filled in-loop; kept for clarity.
 
+  // RETURN_NULL — all alts failed.
+  writeOp(state, Op.RETURN_NULL);
+}
+
+// --- render-block emit (Task 6.4 Commit 2) ---------------------------------
+
+// Emit the opcode sequence that, given a render frame whose frame.captures
+// holds the parsed captures object, builds the rendered value for the
+// declared (production, target) pair. Block ends with RENDER_RETURN.
+function emitRenderBlock(
+  state: EncoderState,
+  body: RenderBody,
+  target: string,
+  production: Production,
+): void {
+  emitRenderBodyExpr(state, body, target, production);
+  writeOp(state, Op.RENDER_RETURN);
+}
+
+// Recursively emit ops that push a single rendered value onto the stack.
+// Mirrors `emit/render.ts:emitBodyExpr` but as opcodes instead of JS source.
+function emitRenderBodyExpr(
+  state: EncoderState,
+  body: RenderBody,
+  target: string,
+  production: Production,
+): void {
+  if (body === null) {
+    writeOp(state, Op.PUSH_NULL);
+    return;
+  }
+  if (typeof body === 'string') {
+    writeOp(state, Op.PUSH_STRING);
+    writeU32(state, internString(state, body));
+    return;
+  }
+  if (typeof body === 'number') {
+    if (!Number.isFinite(body)) {
+      writeOp(state, Op.PUSH_NULL);
+      return;
+    }
+    writeOp(state, Op.PUSH_NUMBER);
+    writeU32(state, internNumber(state, body));
+    return;
+  }
+  if (typeof body === 'boolean') {
+    writeOp(state, body ? Op.PUSH_TRUE : Op.PUSH_FALSE);
+    return;
+  }
+  if (isStructureRef(body)) {
+    emitRefExpr(state, body, target);
+    return;
+  }
+  if (isTemplate(body)) {
+    emitRenderTemplate(state, body, target, production);
+    return;
+  }
+  if (Array.isArray(body)) {
+    for (const child of body) emitRenderBodyExpr(state, child, target, production);
+    writeOp(state, Op.BUILD_ARRAY);
+    writeU32(state, body.length);
+    return;
+  }
+  // Object literal — emit child values in declared key order, then a
+  // BUILD_OBJECT opcode carrying the key names.
+  const entries = Object.entries(body as Record<string, RenderBody>);
+  for (const [, value] of entries) {
+    emitRenderBodyExpr(state, value, target, production);
+  }
+  writeOp(state, Op.BUILD_OBJECT);
+  writeU32(state, entries.length);
+  for (const [key] of entries) {
+    writeU32(state, internString(state, key));
+  }
+}
+
+// Emit a StructureRef. For span-presence, push (captures[name] != null).
+// For span-value, load captures[<name>] and route through RENDER_DISPATCH
+// so a captures-object child renders to the target. Other ref kinds
+// (gap, tail, raw, ends-with, comment-left/right) use synthesized capture
+// keys that captures.ts already computed at parse time — we just LOAD them.
+function emitRefExpr(state: EncoderState, ref: StructureRef, target: string): void {
+  if (ref.__ref === 'span-presence') {
+    // Not exercised by cron — keep loud for early-detection of new schemas
+    // that need this path.
+    throw new Error(`bytecode encoder: span-presence refs not yet supported (target '${target}')`);
+  }
+  const key = ref.__ref === 'span-value' ? ref.name : syntheticKey(ref);
+  writeOp(state, Op.LOAD_CAPTURE);
+  writeU32(state, internString(state, key));
+  if (ref.__ref === 'span-value') {
+    writeOp(state, Op.RENDER_DISPATCH);
+    writeU32(state, internString(state, target));
+  }
+}
+
+// Emit a Template body — fused string concat. For each part/slot:
+//   - non-empty part → PUSH_STRING <part>
+//   - slot           → LOAD_CAPTURE <name> + RENDER_DISPATCH <target>
+// then CONCAT_N of all pushed pieces.
+//
+// Repeats-aware: for slots whose span is .repeats(...), the captured value
+// is an array. RENDER_DISPATCH recursively renders each element to a
+// string (for string targets) and returns an array. To produce the final
+// string we need to join with the declared separator. We mark such slots
+// by emitting a JOIN_OR_PASS opcode pattern: we currently inline the join
+// by emitting PUSH_STRING <sep> + JOIN_TOP — but that op doesn't exist.
+//
+// For Commit 2 we keep it simple: CONCAT_N's runtime joins arrays with the
+// span's declared separator (' ' default). To pass the separator we
+// piggy-back on the value-stack: emit PUSH_STRING <sep> BEFORE the slot
+// dispatch and use a special opcode (or rely on runtime convention).
+// Simplest path: emit RENDER_DISPATCH normally and have CONCAT_N detect
+// arrays and join them with a default ' '. Per-slot separator is deferred
+// (cron's only repeats slot uses default ' ' anyway).
+//
+// Optional-fusion (preceding whitespace literal suppressed when optional
+// slot is absent) is NOT implemented yet — Task 6.4 plan defers it.
+function emitRenderTemplate(
+  state: EncoderState,
+  template: Template,
+  target: string,
+  production: Production,
+): void {
+  const parts = template.parts;
+  const slots = template.slots;
+  let pushed = 0;
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]!;
+    if (part.length > 0) {
+      writeOp(state, Op.PUSH_STRING);
+      writeU32(state, internString(state, part));
+      pushed++;
+    }
+    if (i < slots.length) {
+      const slot = slots[i]!;
+      writeOp(state, Op.LOAD_CAPTURE);
+      writeU32(state, internString(state, slot.ref));
+      writeOp(state, Op.RENDER_DISPATCH);
+      writeU32(state, internString(state, target));
+      pushed++;
+    }
+    void production; // reserved for fusion (currently unused)
+  }
+
+  // If nothing was pushed, push an empty string so CONCAT_N has something.
+  if (pushed === 0) {
+    writeOp(state, Op.PUSH_STRING);
+    writeU32(state, internString(state, ''));
+    pushed = 1;
+  }
+
+  writeOp(state, Op.CONCAT_N);
+  writeU32(state, pushed);
+}
+
+// --- stringify-block emit (Task 6.4 Commit 3) ------------------------------
+
+// Emit a per-(production, target) inverse stringify block. Strategy:
+//   1. Top of value stack is the input VALUE being stringified.
+//   2. Walk the InverseIR: assertions on object fields / scalar matching;
+//      capture-population from refs; template literal-segment scanning.
+//   3. After population, dispatch into the production's render block to
+//      rebuild the source string (using the freshly-populated captures).
+//   4. RENDER_RETURN.
+//
+// The block uses RETURN_NULL on assertion failure so the dispatcher's
+// chain-try (next production) gets a null on the value stack and skips.
+// On success, RENDER_RETURN replaces the value at frame top with the
+// produced source string.
+//
+// Layout note: stringify frames are pushed by STRINGIFY_DISPATCH. The
+// frame's frame.captures starts empty ({}). The block populates it from
+// the input value (which sits on top of the value stack at frame entry).
+function emitStringifyBlock(
+  state: EncoderState,
+  ir: InverseIR,
+  target: string,
+  production: Production,
+  prodIdx: number,
+): void {
+  // Phase 1: walk the IR. Value-on-stack-top at start; ends with the same
+  // value still on top (we leave it for the caller — discriminators pop it
+  // via POP/ASSERT). After this phase, captures (frame.captures) is
+  // populated.
+  emitInverseIR(state, ir);
+
+  // Phase 2: pop the input value off the value stack — we consumed all
+  // the info we need; the render output is built fresh from captures.
+  writeOp(state, Op.POP);
+
+  // Phase 3: dispatch into the production's render block to rebuild source.
+  // We can't use RENDER_DISPATCH here (that's keyed by __production on
+  // captures, which we set explicitly below). Instead: push a synthetic
+  // captures object that includes the __production key, then RENDER_DISPATCH.
+  //
+  // Simpler approach: directly inline a CALL into the render block. To
+  // achieve this we need an opcode that calls into a render block with
+  // the CURRENT frame's captures. For now, we set frame.captures.__production
+  // and use RENDER_DISPATCH — push the captures onto the stack and route.
+  //
+  // We add a small helper: set captures.__production via PUSH_LITERAL_FIELD,
+  // then push the captures onto the stack via a new pattern: LOAD_CAPTURES_SELF
+  // (not in the opcode set). Avoid adding a new opcode: instead, encode the
+  // render block's body INLINE here so the same frame's captures is used.
+  emitRenderBlockBodyInline(state, target, production, prodIdx);
+}
+
+// Emit just the body of a production's render block WITHOUT the RENDER_RETURN
+// at the end. Used by stringify so we run the render expression in the
+// CURRENT frame (re-using its captures) and let the stringify frame's
+// own RENDER_RETURN handle the final return.
+function emitRenderBlockBodyInline(
+  state: EncoderState,
+  target: string,
+  production: Production,
+  prodIdx: number,
+): void {
+  const entry = production.renders.get(target);
+  if (!entry) {
+    throw new Error(`bytecode encoder: stringify needs render body for '${productionKey(production.nodeType, prodIdx)}:${target}'`);
+  }
+  emitRenderBodyExpr(state, entry.body, target, production);
+  writeOp(state, Op.RENDER_RETURN);
+}
+
+// Returns true if the inverse IR has a shape the bytecode emitter supports.
+// Used by the Commit 2 path to skip unsupported targets (template-form
+// inverses, array, non-string scalars) without crashing the encode.
+function canEncodeInverse(ir: InverseIR): boolean {
+  switch (ir.kind) {
+    case 'scalar':
+      return typeof ir.value === 'string';
+    case 'ref':
+      return true;
+    case 'object':
+      for (const field of ir.fields) {
+        if (field.kind === 'literal') {
+          if (typeof field.value !== 'string') return false;
+        } else {
+          if (!canEncodeInverse(field.inverse)) return false;
+        }
+      }
+      return true;
+    case 'array':
+      return false;
+    case 'template':
+      return false;
+  }
+}
+
+// Recursively emit ops that match-and-populate from the input value sitting
+// on top of the value stack. Each kind of IR either asserts a property of
+// the value (fail with RETURN_NULL on mismatch) OR writes a capture entry.
+// The input value remains on TOP after the block (so the caller can chain
+// or POP). Object/array IR variants leave the parent value on top via PEEK.
+function emitInverseIR(state: EncoderState, ir: InverseIR): void {
+  switch (ir.kind) {
+    case 'scalar':
+      // Compare top of stack to the literal scalar; fail on mismatch.
+      emitAssertScalar(state, ir.value);
+      return;
+    case 'ref':
+      // Write the entire value into captures[<name>]. Doesn't consume it.
+      emitWriteCaptureFromTop(state, ir.capture);
+      return;
+    case 'object':
+      emitInverseObject(state, ir.fields);
+      return;
+    case 'array':
+      emitInverseArray(state, ir.elements);
+      return;
+    case 'template':
+      // Template-based inverse: scan literal segments in the string value,
+      // assigning text between segments to the named captures. Cron doesn't
+      // exercise template inverses end-to-end (its render bodies are
+      // discriminated by object 'type' fields), so we punt: the template
+      // inverse from cron's `source` target is structurally there but the
+      // PUBLIC stringify path always uses the AST (object) form. For Task
+      // 6.4 commit 3 we only need to wire AST stringify. Defensive:
+      throw new Error(`bytecode encoder: template-form inverse stringify not yet wired (cron exercises object-form discriminators only)`);
+  }
+}
+
+function emitInverseObject(state: EncoderState, fields: ReadonlyArray<InverseField>): void {
+  // Each field reads value[name] (via PEEK_FIELD which leaves value on top
+  // and adds name's value on top of THAT). Then either asserts a scalar or
+  // recurses into a nested IR. Mismatch → RETURN_NULL via ASSERT path.
+  for (const field of fields) {
+    writeOp(state, Op.PEEK_FIELD);
+    writeU32(state, internString(state, field.name));
+    if (field.kind === 'literal') {
+      emitAssertScalar(state, field.value);
+      // emitAssertScalar pops the field value on success.
+    } else {
+      emitInverseIR(state, field.inverse);
+      // After recursion, the nested IR may have left the field value on top.
+      // Pop it so we land back at the parent value.
+      writeOp(state, Op.POP);
+    }
+  }
+}
+
+function emitInverseArray(state: EncoderState, _elements: ReadonlyArray<InverseIR>): void {
+  // Defensive placeholder — cron doesn't use array-form inverse IRs.
+  throw new Error(`bytecode encoder: array-form inverse IR not yet supported`);
+}
+
+// Pop top of stack and assert it equals the literal scalar. For string
+// scalars we emit ASSERT_TOP_STRING_EQ. For non-string scalars (number/
+// bool/null) we deliberately punt — cron's inverse only uses string
+// discriminators.
+function emitAssertScalar(state: EncoderState, value: string | number | boolean | null): void {
+  if (typeof value === 'string') {
+    writeOp(state, Op.ASSERT_TOP_STRING_EQ);
+    writeU32(state, internString(state, value));
+    return;
+  }
+  // Non-string scalar assertion — emit a more general assert later; for
+  // now throw to keep the failure mode loud.
+  throw new Error(`bytecode encoder: non-string scalar assertion not yet supported (value: ${JSON.stringify(value)})`);
+}
+
+// Write top-of-stack into the current frame's captures under `name`.
+// Does NOT pop — the value remains for downstream uses. The runtime uses
+// PEEK semantics: read top, write to captures[name], leave stack alone.
+function emitWriteCaptureFromTop(state: EncoderState, name: string): void {
+  // We don't have a single "peek-and-write" op. Use CAPTURE_VALUE_FROM_STACK
+  // (which DOES pop) — but we want to preserve the value on top. The
+  // simplest path: the caller (object-field handler) does emitInverseIR
+  // then issues a POP. So here we just pop into captures.
+  writeOp(state, Op.CAPTURE_VALUE_FROM_STACK);
+  writeU32(state, internString(state, name));
+  // The caller's POP will be a no-op now (stack is one shorter). We push
+  // a placeholder null back to keep the invariant "value remains on top".
+  writeOp(state, Op.PUSH_NULL);
+}
+
+// Per-target stringify dispatcher. Layout:
+//
+//   for each root production:
+//     SAVE_OFF 0  (unused for stringify — no input offset, but the dispatch
+//                  frame's slots are not exercised here either)
+//     CALL_PRODUCTION <stringify-block-for-(prod, target)>
+//     JUMP_IF_NULL +<bytes-to-next-alt>
+//     RETURN_OK
+//   RETURN_NULL
+//
+// CALL_PRODUCTION's frame setup is reused: the called block pushes a render
+// frame, runs assertions, and either RENDER_RETURNs (success — value on
+// stack) or RETURN_NULL (failure — null on stack, caller's JUMP_IF_NULL
+// branches to the next alt).
+function emitStringifyDispatcher(
+  state: EncoderState,
+  info: NodeTypeInfo,
+  target: string,
+): void {
+  for (let i = 0; i < info.productions.length; i++) {
+    const prod = info.productions[i]!;
+    const entry = prod.renders.get(target);
+    if (!entry || !entry.inverseDerived) continue;
+
+    // SAVE_OFF 0 — placeholder so the called block's slot table exists.
+    writeOp(state, Op.SAVE_OFF);
+    writeU8(state, 0);
+
+    // CALL_PRODUCTION <stringify block>
+    writeOp(state, Op.CALL_PRODUCTION);
+    const callSite = state.len;
+    writeU32(state, 0xffffffff);
+    state.pendingCalls.push({
+      site: callSite,
+      targetKey: `${productionKey(info.name, i)}:${target}`,
+    });
+
+    // JUMP_IF_NULL +<placeholder>
+    writeOp(state, Op.JUMP_IF_NULL);
+    const operandSite = state.len;
+    writeI32(state, 0);
+    const afterOperand = state.len;
+
+    // RETURN_OK — alt matched, return the rendered value.
+    writeOp(state, Op.RETURN_OK);
+
+    const nextAltStart = state.len;
+    writeI32At(state, operandSite, nextAltStart - afterOperand);
+  }
   // RETURN_NULL — all alts failed.
   writeOp(state, Op.RETURN_NULL);
 }

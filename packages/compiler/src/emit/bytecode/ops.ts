@@ -94,13 +94,61 @@ export enum Op {
   // Reserved; cron doesn't use this either.
   PUSH_BOOL_FIELD = 0x63,
 
-  // --- Render dispatch (for stringify and inverse — Task 6.4 / 6.5) -------
-  // operand: u32 target stringPool index → dispatch top-of-stack captures
-  // through __dispatchRender_<target>. Reserved; encoder currently doesn't
-  // emit this — Task 6.4 will wire it in.
+  // --- Render dispatch (Task 6.4) -----------------------------------------
+  // operand: u32 target stringPool index → top of value stack is the value
+  // to render (captures object, array of captures, string, etc.). Routes
+  // through (target, top.__production) → renderOffsets, pushes a render
+  // frame, and jumps to the production's render block. Inline-handles
+  // arrays (recursive dispatch per element) and primitives (pass-through).
   RENDER_DISPATCH = 0x70,
-  // operand: u32 target stringPool index → ditto for stringify. Reserved.
+  // operand: u32 target stringPool index → top of value stack is a value
+  // to stringify (AST node etc.). Dispatches through the per-target
+  // discriminator. Used by inverse stringify (Task 6.4 Commit 3).
   STRINGIFY_DISPATCH = 0x71,
+
+  // --- Render value primitives (Task 6.4) ---------------------------------
+  // operand: u32 stringPool index → push stringPool[idx] onto value stack.
+  PUSH_STRING = 0x80,
+  // No operands — push null onto value stack.
+  PUSH_NULL = 0x81,
+  // No operands — push true onto value stack.
+  PUSH_TRUE = 0x82,
+  // No operands — push false onto value stack.
+  PUSH_FALSE = 0x83,
+  // operand: u32 numberPool index → push numberPool[idx] onto value stack.
+  PUSH_NUMBER = 0x84,
+  // operand: u32 stringPool index (capture name) → push the current render
+  // frame's captures[name] onto the value stack. null/undefined when the
+  // capture is absent (optional/repeats min=0).
+  LOAD_CAPTURE = 0x85,
+  // operand: u32 count → pop `count` values, concat as strings (null/
+  // undefined coerce to ""), push the resulting string.
+  CONCAT_N = 0x86,
+  // operand: u32 count, then `count` × u32 stringPool indices (field
+  // names). At runtime: pop `count` values (LIFO — last pushed becomes
+  // last field), pair with the field names, build an object literal, push
+  // it. Used for AST object bodies like `{ type: 'cron', minute: ... }`.
+  BUILD_OBJECT = 0x87,
+  // operand: u32 count → pop `count` values, build an array (FIFO — first
+  // popped is the last element), push it. Used for array literal bodies.
+  BUILD_ARRAY = 0x88,
+  // No operands — pop the current render frame and leave top-of-stack
+  // (the rendered value) on the parent's stack. Mirrors RETURN_OK but for
+  // render frames where frame.captures is the INPUT (not produced output).
+  RENDER_RETURN = 0x89,
+  // operand: u32 stringPool index (key name) → peek top of value stack
+  // (must be object), push top[key] onto value stack (leaves the original
+  // object beneath). Used by stringify discriminators that need to read
+  // `value.type` etc. without consuming the value.
+  PEEK_FIELD = 0x8a,
+  // operand: u32 stringPool index (expected value) → top of value stack
+  // must equal stringPool[idx] (string equality). On mismatch, fail the
+  // current stringify frame (RETURN_NULL). On match, pop the asserted
+  // value off the stack. Used by stringify discriminators.
+  ASSERT_TOP_STRING_EQ = 0x8b,
+  // No operands — pop top of value stack. Used to discard values after
+  // assertions / discriminator probes.
+  POP = 0x8c,
 }
 
 // Class-kind enum values for SCAN_CLASS's first operand byte. Kept small
@@ -163,4 +211,18 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
 
   [Op.RENDER_DISPATCH]: [4],
   [Op.STRINGIFY_DISPATCH]: [4],
+
+  [Op.PUSH_STRING]: [4],
+  [Op.PUSH_NULL]: [],
+  [Op.PUSH_TRUE]: [],
+  [Op.PUSH_FALSE]: [],
+  [Op.PUSH_NUMBER]: [4],
+  [Op.LOAD_CAPTURE]: [4],
+  [Op.CONCAT_N]: [4],
+  [Op.BUILD_OBJECT]: [4], // first u32 is count; variable u32 names follow
+  [Op.BUILD_ARRAY]: [4],
+  [Op.RENDER_RETURN]: [],
+  [Op.PEEK_FIELD]: [4],
+  [Op.ASSERT_TOP_STRING_EQ]: [4],
+  [Op.POP]: [],
 };

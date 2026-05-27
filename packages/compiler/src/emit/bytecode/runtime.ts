@@ -1,23 +1,25 @@
-// Bytecode runtime — Task 6.3. Interprets the opcode stream produced by
-// `./encoder.ts`. Designed to be the runtime that the bytecode-backend
-// (Task 6.5) ships alongside its generated artifact: the runtime is
-// schema-agnostic — every schema-specific decision lives in the encoded
+// Bytecode runtime — Task 6.3 / Task 6.4. Interprets the opcode stream
+// produced by `./encoder.ts`. Designed to be the runtime that the bytecode-
+// backend (Task 6.5) ships alongside its generated artifact: the runtime
+// is schema-agnostic — every schema-specific decision lives in the encoded
 // bytes (pool indices, production offsets, refinement keys).
 //
 // Execution model — see `./ops.ts` for the opcode contract.
 //
-// `state.off` is the byte cursor into the input string. `state.pc` is the
-// program counter into the opcode stream. A small explicit frame stack
-// (`Frame[]`, owned by `runParse`) tracks per-production locals — return PC,
-// per-frame slot table (saved offsets), and entry-off used by failure
-// paths. PUSH_NEW_CAPTURES pushes a fresh `{ __production }` object onto
-// `state.valueStack`. CAPTURE_SLICE writes `captures[name] = slice` on the
-// top-of-stack object. RETURN_OK pops the value stack (returning the top
-// to the caller via JS recursion's natural unwind path) and restores the
-// caller's frame. RETURN_NULL discards the in-flight captures, restores
-// the caller's entry `off`, and pushes `null` so the caller's JUMP_IF_NULL
-// (dispatch retry, optional-span guard, repeats-loop exit) can branch.
+// `state.off` is the byte cursor into the input string (parse only).
+// `state.pc` is the program counter into the opcode stream. A small
+// explicit frame stack (`Frame[]`, owned by `runParse`/`runRender`/
+// `runStringify`) tracks per-production locals — return PC, per-frame slot
+// table (saved offsets), entry-off used by failure paths, and a reference
+// to the captures object for the frame (input for render/stringify, output
+// for parse). PUSH_NEW_CAPTURES pushes a fresh `{ __production }` object;
+// CAPTURE_SLICE / CAPTURE_VALUE_* write into the top frame's captures.
+// RETURN_OK collapses the value stack and pushes the frame's captures (or
+// the top-of-stack for dispatch frames). RETURN_NULL pushes null. Render
+// frames use a different completion contract — RENDER_RETURN preserves
+// the top-of-stack as the return value.
 
+import type { EncodedSchema } from './encoder.ts';
 import { Op } from './ops.ts';
 
 export type RuntimeState = {
@@ -29,39 +31,47 @@ export type RuntimeState = {
   pc: number;
   maxOff: number;
   valueStack: unknown[];
+  // Render/stringify routing table — set by runRender / runStringify.
+  // Optional so parse-only callers (existing Task 6.3 callers) can omit it.
+  // RENDER_DISPATCH throws if it's missing at dispatch time.
+  renderOffsets?: ReadonlyMap<string, number>;
 };
 
 // Per-production locals. Allocated when a CALL_PRODUCTION (or the top-level
-// `runParse`) enters a block, popped on RETURN_OK / RETURN_NULL. Slot 0 is
-// reserved by the encoder for the production's entry-off (used by failure
-// paths); slots 1+ are span start/end offsets.
+// `runParse`/`runRender`) enters a block, popped on RETURN_OK / RETURN_NULL
+// / RENDER_RETURN. Slot 0 is reserved by the encoder for the production's
+// entry-off (used by parse failure paths); slots 1+ are span start/end
+// offsets. Render and stringify frames don't use offset slots — slot 0 is
+// initialized to 0 as a placeholder.
+type FrameKind = 'parse' | 'render' | 'stringify';
 type Frame = {
+  kind: FrameKind;
   returnPc: number;
-  // The entry value-stack depth before PUSH_NEW_CAPTURES pushed this
-  // frame's captures. Used by RETURN_NULL to discard any speculative
-  // captures (and child captures pushed by nested calls) when the
-  // production fails partway through.
+  // The entry value-stack depth before this frame's PUSH_NEW_CAPTURES
+  // (for parse) or before the frame was pushed (for render/stringify).
+  // RETURN_OK truncates back to this depth before pushing the result.
   stackBase: number;
   slots: number[];
   entryOff: number;
-  // The captures object created by this frame's PUSH_NEW_CAPTURES. We hold
-  // a direct reference so CAPTURE_SLICE writes to *this* frame's captures
-  // even when nested CALL_PRODUCTIONs have left child captures sitting on
-  // top of the value stack. Null for the synthetic root before any
-  // PUSH_NEW_CAPTURES runs, and for dispatch frames which never push their
-  // own captures (they pass the alt's captures through unchanged).
+  // For parse: the captures object created by this frame's
+  // PUSH_NEW_CAPTURES. Holds a direct reference so CAPTURE_SLICE writes
+  // to *this* frame's captures even when nested calls left child
+  // captures on the stack. Null before PUSH_NEW_CAPTURES runs and for
+  // dispatch frames.
+  // For render: the INPUT captures object provided by the caller (read-
+  // only — LOAD_CAPTURE reads from it).
+  // For stringify: the OUTPUT captures object that the inverse IR
+  // populates from the input value.
   captures: Record<string, unknown> | null;
 };
 
 export function runParse(state: RuntimeState, startOffset: number): unknown {
   // Synthetic root frame. The top-level caller doesn't have a return-pc to
   // resume into, so we sentinel it with -1 and rely on `frames.length === 0`
-  // after RETURN_OK to terminate the interpreter loop. The slot table is
-  // shared with the first real frame because cron's root production is the
-  // only one that runs at this depth, but we still allocate a fresh array
-  // for cleanliness.
+  // after RETURN_OK to terminate the interpreter loop.
   const frames: Frame[] = [];
   frames.push({
+    kind: 'parse',
     returnPc: -1,
     stackBase: state.valueStack.length,
     slots: [],
@@ -70,232 +80,517 @@ export function runParse(state: RuntimeState, startOffset: number): unknown {
   });
 
   state.pc = startOffset;
+  return runInterpreterLoop(state, frames);
+}
 
+
+// renderSlot — handles the polymorphic render dispatch:
+//   - null/undefined: pass-through (caller's CONCAT_N coerces to "")
+//   - array: recursively render each element, return array
+//   - primitive (string/number/bool): pass-through
+//   - captures object (has __production): jump into the production's
+//     render block via the renderOffsets map. We don't have direct access
+//     to encoded.renderOffsets from inside the interpreter loop, so the
+//     runtime stashes the map on `state.__renderOffsets` (set by runRender
+//     / runStringify before entering the loop).
+function renderSlot(
+  state: RuntimeState,
+  frames: Frame[],
+  value: unknown,
+  target: string,
+): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) {
+    const out: unknown[] = new Array(value.length);
+    for (let i = 0; i < value.length; i++) {
+      out[i] = renderSlot(state, frames, value[i], target);
+    }
+    return out;
+  }
+  if (typeof value !== 'object') return value;
+  const captures = value as Record<string, unknown>;
+  const production = captures.__production;
+  if (typeof production !== 'string') {
+    // Plain object with no production hint — pass through. Shouldn't
+    // happen in a well-formed captures tree.
+    return value;
+  }
+  const renderOffsets = state.renderOffsets;
+  if (!renderOffsets) {
+    throw new Error('bytecode runtime: RENDER_DISPATCH without renderOffsets — runRender did not set up state');
+  }
+  const key = `${production}:${target}`;
+  const offset = renderOffsets.get(key);
+  if (offset === undefined) {
+    throw new Error(`bytecode runtime: no render block for '${key}'`);
+  }
+  // Push a render frame and resume the interpreter at the block's offset.
+  // The block ends with RENDER_RETURN which pops the frame and leaves its
+  // result on the stack. We use a re-entrant loop strategy: push the
+  // frame, jump pc, then a NESTED interpreter step. Simpler: push frame,
+  // jump pc, return a marker — but we're already INSIDE the interpreter
+  // loop. The cleanest path is to run a nested loop.
+  return runRenderNested(state, frames, captures, offset);
+}
+
+// Run the interpreter loop starting at `startOffset` inside a fresh
+// render frame whose captures = `captures`. Returns when that frame's
+// RENDER_RETURN / RETURN_NULL pops the last frame off this nested stack.
+function runRenderNested(
+  state: RuntimeState,
+  parentFrames: Frame[],
+  captures: Record<string, unknown>,
+  startOffset: number,
+): unknown {
+  // Save current pc so we can restore after the nested run.
+  const savedPc = state.pc;
+
+  // Build a NEW frames array for the nested execution. Sharing parentFrames
+  // would mean the nested RENDER_RETURN's `frames.length === 0` check would
+  // never trigger. Instead we maintain a self-contained stack.
+  const frames: Frame[] = [];
+  frames.push({
+    kind: 'render',
+    returnPc: -1,
+    stackBase: state.valueStack.length,
+    slots: [],
+    entryOff: state.off,
+    captures,
+  });
+  state.pc = startOffset;
+  const result = runInterpreterLoop(state, frames);
+  state.pc = savedPc;
+  void parentFrames;
+  return result;
+}
+
+// Extracted interpreter loop body. Identical to the body of runParse, but
+// reusable from runRenderNested. Both call sites set up the initial frame
+// stack and start pc, then enter this loop. Returns when the initial
+// frame is popped (frames.length === 0).
+//
+// We inline this as a small re-entry point. For Commit 2 the implementation
+// is a direct copy — Task 6.7 can factor this into a single shared loop
+// when bytecode-budget tightening lands.
+function runInterpreterLoop(state: RuntimeState, frames: Frame[]): unknown {
   while (true) {
     const op = state.ops[state.pc++]!;
-    switch (op) {
-      case Op.CONSUME_LITERAL: {
-        const idx = readU32(state);
-        const lit = state.stringPool[idx]!;
-        if (!state.input.startsWith(lit, state.off)) {
-          // Hard fail this production.
-          if (failProduction(state, frames)) return null;
-          break;
-        }
-        state.off += lit.length;
-        if (state.off > state.maxOff) state.maxOff = state.off;
-        break;
-      }
-
-      case Op.SKIP_WS: {
-        while (state.off < state.input.length) {
-          const c = state.input.charCodeAt(state.off);
-          if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { state.off++; continue; }
-          break;
-        }
-        break;
-      }
-
-      case Op.SAVE_OFF: {
-        const slot = readU8(state);
-        const frame = frames[frames.length - 1]!;
-        frame.slots[slot] = state.off;
-        break;
-      }
-
-      case Op.RESTORE_OFF: {
-        const slot = readU8(state);
-        const frame = frames[frames.length - 1]!;
-        const saved = frame.slots[slot];
-        if (saved !== undefined) state.off = saved;
-        break;
-      }
-
-      case Op.CAPTURE_SLICE: {
-        const startSlot = readU8(state);
-        const endSlot = readU8(state);
-        const nameIdx = readU32(state);
-        const frame = frames[frames.length - 1]!;
-        const start = frame.slots[startSlot]!;
-        const end = frame.slots[endSlot]!;
-        const name = state.stringPool[nameIdx]!;
-        // Write to THIS frame's captures, not the value stack's top:
-        // nested CALL_PRODUCTIONs may have left a child's captures on top
-        // of the stack between SAVE_OFF and CAPTURE_SLICE. The encoder
-        // guarantees PUSH_NEW_CAPTURES has run before any CAPTURE_SLICE
-        // in this frame; if frame.captures is still null the encoder
-        // produced an out-of-order stream.
-        const captures = frame.captures;
-        if (captures === null) {
-          throw new Error(`bytecode runtime: CAPTURE_SLICE before PUSH_NEW_CAPTURES at pc=${state.pc}`);
-        }
-        captures[name] = state.input.slice(start, end);
-        break;
-      }
-
-      case Op.CAPTURE_VALUE_FROM_STACK: {
-        const nameIdx = readU32(state);
-        const name = state.stringPool[nameIdx]!;
-        const frame = frames[frames.length - 1]!;
-        const captures = frame.captures;
-        if (captures === null) {
-          throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK before PUSH_NEW_CAPTURES at pc=${state.pc}`);
-        }
-        if (state.valueStack.length === 0) {
-          throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK with empty value stack at pc=${state.pc}`);
-        }
-        const value = state.valueStack.pop();
-        captures[name] = value as unknown;
-        break;
-      }
-
-      case Op.CAPTURE_VALUE_APPEND: {
-        const nameIdx = readU32(state);
-        const name = state.stringPool[nameIdx]!;
-        const frame = frames[frames.length - 1]!;
-        const captures = frame.captures;
-        if (captures === null) {
-          throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND before PUSH_NEW_CAPTURES at pc=${state.pc}`);
-        }
-        if (state.valueStack.length === 0) {
-          throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND with empty value stack at pc=${state.pc}`);
-        }
-        const value = state.valueStack.pop();
-        const existing = captures[name];
-        if (Array.isArray(existing)) {
-          (existing as unknown[]).push(value);
-        } else {
-          captures[name] = [value];
-        }
-        break;
-      }
-
-      case Op.SCAN_CLASS: {
-        const kind = readU8(state);
-        // Refinement-key pool index — for Task 6.3 we use it only as a
-        // hint (cron's class spans don't change scanner behavior based on
-        // the refinement beyond what kind already encodes: NUMBER==int,
-        // IDENT==css). Future tasks may dispatch off this.
-        readU32(state);
-        const start = state.off;
-        scanClass(state, kind);
-        if (state.off === start) {
-          // Class scanner consumed zero bytes → fail.
-          if (failProduction(state, frames)) return null;
-          break;
-        }
-        if (state.off > state.maxOff) state.maxOff = state.off;
-        break;
-      }
-
-      case Op.CALL_PRODUCTION: {
-        const target = readU32(state);
-        // Push a new frame for the callee. The callee's PUSH_NEW_CAPTURES
-        // (first opcode after SAVE_OFF + SKIP_WS) records the captures
-        // base depth for failure rollback.
-        frames.push({
-          returnPc: state.pc,
-          stackBase: state.valueStack.length,
-          slots: [],
-          entryOff: state.off,
-          captures: null,
-        });
-        state.pc = target;
-        break;
-      }
-
-      case Op.RETURN_OK: {
-        // Collapse the value stack back to the frame's entry depth and
-        // push this frame's result. For regular production frames the
-        // result is `frame.captures` (the object pushed by
-        // PUSH_NEW_CAPTURES at the top of the block). For dispatch frames
-        // (no PUSH_NEW_CAPTURES — they pass the alt's captures through)
-        // the result is whatever was sitting on top of the value stack at
-        // the moment of RETURN_OK.
-        const finished = frames.pop()!;
-        const result = finished.captures !== null
-          ? finished.captures
-          : state.valueStack[state.valueStack.length - 1];
-        state.valueStack.length = finished.stackBase;
-        state.valueStack.push(result);
-        if (frames.length === 0) {
-          // Synthetic root: return the captures to the top-level caller.
-          return state.valueStack.pop();
-        }
-        state.pc = finished.returnPc;
-        break;
-      }
-
-      case Op.RETURN_NULL: {
-        // Hard fail from inside the production. Restore entry off and
-        // push null for the caller's JUMP_IF_NULL guard. Discard any
-        // captures/child captures pushed during this frame.
-        const finished = frames.pop()!;
-        state.off = finished.entryOff;
-        state.valueStack.length = finished.stackBase;
-        if (frames.length === 0) {
-          // Synthetic root: surface null to the top-level caller.
-          state.valueStack.push(null);
-          return null;
-        }
-        state.valueStack.push(null);
-        state.pc = finished.returnPc;
-        break;
-      }
-
-      case Op.JUMP: {
-        const rel = readI32(state);
-        state.pc += rel;
-        break;
-      }
-
-      case Op.JUMP_IF_NULL: {
-        const rel = readI32(state);
-        const top = state.valueStack[state.valueStack.length - 1];
-        if (top === null) {
-          // Branch taken: consume the null sentinel and jump.
-          state.valueStack.pop();
-          state.pc += rel;
-        }
-        // TODO(6.4): on the non-taken branch the child captures object is
-        // left on the value stack. For cron's success path this is bounded —
-        // RETURN_OK's stackBase truncation discards it. Task 6.4 will redesign
-        // value-stack semantics when RENDER_DISPATCH starts consuming child
-        // captures (the orphan becomes the value to write into parent
-        // captures, eliminating the leak by design).
-        break;
-      }
-
-      case Op.PUSH_NEW_CAPTURES: {
-        const idx = readU32(state);
-        const key = state.stringPool[idx]!;
-        const captures: Record<string, unknown> = { __production: key };
-        state.valueStack.push(captures);
-        const frame = frames[frames.length - 1]!;
-        frame.captures = captures;
-        break;
-      }
-
-      case Op.PUSH_LITERAL_FIELD: {
-        const nameIdx = readU32(state);
-        const valIdx = readU32(state);
-        const name = state.stringPool[nameIdx]!;
-        const val = state.stringPool[valIdx]!;
-        const frame = frames[frames.length - 1]!;
-        if (frame.captures === null) {
-          throw new Error(`bytecode runtime: PUSH_LITERAL_FIELD before PUSH_NEW_CAPTURES at pc=${state.pc}`);
-        }
-        frame.captures[name] = val;
-        break;
-      }
-
-      // The following opcodes are reserved by the encoder vocabulary but
-      // not exercised by cron. Task 6.4 (render dispatch) and later tasks
-      // will fill in their cases. Hitting them here is a runtime bug.
-      default:
-        throw new Error(`bytecode runtime: unknown opcode 0x${op.toString(16)} at pc=${state.pc - 1}`);
-    }
+    const r = stepOpcode(state, frames, op);
+    if (r.kind === 'return') return r.value;
   }
+}
+
+type StepResult =
+  | { readonly kind: 'continue' }
+  | { readonly kind: 'return'; readonly value: unknown };
+
+// Execute one opcode. Side-effects on state/frames. Returns 'return' when
+// the synthetic root frame has popped (signals the interpreter loop to
+// exit). Otherwise 'continue'.
+function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResult {
+  switch (op) {
+    case Op.CONSUME_LITERAL: {
+      const idx = readU32(state);
+      const lit = state.stringPool[idx]!;
+      if (!state.input.startsWith(lit, state.off)) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.off += lit.length;
+      if (state.off > state.maxOff) state.maxOff = state.off;
+      return { kind: 'continue' };
+    }
+
+    case Op.SKIP_WS: {
+      while (state.off < state.input.length) {
+        const c = state.input.charCodeAt(state.off);
+        if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { state.off++; continue; }
+        break;
+      }
+      return { kind: 'continue' };
+    }
+
+    case Op.SAVE_OFF: {
+      const slot = readU8(state);
+      const frame = frames[frames.length - 1]!;
+      frame.slots[slot] = state.off;
+      return { kind: 'continue' };
+    }
+
+    case Op.RESTORE_OFF: {
+      const slot = readU8(state);
+      const frame = frames[frames.length - 1]!;
+      const saved = frame.slots[slot];
+      if (saved !== undefined) state.off = saved;
+      return { kind: 'continue' };
+    }
+
+    case Op.CAPTURE_SLICE: {
+      const startSlot = readU8(state);
+      const endSlot = readU8(state);
+      const nameIdx = readU32(state);
+      const frame = frames[frames.length - 1]!;
+      const start = frame.slots[startSlot]!;
+      const end = frame.slots[endSlot]!;
+      const name = state.stringPool[nameIdx]!;
+      const captures = frame.captures;
+      if (captures === null) throw new Error(`bytecode runtime: CAPTURE_SLICE before PUSH_NEW_CAPTURES`);
+      captures[name] = state.input.slice(start, end);
+      return { kind: 'continue' };
+    }
+
+    case Op.CAPTURE_VALUE_FROM_STACK: {
+      const nameIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK before frame captures init`);
+      if (state.valueStack.length === 0) throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK with empty value stack`);
+      const value = state.valueStack.pop();
+      frame.captures[name] = value as unknown;
+      return { kind: 'continue' };
+    }
+
+    case Op.CAPTURE_VALUE_APPEND: {
+      const nameIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND before frame captures init`);
+      if (state.valueStack.length === 0) throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND with empty value stack`);
+      const value = state.valueStack.pop();
+      const existing = frame.captures[name];
+      if (Array.isArray(existing)) (existing as unknown[]).push(value);
+      else frame.captures[name] = [value];
+      return { kind: 'continue' };
+    }
+
+    case Op.SCAN_CLASS: {
+      const kind = readU8(state);
+      readU32(state);
+      const start = state.off;
+      scanClass(state, kind);
+      if (state.off === start) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      if (state.off > state.maxOff) state.maxOff = state.off;
+      return { kind: 'continue' };
+    }
+
+    case Op.CALL_PRODUCTION: {
+      const target = readU32(state);
+      const callerKind = frames[frames.length - 1]!.kind;
+      frames.push({
+        kind: callerKind,
+        returnPc: state.pc,
+        stackBase: state.valueStack.length,
+        slots: [],
+        entryOff: state.off,
+        captures: null,
+      });
+      state.pc = target;
+      return { kind: 'continue' };
+    }
+
+    case Op.RETURN_OK: {
+      const finished = frames.pop()!;
+      const result = finished.captures !== null
+        ? finished.captures
+        : state.valueStack[state.valueStack.length - 1];
+      state.valueStack.length = finished.stackBase;
+      state.valueStack.push(result);
+      if (frames.length === 0) {
+        return { kind: 'return', value: state.valueStack.pop() };
+      }
+      state.pc = finished.returnPc;
+      return { kind: 'continue' };
+    }
+
+    case Op.RETURN_NULL: {
+      const finished = frames.pop()!;
+      state.off = finished.entryOff;
+      state.valueStack.length = finished.stackBase;
+      if (frames.length === 0) {
+        state.valueStack.push(null);
+        return { kind: 'return', value: null };
+      }
+      state.valueStack.push(null);
+      state.pc = finished.returnPc;
+      return { kind: 'continue' };
+    }
+
+    case Op.RENDER_RETURN: {
+      const finished = frames.pop()!;
+      if (state.valueStack.length === finished.stackBase) {
+        throw new Error(`bytecode runtime: RENDER_RETURN with no value on stack`);
+      }
+      const result = state.valueStack[state.valueStack.length - 1];
+      state.valueStack.length = finished.stackBase;
+      state.valueStack.push(result);
+      if (frames.length === 0) {
+        return { kind: 'return', value: state.valueStack.pop() };
+      }
+      state.pc = finished.returnPc;
+      return { kind: 'continue' };
+    }
+
+    case Op.JUMP: {
+      const rel = readI32(state);
+      state.pc += rel;
+      return { kind: 'continue' };
+    }
+
+    case Op.JUMP_IF_NULL: {
+      const rel = readI32(state);
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top === null) {
+        state.valueStack.pop();
+        state.pc += rel;
+      }
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_NEW_CAPTURES: {
+      const idx = readU32(state);
+      const key = state.stringPool[idx]!;
+      const captures: Record<string, unknown> = { __production: key };
+      state.valueStack.push(captures);
+      const frame = frames[frames.length - 1]!;
+      frame.captures = captures;
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_LITERAL_FIELD: {
+      const nameIdx = readU32(state);
+      const valIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const val = state.stringPool[valIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: PUSH_LITERAL_FIELD before captures init`);
+      frame.captures[name] = val;
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_STRING: {
+      const idx = readU32(state);
+      state.valueStack.push(state.stringPool[idx]);
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_NULL: {
+      state.valueStack.push(null);
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_TRUE: {
+      state.valueStack.push(true);
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_FALSE: {
+      state.valueStack.push(false);
+      return { kind: 'continue' };
+    }
+
+    case Op.PUSH_NUMBER: {
+      const idx = readU32(state);
+      state.valueStack.push(state.numberPool[idx]);
+      return { kind: 'continue' };
+    }
+
+    case Op.LOAD_CAPTURE: {
+      const nameIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: LOAD_CAPTURE in frame without captures`);
+      state.valueStack.push(frame.captures[name]);
+      return { kind: 'continue' };
+    }
+
+    case Op.CONCAT_N: {
+      const count = readU32(state);
+      if (state.valueStack.length < count) throw new Error(`bytecode runtime: CONCAT_N stack underflow`);
+      const start = state.valueStack.length - count;
+      let out = '';
+      for (let i = 0; i < count; i++) {
+        const v = state.valueStack[start + i];
+        if (v === null || v === undefined) continue;
+        if (Array.isArray(v)) {
+          // For string-target rendering, an array slot is the result of a
+          // .repeats() span — each element is already rendered to a
+          // string by the RENDER_DISPATCH inside the loader. Join with a
+          // single space (cron's default whitespace policy between
+          // children). Task 6.7 / future tasks can plumb per-span sep
+          // through the opcode stream if a schema needs anything other
+          // than ' '.
+          for (let j = 0; j < v.length; j++) {
+            if (j > 0) out += ' ';
+            const elem = v[j];
+            if (elem === null || elem === undefined) continue;
+            out += String(elem);
+          }
+          continue;
+        }
+        out += String(v);
+      }
+      state.valueStack.length = start;
+      state.valueStack.push(out);
+      return { kind: 'continue' };
+    }
+
+    case Op.BUILD_OBJECT: {
+      const count = readU32(state);
+      const names: string[] = new Array(count);
+      for (let i = 0; i < count; i++) {
+        const idx = readU32(state);
+        names[i] = state.stringPool[idx]!;
+      }
+      if (state.valueStack.length < count) throw new Error(`bytecode runtime: BUILD_OBJECT stack underflow`);
+      const obj: Record<string, unknown> = {};
+      const start = state.valueStack.length - count;
+      for (let i = 0; i < count; i++) obj[names[i]!] = state.valueStack[start + i];
+      state.valueStack.length = start;
+      state.valueStack.push(obj);
+      return { kind: 'continue' };
+    }
+
+    case Op.BUILD_ARRAY: {
+      const count = readU32(state);
+      if (state.valueStack.length < count) throw new Error(`bytecode runtime: BUILD_ARRAY stack underflow`);
+      const arr: unknown[] = new Array(count);
+      const start = state.valueStack.length - count;
+      for (let i = 0; i < count; i++) arr[i] = state.valueStack[start + i];
+      state.valueStack.length = start;
+      state.valueStack.push(arr);
+      return { kind: 'continue' };
+    }
+
+    case Op.RENDER_DISPATCH: {
+      const targetIdx = readU32(state);
+      const target = state.stringPool[targetIdx]!;
+      if (state.valueStack.length === 0) throw new Error(`bytecode runtime: RENDER_DISPATCH empty stack`);
+      const value = state.valueStack.pop();
+      const rendered = renderSlot(state, frames, value, target);
+      state.valueStack.push(rendered);
+      return { kind: 'continue' };
+    }
+
+    case Op.PEEK_FIELD: {
+      const nameIdx = readU32(state);
+      const name = state.stringPool[nameIdx]!;
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top === null || top === undefined || typeof top !== 'object') {
+        state.valueStack.push(undefined);
+        return { kind: 'continue' };
+      }
+      state.valueStack.push((top as Record<string, unknown>)[name]);
+      return { kind: 'continue' };
+    }
+
+    case Op.ASSERT_TOP_STRING_EQ: {
+      const idx = readU32(state);
+      const expected = state.stringPool[idx]!;
+      const top = state.valueStack[state.valueStack.length - 1];
+      if (top !== expected) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+      state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.POP: {
+      if (state.valueStack.length > 0) state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    default:
+      throw new Error(`bytecode runtime: unknown opcode 0x${op.toString(16)} at pc=${state.pc - 1}`);
+  }
+}
+
+// Public entry: render captures into a value of the given target.
+export function runRender(
+  encoded: EncodedSchema,
+  captures: unknown,
+  target: string,
+): unknown {
+  // Handle non-captures inputs gracefully (null/undefined/primitives pass
+  // through; arrays render each element).
+  if (captures === null || captures === undefined) return captures;
+  if (Array.isArray(captures)) {
+    return captures.map((c) => runRender(encoded, c, target));
+  }
+  if (typeof captures !== 'object') return captures;
+
+  const c = captures as Record<string, unknown>;
+  const production = c.__production;
+  if (typeof production !== 'string') {
+    throw new Error(`bytecode runtime: runRender expects captures with __production, got ${JSON.stringify(captures)}`);
+  }
+  const key = `${production}:${target}`;
+  const offset = encoded.renderOffsets.get(key);
+  if (offset === undefined) {
+    throw new Error(`bytecode runtime: no render block for '${key}'`);
+  }
+
+  const state: RuntimeState = {
+    input: '',
+    ops: encoded.ops,
+    stringPool: encoded.stringPool,
+    numberPool: encoded.numberPool,
+    off: 0,
+    pc: offset,
+    maxOff: 0,
+    valueStack: [],
+    renderOffsets: encoded.renderOffsets,
+  };
+  const frames: Frame[] = [];
+  frames.push({
+    kind: 'render',
+    returnPc: -1,
+    stackBase: 0,
+    slots: [],
+    entryOff: 0,
+    captures: c,
+  });
+  return runInterpreterLoop(state, frames);
+}
+
+// Public entry: stringify a value into source text for the given target.
+export function runStringify(
+  encoded: EncodedSchema,
+  value: unknown,
+  target: string,
+): string {
+  const dispatcherOffset = encoded.stringifyDispatcherOffsets.get(target);
+  if (dispatcherOffset === undefined) {
+    throw new Error(`bytecode runtime: no stringify dispatcher for target '${target}'`);
+  }
+  const state: RuntimeState = {
+    input: '',
+    ops: encoded.ops,
+    stringPool: encoded.stringPool,
+    numberPool: encoded.numberPool,
+    off: 0,
+    pc: dispatcherOffset,
+    maxOff: 0,
+    valueStack: [value],
+    renderOffsets: encoded.renderOffsets,
+  };
+  const frames: Frame[] = [];
+  frames.push({
+    kind: 'stringify',
+    returnPc: -1,
+    stackBase: 0,
+    slots: [],
+    entryOff: 0,
+    captures: null,
+  });
+  const result = runInterpreterLoop(state, frames);
+  if (typeof result !== 'string') {
+    throw new Error(`bytecode runtime: stringify returned non-string (${JSON.stringify(result)})`);
+  }
+  return result;
 }
 
 // --- helpers ---------------------------------------------------------------

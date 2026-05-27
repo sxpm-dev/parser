@@ -1602,6 +1602,10 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
   }
+  if (target !== 'ast') {
+    const fused = __renderFused(input, target);
+    if (fused !== null) return fused;
+  }
   const fn = __renderDispatch[target];
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
@@ -3156,6 +3160,35 @@ const __fusedRenderDispatch_source: Record<string, (state: State, out: string[])
   "Declaration#1": __fusedRender_Declaration_1_source,
   "AtRule#1": __fusedRender_AtRule_1_source,
 };
+
+const __rootProductionKey: string = "Stylesheet#0";
+
+function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
+  switch (target) {
+    case "source": return __fusedRenderDispatch_source;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): string | null {
+  const table = __fusedRenderDispatchLookup(target);
+  if (table === null) return null;
+  const rootFusedFn = table[__rootProductionKey];
+  if (rootFusedFn === undefined) return null;
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+  };
+  const out: string[] = [];
+  const ok = rootFusedFn(state, out);
+  if (!ok) return null;
+  if (state.pos !== input.length) return null;
+  return out.join('');
+}
 
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';

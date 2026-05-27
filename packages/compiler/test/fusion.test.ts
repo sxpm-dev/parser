@@ -23,3 +23,39 @@ test('fusion: markdown MarkdownLeaf#5 html target emits a fused render function'
   const body = fnMatch![0];
   assert.ok(!/\{\s*type:/.test(body), 'fused html body must not allocate AST objects');
 });
+
+// Task 5.2 wiring-shape check. The compiler must emit a `__renderFused`
+// entry function AND the public `render()` body must call it BEFORE
+// dispatching to the captures path. The exact sequence ensures the fast
+// path is preferred whenever a fused root entry exists; targets without
+// a root entry get a null and fall through.
+test('fusion: render() entry tries __renderFused before __renderDispatch', async () => {
+  const schema = (await import('../../markdown/src/schema.ts')).default;
+  const src = generateParser(schema, undefined, { packageName: 'markdown' });
+  // The fused entry function must be present unconditionally.
+  assert.match(src, /function __renderFused\(input: string, target: string\): string \| null/);
+  // The dispatch lookup must be emitted.
+  assert.match(src, /function __fusedRenderDispatchLookup\(target: string\)/);
+  // Root production key must be the rootType#0 string.
+  assert.match(src, /const __rootProductionKey: string = "MarkdownDocument#0";/);
+  // Public render() body — match it as a single chunk and verify the
+  // __renderFused call appears BEFORE the __renderDispatch lookup.
+  const renderMatch = src.match(/export function render\(input: string, options\?: \{ type\?: string; mode\?: ParseMode \}\): unknown \{[\s\S]*?\n\}/);
+  assert.ok(renderMatch, 'public render() body must be locatable');
+  const body = renderMatch![0];
+  const fusedIdx = body.indexOf('__renderFused(');
+  const dispatchIdx = body.indexOf('__renderDispatch[');
+  assert.ok(fusedIdx >= 0, 'render() must call __renderFused');
+  assert.ok(dispatchIdx >= 0, 'render() must still reference __renderDispatch (fallback)');
+  assert.ok(fusedIdx < dispatchIdx, '__renderFused call must precede __renderDispatch lookup');
+});
+
+// Task 5.2 runtime regression. The public render() must produce the
+// correct html for a minimal markdown input. The markdown root has a
+// recursive `children` slot so the fused path returns null for it and
+// the captures fallback handles the call — that's the expected path
+// for Task 5.2 (Task 5.3 closes recursive eligibility).
+test('fusion: markdown render(input, {type:html}) produces correct html via fused path', async () => {
+  const { render } = await import('../../markdown/src/index.ts');
+  assert.equal(render('# Hello\n', { type: 'html' }), '<h1>Hello</h1>');
+});

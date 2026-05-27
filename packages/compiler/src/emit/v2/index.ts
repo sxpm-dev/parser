@@ -35,11 +35,20 @@ export function emitV2Parser(schema: InferredSchema): string {
   const inverse = emitInverse(schema);
   // Phase 5 Task 5.1: per-(production, non-ast target) fused parse+render
   // functions for Template-bodied renders with non-recursive slots only.
-  // Emitted but NOT yet wired into the public `render()` entry — that's
-  // Task 5.2. Carries its own dispatch table keyed by `<NodeType>#<idx>`
-  // so the upcoming wiring change is a one-line `__renderDispatch[target]
-  // = (caps) => fusedDispatch[caps.__production](state, out)` swap.
-  const fusion = emitFusion(schema);
+  // Carries its own dispatch table keyed by `<NodeType>#<idx>`.
+  //
+  // Phase 5 Task 5.2: `__renderFused(input, target)` is emitted alongside
+  // the dispatch tables — the public `render()` body (emitted from
+  // `emit/render.ts`) calls it first and falls back to the captures path
+  // when it returns null (no eligible root entry / partial parse / runtime
+  // failure). Function hoisting makes the forward reference from
+  // `render()` safe even though `__renderFused` is emitted later in the
+  // file. The fused entry is unconditionally emitted (even when no
+  // production fused) so the `render()` body always has a callable —
+  // ineligible cases just short-circuit to null and the captures path
+  // handles them.
+  const { source: fusion, targets: fusedTargets } = emitFusion(schema);
+  const fusedEntry = emitFusedRenderEntry(schema, fusedTargets);
   const api = emitPublicApi(schema, validateBody);
   return [
     header,
@@ -50,6 +59,7 @@ export function emitV2Parser(schema: InferredSchema): string {
     rebuild,
     inverse,
     fusion,
+    fusedEntry,
     api,
   ].filter((p) => p !== '').join('\n\n') + '\n';
 }
@@ -60,15 +70,20 @@ export function emitV2Parser(schema: InferredSchema): string {
 // Task 5.2 swap the slow path (parse → captures → builder) for the fused
 // path (parse+render in one walk) wherever the (production, target) entry
 // exists, and fall back to the slow path everywhere else.
-function emitFusion(schema: InferredSchema): string {
+//
+// Returns both the emitted source AND the sorted list of targets that
+// actually got a dispatch table — Task 5.2's `__renderFused` entry needs
+// the latter to switch on target → dispatch table without referencing a
+// table that wasn't emitted (which would land in TDZ at module init).
+function emitFusion(schema: InferredSchema): { source: string; targets: ReadonlyArray<string> } {
   const fns: string[] = [];
   // Per-target dispatch tables. Each map is keyed by the production routing
   // string (`<NodeType>#<prodIdx>`) and yields the fused function. A target
   // appears in the output ONLY when at least one production fused
   // successfully — targets where every production is ineligible (non-template
   // body, recursive slots, ast) are absent from the emitted file. Task 5.2's
-  // wiring must therefore guard for table presence (`typeof
-  // __fusedRenderDispatch_<id> !== 'undefined'`) before consulting it.
+  // wiring must therefore guard for table presence (the `__renderFused`
+  // entry only references tables for targets in `sortedTargets`).
   const targetDispatchEntries = new Map<string, string[]>();
   for (const info of schema.nodeTypes.values()) {
     for (let i = 0; i < info.productions.length; i++) {
@@ -101,8 +116,66 @@ function emitFusion(schema: InferredSchema): string {
 ${entries.join('\n')}
 };`;
   });
-  if (fns.length === 0 && tables.length === 0) return '';
-  return [fns.join('\n\n'), tables.join('\n\n')].filter((p) => p !== '').join('\n\n');
+  if (fns.length === 0 && tables.length === 0) {
+    return { source: '', targets: sortedTargets };
+  }
+  const source = [fns.join('\n\n'), tables.join('\n\n')].filter((p) => p !== '').join('\n\n');
+  return { source, targets: sortedTargets };
+}
+
+// Phase 5 Task 5.2 — entry point that the public `render()` body calls
+// before falling back to the captures path. Walks the same `State` shape
+// the parser uses (mode 'fast' since the fused path never needs raws
+// metadata), invokes the root production's fused builder if one exists
+// for the requested target, and returns null whenever the fused path is
+// not eligible. A null return signals the caller to use the captures
+// dispatcher — semantics-preserving fallback.
+//
+// `__rootProductionKey` is `<rootType>#0`. Multi-prod roots are NOT
+// supported in Task 5.2 (would require running each alt's fused builder
+// in declaration order); no schema in the in-scope set has a multi-prod
+// root, but the dispatch-table lookup yields `undefined` when the key is
+// absent and the function correctly returns null in that case.
+//
+// When no production fused for ANY target (sortedTargets is empty) the
+// lookup switch has just a `default` arm that returns null — `render()`
+// always falls back to the captures path. Same shape, no behavior change.
+function emitFusedRenderEntry(schema: InferredSchema, fusedTargets: ReadonlyArray<string>): string {
+  const rootKey = `${schema.rootType}#0`;
+  const cases = fusedTargets.map((target) => {
+    const id = jsIdent(target);
+    return `    case ${jsString(target)}: return __fusedRenderDispatch_${id};`;
+  });
+  const switchBody = cases.length === 0
+    ? '    default: return null;'
+    : `${cases.join('\n')}\n    default: return null;`;
+  return `const __rootProductionKey: string = ${jsString(rootKey)};
+
+function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
+  switch (target) {
+${switchBody}
+  }
+}
+
+function __renderFused(input: string, target: string): string | null {
+  const table = __fusedRenderDispatchLookup(target);
+  if (table === null) return null;
+  const rootFusedFn = table[__rootProductionKey];
+  if (rootFusedFn === undefined) return null;
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+  };
+  const out: string[] = [];
+  const ok = rootFusedFn(state, out);
+  if (!ok) return null;
+  if (state.pos !== input.length) return null;
+  return out.join('');
+}`;
 }
 
 function emitHeader(schema: InferredSchema, validatorImports: string): string {

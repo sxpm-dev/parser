@@ -343,10 +343,22 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   // `__parse` accepts it (currently css's raws mode). Passing `undefined`
   // for non-css packages is a no-op — the inner __parse just falls back
   // to its default.
+  //
+  // Phase 5 Task 5.2 — Fused path: for any non-ast target whose root
+  // production has a fused builder, parse-and-render happens in one walk
+  // with zero AST allocation. `__renderFused` returns null whenever the
+  // (root × target) pair is not eligible (no fused dispatch table, no
+  // root entry, partial parse, or runtime failure); we then fall back to
+  // the captures-based path so semantics stay identical. Task 5.3 closes
+  // recursive-slot eligibility so the fast path covers full schemas.
   return `export function render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  if (target !== 'ast') {
+    const fused = __renderFused(input, target);
+    if (fused !== null) return fused;
   }
   const fn = __renderDispatch[target];
   if (!fn) {

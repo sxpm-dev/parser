@@ -133,7 +133,7 @@ function emitFusedBody(
   // schema author wrote: parts[0], slot[0], parts[1], slot[1], …, parts[n].
   inner.push(`state.pos = off;`);
   inner.push(`if (off > state.maxOff) state.maxOff = off;`);
-  for (const line of emitTemplatePushes(template, bindings)) {
+  for (const line of emitTemplatePushes(template, bindings, production)) {
     inner.push(line);
   }
   inner.push(`return true;`);
@@ -154,15 +154,37 @@ return __ok === true;`;
 // non-empty segment / slot. Slot values are wrapped in `String(...)` so a
 // runtime number / boolean / array slot collapses to its string form —
 // matches the inverse-direction template rebuild semantics.
-function emitTemplatePushes(template: Template, bindings: SpanBindings): string[] {
+//
+// Mirrors the two pieces of template fusion in emit/render.ts that the
+// captures path already implements (commit history: "Gap A" and "Gap B"):
+//
+//   - Gap A — optional-absent slot suppresses preceding whitespace
+//     separator. When the slot references an .optional() / .repeats({min:0})
+//     span and the immediately-preceding literal is whitespace-only, the
+//     entire pair (literal + slot) is gated on slot presence.
+//   - Gap B — .repeats() slot joins array children with the schema-declared
+//     separator (single space for plain .repeats(), explicit `sep` when
+//     declared). Without this thread, Array.prototype.toString comma-joins
+//     at runtime.
+function emitTemplatePushes(
+  template: Template,
+  bindings: SpanBindings,
+  production: Production,
+): string[] {
   const parts = template.parts;
   const slots = template.slots;
-  const lines: string[] = [];
+  type LiteralPiece = { readonly kind: 'literal'; readonly text: string; readonly raw: string };
+  type SlotPiece = {
+    readonly kind: 'slot';
+    readonly pushExpr: string;
+    readonly optional: boolean;
+    readonly varExpr: string;
+  };
+  type Piece = LiteralPiece | SlotPiece;
+  const pieces: Piece[] = [];
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]!;
-    if (part.length > 0) {
-      lines.push(`out.push(${jsString(part)});`);
-    }
+    if (part.length > 0) pieces.push({ kind: 'literal', text: jsString(part), raw: part });
     if (i < slots.length) {
       const slot = slots[i]!;
       const varExpr = bindings.valueExpr.get(slot.ref);
@@ -177,10 +199,61 @@ function emitTemplatePushes(template: Template, bindings: SpanBindings): string[
           `fusion: slot '${slot.ref}' has no binding (template references an unnamed span)`,
         );
       }
-      // Coalesce null/undefined to "" so optional-absent captures don't
-      // serialize as the strings "null"/"undefined". Mirrors the same
-      // defensive coalesce in emit/render.ts's emitTemplateExpr.
-      lines.push(`out.push(String(${varExpr} ?? ""));`);
+      const span = findSpanByName(production, slot.ref);
+      const optional = span !== undefined && isAbsentAllowedSpan(span);
+      const repeatsSep = span !== undefined ? repeatsJoinSeparator(span) : null;
+      let pushExpr: string;
+      if (repeatsSep !== null) {
+        // Array-of-children slot: per-child stringify + join. The fused
+        // path never sees recursive children here (eligibility gates them
+        // out), so children are scalars from a .repeats() of a primitive
+        // span. Use String() on each entry to match the captures path's
+        // coercion semantics.
+        const sepLit = jsString(repeatsSep);
+        pushExpr = `(Array.isArray(${varExpr}) ? ${varExpr}.map((__v: any) => String(__v ?? "")).join(${sepLit}) : String(${varExpr} ?? ""))`;
+      } else {
+        // Coalesce null/undefined to "" so optional-absent captures don't
+        // serialize as the strings "null"/"undefined".
+        pushExpr = `String(${varExpr} ?? "")`;
+      }
+      pieces.push({ kind: 'slot', pushExpr, optional, varExpr });
+    }
+  }
+
+  // Fuse optional-absent slots with their immediately-preceding
+  // whitespace-only literal. When the captured value is null/undefined
+  // BOTH the literal and the slot collapse to nothing. Matches
+  // emit/render.ts's emitTemplateExpr fusion exactly.
+  const lines: string[] = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = pieces[i]!;
+    if (piece.kind === 'literal') {
+      lines.push(`out.push(${piece.text});`);
+      continue;
+    }
+    if (!piece.optional) {
+      lines.push(`out.push(${piece.pushExpr});`);
+      continue;
+    }
+    // Optional slot. Decide whether to fuse with the preceding literal.
+    const prev = i > 0 ? pieces[i - 1] : undefined;
+    const prevIsWhitespaceLiteral =
+      prev !== undefined
+      && prev.kind === 'literal'
+      && prev.raw.length > 0
+      && /^\s+$/.test(prev.raw);
+    if (prevIsWhitespaceLiteral && lines.length > 0) {
+      // Replace the just-pushed literal with a presence-gated emission of
+      // both the literal and the slot. The lookup MUST match the line we
+      // emitted for the preceding whitespace literal — there are no
+      // intermediate pushes between literal and slot.
+      lines.pop();
+      const sepLit = (prev as LiteralPiece).text;
+      lines.push(
+        `if (${piece.varExpr} != null) { out.push(${sepLit}); out.push(${piece.pushExpr}); }`,
+      );
+    } else {
+      lines.push(`if (${piece.varExpr} != null) out.push(${piece.pushExpr});`);
     }
   }
   return lines;
@@ -219,6 +292,30 @@ function findSpanByName(production: Production, name: string): ResolvedSpan | un
     if (span.name === name) return span;
   }
   return undefined;
+}
+
+// Mirrors emit/render.ts's `isAbsentAllowedSpan`. A span is "absent-allowed"
+// when its capture may legitimately be null/undefined at render time —
+// either via .optional() or .repeats() with min: 0 (no children).
+function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
+  for (const m of span.modifiers) {
+    if (m.kind === 'optional') return true;
+    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
+  }
+  return false;
+}
+
+// Mirrors emit/render.ts's `repeatsJoinSeparator`. Returns the per-array
+// join separator declared by `.repeats(...)`, or null when the span doesn't
+// repeat. `.repeats()` without explicit `sep` defaults to a single space
+// (matches the schema-level whitespace policy that drives parsing).
+function repeatsJoinSeparator(span: ResolvedSpan): string | null {
+  for (const m of span.modifiers) {
+    if (m.kind === 'repeats') {
+      return m.sep === undefined ? ' ' : m.sep;
+    }
+  }
+  return null;
 }
 
 // Whitespace skips — identical to those in production.ts. Inlined here to

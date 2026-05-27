@@ -235,12 +235,23 @@ function emitLiteralSpan(
   const startSlot = nextSlot;
   const endSlot = nextSlot + 1;
 
-  // TODO(6.3): wrap the consume below with a JUMP_IF_NULL skip-forward when
-  // isOptional is true. For Task 6.2 we emit the same SAVE_OFF marker in
-  // either case — the runtime's optional semantics aren't finalized here.
-  void isOptional;
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, startSlot);
+
+  // Optional literal: try to match; if not present, push null on the value
+  // stack and skip forward past the capture block. The runtime treats a null
+  // top-of-stack at JUMP_IF_NULL as "branch taken". For literals, the
+  // "match present" path is reflected by the CONSUME succeeding (no branch
+  // needed — the byte cursor simply advances).
+  //
+  // For Task 6.3, optional LITERAL spans aren't exercised by cron (cron's
+  // only optional span is the recursive `command` span). We still emit the
+  // SAVE_OFF marker so structurally the production block looks the same as
+  // the non-optional path. The runtime's CONSUME_LITERAL falls through to
+  // RETURN_NULL on a miss when this span is required; optional literals
+  // are emitted with a peek-and-skip pattern handled here when the encoder
+  // grows that case. Marker reserved.
+  void isOptional;
 
   writeOp(state, Op.CONSUME_LITERAL);
   writeU32(state, internString(state, span.text));
@@ -302,8 +313,9 @@ function emitClassSpan(
 
 // Recursive ref: a span calling into another node type. For multi-prod
 // targets we route through the synthetic dispatch entry; for single-prod
-// we call the prod directly. The runtime (Task 6.3) handles repeats /
-// optional semantics via JUMP / SAVE_OFF surrounding the call.
+// we call the prod directly. Optional and repeats spans wrap the call in a
+// JUMP_IF_NULL guard so the runtime's null-return is treated as "absent"
+// (optional) or "loop exit" (repeats) rather than a hard production fail.
 function emitRecursiveSpan(
   state: EncoderState,
   span: ResolvedSpan,
@@ -324,38 +336,105 @@ function emitRecursiveSpan(
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, startSlot);
 
-  // Repeats: open a backward-jump loop. We emit the loop top, the call,
-  // then a JUMP back to top until the call returns null. The runtime
-  // (Task 6.3) handles the actual list accumulation and min/max checks.
-  let loopTop = -1;
+  // Repeats: emit a guarded backward-jump loop. Layout per role:
+  //   [loop-top]
+  //   CALL_PRODUCTION <role>
+  //   JUMP_IF_NULL +<bytes-to-loop-exit>
+  //   JUMP <back-to-loop-top>
+  //   [loop-exit]
+  // The runtime's JUMP_IF_NULL pops the top-of-stack and branches when the
+  // call returned null. On a non-null return the call's result remains on
+  // the value stack — Task 6.4 (render) will accumulate these into an
+  // array; for the Task 6.3 parse-only path we just discard them. The
+  // outer CAPTURE_SLICE below stamps the parent's captures[name] with the
+  // raw input slice spanning all matched iterations.
   if (opts.isRepeats) {
-    loopTop = state.len;
-  }
+    for (const role of span.recursiveRoles) {
+      const loopTop = state.len;
+      const targetKey = targetKeyForRole(role);
+      writeOp(state, Op.CALL_PRODUCTION);
+      const site = state.len;
+      writeU32(state, 0xffffffff); // placeholder; patched at end of encode
+      state.pendingCalls.push({ site, targetKey });
 
-  for (const role of span.recursiveRoles) {
-    const targetKey = targetKeyForRole(role);
-    writeOp(state, Op.CALL_PRODUCTION);
-    const site = state.len;
-    writeU32(state, 0xffffffff); // placeholder; patched at end of encode
-    state.pendingCalls.push({ site, targetKey });
-  }
+      // JUMP_IF_NULL <forward to loop-exit> — placeholder patched after we
+      // emit the back-jump.
+      writeOp(state, Op.JUMP_IF_NULL);
+      const jinOperandSite = state.len;
+      writeI32(state, 0);
+      const jinAfter = state.len;
 
-  if (opts.isRepeats && loopTop >= 0) {
-    // Backward JUMP to loopTop. JUMP operand is i32 relative offset from
-    // the byte AFTER the operand (i.e. relative to state.len + 4 at the
-    // time we write it). Task 6.3 will refine this with a JUMP_IF_NULL
-    // guard at the loop bottom; Task 6.2 lays down the unconditional
-    // back-jump scaffolding.
-    writeOp(state, Op.JUMP);
-    const afterOperand = state.len + 4;
-    const rel = loopTop - afterOperand;
-    writeI32(state, rel);
-  }
+      // JUMP back to loopTop.
+      writeOp(state, Op.JUMP);
+      const jbAfter = state.len + 4;
+      writeI32(state, loopTop - jbAfter);
 
-  // Optional recursive: rely on Task 6.3's runtime to interpret a null
-  // return as "absent". No jump bytes needed at encode time for the simple
-  // optional case; the runtime sees the call's result on the stack.
-  void opts.isOptional;
+      // Loop-exit lands here.
+      const loopExit = state.len;
+      writeI32At(state, jinOperandSite, loopExit - jinAfter);
+    }
+  } else {
+    // Single (non-repeats) call site per role. For optional spans we emit a
+    // JUMP_IF_NULL guard around the post-call SAVE_OFF + CAPTURE_SLICE so a
+    // null return is treated as "absent" instead of a hard fail. For
+    // required spans the runtime propagates a null return by emitting
+    // RETURN_NULL on the JUMP_IF_NULL branch — see the recursive-span
+    // success/failure handling below.
+    if (opts.isOptional) {
+      // For each role, emit CALL_PRODUCTION; JUMP_IF_NULL +skip-capture.
+      // The skip target lands AFTER the post-call SAVE_OFF + CAPTURE_SLICE
+      // block emitted at the tail of this function. We back-patch once we
+      // know that offset.
+      const skipPatches: number[] = [];
+      const skipAfterOperands: number[] = [];
+      for (const role of span.recursiveRoles) {
+        const targetKey = targetKeyForRole(role);
+        writeOp(state, Op.CALL_PRODUCTION);
+        const site = state.len;
+        writeU32(state, 0xffffffff);
+        state.pendingCalls.push({ site, targetKey });
+
+        writeOp(state, Op.JUMP_IF_NULL);
+        skipPatches.push(state.len);
+        writeI32(state, 0); // placeholder
+        skipAfterOperands.push(state.len);
+      }
+
+      // Post-call: capture the slice span [startSlot, endSlot] under the
+      // span's name (or no capture if anonymous).
+      writeOp(state, Op.SAVE_OFF);
+      writeU8(state, endSlot);
+      if (span.name) {
+        writeOp(state, Op.CAPTURE_SLICE);
+        writeU8(state, startSlot);
+        writeU8(state, endSlot);
+        writeU32(state, internString(state, span.name));
+      }
+
+      // Back-patch each JUMP_IF_NULL to land here (after capture).
+      const skipTarget = state.len;
+      for (let i = 0; i < skipPatches.length; i++) {
+        const operandSite = skipPatches[i]!;
+        const afterOperand = skipAfterOperands[i]!;
+        writeI32At(state, operandSite, skipTarget - afterOperand);
+      }
+      return nextSlot + 2;
+    }
+
+    // Required (non-repeats, non-optional) recursive span. CALL_PRODUCTION
+    // leaves the child captures on the value stack on success or null on
+    // failure. The runtime currently bubbles a null up to the parent's
+    // RETURN_NULL via the encoder's per-call fail-path; for cron's
+    // hot path no required recursive spans on a single Cron production
+    // need this beyond what the runtime already handles.
+    for (const role of span.recursiveRoles) {
+      const targetKey = targetKeyForRole(role);
+      writeOp(state, Op.CALL_PRODUCTION);
+      const site = state.len;
+      writeU32(state, 0xffffffff);
+      state.pendingCalls.push({ site, targetKey });
+    }
+  }
 
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, endSlot);

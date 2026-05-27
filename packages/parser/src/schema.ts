@@ -16,6 +16,10 @@ export function defineSchema(input: SchemaInput): SchemaDef {
     tokens: normalizeTokens(input.tokens),
     whitespace: input.whitespace ?? 'standard',
     unknownChars: input.unknownChars ?? 'reject',
+    bom: input.bom ?? 'allow',
+    unicode: input.unicode ?? 'none',
+    newlines: input.newlines ?? 'LF',
+    caseSensitive: input.caseSensitive ?? true,
     defaultTarget: input.defaultTarget,
     examples: input.examples,
   };

@@ -51,6 +51,10 @@ export function inferSchema(
     tokenTypeIds,
     whitespace: root.whitespace,
     unknownChars: root.unknownChars,
+    bom: root.bom,
+    unicode: root.unicode,
+    newlines: root.newlines,
+    caseSensitive: root.caseSensitive,
     defaultTarget: root.defaultTarget,
     validation,
   };

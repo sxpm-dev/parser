@@ -11,6 +11,31 @@ export type WhitespacePolicy = 'standard' | 'significant';
 //                tag-soup HTML, shell heredocs, JSX raw text, INI values.
 export type UnknownCharPolicy = 'reject' | 'tolerate';
 
+// Phase 8 dials — applied at parse entry as a single composable preamble.
+// All four are no-ops at their default values; the v2 emitter only emits
+// preamble code for the dials a schema explicitly changes from default.
+
+// BOM (U+FEFF) handling at parse entry.
+//   'allow'   — strip a leading BOM if present (default).
+//   'reject'  — throw a parse error if a BOM is present.
+//   'require' — throw a parse error if a BOM is absent.
+export type BomPolicy = 'allow' | 'reject' | 'require';
+
+// Unicode normalization applied to the entire input before scan.
+//   'none' — no normalization (default).
+//   'NFC'  — call input.normalize('NFC') once at entry.
+//   'NFD'  — call input.normalize('NFD') once at entry.
+export type UnicodeForm = 'none' | 'NFC' | 'NFD';
+
+// Newline canonicalization applied to the entire input before scan.
+//   'LF'              — no transform (default). Lone \r will fail literal
+//                       matches at scan time; the schema author owns that.
+//   'CRLF'            — normalize \r\n → \n once at entry.
+//   'either-preserve' — normalize \r\n → \n and lone \r → \n once at entry.
+//                       Round-trip is value-stable but not byte-stable for
+//                       CRLF input (it becomes LF on the first stringify).
+export type NewlinePolicy = 'LF' | 'CRLF' | 'either-preserve';
+
 export type TrailingPolicy = 'allowed' | 'required' | 'forbidden';
 
 // --- Spans -----------------------------------------------------------------
@@ -310,6 +335,14 @@ export type SchemaDef = {
   readonly tokens: ReadonlyArray<TokenDecl>;
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
+  readonly bom: BomPolicy;
+  readonly unicode: UnicodeForm;
+  readonly newlines: NewlinePolicy;
+  // When false, input is lowercased via input.toLowerCase() at parse entry,
+  // AFTER bom/unicode/newlines. Captures see the lowercased view. Schemas
+  // with caseSensitive:false must write examples in canonical (lowercase)
+  // form for the round-trip theorem.
+  readonly caseSensitive: boolean;
   readonly defaultTarget?: string;
   readonly examples: ReadonlyArray<ExampleDef>;
 };
@@ -327,6 +360,10 @@ export type SchemaInput = {
   readonly tokens?: ReadonlyArray<SpanClass | TokenDecl>;
   readonly whitespace?: WhitespacePolicy;
   readonly unknownChars?: UnknownCharPolicy;
+  readonly bom?: BomPolicy;
+  readonly unicode?: UnicodeForm;
+  readonly newlines?: NewlinePolicy;
+  readonly caseSensitive?: boolean;
   readonly defaultTarget?: string;
   readonly examples: ReadonlyArray<ExampleDef>;
 };

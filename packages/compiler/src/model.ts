@@ -3,13 +3,16 @@
 // shape — no language-specific knowledge.
 
 import type {
+  BomPolicy,
   ExampleDef,
+  NewlinePolicy,
   RecoveryPolicy,
   Refinement,
   RenderBody,
   SpanClass,
   SpanDef,
   SpanModifier,
+  UnicodeForm,
   UnknownCharPolicy,
   ValidationDef,
   WhitespacePolicy,
@@ -124,6 +127,10 @@ export type InferredSchema = {
   readonly tokenTypeIds: ReadonlyMap<string, number>;
   readonly whitespace: WhitespacePolicy;
   readonly unknownChars: UnknownCharPolicy;
+  readonly bom: BomPolicy;
+  readonly unicode: UnicodeForm;
+  readonly newlines: NewlinePolicy;
+  readonly caseSensitive: boolean;
   // Default render target, propagated from SchemaDef.defaultTarget. The
   // generated `render(input, opts)` wrapper uses this as the fallback when
   // the caller didn't pass `{ type }`. Phase 4 will wire the same constant

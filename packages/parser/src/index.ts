@@ -5,8 +5,10 @@ export { $, isStructureRef } from './ref.ts';
 export { tpl, isTemplate } from './template.ts';
 export { assertRoundTrip, type RoundTripModule } from './test-harness/round-trip.ts';
 export type {
+  BomPolicy,
   ExampleDef,
   ExampleStatus,
+  NewlinePolicy,
   OperatorLayers,
   PunctuatorDecl,
   PunctuatorMap,
@@ -24,6 +26,7 @@ export type {
   TemplateSlot,
   TokenDecl,
   TrailingPolicy,
+  UnicodeForm,
   UnknownCharPolicy,
   GeneratedValidator,
   ValidationDef,

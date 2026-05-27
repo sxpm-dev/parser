@@ -63,14 +63,27 @@ type Exclusion = {
   readonly nodeType: string;
   readonly target: string;
   readonly input: string;
+  readonly reason: string;
 };
 
 const KNOWN_EXCLUSIONS: ReadonlyArray<Exclusion> = [
-  // CSS Comment source — `.comment()` strips delimiters on parse, the
-  // production-span rebuild produces only the interior, so the interp
-  // canonical reparse path can't close the loop. Phase 7 follow-up.
-  { nodeType: 'Comment', target: 'source', input: '/* foo */' },
+  {
+    nodeType: 'Comment',
+    target: 'source',
+    input: '/* foo */',
+    reason: '.comment() strips delimiters on parse; the production-span rebuild produces only the interior. Phase 7 follow-up.',
+  },
 ];
+
+// Per-schema minimum comparison counts. Updates ratchet upward as
+// fusion eligibility expands. A drop below these floors signals a
+// silent coverage regression (e.g. a target rename dropped all
+// non-ast targets without anyone noticing).
+const EXPECTED_MIN_COMPARISONS: Record<string, number> = {
+  css: 5,
+  html: 15,
+  markdown: 70,
+};
 
 function isExcluded(nodeType: string, target: string, input: string): boolean {
   for (const e of KNOWN_EXCLUSIONS) {
@@ -148,13 +161,12 @@ for (const fixture of SCHEMAS) {
         continue;
       }
 
-      for (const [target, renderEntry] of production.renders) {
+      for (const target of production.renders.keys()) {
         if (target === 'ast') continue;
         // Inverse overrides exempt the round-trip check at codegen for
         // the body↔inverse path. Here we're comparing render outputs (no
         // inverse involved), so override-presence doesn't apply — keep
         // these in scope.
-        void renderEntry;
         if (isExcluded(nodeType, target, example)) continue;
 
         const v2Output = render(example, { type: target });
@@ -170,7 +182,11 @@ for (const fixture of SCHEMAS) {
       }
     }
 
-    assert.ok(comparisons > 0, `${fixture.name}: expected at least one comparison`);
+    const floor = EXPECTED_MIN_COMPARISONS[fixture.name] ?? 1;
+    assert.ok(
+      comparisons >= floor,
+      `${fixture.name}: expected at least ${floor} comparisons, got ${comparisons}`,
+    );
   });
 }
 

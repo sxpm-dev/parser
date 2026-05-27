@@ -3131,15 +3131,10 @@ function __fusedRender_Rule_0_source(state: State, out: string[]): boolean {
     // recursive repeats span (Comment, AtRule, Rule, Declaration) — fused loop
     {
       let __count = 0;
-      let __sepConsumed = false;
-      let __preSweep = off;
       while (true) {
         const __loopStart = off;
-        __preSweep = off;
-        __sepConsumed = false;
         while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         while (input.charCodeAt(off) === 59) {
-          __sepConsumed = true;
           off += 1;
           while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         }
@@ -3406,15 +3401,10 @@ function __fusedRender_AtRule_0_source(state: State, out: string[]): boolean {
     // recursive repeats span (Comment, AtRule, Rule, Declaration) — fused loop
     {
       let __count = 0;
-      let __sepConsumed = false;
-      let __preSweep = off;
       while (true) {
         const __loopStart = off;
-        __preSweep = off;
-        __sepConsumed = false;
         while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         while (input.charCodeAt(off) === 59) {
-          __sepConsumed = true;
           off += 1;
           while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         }
@@ -3691,15 +3681,10 @@ function __fusedRender_Stylesheet_0_source(state: State, out: string[]): boolean
     // recursive repeats span (Comment, AtRule, Rule, Declaration) — fused loop
     {
       let __count = 0;
-      let __sepConsumed = false;
-      let __preSweep = off;
       while (true) {
         const __loopStart = off;
-        __preSweep = off;
-        __sepConsumed = false;
         while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         while (input.charCodeAt(off) === 59) {
-          __sepConsumed = true;
           off += 1;
           while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
         }

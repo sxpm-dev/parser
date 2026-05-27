@@ -186,6 +186,20 @@ function isProductionFusable(
     cache.set(key, false);
     return false;
   }
+  // Unsupported repeats features. `stopBefore` is not yet implemented by
+  // `emitFusedRepeatsSpan` — fusing a production whose repeats slot carries
+  // a stopBefore would over-accept input vs. the captures path. Gate the
+  // whole production out of fusion until the loop emit grows a stopBefore
+  // check. Same gate for any other repeats option the fused emit doesn't
+  // honour yet (none today, but keep the predicate co-located).
+  for (const span of production.spans) {
+    const repeats = findSpanModifier(span, 'repeats');
+    if (repeats && repeats.stopBefore && repeats.stopBefore.length > 0) {
+      inProgress.delete(key);
+      cache.set(key, false);
+      return false;
+    }
+  }
   const template = entry.body as Template;
   let ok = true;
   for (const slot of template.slots) {
@@ -476,25 +490,17 @@ function emitFusedRepeatsSpan(
   lines.push(`// recursive repeats span (${roles.join(', ')}) — fused loop`);
   lines.push(`{`);
   lines.push(`  let __count = 0;`);
-  if (sep !== undefined) {
-    // Sep-sweep state mirrors the parse-time loop in span.ts. We don't
-    // actually use the variables for any post-loop policy yet (trailing
-    // checks are out of scope for fusion — the captures fallback handles
-    // those for now); we keep the sweep so input acceptance matches.
-    lines.push(`  let __sepConsumed = false;`);
-    lines.push(`  let __preSweep = off;`);
-  }
   lines.push(`  while (true) {`);
   lines.push(`    const __loopStart = off;`);
   if (sep !== undefined) {
     // Top-of-loop separator sweep — mirrors the parse-time sweep in
     // `emitRepeatsSpan`. Allows zero-or-more separators between items so
-    // tolerant grammars (CSS `;;`) parse identically under fusion.
-    lines.push(`    __preSweep = off;`);
-    lines.push(`    __sepConsumed = false;`);
+    // tolerant grammars (CSS `;;`) parse identically under fusion. No
+    // post-loop trailing-policy check yet (the captures fallback handles
+    // trailing-sep edge cases), so the sweep doesn't need to track whether
+    // a separator was consumed.
     lines.push(`    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
     lines.push(`    while (${literalMatchExpr(sep, 'off')}) {`);
-    lines.push(`      __sepConsumed = true;`);
     lines.push(`      off += ${sep.length};`);
     lines.push(`      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
     lines.push(`    }`);

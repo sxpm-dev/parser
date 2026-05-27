@@ -202,6 +202,24 @@ test('emit preamble: BOM require throws if BOM is absent', async () => {
   }
 });
 
+test('emit preamble: BOM allow is a no-op when absent (happy path)', async () => {
+  const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'allow' }));
+  try {
+    assert.equal(mod.render('hello', { type: 'ast' }), 'hello');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('emit preamble: BOM reject is a no-op when BOM is absent (happy path)', async () => {
+  const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'reject' }));
+  try {
+    assert.equal(mod.render('hello', { type: 'ast' }), 'hello');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('emit preamble: unicode NFC normalizes NFD input', async () => {
   const nfd = 'café';   // 'cafe' + combining acute (length 5)
   const nfc = 'café';    // precomposed (length 4)
@@ -223,6 +241,33 @@ test('emit preamble: unicode NFC normalizes NFD input', async () => {
     const result = mod.render(nfd, { type: 'ast' }) as string;
     assert.equal(result, nfc);
     assert.equal(result.length, 4);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('emit preamble: unicode NFD decomposes precomposed input', async () => {
+  // Inverse of the NFC test: feed NFC input, assert post-preamble is NFD.
+  const nfc = 'café';   // precomposed (length 4)
+  const nfd = 'café';  // 'cafe' + combining acute (length 5)
+  const { mod, dir } = await loadGeneratedParser(
+    defineSchema({
+      rootType: 'Line',
+      unicode: 'NFD',
+      examples: [
+        ex('café')
+          .as('Line')
+          .span('text', 'café').until('\n')
+          .render('ast', $.text)
+          .render('source', tpl`${$.text}`)
+          .build(),
+      ],
+    }),
+  );
+  try {
+    const result = mod.render(nfc, { type: 'ast' }) as string;
+    assert.equal(result, nfd);
+    assert.equal(result.length, 5);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

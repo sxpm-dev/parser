@@ -794,6 +794,8 @@ defineSchema({
 
 **Phase 8 exit gate:** HTML schema can parse `<DIV>` and `<div>` equivalently with `caseSensitive: false` set; Unicode normalization round-trips for an email-grammar example.
 
+**Status: CLOSED (2026-05-28).** See `docs/v2-migration-status.md` § "Phase 8 closeout" and `docs/superpowers/plans/2026-05-29-phase-8-unicode-case.md` for the executed task breakdown.
+
 ---
 
 ## Phase 9 — DSL clean break: `ex()` → `relation()`

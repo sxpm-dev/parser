@@ -345,8 +345,150 @@ need to be addressed if a future schema exposes the gap.
    to Phase 7.** Confirmed by code-quality reviewer during Task 7.7b. Not
    introduced by Phase 7; flagged for awareness.
 
+## Phase 8 closeout (2026-05-28)
+
+Four schema-level dials — `bom`, `unicode`, `newlines`, `caseSensitive` — land
+as a single composable input-normalization preamble applied once at parse
+entry. The reference interpreter (`packages/compiler/src/interp/parse.ts`) and
+the v2 emitter (`packages/compiler/src/emit/v2/index.ts`) carry matching
+preamble logic so they parse BOM-prefixed / mixed-case / CRLF / non-NFC inputs
+identically. The HTML schema opts in to `caseSensitive: false` — `<DIV>` and
+`<div>` produce identical ASTs.
+
+### Design summary
+
+Four orthogonal transforms applied at parse entry, in order:
+
+1. **BOM handling** (`bom: 'allow' | 'reject' | 'require'`, default `'allow'`).
+   `'allow'` silently strips a leading U+FEFF; `'reject'` throws on presence;
+   `'require'` throws on absence and strips. Default `'allow'` is the realistic
+   behavior for a parser — legacy editors emit BOMs, the parser should
+   silently tolerate them.
+2. **Unicode normalization** (`unicode: 'NFC' | 'NFD' | 'none'`, default
+   `'none'`). Calls `input.normalize(form)` once when set. `'none'` is a real
+   string-typed value (not undefined) so the runtime branch is unambiguous.
+3. **Newline canonicalization** (`newlines: 'LF' | 'CRLF' | 'either-preserve'`,
+   default `'LF'`). `'LF'` is a no-op. `'CRLF'` normalizes `\r\n → \n` once at
+   entry. `'either-preserve'` normalizes both `\r\n` and lone `\r` to `\n` —
+   value-stable but not byte-stable for CRLF input.
+4. **Case fold** (`caseSensitive: boolean`, default `true`). When `false`,
+   input is lowercased via `input.toLowerCase()` AFTER the prior three steps.
+   Captures see the lowercased view. Schemas with `caseSensitive: false` MUST
+   write examples in canonical (lowercase) form for the round-trip theorem.
+
+The v2 emitter emits per-dial code unconditionally — there is no
+"all-defaults short-circuit" — because the interp actively strips BOMs at
+`bom: 'allow'`, so emit must too (otherwise BOM-prefixed input parses
+differently between interp and emit, breaking the differential-fuzzing
+invariant). Result: default schemas have a `__parse` body containing exactly
+one new BOM-strip line; non-default schemas accrete one line per opted-in
+dial. Bytecode backend stays untouched — cron remains the only
+bytecode-tested schema (Phase 6 follow-up #4 / Phase 7 follow-up #3).
+
+### What landed (Phase 8)
+
+| Task | Commit(s) | What landed |
+| --- | --- | --- |
+| 8.1 | `619aadc` + `ccea8e2` | `BomPolicy`, `UnicodeForm`, `NewlinePolicy` type unions in `parser/src/types.ts`; four new fields on `SchemaDef`/`SchemaInput`/`InferredSchema`; defaults wired through `defineSchema` + `inferSchema`. `parser/test/schema-dials.test.ts` covers defaults + overrides (parser 28 → 30). Comment fix-up `ccea8e2` corrects the "all four are no-ops at default" claim (BOM `'allow'` strips). |
+| 8.2 | `fddc150` + `e8b3a07` | `applyPreamble` helper in `interp/parse.ts` handles BOM allow/reject/require + Unicode NFC/NFD/none at parse entry. `compiler/test/unicode-preamble.test.ts` (6 + 3 happy-path follow-ups in `e8b3a07` → 9 tests; compiler 335 → 344). |
+| 8.3 | `cc3c297` | `applyPreamble` extended for newline canonicalization. `compiler/test/newlines-preamble.test.ts` uses a `rawUntil([])` schema design (the plan's `.span('\n')` design was broken by `parseProduction`'s `skipWs`). 5 tests instead of 3 (extra happy-path checks; compiler 344 → 349). |
+| 8.4 | `e39dbe5` + `392b01a` | `applyPreamble` extended for `input.toLowerCase()` when `caseSensitive: false`. `compiler/test/case-insensitive.test.ts` uses literal `.span('open', 'div')` (no `.until()`) so case-sensitive mode can reject uppercase via exact-byte literal match. Fix-up `392b01a` switches to a `makeTagSchema(caseSensitive)` factory and tightens `assert.throws` to match `SyntaxError`. Compiler 349 → 354. |
+| 8.5 | `16243d8` + `1226331` + `e5597bf` | `emitPreamble` in `emit/v2/index.ts` emits the same 4-step preamble into generated `__parse`. **No all-defaults short-circuit** (would diverge from interp on BOM-prefixed input). Regen commit `1226331` updates 5 in-scope `_generated/parser.ts` files (each gaining the BOM-strip line). CSS regen absorbed legitimate Phase 7 indent catch-up (stale helper functions). Fix-up `e5597bf` adds emit-side BOM allow/reject happy paths + NFD test. Compiler 354 → 367. |
+| 8.6 | `abdc2ea` + `9c023ba` | HTML schema opts in to `caseSensitive: false`. `packages/html/test/case-insensitive.test.ts` covers DIV/div parity, `<Script>` raw-text, attribute lowercasing, `<BR>` void element. Pre-existing HTML tests (`conformance.test.ts`, `html.test.ts`) updated for the design contract — `caseSensitive: false` lowercases the **entire input** including text content and attribute values, not just tag names. Fix-up `9c023ba` strengthens 3 weak assertions to structured AST access (was JSON-substring scans). HTML 30 → 34. |
+| 8.7 | `68c55fa` + `364f047` | `compiler/test/unicode-roundtrip.test.ts` — inline email-grammar schema with `unicode: 'NFC'`. 5 tests cover interp NFD→NFC + identity, emit NFD→NFC, stringify produces NFC, and round-trip stability with NFC-anchor assertion. Compiler 367 → 372. |
+| 8.8 | (this commit) | Documentation closeout. |
+
+### Phase 8 exit gate status
+
+| Criterion | Status | Note |
+| --- | --- | --- |
+| HTML schema parses `<DIV>` and `<div>` equivalently with `caseSensitive: false` set | **PASS** | `packages/html/test/case-insensitive.test.ts` — DIV/div parity, mixed-case raw-text containers, attribute-name lowercasing, void elements all parse to identical structured ASTs. |
+| Unicode normalization round-trips for an email-grammar example | **PASS** | `packages/compiler/test/unicode-roundtrip.test.ts` — NFD input → NFC capture (interp + emit); stringify produces NFC source; second-pass round-trip is byte-stable AND anchored to NFC explicitly. |
+
+### Phase 8 follow-ups (deferrable)
+
+None block Phase 9. Each is a real gap that the in-scope schemas and exit-gate
+tests work around or don't exercise.
+
+1. **Bytecode backend has no preamble support.** The bytecode encoder ignores
+   the four new dials. Cron stays bound to defaults. Adding preamble to
+   `packages/compiler/src/emit/bytecode/runtime.ts` is a follow-up.
+
+2. **`caseSensitive: false` is ASCII-only-correct.** `input.toLowerCase()` uses
+   Unicode default case mapping (locale-independent — not the
+   `toLocaleLowerCase('tr')` path with the Turkish dotless-i gotcha), which is
+   right for ASCII tag names. Grammars with non-ASCII tokens (e.g. Greek
+   letters in math notation) may hit edge cases.
+
+3. **`caseSensitive: false` lowercases the ENTIRE input, not just tag/attribute
+   names.** Surfaced by Task 8.6 — text content and attribute values are also
+   folded. The Phase 8 design contract documents this: schemas with
+   `caseSensitive: false` MUST write examples in canonical (lowercase) form.
+   Pre-existing HTML tests that asserted on mixed-case text content were
+   updated to canonical lowercase. Inline `conformance.test.ts` normalizer
+   lowercases parse5's text/attr-value sides before comparison.
+
+4. **`newlines: 'either-preserve'` is value-stable but not byte-stable for
+   CRLF input.** Round-trip emits LF only. "Preserve" in the name is a
+   misnomer kept for master-plan compatibility; true byte preservation would
+   require per-newline metadata in captures and is out of scope.
+
+5. **`bom: 'allow'` changes behavior for inputs with a BOM.** Pre-Phase-8
+   schemas would fail on BOM-prefixed input; post-Phase-8 they strip the BOM
+   silently. This is a strict expansion of accepted inputs (no schema that
+   previously parsed now fails).
+
+6. **No per-pattern case-insensitive escape hatch.** Phase 8 dials are
+   schema-wide. The existing `.oneOf({ caseInsensitive: true })` refinement is
+   value-level (it lowercases the candidate AND the captured token before
+   comparison) and unchanged by Phase 8. With `caseSensitive: false` at schema
+   level, this refinement becomes redundant — both `.html().oneOf(...)` and
+   the schema-level dial now lowercase. Worth simplifying the HTML schema in
+   a future cleanup pass.
+
+7. **Switch exhaustiveness gap on `bom` and `newlines`.** Neither
+   `applyPreamble` (interp) nor `emitPreamble` (emit) has a `default` branch
+   on the `bom` / `newlines` switches. The type union is closed today so this
+   is forward-safety only — if a future task adds `bom: 'strip-silently'` the
+   switch will silently no-op. Adding `default: throw new Error(...)` to both
+   switches in BOTH files (to avoid interp/emit drift) is the fix.
+
+8. **Preamble cost is O(n) per parse call.** For very large inputs with many
+   parse calls (e.g. streaming-style use), the per-call `.normalize` /
+   `.toLowerCase` cost may dominate. The schema-level dial design assumes
+   per-document parsing.
+
+9. **`checkRoundTrip` does not exercise non-canonical inputs.** Schemas with
+   `caseSensitive: false` or `newlines: 'either-preserve'` must write examples
+   in canonical form (lowercase, LF) for the theorem to hold. Non-canonical
+   inputs are tested via separate package-level tests.
+
+10. **CSS `_generated/parser.ts` drifted during prior tasks.** Task 8.5's
+    regen absorbed Phase 7 indent helpers (`indentStack`/`columnAt`/etc.) that
+    were emitted by the compiler but never regenerated in the CSS package.
+    The regen mechanism that produces drift is worth investigating — running
+    css tests should not be silently regenerating the parser.
+
+11. **`packages/parser/src/index.ts` re-export drift.** Task 8.1 added
+    `BomPolicy`/`UnicodeForm`/`NewlinePolicy` to the parser barrel because
+    `compiler/src/model.ts` imports them. Plan oversight; the re-export is
+    additive and safe.
+
+12. **Literal diacritics in `unicode-roundtrip.test.ts:50-51`.** `NFC_LOCAL`
+    and `NFD_LOCAL` use visually-ambiguous literal characters
+    instead of `é` / `é` escapes. The codepoint sequences are
+    byte-correct but the source presentation is sub-optimal. The Edit tool
+    cannot reliably perform byte-level NFC/NFD source edits without
+    corrupting them; a manual fix is required.
+
+13. **`mac` and `css-color` packages have pre-existing test failures unrelated
+    to Phase 8.** Same as Phase 7 follow-up #8 — confirmed unrelated; flagged
+    for awareness.
+
 ## Where to next
 
-Phases 1 + 1.5 + 5 + 6 + 7 are closed. Next phase per the engine overhaul plan
-(`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`) is
-Phase 8 — Unicode / case-insensitive policy.
+Phases 1 + 1.5 + 5 + 6 + 7 + 8 are closed. Next phase per the engine overhaul
+plan (`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`) is
+Phase 9 — DSL clean break (`ex()` → `relation()`). Phase 9 is cosmetic on top
+of the working engine and is gated on a re-plan session to fold in lessons
+from Phases 5-8 (fusion + indent + dials).

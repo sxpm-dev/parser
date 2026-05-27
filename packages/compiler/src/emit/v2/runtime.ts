@@ -2,10 +2,11 @@
 // docs/scannerless-emit-v2.md for the contract. Schema-agnostic.
 //
 // What it carries:
-//   - State { input, len, pos, maxOff, mode, lineStarts }
+//   - State { input, len, pos, maxOff, mode, lineStarts, indentStack, indentStackTop }
 //   - posAt / makeSource (raws-mode source-position lookup)
 //   - syntaxErrorAt (only used at top-level parse() when result === null)
 //   - ASCII / digit / hex / ident predicates used by inline class scans
+//   - columnAt / skipBlankLines / skipHorizontalWs — indent-scope column helpers
 //
 // What it deliberately does NOT carry:
 //   - tryRoles / trySpeculate / tryRolesOrNull — dispatch is byte-prefix or
@@ -87,9 +88,10 @@ function isJsIdentPart(c: number): boolean {
 }
 
 function columnAt(state: State, off: number): number {
-  // Column (0-indexed) of byte at off within its line. Raw byte offset from
-  // the start of the current line — tabs count as a single column, not their
-  // display width. Schemas using .indent() should document this.
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
   const input = state.input;
   let lineStart = off;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
@@ -100,6 +102,10 @@ function skipBlankLines(state: State): void {
   // Advance state.pos past any sequence of lines containing only whitespace.
   // Stops at the first non-whitespace character (without consuming the
   // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
   const input = state.input;
   const len = state.len;
   outer: while (state.pos < len) {
@@ -115,8 +121,10 @@ function skipBlankLines(state: State): void {
 }
 
 function skipHorizontalWs(state: State): void {
-  // Skip ASCII spaces only (no tabs, no newlines). Used after skipBlankLines
-  // to land on the first non-space byte of the current line.
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
   const input = state.input;
   const len = state.len;
   while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;

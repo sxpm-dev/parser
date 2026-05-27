@@ -131,15 +131,16 @@ function renderSlot(
   // frame, jump pc, then a NESTED interpreter step. Simpler: push frame,
   // jump pc, return a marker — but we're already INSIDE the interpreter
   // loop. The cleanest path is to run a nested loop.
-  return runRenderNested(state, frames, captures, offset);
+  return runRenderNested(state, captures, offset);
 }
 
 // Run the interpreter loop starting at `startOffset` inside a fresh
 // render frame whose captures = `captures`. Returns when that frame's
 // RENDER_RETURN / RETURN_NULL pops the last frame off this nested stack.
+// The nested run uses its OWN frames array (not the parent's) so the
+// nested completion check (`frames.length === 0`) fires correctly.
 function runRenderNested(
   state: RuntimeState,
-  parentFrames: Frame[],
   captures: Record<string, unknown>,
   startOffset: number,
 ): unknown {
@@ -147,9 +148,6 @@ function runRenderNested(
   const savedPc = state.pc;
   const baseDepth = state.valueStack.length;
 
-  // Build a NEW frames array for the nested execution. Sharing parentFrames
-  // would mean the nested RENDER_RETURN's `frames.length === 0` check would
-  // never trigger. Instead we maintain a self-contained stack.
   const frames: Frame[] = [];
   frames.push({
     kind: 'render',
@@ -162,7 +160,6 @@ function runRenderNested(
   state.pc = startOffset;
   const result = runInterpreterLoop(state, frames);
   state.pc = savedPc;
-  void parentFrames;
   // Defensive: ensure no orphan values remain on the parent's stack from
   // a failed nested execution.
   if (state.valueStack.length > baseDepth) {
@@ -699,6 +696,16 @@ export function runStringify(
 
 // Fail the current production. Returns true if the failure unwound past
 // the synthetic root frame (caller must return null to the top-level).
+//
+// Dual-use across frame kinds:
+//   - parse frames: restores `state.off` to the frame's entryOff and
+//     updates maxOff for syntax-error reporting.
+//   - stringify frames: state.off is meaningless (always 0); the off
+//     restore is a harmless no-op. The interesting work is the value-
+//     stack truncation + frame pop, which lets `runStringifyNested`
+//     surface null so `stringifySlot` can chain-try the next alt.
+//   - render frames: render blocks don't fail under normal operation;
+//     this path exists for symmetry only.
 function failProduction(state: RuntimeState, frames: Frame[]): boolean {
   const finished = frames.pop()!;
   if (state.off > state.maxOff) state.maxOff = state.off;

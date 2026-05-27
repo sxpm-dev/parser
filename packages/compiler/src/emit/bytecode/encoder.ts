@@ -461,6 +461,16 @@ function emitRecursiveSpan(
   // role spans on a single span site — every Cron-recursive span names one
   // target node type (CronField / Command / CommandWord), and that target
   // may itself have multiple internal alts (handled by its dispatch entry).
+  //
+  // ASSUMPTION (Task 6.4): the optional/required CAPTURE_VALUE_FROM_STACK
+  // (and repeats CAPTURE_VALUE_APPEND) emitted after the role loop consume
+  // ONE captures object from the value stack. When multiple roles succeed
+  // sequentially before that capture-emit, only the last one is consumed;
+  // earlier successes leave orphans on the stack until RETURN_OK's
+  // stackBase truncation. cron's single-role spans never hit this path —
+  // multi-role schemas will need either an additional POP between roles or
+  // per-role CAPTURE_VALUE_FROM_STACK emission. Documented here for the
+  // next implementer.
   const startSlot = nextSlot;
   const endSlot = nextSlot + 1;
   writeOp(state, Op.SAVE_OFF);

@@ -8,9 +8,13 @@
 
 import test from 'node:test';
 import { strict as assert } from 'node:assert';
+import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { $, defineSchema, ex, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 import { interpretStringify } from '../src/interp/index.ts';
+import { emitV2Parser } from '../src/emit/v2/index.ts';
 
 const yamlListSchema = defineSchema({
   rootType: 'YamlList',
@@ -41,6 +45,28 @@ test('interp stringify: emits items at column 0 with newline separation', () => 
   // rebuildSource joins them. With kind:'indent', the joiner must be '\n'.
   const source = interpretStringify(schema, ast, 'ast');
   // Both items at column 0, separated by a single newline. Trailing newline
-  // omitted; round-trip parser tolerates either.
+  // must NOT be emitted; downstream round-trip relies on exact equality.
   assert.equal(source, '- a\n- b');
+});
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+// Exercises the EMITTER-SIDE rebuild path (emit/rebuild.ts and emit/render.ts
+// both run their own copies of joinSeparatorOf / repeatsJoinSeparator). The
+// interp test above only covers interp/stringify.ts; this test ensures the
+// generated parser produces the same '\n' joiner for indent-modified spans.
+test('emit v2: generated stringify emits items at column 0 with newline separation', async () => {
+  const schema = inferSchema(yamlListSchema);
+  const source = emitV2Parser(schema);
+  const dir = mkdtempSync(join(here, '.indent-stringify-emit-'));
+  const file = join(dir, 'parser.ts');
+  writeFileSync(file, source, 'utf8');
+  try {
+    const mod = await import(pathToFileURL(file).href);
+    const ast = { type: 'list', items: ['a', 'b'] };
+    const out = mod.stringify(ast, { type: 'ast' });
+    assert.equal(out, '- a\n- b');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -251,15 +251,24 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
 
 // Returns the per-array join separator if the span is `.repeats(...)`, or
 // null when the span doesn't repeat. Mirrors the rebuild-side
-// `joinSeparatorOf` in emit/rebuild.ts: `.repeats({ sep })` declares an
-// explicit inter-child separator that the parser consumed between children
-// — children's rebuilt source carries only their own content (not the
-// separator), so we must re-introduce the declared separator at join time.
-// `.repeats()` without `sep` relies on the schema-level whitespace policy
-// (single space) between children → join with " ".
+// `joinSeparatorOf` in emit/rebuild.ts and the interpreter's stringify
+// equivalent — keep all three in lockstep.
+//
+// Priority:
+//   1. Indent-modified repeats span → '\n' (structural line break between
+//      siblings in the indented block). Phase 7 MVP joins at column 0;
+//      Task 7.7's yaml-block schema will reveal whether per-level padding
+//      is needed.
+//   2. `.repeats({ sep })` → declared inter-child separator that the parser
+//      consumed between children — children's rebuilt source carries only
+//      their own content, so we re-introduce the declared separator here.
+//   3. `.repeats()` without `sep` → schema-level whitespace policy (single
+//      space) between children.
 function repeatsJoinSeparator(span: ResolvedSpan): string | null {
+  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
+      if (hasIndent) return '\n';
       return m.sep === undefined ? ' ' : m.sep;
     }
   }

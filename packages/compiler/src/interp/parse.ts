@@ -35,7 +35,41 @@ type State = {
   readonly len: number;
   pos: number;
   maxOff: number;
+  // Stack of expected column offsets for nested indent scopes. Pushed by the
+  // recursive-repeats parser when the span carries kind:'indent'; popped on
+  // exit. Top of stack = current required column (in chars) for the next
+  // child item in an indented block.
+  readonly indentStack: number[];
 };
+
+// --- Indent helpers --------------------------------------------------------
+
+// Return the column (0-indexed) of the byte at `pos` within its line.
+// Column = number of characters since the start of the current line.
+// Tabs are NOT supported in the MVP — schemas with tabs return non-deterministic
+// columns relative to the surrounding text.
+function columnAt(state: State, pos: number): number {
+  let lineStart = pos;
+  while (lineStart > 0 && state.input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return pos - lineStart;
+}
+
+// Skip blank/whitespace-only lines. Advances state.pos past any sequence of
+// lines that contain only spaces/tabs followed by a newline. Stops at the
+// first non-blank character (without consuming the spaces leading up to it).
+function skipBlankLines(state: State): void {
+  outer: while (state.pos < state.len) {
+    let probe = state.pos;
+    while (probe < state.len) {
+      const c = state.input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    // End of input reached while scanning whitespace — leave pos unchanged.
+    return;
+  }
+}
 
 // --- Captures --------------------------------------------------------------
 
@@ -50,7 +84,7 @@ type SpanRange = { readonly start: number; readonly end: number };
 // --- Entry points ----------------------------------------------------------
 
 export function interpretParse(schema: InferredSchema, input: string): unknown {
-  const state: State = { input, len: input.length, pos: 0, maxOff: 0 };
+  const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
   const captures = parseNode(schema, schema.rootType, state);
   // Trailing-input check mirrors the v2 public API: a partial match is a
   // parse error.
@@ -69,7 +103,7 @@ export function interpretParse(schema: InferredSchema, input: string): unknown {
 // Exposed for the future differential fuzzer (Task 2.4) — gives raw captures
 // without forcing the ast render walk.
 export function interpretParseCaptures(schema: InferredSchema, input: string): Captures {
-  const state: State = { input, len: input.length, pos: 0, maxOff: 0 };
+  const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
   const captures = parseNode(schema, schema.rootType, state);
   skipWs(state);
   if (captures === null || state.pos !== input.length) {
@@ -723,6 +757,27 @@ function parseRepeatsSpan(
   let sepConsumed = false;
   let preSweep = state.pos;
 
+  // Indent-scope setup. If this span carries kind:'indent', we capture the
+  // column of the first child and push it onto the indent stack. Each
+  // subsequent iteration checks that the next non-blank line's column
+  // matches the captured column; mismatches exit the loop cleanly.
+  const isIndented = hasModifier(span, 'indent');
+  let indentPushed = false;
+  if (isIndented) {
+    skipBlankLines(state);
+    // Skip horizontal whitespace (spaces only — tabs not supported in MVP).
+    while (state.pos < state.len && state.input.charCodeAt(state.pos) === 0x20) state.pos++;
+    const firstCol = columnAt(state, state.pos);
+    const parentCol =
+      state.indentStack.length > 0 ? state.indentStack[state.indentStack.length - 1]! : -1;
+    if (firstCol > parentCol) {
+      state.indentStack.push(firstCol);
+      indentPushed = true;
+    }
+    // If firstCol <= parentCol the block is empty (immediate dedent). The
+    // existing post-loop min check handles the min=0 / min>0 cases.
+  }
+
   // Loop. Each iteration: optional sep-sweep, stopBefore check, attempt
   // one role parse, push on success. Break when no role matched.
   // Infinite-loop guard: break if a successful parse didn't advance.
@@ -739,6 +794,20 @@ function parseRepeatsSpan(
         state.pos += sep.length;
         while (state.pos < state.len && isWs(state.input.charCodeAt(state.pos))) state.pos++;
       }
+    }
+    // For indent scopes (and only when the stack was actually pushed), check
+    // the column of the next non-blank token before dispatching the role.
+    // This runs instead of the generic whitespace-skip that dispatchRoles
+    // would otherwise perform — by advancing pos to the first non-space
+    // character before calling dispatchRoles, we ensure dispatchRoles'
+    // internal skipWs is a no-op and the column check is authoritative.
+    if (isIndented && indentPushed) {
+      skipBlankLines(state);
+      while (state.pos < state.len && state.input.charCodeAt(state.pos) === 0x20) state.pos++;
+      const col = columnAt(state, state.pos);
+      const required = state.indentStack[state.indentStack.length - 1]!;
+      if (col < required) break;  // dedent — exit cleanly
+      if (col > required) break;  // unexpected over-indent — exit cleanly
     }
     if (stopBefore && stopBefore.length > 0) {
       let stop = false;
@@ -760,9 +829,12 @@ function parseRepeatsSpan(
     if (state.pos === loopStart) break;
     if (max !== undefined && list.length > max) {
       state.pos = start;
+      if (indentPushed) state.indentStack.pop();
       return false;
     }
   }
+
+  if (indentPushed) state.indentStack.pop();
 
   // Trailing-separator policy.
   const trailing = repeats.trailing ?? 'allowed';

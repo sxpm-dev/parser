@@ -56,7 +56,17 @@ function applyPreamble(schema: InferredSchema, input: string): string {
   if (schema.unicode !== 'none') {
     input = input.normalize(schema.unicode);
   }
-  // 3. Newline canonicalization (Task 8.3 wires this in).
+  // 3. Newline canonicalization.
+  switch (schema.newlines) {
+    case 'LF':
+      break;
+    case 'CRLF':
+      input = input.replace(/\r\n/g, '\n');
+      break;
+    case 'either-preserve':
+      input = input.replace(/\r\n?/g, '\n');
+      break;
+  }
   // 4. Case fold (Task 8.4 wires this in).
   return input;
 }

@@ -12,8 +12,11 @@ export type WhitespacePolicy = 'standard' | 'significant';
 export type UnknownCharPolicy = 'reject' | 'tolerate';
 
 // Phase 8 dials — applied at parse entry as a single composable preamble.
-// All four are no-ops at their default values; the v2 emitter only emits
-// preamble code for the dials a schema explicitly changes from default.
+// Transparent to existing schemas at their default values; the v2 emitter
+// emits per-dial preamble code only for dials a schema changes from default
+// (with `bom: 'allow'` as the one exception that emits a no-op BOM-strip
+// check even at default — see emit/v2/index.ts emitPreamble for the
+// rationale on interp/emit consistency).
 
 // BOM (U+FEFF) handling at parse entry.
 //   'allow'   — strip a leading BOM if present (default).

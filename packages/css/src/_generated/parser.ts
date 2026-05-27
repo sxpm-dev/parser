@@ -23,6 +23,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -70,6 +76,49 @@ function isJsIdentStart(c: number): boolean {
 }
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
@@ -1614,10 +1663,11 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   return fn(captures);
 }
 
-function __rebuildSlot(v: any, joinSep: string = ""): string {
+function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
-    let out = "";
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : "";
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += __rebuildSlot(v[i]);
@@ -1655,7 +1705,7 @@ function __rebuild_Stylesheet_0(captures: any): string {
   return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
 }
 
-function __invert_Comment_0_ast(value: any): string {
+function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1664,10 +1714,10 @@ function __invert_Comment_0_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"comment\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_Comment_0(captures);
+  return __rebuild_Comment_0(captures, __indentCol);
 }
 
-function __invert_Declaration_0_ast(value: any): string {
+function __invert_Declaration_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1681,10 +1731,10 @@ function __invert_Declaration_0_ast(value: any): string {
     throw new Error("stringify: field \"important\" expected true, got " + JSON.stringify(value.important));
   }
   captures.important = __invertSlotLeaf_ast(value._important);
-  return __rebuild_Declaration_0(captures);
+  return __rebuild_Declaration_0(captures, __indentCol);
 }
 
-function __invert_Declaration_1_ast(value: any): string {
+function __invert_Declaration_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1694,10 +1744,10 @@ function __invert_Declaration_1_ast(value: any): string {
   }
   captures.prop = __invertSlotLeaf_ast(value.prop);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Declaration_1(captures);
+  return __rebuild_Declaration_1(captures, __indentCol);
 }
 
-function __invert_Rule_0_ast(value: any): string {
+function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1706,11 +1756,11 @@ function __invert_Rule_0_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"rule\", got " + JSON.stringify(value.type));
   }
   captures.selector = __invertSlotLeaf_ast(value.selector);
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes);
-  return __rebuild_Rule_0(captures);
+  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  return __rebuild_Rule_0(captures, __indentCol);
 }
 
-function __invert_AtRule_0_ast(value: any): string {
+function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1720,11 +1770,11 @@ function __invert_AtRule_0_ast(value: any): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes);
-  return __rebuild_AtRule_0(captures);
+  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  return __rebuild_AtRule_0(captures, __indentCol);
 }
 
-function __invert_AtRule_1_ast(value: any): string {
+function __invert_AtRule_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1734,10 +1784,10 @@ function __invert_AtRule_1_ast(value: any): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
-  return __rebuild_AtRule_1(captures);
+  return __rebuild_AtRule_1(captures, __indentCol);
 }
 
-function __invert_Stylesheet_0_ast(value: any): string {
+function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -1745,11 +1795,11 @@ function __invert_Stylesheet_0_ast(value: any): string {
   if (!Object.is(value.type, "root")) {
     throw new Error("stringify: field \"type\" expected \"root\", got " + JSON.stringify(value.type));
   }
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes);
-  return __rebuild_Stylesheet_0(captures);
+  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  return __rebuild_Stylesheet_0(captures, __indentCol);
 }
 
-function __invert_Comment_0_source(value: any): string {
+function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1761,10 +1811,10 @@ function __invert_Comment_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Comment_0(captures);
+  return __rebuild_Comment_0(captures, __indentCol);
 }
 
-function __invert_Declaration_0_source(value: any): string {
+function __invert_Declaration_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1798,10 +1848,10 @@ function __invert_Declaration_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Declaration_0(captures);
+  return __rebuild_Declaration_0(captures, __indentCol);
 }
 
-function __invert_Declaration_1_source(value: any): string {
+function __invert_Declaration_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1827,10 +1877,10 @@ function __invert_Declaration_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Declaration_1(captures);
+  return __rebuild_Declaration_1(captures, __indentCol);
 }
 
-function __invert_Rule_0_source(value: any): string {
+function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1853,16 +1903,16 @@ function __invert_Rule_0_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end));
+    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Rule_0(captures);
+  return __rebuild_Rule_0(captures, __indentCol);
 }
 
-function __invert_AtRule_0_source(value: any): string {
+function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1897,16 +1947,16 @@ function __invert_AtRule_0_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end));
+    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_AtRule_0(captures);
+  return __rebuild_AtRule_0(captures, __indentCol);
 }
 
-function __invert_AtRule_1_source(value: any): string {
+function __invert_AtRule_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1936,10 +1986,10 @@ function __invert_AtRule_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_AtRule_1(captures);
+  return __rebuild_AtRule_1(captures, __indentCol);
 }
 
-function __invert_Stylesheet_0_source(value: any): string {
+function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -1949,204 +1999,204 @@ function __invert_Stylesheet_0_source(value: any): string {
   if (__pos >= __s.length) {
     captures.nodes = null;
   } else {
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos));
+    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos), __indentCol);
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Stylesheet_0(captures);
+  return __rebuild_Stylesheet_0(captures, __indentCol);
 }
 
-function __dispatchInverse_Comment_ast(value: any): string {
+function __dispatchInverse_Comment_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "comment")) return __invert_Comment_0_ast(value);
+    if (Object.is(value.type, "comment")) return __invert_Comment_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Declaration_ast(value: any): string {
+function __dispatchInverse_Declaration_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "decl") && Object.is(value.important, true)) return __invert_Declaration_0_ast(value);
-    if (Object.is(value.type, "decl")) return __invert_Declaration_1_ast(value);
+    if (Object.is(value.type, "decl") && Object.is(value.important, true)) return __invert_Declaration_0_ast(value, __indentCol);
+    if (Object.is(value.type, "decl")) return __invert_Declaration_1_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Rule_ast(value: any): string {
+function __dispatchInverse_Rule_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "rule")) return __invert_Rule_0_ast(value);
+    if (Object.is(value.type, "rule")) return __invert_Rule_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_AtRule_ast(value: any): string {
+function __dispatchInverse_AtRule_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "atrule") && "nodes" in value) return __invert_AtRule_0_ast(value);
-    if (Object.is(value.type, "atrule") && !("nodes" in value)) return __invert_AtRule_1_ast(value);
+    if (Object.is(value.type, "atrule") && "nodes" in value) return __invert_AtRule_0_ast(value, __indentCol);
+    if (Object.is(value.type, "atrule") && !("nodes" in value)) return __invert_AtRule_1_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Stylesheet_ast(value: any): string {
+function __dispatchInverse_Stylesheet_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "root")) return __invert_Stylesheet_0_ast(value);
+    if (Object.is(value.type, "root")) return __invert_Stylesheet_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_ast(value: any): string {
-  return __dispatchInverse_Stylesheet_ast(value);
+  return __dispatchInverse_Stylesheet_ast(value, 0);
 }
 
-function __dispatchInverse_Comment_source(value: any): string {
+function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_Comment_0_source(value);
+    return __invert_Comment_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Declaration_source(value: any): string {
+function __dispatchInverse_Declaration_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(" !") >= 0) return __invert_Declaration_0_source(value);
-    return __invert_Declaration_1_source(value);
+    if (value.indexOf(" !") >= 0) return __invert_Declaration_0_source(value, __indentCol);
+    return __invert_Declaration_1_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Rule_source(value: any): string {
+function __dispatchInverse_Rule_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(" {") >= 0) return __invert_Rule_0_source(value);
+    if (value.indexOf(" {") >= 0) return __invert_Rule_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_AtRule_source(value: any): string {
+function __dispatchInverse_AtRule_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("@")) return __invert_AtRule_0_source(value);
-    if (value.startsWith("@")) return __invert_AtRule_1_source(value);
+    if (value.startsWith("@")) return __invert_AtRule_0_source(value, __indentCol);
+    if (value.startsWith("@")) return __invert_AtRule_1_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Stylesheet_source(value: any): string {
+function __dispatchInverse_Stylesheet_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_Stylesheet_0_source(value);
+    return __invert_Stylesheet_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_source(value: any): string {
-  return __dispatchInverse_Stylesheet_source(value);
+  return __dispatchInverse_Stylesheet_source(value, 0);
 }
 
-function __invertSlotFor_Comment_ast(v: any): any {
+function __invertSlotFor_Comment_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_ast(v[i]);
+      const r = __invertSlotFor_Comment_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Comment_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Comment_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Declaration_ast(v: any): any {
+function __invertSlotFor_Declaration_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Declaration_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Declaration_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Declaration_ast(v[i]);
+      const r = __invertSlotFor_Declaration_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Declaration_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Declaration_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Rule_ast(v: any): any {
+function __invertSlotFor_Rule_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Rule_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Rule_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Rule_ast(v[i]);
+      const r = __invertSlotFor_Rule_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Rule_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Rule_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_AtRule_ast(v: any): any {
+function __invertSlotFor_AtRule_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_AtRule_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_AtRule_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_AtRule_ast(v[i]);
+      const r = __invertSlotFor_AtRule_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_AtRule_ast(v);
+  if (typeof v === "object") return __dispatchInverse_AtRule_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Stylesheet_ast(v: any): any {
+function __invertSlotFor_Stylesheet_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Stylesheet_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Stylesheet_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Stylesheet_ast(v[i]);
+      const r = __invertSlotFor_Stylesheet_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Stylesheet_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Stylesheet_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v: any): any {
+function __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_AtRule_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Rule_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Declaration_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v[i]);
+      const r = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_AtRule_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Rule_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Declaration_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Comment, AtRule, Rule, Declaration; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -2166,113 +2216,113 @@ function __invertSlotLeaf_ast(v: any): any {
   return String(v);
 }
 
-function __invertSlotFor_Comment_source(v: any): any {
+function __invertSlotFor_Comment_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_source(v[i]);
+      const r = __invertSlotFor_Comment_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Comment_source(v);
+  if (typeof v === "object") return __dispatchInverse_Comment_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Declaration_source(v: any): any {
+function __invertSlotFor_Declaration_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Declaration_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Declaration_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Declaration_source(v[i]);
+      const r = __invertSlotFor_Declaration_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Declaration_source(v);
+  if (typeof v === "object") return __dispatchInverse_Declaration_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Rule_source(v: any): any {
+function __invertSlotFor_Rule_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Rule_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Rule_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Rule_source(v[i]);
+      const r = __invertSlotFor_Rule_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Rule_source(v);
+  if (typeof v === "object") return __dispatchInverse_Rule_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_AtRule_source(v: any): any {
+function __invertSlotFor_AtRule_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_AtRule_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_AtRule_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_AtRule_source(v[i]);
+      const r = __invertSlotFor_AtRule_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_AtRule_source(v);
+  if (typeof v === "object") return __dispatchInverse_AtRule_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Stylesheet_source(v: any): any {
+function __invertSlotFor_Stylesheet_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Stylesheet_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Stylesheet_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Stylesheet_source(v[i]);
+      const r = __invertSlotFor_Stylesheet_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Stylesheet_source(v);
+  if (typeof v === "object") return __dispatchInverse_Stylesheet_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v: any): any {
+function __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_AtRule_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Rule_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Declaration_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v[i]);
+      const r = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_AtRule_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Rule_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Declaration_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Comment, AtRule, Rule, Declaration; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -3782,6 +3832,8 @@ function __renderFused(input: string, target: string): string | null {
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -3792,6 +3844,7 @@ function __renderFused(input: string, target: string): string | null {
 
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
   const state: State = {
     input,
     len: input.length,
@@ -3799,6 +3852,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = parseStylesheet(state);
   if (result === null || state.pos !== input.length) {

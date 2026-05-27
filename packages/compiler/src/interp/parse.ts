@@ -28,6 +28,39 @@ import {
 } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
 
+// --- Phase 8 input-normalization preamble ---------------------------------
+//
+// Applied once at parse entry, before the State is constructed. Each step
+// is a no-op at the schema's default dial value EXCEPT BOM 'allow' which
+// silently strips a leading U+FEFF (the realistic default for a parser).
+function applyPreamble(schema: InferredSchema, input: string): string {
+  // 1. BOM handling.
+  const hasBom = input.charCodeAt(0) === 0xfeff;
+  switch (schema.bom) {
+    case 'allow':
+      if (hasBom) input = input.slice(1);
+      break;
+    case 'reject':
+      if (hasBom) {
+        throw new SyntaxError('interp: schema rejects BOM; input begins with U+FEFF');
+      }
+      break;
+    case 'require':
+      if (!hasBom) {
+        throw new SyntaxError('interp: schema requires BOM; input does not begin with U+FEFF');
+      }
+      input = input.slice(1);
+      break;
+  }
+  // 2. Unicode normalization.
+  if (schema.unicode !== 'none') {
+    input = input.normalize(schema.unicode);
+  }
+  // 3. Newline canonicalization (Task 8.3 wires this in).
+  // 4. Case fold (Task 8.4 wires this in).
+  return input;
+}
+
 // --- State -----------------------------------------------------------------
 
 type State = {
@@ -86,6 +119,7 @@ type SpanRange = { readonly start: number; readonly end: number };
 // --- Entry points ----------------------------------------------------------
 
 export function interpretParse(schema: InferredSchema, input: string): unknown {
+  input = applyPreamble(schema, input);
   const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
   const captures = parseNode(schema, schema.rootType, state);
   // Trailing-input check mirrors the v2 public API: a partial match is a
@@ -105,6 +139,7 @@ export function interpretParse(schema: InferredSchema, input: string): unknown {
 // Exposed for the future differential fuzzer (Task 2.4) — gives raw captures
 // without forcing the ast render walk.
 export function interpretParseCaptures(schema: InferredSchema, input: string): Captures {
+  input = applyPreamble(schema, input);
   const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
   const captures = parseNode(schema, schema.rootType, state);
   skipWs(state);

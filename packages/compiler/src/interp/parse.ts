@@ -67,7 +67,14 @@ function applyPreamble(schema: InferredSchema, input: string): string {
       input = input.replace(/\r\n?/g, '\n');
       break;
   }
-  // 4. Case fold (Task 8.4 wires this in).
+  // 4. Case fold. Locale-independent Unicode default case mapping —
+  // schemas with caseSensitive:false MUST write examples in canonical
+  // (lowercase) form. ASCII-correctness only; non-ASCII case folding has
+  // documented edge cases (e.g. dotless-i variants) — see Phase 8 closeout
+  // follow-ups.
+  if (!schema.caseSensitive) {
+    input = input.toLowerCase();
+  }
   return input;
 }
 

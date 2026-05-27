@@ -28,7 +28,7 @@ import {
 } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
 
-// --- Phase 8 input-normalization preamble ---------------------------------
+// --- Phase 8 input-normalization preamble ----------------------------------
 //
 // Applied once at parse entry, before the State is constructed. Each step
 // is a no-op at the schema's default dial value EXCEPT BOM 'allow' which

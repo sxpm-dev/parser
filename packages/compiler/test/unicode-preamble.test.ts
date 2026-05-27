@@ -42,6 +42,16 @@ test('interp preamble: BOM require throws if BOM is absent', () => {
   assert.throws(() => interpretParse(schema, 'hello'), /BOM/);
 });
 
+test('interp preamble: BOM require strips BOM when present (happy path)', () => {
+  const schema = inferSchema(makeLineSchema({ bom: 'require' }));
+  assert.equal(interpretParse(schema, '﻿hello'), 'hello');
+});
+
+test('interp preamble: BOM reject is a no-op when BOM is absent (happy path)', () => {
+  const schema = inferSchema(makeLineSchema({ bom: 'reject' }));
+  assert.equal(interpretParse(schema, 'hello'), 'hello');
+});
+
 test('interp preamble: unicode NFC normalizes NFD input', () => {
   // 'é' as NFD = 'e' + combining acute (U+0301). After normalize('NFC') the
   // input becomes the NFC form 'é' (U+00E9). The captured value is whatever
@@ -67,6 +77,31 @@ test('interp preamble: unicode NFC normalizes NFD input', () => {
   // NFC (length 4), not the original NFD (length 5).
   assert.equal(result, nfc);
   assert.equal(result.length, 4);
+});
+
+test('interp preamble: unicode NFD decomposes precomposed input', () => {
+  // Inverse of the NFC test: feed NFC input, assert preamble produced NFD.
+  const nfc = 'café';   // 'café' precomposed (length 4)
+  const nfd = 'café';  // 'cafe' + combining acute (length 5)
+  const schemaNfd = inferSchema(
+    defineSchema({
+      rootType: 'Line',
+      unicode: 'NFD',
+      examples: [
+        ex('café')
+          .as('Line')
+          .span('text', 'café').until('\n')
+          .render('ast', $.text)
+          .render('source', tpl`${$.text}`)
+          .build(),
+      ],
+    }),
+  );
+  const result = interpretParse(schemaNfd, nfc) as string;
+  // Preamble normalized NFC input to NFD before parsing → captured value is
+  // NFD (length 5), not the original NFC (length 4).
+  assert.equal(result, nfd);
+  assert.equal(result.length, 5);
 });
 
 test('interp preamble: unicode none leaves input as-is', () => {

@@ -354,6 +354,12 @@ function emitRepeatsSpan(
     throw new Error(`v2: repeats span has no recursive roles (span '${span.name ?? '?'}')`);
   }
   const repeats = findModifier(span, 'repeats')!;
+  const isIndented = hasModifier(span, 'indent');
+  if (isIndented && repeats.sep !== undefined) {
+    throw new Error(
+      `emit v2: span '${span.name ?? '<unnamed>'}' combines .indent() with .repeats({ sep }); this is unsupported in Phase 7.`,
+    );
+  }
   const min = repeats.min ?? 0;
   const max = repeats.max;
   const sep = repeats.sep;
@@ -485,6 +491,26 @@ while (${literalMatchExpr(sep, 'off')}) {
     lines.push(`let __sepConsumed = false;`);
     lines.push(`let __preSweep = off;`);
   }
+  if (isIndented) {
+    // Indent prologue: skip blank lines + horizontal ws to find first item's
+    // column, then push that column onto the indent stack so nested repeats
+    // can gate against it. If the first non-blank column is not greater than
+    // the parent's column (or the stack is empty), we still push and allow
+    // the loop to run (min/max enforcement handles the empty case). The
+    // overflow guard matches the reference interpreter's behaviour.
+    lines.push(`state.pos = off;`);
+    lines.push(`skipBlankLines(state);`);
+    lines.push(`skipHorizontalWs(state);`);
+    lines.push(`off = state.pos;`);
+    lines.push(`const __indentCol = columnAt(state, off);`);
+    lines.push(`const __parentCol = state.indentStackTop > 0 ? state.indentStack[state.indentStackTop - 1] : -1;`);
+    lines.push(`let __indentPushed = false;`);
+    lines.push(`if (__indentCol > __parentCol) {`);
+    lines.push(`  if (state.indentStackTop >= 16) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }`);
+    lines.push(`  state.indentStack[state.indentStackTop++] = __indentCol;`);
+    lines.push(`  __indentPushed = true;`);
+    lines.push(`}`);
+  }
   lines.push(`while (true) {`);
   // Track the off at loop entry. If a successful child parse returns without
   // advancing `off`, we break to avoid an infinite loop. Matches v1
@@ -492,6 +518,23 @@ while (${literalMatchExpr(sep, 'off')}) {
   // on truly empty productions (no spans) or on productions whose only span
   // is an optional that didn't match.
   lines.push(`  const __loopStart = off;`);
+  if (isIndented) {
+    // Per-iteration column gate: skip blank lines + horizontal ws, then
+    // check that the next non-blank character is at the same column as the
+    // first item. Any deviation (dedent or over-indent) terminates the loop.
+    // We only run this when a column was actually pushed (the first item's
+    // column exceeded the parent's); if __indentPushed is false the loop
+    // exits via the normal __cand === null path on the first attempt.
+    lines.push(`  if (__indentPushed) {`);
+    lines.push(`    state.pos = off;`);
+    lines.push(`    skipBlankLines(state);`);
+    lines.push(`    skipHorizontalWs(state);`);
+    lines.push(`    off = state.pos;`);
+    lines.push(`    if (off >= len) break;`);
+    lines.push(`    const __col = columnAt(state, off);`);
+    lines.push(`    if (__col !== __indentCol) break;`);
+    lines.push(`  }`);
+  }
   if (sep !== undefined) {
     // Top-of-loop sep-sweep, executed on EVERY iteration (including the
     // first). Mirrors v1 emitRepeatedSpan which sweeps leading separators
@@ -512,6 +555,12 @@ while (${literalMatchExpr(sep, 'off')}) {
   lines.push(`  ${listVar}.push(__cand);`);
   lines.push(`  if (off === __loopStart) break;`);
   lines.push(`}`);
+  if (isIndented) {
+    // Epilogue: pop the indent column from the stack when it was pushed in
+    // the prologue. Must execute whether the loop exited via break or
+    // exhaustion so the stack stays balanced for outer indent scopes.
+    lines.push(`if (__indentPushed) state.indentStackTop--;`);
+  }
   for (const c of trailingChecks) lines.push(c);
   if (minCheck) lines.push(minCheck);
   if (maxCheck) lines.push(maxCheck);

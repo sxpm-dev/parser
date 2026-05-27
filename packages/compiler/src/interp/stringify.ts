@@ -34,10 +34,7 @@ import type {
   Production,
   ResolvedSpan,
 } from '../model.ts';
-
-// Number of spaces added per indent level. MVP constant; a future phase
-// could expose this as a schema-level `indentWidth` option.
-const INDENT_STEP_SPACES = 2;
+import { INDENT_STEP_SPACES, type Piece } from '../emit/rebuild.ts';
 
 // --- Public API ------------------------------------------------------------
 
@@ -671,15 +668,6 @@ function rebuildSource(
   indentCol: number,
 ): string {
   const input = production.source.input;
-  type Piece =
-    | { readonly kind: 'literal'; readonly text: string }
-    | {
-        readonly kind: 'slot';
-        readonly ref: string;
-        readonly optional: boolean;
-        readonly joinSep: string;
-        readonly isIndent: boolean;
-      };
   const pieces: Piece[] = [];
   let cursor = 0;
   for (const span of production.spans) {
@@ -734,15 +722,7 @@ function rebuildSource(
   return result;
 }
 
-function contributionOf(span: ResolvedSpan):
-  | { readonly kind: 'literal'; readonly text: string }
-  | {
-      readonly kind: 'slot';
-      readonly ref: string;
-      readonly optional: boolean;
-      readonly joinSep: string;
-      readonly isIndent: boolean;
-    } {
+function contributionOf(span: ResolvedSpan): Piece {
   const optional = isAbsentAllowedSpan(span);
   const { sep: joinSep, isIndent } = joinSeparatorOf(span);
   if (span.recursiveRoles.length > 0) {

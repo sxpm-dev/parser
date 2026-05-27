@@ -43,9 +43,9 @@ import {
 } from '../model.ts';
 import { jsString } from './strings.ts';
 
-// Number of spaces added per indent level — kept in sync with
-// interp/stringify.ts `INDENT_STEP_SPACES` and emit/inverse.ts
-// `CODEGEN_INDENT_STEP`.
+// Number of spaces added per indent level. Imported by every leg of the
+// stringify pipeline (this file, emit/inverse.ts, interp/stringify.ts) so
+// the three paths cannot drift apart.
 export const INDENT_STEP_SPACES = 2;
 
 export function emitRebuild(schema: InferredSchema): string {
@@ -58,7 +58,10 @@ export function emitRebuild(schema: InferredSchema): string {
   return fns.join('\n\n');
 }
 
-type Piece =
+// Shared between rebuild.ts and interp/stringify.ts — both synthesize the
+// same Piece sequence per production. Exported so the interp side imports
+// the definition rather than re-declaring it locally.
+export type Piece =
   | { readonly kind: 'literal'; readonly text: string }
   | {
       readonly kind: 'slot';

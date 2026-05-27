@@ -56,10 +56,15 @@ test('yaml-block round-trip: five-entry mapping', () => {
 // which the parser accepts as a valid nested mapping.
 
 // Two-level nested mapping: `bar:\n  baz: 2\n  qux: 3`.
+// Source-shape assertion locks the invariant that children are emitted on
+// indented continuation lines, not collapsed onto the parent line. Without
+// this assertion, a regression that produced `'bar: baz: 2 qux: 3'` (still
+// parses by accident under some grammar relaxation) would silently pass.
 test('yaml-block round-trip: nested mapping value', () => {
   const input = 'bar:\n  baz: 2\n  qux: 3';
   const ast1 = parseAst(input);
   const source = stringify(ast1, { type: 'ast' });
+  assert.equal(source, 'bar: \n  baz: 2\n  qux: 3', 'nested mapping must emit indented continuation block');
   const ast2 = parseAst(source as string);
   assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
 });
@@ -69,6 +74,7 @@ test('yaml-block round-trip: nested sequence value', () => {
   const input = 'items:\n  - a\n  - b';
   const ast1 = parseAst(input);
   const source = stringify(ast1, { type: 'ast' });
+  assert.equal(source, 'items: \n  - a\n  - b', 'nested sequence must emit indented continuation block');
   const ast2 = parseAst(source as string);
   assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
 });
@@ -78,6 +84,11 @@ test('yaml-block round-trip: mixed flat and nested', () => {
   const input = 'bar:\n  baz: 2\n  qux: 3\nitems:\n  - a\n  - b';
   const ast1 = parseAst(input);
   const source = stringify(ast1, { type: 'ast' });
+  assert.equal(
+    source,
+    'bar: \n  baz: 2\n  qux: 3\nitems: \n  - a\n  - b',
+    'mixed flat+nested must preserve column structure',
+  );
   const ast2 = parseAst(source as string);
   assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
 });
@@ -87,6 +98,7 @@ test('yaml-block round-trip: three-level nested mapping', () => {
   const input = 'outer:\n  bar:\n    baz: 2';
   const ast1 = parseAst(input);
   const source = stringify(ast1, { type: 'ast' });
+  assert.equal(source, 'outer: \n  bar: \n    baz: 2', 'three-level nesting must indent 2/4 spaces respectively');
   const ast2 = parseAst(source as string);
   assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
 });

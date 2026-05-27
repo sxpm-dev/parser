@@ -5,6 +5,7 @@ import type { SchemaDef, ValidationDef } from '@parser2/parser';
 import { generateParser } from './index.ts';
 import type { Backend } from './emit/backend.ts';
 import { TS_BACKEND } from './emit/ts.ts';
+import { BYTECODE_BACKEND } from './emit/bytecode/index.ts';
 
 // Usage:
 //   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts [--backend ts|bytecode]
@@ -49,9 +50,7 @@ async function main(path: string, backend: Backend): Promise<void> {
 
 function resolveBackend(name: string): Backend {
   if (name === 'ts') return TS_BACKEND;
-  // 'bytecode' is reserved for a future Backend registration (Phase 6.5).
-  // Until then, requesting it must fail cleanly rather than crash with an
-  // import error.
+  if (name === 'bytecode') return BYTECODE_BACKEND;
   throw new Error(`Unknown backend: ${name}`);
 }
 

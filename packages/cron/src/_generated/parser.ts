@@ -70,6 +70,25 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
+  let lineStart = offset;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
+  let lineEnd = offset;
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  // Headline is generic — the underlying validator's message is attached via
+  // `cause` so callers can drill into it without polluting `.message`. Tests
+  // assert that the headline does NOT include validator-specific text (e.g.
+  // 'Invalid CSS value'), so we deliberately keep the message bare.
+  return new SyntaxError(`Invalid value at position ${offset}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`, cause !== undefined ? { cause } : undefined);
+}
+
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -80,7 +99,11 @@ function syntaxErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`parse failed at position ${offset}
+  const ch = offset < input.length ? input[offset] : 'EOF';
+  const headline = ch === 'EOF'
+    ? `Unexpected end of input at position ${offset}`
+    : `Unexpected '${ch}' at position ${offset}`;
+  return new SyntaxError(`${headline}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
@@ -437,6 +460,10 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  if (target !== 'ast') {
+    const fused = __renderFused(input, target);
+    if (fused !== null) return fused;
   }
   const fn = __renderDispatch[target];
   if (!fn) {
@@ -987,6 +1014,1352 @@ export function stringify(value: unknown, options?: { type?: string }): string {
   return fn(value);
 }
 
+function __fusedRender_CronField_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("*");
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_CronField_1_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __step_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __step_end = off;
+    const step = input.slice(__step_start, __step_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("*/");
+    out.push(String(step ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_CronField_2_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __value_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __value_end = off;
+    const value = input.slice(__value_start, __value_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(value ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_CronField_3_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __start_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __start_end = off;
+    const start = input.slice(__start_start, __start_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __end_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __end_end = off;
+    const end = input.slice(__end_start, __end_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(start ?? ""));
+    out.push("-");
+    out.push(String(end ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_CommandWord_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __value_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __value_end = off;
+    const value = input.slice(__value_start, __value_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(value ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Command_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_words: string[] = [];
+    let __slotMatched_words = false;
+    // recursive repeats span (CommandWord) — fused loop
+    {
+      let __count = 0;
+      while (true) {
+        const __loopStart = off;
+        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+        const __bufLenBefore = __slotBuf_words.length;
+        const __offBeforeItem = off;
+        state.pos = off;
+        let __itemMatched = false;
+        if (__count > 0) __slotBuf_words.push(" ");
+        if (off < len) {
+          const __c0 = input.charCodeAt(off);
+          if (__c0 === 45) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 65) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 66) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 67) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 68) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 69) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 70) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 71) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 72) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 73) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 74) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 75) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 76) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 77) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 78) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 79) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 80) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 81) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 82) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 83) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 84) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 85) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 86) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 87) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 88) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 89) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 90) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 95) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 97) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 98) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 99) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 100) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 101) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 102) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 103) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 104) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 105) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 106) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 107) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 108) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 109) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 110) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 111) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 112) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 113) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 114) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 115) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 116) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 117) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 118) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 119) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 120) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 121) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 122) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_words.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_CommandWord_0_source(state, __slotBuf_words)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+        }
+        if (!__itemMatched) {
+          __slotBuf_words.length = __bufLenBefore;
+          off = __offBeforeItem;
+          state.pos = __offBeforeItem;
+          break;
+        }
+        __count++;
+        __slotMatched_words = true;
+        if (off === __loopStart) break;
+      }
+      if (__count < 1) { state.pos = entryOff; return null; }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    for (let __i = 0; __i < __slotBuf_words.length; __i++) out.push(__slotBuf_words[__i]);
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_minute: string[] = [];
+    let __slotMatched_minute = false;
+    // recursive span (CronField) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 42) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_0_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_1_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 48) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 49) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 50) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 51) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 52) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 53) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 54) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 55) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 56) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 57) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_minute) __slotBuf_minute.length = 0;
+      if (!__slotMatched_minute) { state.pos = entryOff; return null; }
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_hour: string[] = [];
+    let __slotMatched_hour = false;
+    // recursive span (CronField) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 42) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_0_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_1_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 48) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 49) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 50) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 51) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 52) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 53) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 54) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 55) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 56) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 57) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_hour) __slotBuf_hour.length = 0;
+      if (!__slotMatched_hour) { state.pos = entryOff; return null; }
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_dayOfMonth: string[] = [];
+    let __slotMatched_dayOfMonth = false;
+    // recursive span (CronField) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 42) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_0_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_1_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 48) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 49) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 50) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 51) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 52) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 53) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 54) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 55) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 56) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 57) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_dayOfMonth) __slotBuf_dayOfMonth.length = 0;
+      if (!__slotMatched_dayOfMonth) { state.pos = entryOff; return null; }
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_month: string[] = [];
+    let __slotMatched_month = false;
+    // recursive span (CronField) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 42) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_0_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_1_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 48) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 49) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 50) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 51) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 52) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 53) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 54) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 55) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 56) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 57) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_month) __slotBuf_month.length = 0;
+      if (!__slotMatched_month) { state.pos = entryOff; return null; }
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_dayOfWeek: string[] = [];
+    let __slotMatched_dayOfWeek = false;
+    // recursive span (CronField) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 42) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_0_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_1_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 48) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 49) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 50) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 51) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 52) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 53) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 54) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 55) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 56) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 57) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_dayOfWeek) __slotBuf_dayOfWeek.length = 0;
+      if (!__slotMatched_dayOfWeek) { state.pos = entryOff; return null; }
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_command: string[] = [];
+    let __slotMatched_command = false;
+    // recursive span (Command) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (!__slotMatched_command) {
+          state.pos = __offBefore;
+          __slotBuf_command.length = 0;
+          if (__fusedRender_Command_0_source(state, __slotBuf_command)) { __slotMatched_command = true; off = state.pos; }
+        }
+      }
+      if (!__slotMatched_command) __slotBuf_command.length = 0;
+      if (!__slotMatched_command) { off = __offBefore; state.pos = __offBefore; }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    for (let __i = 0; __i < __slotBuf_minute.length; __i++) out.push(__slotBuf_minute[__i]);
+    out.push(" ");
+    for (let __i = 0; __i < __slotBuf_hour.length; __i++) out.push(__slotBuf_hour[__i]);
+    out.push(" ");
+    for (let __i = 0; __i < __slotBuf_dayOfMonth.length; __i++) out.push(__slotBuf_dayOfMonth[__i]);
+    out.push(" ");
+    for (let __i = 0; __i < __slotBuf_month.length; __i++) out.push(__slotBuf_month[__i]);
+    out.push(" ");
+    for (let __i = 0; __i < __slotBuf_dayOfWeek.length; __i++) out.push(__slotBuf_dayOfWeek[__i]);
+    if (__slotMatched_command) { out.push(" "); for (let __i = 0; __i < __slotBuf_command.length; __i++) out.push(__slotBuf_command[__i]); }
+    return true;
+  })();
+  return __ok === true;
+}
+
+const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "CronField#0": __fusedRender_CronField_0_source,
+  "CronField#1": __fusedRender_CronField_1_source,
+  "CronField#2": __fusedRender_CronField_2_source,
+  "CronField#3": __fusedRender_CronField_3_source,
+  "CommandWord#0": __fusedRender_CommandWord_0_source,
+  "Command#0": __fusedRender_Command_0_source,
+  "Cron#0": __fusedRender_Cron_0_source,
+};
+
+const __rootProductionKey: string = "Cron#0";
+
+function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
+  switch (target) {
+    case "source": return __fusedRenderDispatch_source;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): string | null {
+  const table = __fusedRenderDispatchLookup(target);
+  if (table === null) return null;
+  const rootFusedFn = table[__rootProductionKey];
+  if (rootFusedFn === undefined) return null;
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+  };
+  const out: string[] = [];
+  const ok = rootFusedFn(state, out);
+  if (!ok) return null;
+  if (state.pos !== input.length) return null;
+  return out.join('');
+}
+
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {
@@ -1005,7 +2378,7 @@ function __parse(input: string, options?: ParseOptions): unknown {
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  const state: State = {
+  const __state: State = {
     input,
     len: input.length,
     pos: 0,
@@ -1013,9 +2386,9 @@ export function validate(input: string, options?: ParseOptions): void {
     mode: 'fast',
     lineStarts: [],
   };
-  const result = parseCron(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  const __result = parseCron(__state);
+  if (__result === null || __state.pos !== input.length) {
+    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
   }
 }
 

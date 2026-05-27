@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "generate": "npm run build -w @parser2/compiler && tsx ../../packages/compiler/src/cli.ts src/schema.ts",
+    "generate": "npm run build -w @parser2/compiler && npm run generate:ts && npm run generate:bcode",
+    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
+    "generate:bcode": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend bytecode",
     "build": "tsc -b",
     "test": "npm run generate && tsx --test test/*.test.ts",
     "bench": "npm run generate && npm run bench:parse",

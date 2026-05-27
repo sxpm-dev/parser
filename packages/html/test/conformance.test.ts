@@ -5,6 +5,13 @@
  *   - sourceCodeLocation (different shape; we use auto-attached `source` in raws mode only)
  *   - whitespace-only #text nodes (parse5 emits them between tags; we don't, because whitespace is skipped at tokenization)
  *   - quirks-mode (we always emit 'no-quirks')
+ *
+ * Phase 8 addition: the HTML schema is now opted into `caseSensitive: false`,
+ * which lowercases the entire input at parse entry. parse5 preserves text and
+ * attribute-value case, so to keep conformance comparable we lowercase text
+ * `value` and attribute `value` fields on the parse5 side before comparing.
+ * Tag names and attribute names are already lowercase in parse5's output, so
+ * no normalization is needed there.
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -57,15 +64,17 @@ type OurNode = {
 function normalizeP5(node: P5Node): OurNode {
   const out: OurNode = { nodeName: node.nodeName };
   if (node.nodeName === '#text') {
-    // parse5 stores text content under `value` for text nodes
-    out.value = (node as { value?: string }).value ?? '';
+    // parse5 stores text content under `value` for text nodes. Lowercase to
+    // match the HTML schema's `caseSensitive: false` canonicalization.
+    out.value = ((node as { value?: string }).value ?? '').toLowerCase();
     return out;
   }
   if (node.nodeName === '#comment') {
     // Phase I limitation: comment data loses leading/trailing whitespace
     // because `.until()` slices by token offsets and whitespace tokens are
     // skipped. Trim parse5 side to match. See parking lot.
-    out.data = (node.data ?? '').trim();
+    // Lowercase to match the schema's case-insensitive canonicalization.
+    out.data = (node.data ?? '').trim().toLowerCase();
     return out;
   }
   if (node.nodeName === '#documentType') {
@@ -77,7 +86,10 @@ function normalizeP5(node: P5Node): OurNode {
   if (node.nodeName !== '#document' && node.nodeName !== '#document-fragment') {
     out.tagName = node.tagName;
     out.namespaceURI = node.namespaceURI;
-    out.attrs = (node.attrs ?? []).map(({ name, value }) => ({ name, value }));
+    // Lowercase attribute values to match the schema's
+    // `caseSensitive: false` canonicalization. Names are already lowercase
+    // in parse5's output for HTML elements.
+    out.attrs = (node.attrs ?? []).map(({ name, value }) => ({ name, value: value.toLowerCase() }));
   }
   const kids = (node.childNodes ?? [])
     .filter((kid) => !isWhitespaceOnlyText(kid))

@@ -9538,6 +9538,7 @@ function __renderFused(input: string, target: string): string | null {
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
+  input = input.toLowerCase();
   const state: State = {
     input,
     len: input.length,

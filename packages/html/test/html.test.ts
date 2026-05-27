@@ -29,6 +29,10 @@ function stripKind(value: unknown): unknown {
 }
 
 test('html parses repeated top-level element nodes from schema examples', () => {
+  // Phase 8: the HTML schema is `caseSensitive: false`, so the entire input
+  // is lowercased at parse entry. Text content captures therefore reflect
+  // the canonicalized (lowercase) form. The `<DIV>foo</DIV>` ≡ `<div>foo</div>`
+  // contract documented in the Phase 8 plan applies to text too.
   assert.deepEqual(stripKind(parse('<div>Hello</div><p>World</p>')), {
     nodeName: '#document',
     mode: 'no-quirks',
@@ -38,7 +42,7 @@ test('html parses repeated top-level element nodes from schema examples', () => 
         tagName: 'div',
         namespaceURI: HTML_NS,
         attrs: [],
-        childNodes: [{ nodeName: '#text', value: 'Hello', parentNode: null }],
+        childNodes: [{ nodeName: '#text', value: 'hello', parentNode: null }],
         parentNode: null,
       },
       {
@@ -46,7 +50,7 @@ test('html parses repeated top-level element nodes from schema examples', () => 
         tagName: 'p',
         namespaceURI: HTML_NS,
         attrs: [],
-        childNodes: [{ nodeName: '#text', value: 'World', parentNode: null }],
+        childNodes: [{ nodeName: '#text', value: 'world', parentNode: null }],
         parentNode: null,
       },
     ],
@@ -67,7 +71,7 @@ test('html parses attributes and boolean attributes through Attribute node repea
           { name: 'class', value: 'hero' },
           { name: 'disabled', value: '' },
         ],
-        childNodes: [{ nodeName: '#text', value: 'Hello world', parentNode: null }],
+        childNodes: [{ nodeName: '#text', value: 'hello world', parentNode: null }],
         parentNode: null,
       },
     ],
@@ -166,7 +170,7 @@ test('html parses single-quoted and unquoted ident-shape attribute values', () =
         namespaceURI: HTML_NS,
         attrs: [
           { name: 'class', value: 'hero' },
-          { name: 'lang', value: 'en-GB' },
+          { name: 'lang', value: 'en-gb' },
         ],
         childNodes: [{ nodeName: '#text', value: 'x', parentNode: null }],
         parentNode: null,
@@ -219,10 +223,14 @@ test('html parses script and style raw-text content with `<` inside', () => {
 });
 
 test('html tokenizer tolerates non-ASCII bytes (em-dash, accents, emoji)', () => {
+  // Phase 8: `caseSensitive: false` applies `String.prototype.toLowerCase` to
+  // the input at parse entry. The capital `H` in `Héllo` is folded to `h` —
+  // the rest of the string (combining mark é, em-dash, emoji) is unchanged
+  // because they have no case mapping.
   const ast = parse('<p>Héllo — wörld 🌍</p>') as {
     childNodes: readonly { childNodes: readonly { value: string }[] }[];
   };
-  assert.equal(ast.childNodes[0]?.childNodes[0]?.value, 'Héllo — wörld 🌍');
+  assert.equal(ast.childNodes[0]?.childNodes[0]?.value, 'héllo — wörld 🌍');
 });
 
 test('html parses implicit-close lists (<li>/<dt>/<dd> without close)', () => {

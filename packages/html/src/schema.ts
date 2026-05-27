@@ -66,6 +66,7 @@ const P_STOPS = ['</p>', '<p>', '<p ', '<p/', '<div>', '<div ', '<table>', '<tab
 
 export default defineSchema({
   rootType: 'HtmlDocument',
+  caseSensitive: false,
   punctuators: {
     commentOpen:  '<!--',
     commentClose: '-->',

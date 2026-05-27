@@ -169,6 +169,8 @@ function __renderFused(input: string, target: string): string | null {
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -222,6 +224,8 @@ function emitPublicApi(schema: InferredSchema, validateBody: string): string {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = ${rootFn}(state);
   if (result === null || state.pos !== input.length) {

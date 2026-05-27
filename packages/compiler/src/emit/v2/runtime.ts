@@ -31,6 +31,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -78,6 +84,42 @@ function isJsIdentStart(c: number): boolean {
 }
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line. Raw byte offset from
+  // the start of the current line — tabs count as a single column, not their
+  // display width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces only (no tabs, no newlines). Used after skipBlankLines
+  // to land on the first non-space byte of the current line.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {

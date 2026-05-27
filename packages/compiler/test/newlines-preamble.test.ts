@@ -1,8 +1,29 @@
 import test from 'node:test';
 import { strict as assert } from 'node:assert';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { $, defineSchema, ex, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
+import { emitV2Parser } from '../src/emit/v2/index.ts';
 import { interpretParse } from '../src/interp/index.ts';
+
+const here = dirname(fileURLToPath(import.meta.url));
+
+async function loadGeneratedParser(schemaDef: Parameters<typeof inferSchema>[0]) {
+  const schema = inferSchema(schemaDef);
+  const source = emitV2Parser(schema);
+  const dir = mkdtempSync(join(here, '.newlines-emit-'));
+  const file = join(dir, 'parser.ts');
+  writeFileSync(file, source, 'utf8');
+  try {
+    const mod = await import(pathToFileURL(file).href);
+    return { mod, dir };
+  } catch (e) {
+    rmSync(dir, { recursive: true, force: true });
+    throw e;
+  }
+}
 
 // A `rawUntil([])` span captures the post-preamble input verbatim — no
 // whitespace skipping, no stop trimming. The asserted value is exactly the
@@ -54,4 +75,39 @@ test('newlines: either-preserve rewrites both \\r\\n and lone \\r to \\n', () =>
   assert.equal(interpretParse(schema, 'a\rb'), 'a\nb');
   // Plain LF passes through unchanged.
   assert.equal(interpretParse(schema, 'a\nb'), 'a\nb');
+});
+
+// --- Emit-side mirror tests (Task 8.5) -------------------------------------
+
+test('emit newlines: LF leaves CR and CRLF untouched (lossless)', async () => {
+  const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'LF' }));
+  try {
+    assert.equal(mod.render('a\nb', { type: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\rb');
+    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\r\nb');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('emit newlines: CRLF rewrites \\r\\n to \\n', async () => {
+  const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'CRLF' }));
+  try {
+    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\nb');
+    // Lone \r is NOT a CRLF sequence — strict CRLF mode leaves it alone.
+    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\rb');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('emit newlines: either-preserve rewrites both \\r\\n and lone \\r to \\n', async () => {
+  const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'either-preserve' }));
+  try {
+    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\nb', { type: 'ast' }), 'a\nb');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

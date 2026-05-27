@@ -213,11 +213,67 @@ export function parseFnName(nodeType: string): string {
   return `parse${nodeType}`;
 }
 
+// Phase 8 Task 8.5 — emit the input-normalization preamble inside __parse.
+// Mirrors `applyPreamble` in src/interp/parse.ts step-for-step so the
+// generated parser produces the same AST as the reference interpreter for
+// any (schema, input) pair.
+//
+// IMPORTANT: we intentionally do NOT short-circuit at "all defaults". The
+// default `bom: 'allow'` actively strips a leading U+FEFF — if the emit
+// path skipped the BOM block at default the generated parser would fail
+// the literal match on BOM-prefixed input while the interpreter strips it
+// and parses successfully. That divergence breaks the differential-fuzzing
+// invariant Phase 2 established. Each per-dial block below emits NO code
+// for `'LF'` / `'none'` / `caseSensitive: true`, so non-BOM dials at
+// default carry zero overhead.
+function emitPreamble(schema: InferredSchema): string {
+  const blocks: string[] = [];
+  // 1. BOM handling.
+  switch (schema.bom) {
+    case 'allow':
+      blocks.push(`if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);`);
+      break;
+    case 'reject':
+      blocks.push(
+        `if (input.charCodeAt(0) === 0xfeff) throw new SyntaxError('parse: schema rejects BOM; input begins with U+FEFF');`,
+      );
+      break;
+    case 'require':
+      blocks.push(
+        `if (input.charCodeAt(0) !== 0xfeff) throw new SyntaxError('parse: schema requires BOM; input does not begin with U+FEFF');`,
+      );
+      blocks.push(`input = input.slice(1);`);
+      break;
+  }
+  // 2. Unicode normalization.
+  if (schema.unicode !== 'none') {
+    blocks.push(`input = input.normalize(${JSON.stringify(schema.unicode)});`);
+  }
+  // 3. Newline canonicalization.
+  switch (schema.newlines) {
+    case 'LF':
+      break;
+    case 'CRLF':
+      blocks.push(`input = input.replace(/\\r\\n/g, '\\n');`);
+      break;
+    case 'either-preserve':
+      blocks.push(`input = input.replace(/\\r\\n?/g, '\\n');`);
+      break;
+  }
+  // 4. Case fold. ASCII-correctness only — non-ASCII case folding has
+  // documented edge cases (see Phase 8 closeout follow-ups).
+  if (!schema.caseSensitive) {
+    blocks.push(`input = input.toLowerCase();`);
+  }
+  return blocks.length === 0 ? '' : '  ' + blocks.join('\n  ') + '\n';
+}
+
 function emitPublicApi(schema: InferredSchema, validateBody: string): string {
   const rootFn = parseFnName(schema.rootType);
+  const preamble = emitPreamble(schema);
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-  const state: State = {
+${preamble}  const state: State = {
     input,
     len: input.length,
     pos: 0,

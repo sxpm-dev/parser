@@ -93,7 +93,25 @@ export type SpanModifier =
     }
   | { readonly kind: 'noLineTerminatorAfter' }
   | { readonly kind: 'noWhitespaceAfter' }
-  | { readonly kind: 'requireSpaceAfter' };
+  | { readonly kind: 'requireSpaceAfter' }
+  | {
+      // Column-significant indent scope. Used on a recursive-repeats span to
+      // mark the block as indented relative to the surrounding production.
+      //
+      // Semantics (MVP — see docs/superpowers/plans/2026-05-28-phase-7-indentation.md
+      // for the full design):
+      //   - On entry to the indented repeats loop, the column where the FIRST
+      //     child begins is captured and pushed onto state.indentStack.
+      //   - Each subsequent iteration must begin at that same column (after
+      //     consuming any number of blank or whitespace-only lines).
+      //   - The loop exits cleanly when the next non-blank line starts at a
+      //     strictly smaller column (dedent).
+      //   - Only ASCII space (0x20) counts toward the indent column; tabs are
+      //     not supported.
+      //   - Maximum stack depth is 16 (`Int32Array(16)`); deeper nesting is a
+      //     syntax error.
+      readonly kind: 'indent';
+    };
 
 export type SpanDef = {
   readonly name?: string;

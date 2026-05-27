@@ -207,6 +207,10 @@ class SpanBuilder {
     return this.addModifier({ kind: 'requireSpaceAfter' });
   }
 
+  indent(): this {
+    return this.addModifier({ kind: 'indent' });
+  }
+
   // --- Continuation onto the parent chain --------------------------------
   //
   // Note: the method name `span` does not collide with any property on this
@@ -251,6 +255,13 @@ class ExampleBuilder {
   span(...args: SpanArgs): SpanBuilder {
     const [name, text, recursiveRoles] = normalizeSpanArgs(args);
     return new SpanBuilder(this, name, text, recursiveRoles);
+  }
+
+  // Sugar: equivalent to .span(name, '', roles).indent(). Returns a
+  // SpanBuilder so the caller can chain .repeats(...) etc.
+  indent(name: string, roles: ReadonlyArray<string>): SpanBuilder {
+    const builder = new SpanBuilder(this, name, undefined, roles);
+    return builder.indent();
   }
 
   _registerSpan(span: MutableSpanDef): void {

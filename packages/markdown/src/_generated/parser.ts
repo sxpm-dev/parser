@@ -6154,6 +6154,656 @@ export function stringify(value: unknown, options?: { type?: string }): string {
   return fn(value);
 }
 
+function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_children: string[] = [];
+    let __slotMatched_children = false;
+    // recursive repeats span (MarkdownLeaf, MarkdownParagraph) — fused loop
+    {
+      let __count = 0;
+      while (true) {
+        const __loopStart = off;
+        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+        const __bufLenBefore = __slotBuf_children.length;
+        const __offBeforeItem = off;
+        state.pos = off;
+        let __itemMatched = false;
+        if (__count > 0) __slotBuf_children.push(" ");
+        if (off < len) {
+          const __c0 = input.charCodeAt(off);
+          if (__c0 === 33) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_26_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_27_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 35) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_1_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_2_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_3_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_4_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_5_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 38) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_28_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 42) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_8_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_14_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_20_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_21_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 43) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_13_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 45) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_11_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_12_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_10_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_15_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 48) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 49) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 50) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 51) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 52) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 53) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 54) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 55) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 56) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 57) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 60) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_35_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_36_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 62) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_17_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 91) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_33_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_34_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_24_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_25_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_32_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 95) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_9_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 96) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_19_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_18_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_23_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 124) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_29_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_30_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_31_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 126) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_22_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_6_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_7_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownParagraph_0_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+        }
+        if (!__itemMatched) {
+          __slotBuf_children.length = __bufLenBefore;
+          off = __offBeforeItem;
+          state.pos = __offBeforeItem;
+          break;
+        }
+        __count++;
+        __slotMatched_children = true;
+        if (off === __loopStart) break;
+      }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    if (__slotMatched_children) for (let __i = 0; __i < __slotBuf_children.length; __i++) out.push(__slotBuf_children[__i]);
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_children: string[] = [];
+    let __slotMatched_children = false;
+    // recursive repeats span (MarkdownLeaf, MarkdownParagraph) — fused loop
+    {
+      let __count = 0;
+      while (true) {
+        const __loopStart = off;
+        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+        const __bufLenBefore = __slotBuf_children.length;
+        const __offBeforeItem = off;
+        state.pos = off;
+        let __itemMatched = false;
+        if (__count > 0) __slotBuf_children.push(" ");
+        if (off < len) {
+          const __c0 = input.charCodeAt(off);
+          if (__c0 === 33) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_26_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_27_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 35) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_1_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_2_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_3_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_4_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_5_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 38) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_28_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 42) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_8_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_14_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_20_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_21_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 43) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_13_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 45) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_11_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_12_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_10_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_15_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 48) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 49) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 50) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 51) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 52) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 53) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 54) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 55) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 56) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 57) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 60) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_35_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_36_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 62) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_17_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 91) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_33_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_34_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_24_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_25_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_32_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 95) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_9_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 96) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_19_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_18_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_23_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 124) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_29_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_30_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_31_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else if (__c0 === 126) {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_22_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+          else {
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_6_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_7_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownParagraph_0_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+          }
+        }
+        if (!__itemMatched) {
+          __slotBuf_children.length = __bufLenBefore;
+          off = __offBeforeItem;
+          state.pos = __offBeforeItem;
+          break;
+        }
+        __count++;
+        __slotMatched_children = true;
+        if (off === __loopStart) break;
+      }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    if (__slotMatched_children) for (let __i = 0; __i < __slotBuf_children.length; __i++) out.push(__slotBuf_children[__i]);
+    return true;
+  })();
+  return __ok === true;
+}
+
 function __fusedRender_MarkdownLeaf_0_html(state: State, out: string[]): boolean {
   const __ok = ((): unknown => {
     const input = state.input;
@@ -10632,6 +11282,7 @@ function __fusedRender_MarkdownParagraph_0_source(state: State, out: string[]): 
 }
 
 const __fusedRenderDispatch_html: Record<string, (state: State, out: string[]) => boolean> = {
+  "MarkdownDocument#0": __fusedRender_MarkdownDocument_0_html,
   "MarkdownLeaf#0": __fusedRender_MarkdownLeaf_0_html,
   "MarkdownLeaf#1": __fusedRender_MarkdownLeaf_1_html,
   "MarkdownLeaf#2": __fusedRender_MarkdownLeaf_2_html,
@@ -10673,6 +11324,7 @@ const __fusedRenderDispatch_html: Record<string, (state: State, out: string[]) =
 };
 
 const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "MarkdownDocument#0": __fusedRender_MarkdownDocument_0_source,
   "MarkdownLeaf#0": __fusedRender_MarkdownLeaf_0_source,
   "MarkdownLeaf#1": __fusedRender_MarkdownLeaf_1_source,
   "MarkdownLeaf#2": __fusedRender_MarkdownLeaf_2_source,

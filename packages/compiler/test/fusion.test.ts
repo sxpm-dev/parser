@@ -59,3 +59,37 @@ test('fusion: markdown render(input, {type:html}) produces correct html via fuse
   const { render } = await import('../../markdown/src/index.ts');
   assert.equal(render('# Hello\n', { type: 'html' }), '<h1>Hello</h1>');
 });
+
+// Task 5.3 — recursive children fusion. With the eligibility check
+// relaxed and the per-span streamed-slot mechanism in place, markdown's
+// MarkdownDocument#0 (`tpl\`${$.children}\`` over a recursive .repeats()
+// slot) now fuses end-to-end. The runtime test below exercises the
+// fused path for a multi-block document; it depends on the fused
+// builder actually being reachable (sanity-checked in the second 5.3
+// test below).
+test('fusion: markdown Document renders complete document html', async () => {
+  const { render } = await import('../../markdown/src/index.ts');
+  const md = '# Heading\n\nParagraph text.\n';
+  const html = render(md, { type: 'html' }) as string;
+  assert.match(html, /<h1>Heading<\/h1>/);
+  assert.match(html, /<p>Paragraph text\.<\/p>/);
+});
+
+// Task 5.3 codegen sanity — the root production's fused builder must
+// now exist in the generated parser. Without this, the previous runtime
+// test could still pass via the captures fallback and we'd never notice
+// fusion hadn't closed the recursive gap. Cf. the "5.2 reviewer flagged
+// no test exercises the fused path" note in the Task 5.3 plan.
+test('fusion: markdown Document fused builder is emitted for {type:html}', async () => {
+  const schema = (await import('../../markdown/src/schema.ts')).default;
+  const src = generateParser(schema, undefined, { packageName: 'markdown' });
+  // The fused entry for MarkdownDocument#0 must exist — proves the
+  // recursive `children` slot is fusable post-Task 5.3.
+  assert.match(src, /function __fusedRender_MarkdownDocument_0_html/);
+  // And the dispatch table must list it under the html target so the
+  // root lookup in __renderFused finds it.
+  assert.match(
+    src,
+    /__fusedRenderDispatch_html[\s\S]*?"MarkdownDocument#0":\s*__fusedRender_MarkdownDocument_0_html/,
+  );
+});

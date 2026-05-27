@@ -220,6 +220,12 @@ export function runParse(state: RuntimeState, startOffset: number): unknown {
           state.valueStack.pop();
           state.pc += rel;
         }
+        // TODO(6.4): on the non-taken branch the child captures object is
+        // left on the value stack. For cron's success path this is bounded —
+        // RETURN_OK's stackBase truncation discards it. Task 6.4 will redesign
+        // value-stack semantics when RENDER_DISPATCH starts consuming child
+        // captures (the orphan becomes the value to write into parent
+        // captures, eliminating the leak by design).
         break;
       }
 
@@ -238,8 +244,11 @@ export function runParse(state: RuntimeState, startOffset: number): unknown {
         const valIdx = readU32(state);
         const name = state.stringPool[nameIdx]!;
         const val = state.stringPool[valIdx]!;
-        const captures = state.valueStack[state.valueStack.length - 1] as Record<string, unknown>;
-        captures[name] = val;
+        const frame = frames[frames.length - 1]!;
+        if (frame.captures === null) {
+          throw new Error(`bytecode runtime: PUSH_LITERAL_FIELD before PUSH_NEW_CAPTURES at pc=${state.pc}`);
+        }
+        frame.captures[name] = val;
         break;
       }
 

@@ -21,6 +21,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -70,6 +76,68 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
+}
+
+function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
+  let lineStart = offset;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
+  let lineEnd = offset;
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  // Headline is generic — the underlying validator's message is attached via
+  // `cause` so callers can drill into it without polluting `.message`. Tests
+  // assert that the headline does NOT include validator-specific text (e.g.
+  // 'Invalid CSS value'), so we deliberately keep the message bare.
+  return new SyntaxError(`Invalid value at position ${offset}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`, cause !== undefined ? { cause } : undefined);
+}
+
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -80,7 +148,11 @@ function syntaxErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`parse failed at position ${offset}
+  const ch = offset < input.length ? input[offset] : 'EOF';
+  const headline = ch === 'EOF'
+    ? `Unexpected end of input at position ${offset}`
+    : `Unexpected '${ch}' at position ${offset}`;
+  return new SyntaxError(`${headline}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
@@ -103,6 +175,7 @@ function parseLogEntry(state: State): unknown {
     __ip_start = off;
     let __lastNonWs = off;
     let __depth = 0;
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 45)) break;
@@ -163,6 +236,12 @@ function parseLogEntry(state: State): unknown {
         continue;
       }
       if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
       off++;
     }
     const __emptyAnchor = __ip_start;
@@ -201,6 +280,7 @@ function parseLogEntry(state: State): unknown {
     __date_start = off;
     let __lastNonWs = off;
     let __depth = 0;
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 93)) break;
@@ -261,6 +341,12 @@ function parseLogEntry(state: State): unknown {
         continue;
       }
       if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
       off++;
     }
     const __emptyAnchor = __date_start;
@@ -381,6 +467,10 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  if (target !== 'ast') {
+    const fused = __renderFused(input, target);
+    if (fused !== null) return fused;
   }
   const fn = __renderDispatch[target];
   if (!fn) {
@@ -583,6 +673,295 @@ export function stringify(value: unknown, options?: { type?: string }): string {
   return fn(value);
 }
 
+function __fusedRender_LogEntry_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let ip: string = '';
+    let __ip_start = off;
+    let __ip_end = off;
+    {
+      while (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+        break;
+      }
+      __ip_start = off;
+      let __lastNonWs = off;
+      let __depth = 0;
+      const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__depth === 0 && (__c === 45)) break;
+        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+          __depth++; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+          if (__depth === 0) break;
+          __depth--; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x22 || __c === 0x27) {
+          const __q = __c;
+          off++;
+          while (off < len) {
+            const __sc = input.charCodeAt(off);
+            if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__sc === __q) { off++; break; }
+            if (__sc === 0x0a || __sc === 0x0d) break;
+            off++;
+          }
+          __lastNonWs = off;
+          continue;
+        }
+        if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+          && off + 3 < len
+          && (input.charCodeAt(off + 1) | 32) === 0x72
+          && (input.charCodeAt(off + 2) | 32) === 0x6c
+          && input.charCodeAt(off + 3) === 0x28) {
+          off += 4;
+          while (off < len) {
+            const __uc = input.charCodeAt(off);
+            if (__uc === 0x29) { off++; break; }
+            if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__uc === 0x22 || __uc === 0x27) {
+              const __uq = __uc;
+              off++;
+              while (off < len) {
+                const __usc = input.charCodeAt(off);
+                if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+                if (__usc === __uq) { off++; break; }
+                if (__usc === 0x0a || __usc === 0x0d) break;
+                off++;
+              }
+              continue;
+            }
+            off++;
+          }
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x5c && off + 1 < len) {
+          __lastNonWs = off + 2;
+          off += 2;
+          continue;
+        }
+        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+        if (__depth === 0 && __KB[__c] === 0) {
+          // unknown char (depth 0, no stop, no opener) — fail production
+          if (off > state.maxOff) state.maxOff = off;
+          state.pos = entryOff;
+          return null;
+        }
+        off++;
+      }
+      const __emptyAnchor = __ip_start;
+      if (__lastNonWs === __ip_start) {
+        off = __emptyAnchor;
+        ip = '';
+      } else {
+        off = __lastNonWs;
+        ip = input.slice(__ip_start, __lastNonWs);
+      }
+      __ip_end = off;
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __user_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __user_end = off;
+    const user = input.slice(__user_start, __user_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    let date: string = '';
+    let __date_start = off;
+    let __date_end = off;
+    {
+      while (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+        break;
+      }
+      __date_start = off;
+      let __lastNonWs = off;
+      let __depth = 0;
+      const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__depth === 0 && (__c === 93)) break;
+        if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+          __depth++; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+          if (__depth === 0) break;
+          __depth--; off++;
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x22 || __c === 0x27) {
+          const __q = __c;
+          off++;
+          while (off < len) {
+            const __sc = input.charCodeAt(off);
+            if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__sc === __q) { off++; break; }
+            if (__sc === 0x0a || __sc === 0x0d) break;
+            off++;
+          }
+          __lastNonWs = off;
+          continue;
+        }
+        if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+          && off + 3 < len
+          && (input.charCodeAt(off + 1) | 32) === 0x72
+          && (input.charCodeAt(off + 2) | 32) === 0x6c
+          && input.charCodeAt(off + 3) === 0x28) {
+          off += 4;
+          while (off < len) {
+            const __uc = input.charCodeAt(off);
+            if (__uc === 0x29) { off++; break; }
+            if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__uc === 0x22 || __uc === 0x27) {
+              const __uq = __uc;
+              off++;
+              while (off < len) {
+                const __usc = input.charCodeAt(off);
+                if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+                if (__usc === __uq) { off++; break; }
+                if (__usc === 0x0a || __usc === 0x0d) break;
+                off++;
+              }
+              continue;
+            }
+            off++;
+          }
+          __lastNonWs = off;
+          continue;
+        }
+        if (__c === 0x5c && off + 1 < len) {
+          __lastNonWs = off + 2;
+          off += 2;
+          continue;
+        }
+        if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+        if (__depth === 0 && __KB[__c] === 0) {
+          // unknown char (depth 0, no stop, no opener) — fail production
+          if (off > state.maxOff) state.maxOff = off;
+          state.pos = entryOff;
+          return null;
+        }
+        off++;
+      }
+      const __emptyAnchor = __date_start;
+      if (__lastNonWs === __date_start) {
+        off = __emptyAnchor;
+        date = '';
+      } else {
+        off = __lastNonWs;
+        date = input.slice(__date_start, __lastNonWs);
+      }
+      __date_end = off;
+    }
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __request_start = off;
+    {
+      const __q = input.charCodeAt(off);
+      off++;
+      while (off < len) {
+        const __c = input.charCodeAt(off);
+        if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__c === __q) { off++; break; }
+        if (__c === 0x0a || __c === 0x0d) break;
+        off++;
+      }
+    }
+    const __request_end = off;
+    const request = input.slice(__request_start, __request_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __status_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __status_end = off;
+    const status = input.slice(__status_start, __status_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __size_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __size_end = off;
+    const size = input.slice(__size_start, __size_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(ip ?? ""));
+    out.push(" - ");
+    out.push(String(user ?? ""));
+    out.push(" [");
+    out.push(String(date ?? ""));
+    out.push("] ");
+    out.push(String(request ?? ""));
+    out.push(" ");
+    out.push(String(status ?? ""));
+    out.push(" ");
+    out.push(String(size ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "LogEntry#0": __fusedRender_LogEntry_0_source,
+};
+
+const __rootProductionKey: string = "LogEntry#0";
+
+function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
+  switch (target) {
+    case "source": return __fusedRenderDispatch_source;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): string | null {
+  const table = __fusedRenderDispatchLookup(target);
+  if (table === null) return null;
+  const rootFusedFn = table[__rootProductionKey];
+  if (rootFusedFn === undefined) return null;
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+  const out: string[] = [];
+  const ok = rootFusedFn(state, out);
+  if (!ok) return null;
+  if (state.pos !== input.length) return null;
+  return out.join('');
+}
+
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {
@@ -592,6 +971,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = parseLogEntry(state);
   if (result === null || state.pos !== input.length) {
@@ -601,7 +982,7 @@ function __parse(input: string, options?: ParseOptions): unknown {
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  const state: State = {
+  const __state: State = {
     input,
     len: input.length,
     pos: 0,
@@ -609,9 +990,9 @@ export function validate(input: string, options?: ParseOptions): void {
     mode: 'fast',
     lineStarts: [],
   };
-  const result = parseLogEntry(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  const __result = parseLogEntry(__state);
+  if (__result === null || __state.pos !== input.length) {
+    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
   }
 }
 

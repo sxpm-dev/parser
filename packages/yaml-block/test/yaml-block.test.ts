@@ -4,9 +4,9 @@ import { render } from '../src/index.ts';
 
 // 50-line representative YAML-block input. Contains:
 //   - Flat scalar entries (name, version, etc.)
-//   - Nested sequence values (authors, dependencies, etc.)
-//   - Nested mapping values (config, endpoints, constants)
-//   - Mixed nesting levels
+//   - Nested mapping values (compiler.strict, compiler.target)
+//   - Nested sequence values (tags, ports)
+//   - Three-level nesting (server.tls.certFile)
 //
 // Note: values like "3.14", "api.example.com", "us-east" work because
 // the schema declares unknownChars: 'tolerate'.
@@ -37,22 +37,27 @@ noPropertyAccessFromIndexSignature: false
 esModuleInterop: false
 isolatedModules: true
 incremental: false
+compiler:
+  strict: true
+  target: esnext
+  outDir: dist
+server:
+  host: localhost
+  port: 8080
+  tls:
+    enabled: true
+tags:
+  - typescript
+  - parser
+  - codegen
+ports:
+  - 8080
+  - 8443
 paths: placeholder
 baseUrl: dot
 lib: esnext
 types: node
 typeRoots: node-modules
-experimentalDecorators: false
-emitDecoratorMetadata: false
-plugins: none
-watchOptions: none
-buildOptions: none
-references: none
-exclude: dist
-include: src
-files: none
-extends: base
-tsBuildInfoFile: tsbuildinfo
 diagnostics: false
 traceResolution: false
 listEmittedFiles: false

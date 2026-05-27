@@ -4,19 +4,10 @@ import { render, stringify } from '../src/index.ts';
 
 // Round-trip property test for the yaml-block schema.
 //
-// The MVP indent primitive (Phase 7) joins indent-block children with '\n'
-// and no leading spaces. This means nested blocks (mappings/sequences as
-// values in mapping entries) lose their indentation when stringified. The
-// round-trip tests therefore use:
-//   1. Flat scalar mappings — all values are scalars on the same line.
-//   2. Flat top-level sequences — items are scalars.
-//   3. YamlNode as root (flat scalar) — verifies the ref-chain dispatch.
-//
-// Nested blocks (e.g. `bar:\n  baz: 2`) cannot round-trip with the current
-// stringify because the rebuilt source loses indentation and re-parses to a
-// different structure. That is a known Phase 7 MVP limitation documented in
-// the schema header comment. A future phase would add per-level indentCol
-// tracking to the stringifier.
+// Task 7.7b adds per-level indentCol threading to the stringify pipeline.
+// Nested mappings/sequences now round-trip correctly:
+//   stringify produces `bar: \n  baz: 2\n  qux: 3` (indented block on the
+//   next line) which the parser accepts as a valid nested mapping.
 
 function parseAst(input: string): unknown {
   return render(input, { type: 'ast' });
@@ -52,6 +43,48 @@ test('yaml-block round-trip: flat mapping with special-char values', () => {
 // Multiple entries — verifies that '\n' join separator is stable.
 test('yaml-block round-trip: five-entry mapping', () => {
   const input = 'a: one\nb: two\nc: three\nd: four\ne: five';
+  const ast1 = parseAst(input);
+  const source = stringify(ast1, { type: 'ast' });
+  const ast2 = parseAst(source as string);
+  assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
+});
+
+// --- Nested round-trip tests (Task 7.7b) ------------------------------------
+// Per-level indentCol threading in the stringify pipeline means nested
+// mappings and sequences now round-trip correctly. The stringifier emits
+// `bar: \n  baz: 2\n  qux: 3` (block starting on next indented line)
+// which the parser accepts as a valid nested mapping.
+
+// Two-level nested mapping: `bar:\n  baz: 2\n  qux: 3`.
+test('yaml-block round-trip: nested mapping value', () => {
+  const input = 'bar:\n  baz: 2\n  qux: 3';
+  const ast1 = parseAst(input);
+  const source = stringify(ast1, { type: 'ast' });
+  const ast2 = parseAst(source as string);
+  assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
+});
+
+// Sequence value: `items:\n  - a\n  - b`.
+test('yaml-block round-trip: nested sequence value', () => {
+  const input = 'items:\n  - a\n  - b';
+  const ast1 = parseAst(input);
+  const source = stringify(ast1, { type: 'ast' });
+  const ast2 = parseAst(source as string);
+  assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
+});
+
+// Mixed: flat entries + nested mapping + nested sequence.
+test('yaml-block round-trip: mixed flat and nested', () => {
+  const input = 'bar:\n  baz: 2\n  qux: 3\nitems:\n  - a\n  - b';
+  const ast1 = parseAst(input);
+  const source = stringify(ast1, { type: 'ast' });
+  const ast2 = parseAst(source as string);
+  assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
+});
+
+// Three-level nesting: `outer:\n  bar:\n    baz: 2`.
+test('yaml-block round-trip: three-level nested mapping', () => {
+  const input = 'outer:\n  bar:\n    baz: 2';
   const ast1 = parseAst(input);
   const source = stringify(ast1, { type: 'ast' });
   const ast2 = parseAst(source as string);

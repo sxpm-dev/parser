@@ -21,6 +21,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -68,6 +74,49 @@ function isJsIdentStart(c: number): boolean {
 }
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
@@ -3063,10 +3112,11 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   return fn(captures);
 }
 
-function __rebuildSlot(v: any, joinSep: string = ""): string {
+function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
-    let out = "";
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : "";
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += __rebuildSlot(v[i]);
@@ -3232,7 +3282,7 @@ function __rebuild_MarkdownParagraph_0(captures: any): string {
   return String(__rebuildSlot(captures.text));
 }
 
-function __invert_MarkdownDocument_0_ast(value: any): string {
+function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3240,11 +3290,11 @@ function __invert_MarkdownDocument_0_ast(value: any): string {
   if (!Object.is(value.type, "document")) {
     throw new Error("stringify: field \"type\" expected \"document\", got " + JSON.stringify(value.type));
   }
-  captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(value.children);
-  return __rebuild_MarkdownDocument_0(captures);
+  captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(value.children, __indentCol);
+  return __rebuild_MarkdownDocument_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_0_ast(value: any): string {
+function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3256,10 +3306,10 @@ function __invert_MarkdownLeaf_0_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 6, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_0(captures);
+  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_1_ast(value: any): string {
+function __invert_MarkdownLeaf_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3271,10 +3321,10 @@ function __invert_MarkdownLeaf_1_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 5, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_1(captures);
+  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_2_ast(value: any): string {
+function __invert_MarkdownLeaf_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3286,10 +3336,10 @@ function __invert_MarkdownLeaf_2_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 4, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_2(captures);
+  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_3_ast(value: any): string {
+function __invert_MarkdownLeaf_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3301,10 +3351,10 @@ function __invert_MarkdownLeaf_3_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 3, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_3(captures);
+  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_4_ast(value: any): string {
+function __invert_MarkdownLeaf_4_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3316,10 +3366,10 @@ function __invert_MarkdownLeaf_4_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 2, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_4(captures);
+  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_5_ast(value: any): string {
+function __invert_MarkdownLeaf_5_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3331,10 +3381,10 @@ function __invert_MarkdownLeaf_5_ast(value: any): string {
     throw new Error("stringify: field \"depth\" expected 1, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_5(captures);
+  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_6_ast(value: any): string {
+function __invert_MarkdownLeaf_6_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3349,10 +3399,10 @@ function __invert_MarkdownLeaf_6_ast(value: any): string {
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
   }
-  return __rebuild_MarkdownLeaf_6(captures);
+  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_7_ast(value: any): string {
+function __invert_MarkdownLeaf_7_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3367,10 +3417,10 @@ function __invert_MarkdownLeaf_7_ast(value: any): string {
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
   }
-  return __rebuild_MarkdownLeaf_7(captures);
+  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_8_ast(value: any): string {
+function __invert_MarkdownLeaf_8_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3381,10 +3431,10 @@ function __invert_MarkdownLeaf_8_ast(value: any): string {
   if (!Object.is(value.marker, "*")) {
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
-  return __rebuild_MarkdownLeaf_8(captures);
+  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_9_ast(value: any): string {
+function __invert_MarkdownLeaf_9_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3395,10 +3445,10 @@ function __invert_MarkdownLeaf_9_ast(value: any): string {
   if (!Object.is(value.marker, "_")) {
     throw new Error("stringify: field \"marker\" expected \"_\", got " + JSON.stringify(value.marker));
   }
-  return __rebuild_MarkdownLeaf_9(captures);
+  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_10_ast(value: any): string {
+function __invert_MarkdownLeaf_10_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3406,10 +3456,10 @@ function __invert_MarkdownLeaf_10_ast(value: any): string {
   if (!Object.is(value.type, "thematic-break")) {
     throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
   }
-  return __rebuild_MarkdownLeaf_10(captures);
+  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_11_ast(value: any): string {
+function __invert_MarkdownLeaf_11_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3424,10 +3474,10 @@ function __invert_MarkdownLeaf_11_ast(value: any): string {
     throw new Error("stringify: field \"marker\" expected \"x\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_11(captures);
+  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_12_ast(value: any): string {
+function __invert_MarkdownLeaf_12_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3439,10 +3489,10 @@ function __invert_MarkdownLeaf_12_ast(value: any): string {
     throw new Error("stringify: field \"checked\" expected false, got " + JSON.stringify(value.checked));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_12(captures);
+  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_13_ast(value: any): string {
+function __invert_MarkdownLeaf_13_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3457,10 +3507,10 @@ function __invert_MarkdownLeaf_13_ast(value: any): string {
     throw new Error("stringify: field \"marker\" expected \"+\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_13(captures);
+  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_14_ast(value: any): string {
+function __invert_MarkdownLeaf_14_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3475,10 +3525,10 @@ function __invert_MarkdownLeaf_14_ast(value: any): string {
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_14(captures);
+  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_15_ast(value: any): string {
+function __invert_MarkdownLeaf_15_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3490,10 +3540,10 @@ function __invert_MarkdownLeaf_15_ast(value: any): string {
     throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_15(captures);
+  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_16_ast(value: any): string {
+function __invert_MarkdownLeaf_16_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3506,10 +3556,10 @@ function __invert_MarkdownLeaf_16_ast(value: any): string {
   }
   captures.index = __invertSlotLeaf_ast(value.index);
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_16(captures);
+  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_17_ast(value: any): string {
+function __invert_MarkdownLeaf_17_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3518,10 +3568,10 @@ function __invert_MarkdownLeaf_17_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"blockquote\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_17(captures);
+  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_18_ast(value: any): string {
+function __invert_MarkdownLeaf_18_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3531,10 +3581,10 @@ function __invert_MarkdownLeaf_18_ast(value: any): string {
   }
   captures.lang = __invertSlotLeaf_ast(value.lang);
   captures.body = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_18(captures);
+  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_19_ast(value: any): string {
+function __invert_MarkdownLeaf_19_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3543,10 +3593,10 @@ function __invert_MarkdownLeaf_19_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"code-block\", got " + JSON.stringify(value.type));
   }
   captures.body = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_19(captures);
+  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_20_ast(value: any): string {
+function __invert_MarkdownLeaf_20_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3555,10 +3605,10 @@ function __invert_MarkdownLeaf_20_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"bold\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_20(captures);
+  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_21_ast(value: any): string {
+function __invert_MarkdownLeaf_21_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3567,10 +3617,10 @@ function __invert_MarkdownLeaf_21_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"italic\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_21(captures);
+  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_22_ast(value: any): string {
+function __invert_MarkdownLeaf_22_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3579,10 +3629,10 @@ function __invert_MarkdownLeaf_22_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"strikethrough\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_22(captures);
+  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_23_ast(value: any): string {
+function __invert_MarkdownLeaf_23_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3591,10 +3641,10 @@ function __invert_MarkdownLeaf_23_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"inline-code\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_23(captures);
+  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_24_ast(value: any): string {
+function __invert_MarkdownLeaf_24_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3604,10 +3654,10 @@ function __invert_MarkdownLeaf_24_ast(value: any): string {
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_24(captures);
+  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_25_ast(value: any): string {
+function __invert_MarkdownLeaf_25_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3617,10 +3667,10 @@ function __invert_MarkdownLeaf_25_ast(value: any): string {
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_25(captures);
+  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_26_ast(value: any): string {
+function __invert_MarkdownLeaf_26_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3630,10 +3680,10 @@ function __invert_MarkdownLeaf_26_ast(value: any): string {
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_26(captures);
+  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_27_ast(value: any): string {
+function __invert_MarkdownLeaf_27_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3643,10 +3693,10 @@ function __invert_MarkdownLeaf_27_ast(value: any): string {
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_27(captures);
+  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_28_ast(value: any): string {
+function __invert_MarkdownLeaf_28_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3655,10 +3705,10 @@ function __invert_MarkdownLeaf_28_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"entity\", got " + JSON.stringify(value.type));
   }
   captures.name = __invertSlotLeaf_ast(value.name);
-  return __rebuild_MarkdownLeaf_28(captures);
+  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_29_ast(value: any): string {
+function __invert_MarkdownLeaf_29_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3678,10 +3728,10 @@ function __invert_MarkdownLeaf_29_ast(value: any): string {
   if (!Object.is(value.align[1], "default")) {
     throw new Error("stringify: expected scalar \"default\", got " + JSON.stringify(value.align[1]));
   }
-  return __rebuild_MarkdownLeaf_29(captures);
+  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_30_ast(value: any): string {
+function __invert_MarkdownLeaf_30_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3701,10 +3751,10 @@ function __invert_MarkdownLeaf_30_ast(value: any): string {
   if (!Object.is(value.align[1], "right")) {
     throw new Error("stringify: expected scalar \"right\", got " + JSON.stringify(value.align[1]));
   }
-  return __rebuild_MarkdownLeaf_30(captures);
+  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_31_ast(value: any): string {
+function __invert_MarkdownLeaf_31_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3717,10 +3767,10 @@ function __invert_MarkdownLeaf_31_ast(value: any): string {
   }
   captures.first = __invertSlotLeaf_ast(value.cells[0]);
   captures.second = __invertSlotLeaf_ast(value.cells[1]);
-  return __rebuild_MarkdownLeaf_31(captures);
+  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_32_ast(value: any): string {
+function __invert_MarkdownLeaf_32_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3730,10 +3780,10 @@ function __invert_MarkdownLeaf_32_ast(value: any): string {
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_32(captures);
+  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_33_ast(value: any): string {
+function __invert_MarkdownLeaf_33_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3743,10 +3793,10 @@ function __invert_MarkdownLeaf_33_ast(value: any): string {
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_33(captures);
+  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_34_ast(value: any): string {
+function __invert_MarkdownLeaf_34_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3755,10 +3805,10 @@ function __invert_MarkdownLeaf_34_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"footnote-reference\", got " + JSON.stringify(value.type));
   }
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_34(captures);
+  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_35_ast(value: any): string {
+function __invert_MarkdownLeaf_35_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3769,10 +3819,10 @@ function __invert_MarkdownLeaf_35_ast(value: any): string {
   captures.tag = __invertSlotLeaf_ast(value.tag);
   captures.body = __invertSlotLeaf_ast(value.text);
   captures.closingTag = __invertSlotLeaf_ast(value.closingTag);
-  return __rebuild_MarkdownLeaf_35(captures);
+  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_36_ast(value: any): string {
+function __invert_MarkdownLeaf_36_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3781,10 +3831,10 @@ function __invert_MarkdownLeaf_36_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"autolink\", got " + JSON.stringify(value.type));
   }
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_36(captures);
+  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
 }
 
-function __invert_MarkdownParagraph_0_ast(value: any): string {
+function __invert_MarkdownParagraph_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -3793,10 +3843,10 @@ function __invert_MarkdownParagraph_0_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"paragraph\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownParagraph_0(captures);
+  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
 }
 
-function __invert_MarkdownDocument_0_html(value: any): string {
+function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3806,16 +3856,16 @@ function __invert_MarkdownDocument_0_html(value: any): string {
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(__s.slice(__pos));
+    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(__s.slice(__pos), __indentCol);
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownDocument_0(captures);
+  return __rebuild_MarkdownDocument_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_0_html(value: any): string {
+function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3837,10 +3887,10 @@ function __invert_MarkdownLeaf_0_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_0(captures);
+  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_1_html(value: any): string {
+function __invert_MarkdownLeaf_1_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3862,10 +3912,10 @@ function __invert_MarkdownLeaf_1_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_1(captures);
+  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_2_html(value: any): string {
+function __invert_MarkdownLeaf_2_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3887,10 +3937,10 @@ function __invert_MarkdownLeaf_2_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_2(captures);
+  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_3_html(value: any): string {
+function __invert_MarkdownLeaf_3_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3912,10 +3962,10 @@ function __invert_MarkdownLeaf_3_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_3(captures);
+  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_4_html(value: any): string {
+function __invert_MarkdownLeaf_4_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3937,10 +3987,10 @@ function __invert_MarkdownLeaf_4_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_4(captures);
+  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_5_html(value: any): string {
+function __invert_MarkdownLeaf_5_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3962,10 +4012,10 @@ function __invert_MarkdownLeaf_5_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_5(captures);
+  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_6_html(value: any): string {
+function __invert_MarkdownLeaf_6_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3987,10 +4037,10 @@ function __invert_MarkdownLeaf_6_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_6(captures);
+  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_7_html(value: any): string {
+function __invert_MarkdownLeaf_7_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4012,10 +4062,10 @@ function __invert_MarkdownLeaf_7_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_7(captures);
+  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_8_html(value: any): string {
+function __invert_MarkdownLeaf_8_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4029,10 +4079,10 @@ function __invert_MarkdownLeaf_8_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_8(captures);
+  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_9_html(value: any): string {
+function __invert_MarkdownLeaf_9_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4046,10 +4096,10 @@ function __invert_MarkdownLeaf_9_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_9(captures);
+  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_10_html(value: any): string {
+function __invert_MarkdownLeaf_10_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4063,10 +4113,10 @@ function __invert_MarkdownLeaf_10_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_10(captures);
+  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_11_html(value: any): string {
+function __invert_MarkdownLeaf_11_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4088,10 +4138,10 @@ function __invert_MarkdownLeaf_11_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_11(captures);
+  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_12_html(value: any): string {
+function __invert_MarkdownLeaf_12_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4113,10 +4163,10 @@ function __invert_MarkdownLeaf_12_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_12(captures);
+  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_13_html(value: any): string {
+function __invert_MarkdownLeaf_13_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4138,10 +4188,10 @@ function __invert_MarkdownLeaf_13_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_13(captures);
+  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_14_html(value: any): string {
+function __invert_MarkdownLeaf_14_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4163,10 +4213,10 @@ function __invert_MarkdownLeaf_14_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_14(captures);
+  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_15_html(value: any): string {
+function __invert_MarkdownLeaf_15_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4188,10 +4238,10 @@ function __invert_MarkdownLeaf_15_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_15(captures);
+  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_16_html(value: any): string {
+function __invert_MarkdownLeaf_16_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4213,10 +4263,10 @@ function __invert_MarkdownLeaf_16_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_16(captures);
+  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_17_html(value: any): string {
+function __invert_MarkdownLeaf_17_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4238,10 +4288,10 @@ function __invert_MarkdownLeaf_17_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_17(captures);
+  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_18_html(value: any): string {
+function __invert_MarkdownLeaf_18_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4271,10 +4321,10 @@ function __invert_MarkdownLeaf_18_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_18(captures);
+  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_19_html(value: any): string {
+function __invert_MarkdownLeaf_19_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4296,10 +4346,10 @@ function __invert_MarkdownLeaf_19_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_19(captures);
+  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_20_html(value: any): string {
+function __invert_MarkdownLeaf_20_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4321,10 +4371,10 @@ function __invert_MarkdownLeaf_20_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_20(captures);
+  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_21_html(value: any): string {
+function __invert_MarkdownLeaf_21_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4346,10 +4396,10 @@ function __invert_MarkdownLeaf_21_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_21(captures);
+  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_22_html(value: any): string {
+function __invert_MarkdownLeaf_22_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4371,10 +4421,10 @@ function __invert_MarkdownLeaf_22_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_22(captures);
+  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_23_html(value: any): string {
+function __invert_MarkdownLeaf_23_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4396,10 +4446,10 @@ function __invert_MarkdownLeaf_23_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_23(captures);
+  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_24_html(value: any): string {
+function __invert_MarkdownLeaf_24_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4429,10 +4479,10 @@ function __invert_MarkdownLeaf_24_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_24(captures);
+  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_25_html(value: any): string {
+function __invert_MarkdownLeaf_25_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4462,10 +4512,10 @@ function __invert_MarkdownLeaf_25_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_25(captures);
+  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_26_html(value: any): string {
+function __invert_MarkdownLeaf_26_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4495,10 +4545,10 @@ function __invert_MarkdownLeaf_26_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_26(captures);
+  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_27_html(value: any): string {
+function __invert_MarkdownLeaf_27_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4528,10 +4578,10 @@ function __invert_MarkdownLeaf_27_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_27(captures);
+  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_28_html(value: any): string {
+function __invert_MarkdownLeaf_28_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4553,10 +4603,10 @@ function __invert_MarkdownLeaf_28_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_28(captures);
+  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_29_html(value: any): string {
+function __invert_MarkdownLeaf_29_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4566,10 +4616,10 @@ function __invert_MarkdownLeaf_29_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_29(captures);
+  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_30_html(value: any): string {
+function __invert_MarkdownLeaf_30_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4579,10 +4629,10 @@ function __invert_MarkdownLeaf_30_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_30(captures);
+  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_31_html(value: any): string {
+function __invert_MarkdownLeaf_31_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4612,10 +4662,10 @@ function __invert_MarkdownLeaf_31_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_31(captures);
+  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_32_html(value: any): string {
+function __invert_MarkdownLeaf_32_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4625,10 +4675,10 @@ function __invert_MarkdownLeaf_32_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_32(captures);
+  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_33_html(value: any): string {
+function __invert_MarkdownLeaf_33_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4658,10 +4708,10 @@ function __invert_MarkdownLeaf_33_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_33(captures);
+  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_34_html(value: any): string {
+function __invert_MarkdownLeaf_34_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4691,10 +4741,10 @@ function __invert_MarkdownLeaf_34_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_34(captures);
+  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_35_html(value: any): string {
+function __invert_MarkdownLeaf_35_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4732,10 +4782,10 @@ function __invert_MarkdownLeaf_35_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_35(captures);
+  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_36_html(value: any): string {
+function __invert_MarkdownLeaf_36_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4765,10 +4815,10 @@ function __invert_MarkdownLeaf_36_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_36(captures);
+  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
 }
 
-function __invert_MarkdownParagraph_0_html(value: any): string {
+function __invert_MarkdownParagraph_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4790,10 +4840,10 @@ function __invert_MarkdownParagraph_0_html(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownParagraph_0(captures);
+  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
 }
 
-function __invert_MarkdownDocument_0_source(value: any): string {
+function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4803,16 +4853,16 @@ function __invert_MarkdownDocument_0_source(value: any): string {
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(__s.slice(__pos));
+    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(__s.slice(__pos), __indentCol);
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownDocument_0(captures);
+  return __rebuild_MarkdownDocument_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_0_source(value: any): string {
+function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4828,10 +4878,10 @@ function __invert_MarkdownLeaf_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_0(captures);
+  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_1_source(value: any): string {
+function __invert_MarkdownLeaf_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4847,10 +4897,10 @@ function __invert_MarkdownLeaf_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_1(captures);
+  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_2_source(value: any): string {
+function __invert_MarkdownLeaf_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4866,10 +4916,10 @@ function __invert_MarkdownLeaf_2_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_2(captures);
+  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_3_source(value: any): string {
+function __invert_MarkdownLeaf_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4885,10 +4935,10 @@ function __invert_MarkdownLeaf_3_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_3(captures);
+  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_4_source(value: any): string {
+function __invert_MarkdownLeaf_4_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4904,10 +4954,10 @@ function __invert_MarkdownLeaf_4_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_4(captures);
+  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_5_source(value: any): string {
+function __invert_MarkdownLeaf_5_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4923,10 +4973,10 @@ function __invert_MarkdownLeaf_5_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_5(captures);
+  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_6_source(value: any): string {
+function __invert_MarkdownLeaf_6_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4944,10 +4994,10 @@ function __invert_MarkdownLeaf_6_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_6(captures);
+  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_7_source(value: any): string {
+function __invert_MarkdownLeaf_7_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4965,10 +5015,10 @@ function __invert_MarkdownLeaf_7_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_7(captures);
+  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_8_source(value: any): string {
+function __invert_MarkdownLeaf_8_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4982,10 +5032,10 @@ function __invert_MarkdownLeaf_8_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_8(captures);
+  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_9_source(value: any): string {
+function __invert_MarkdownLeaf_9_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -4999,10 +5049,10 @@ function __invert_MarkdownLeaf_9_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_9(captures);
+  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_10_source(value: any): string {
+function __invert_MarkdownLeaf_10_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5016,10 +5066,10 @@ function __invert_MarkdownLeaf_10_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_10(captures);
+  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_11_source(value: any): string {
+function __invert_MarkdownLeaf_11_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5035,10 +5085,10 @@ function __invert_MarkdownLeaf_11_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_11(captures);
+  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_12_source(value: any): string {
+function __invert_MarkdownLeaf_12_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5054,10 +5104,10 @@ function __invert_MarkdownLeaf_12_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_12(captures);
+  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_13_source(value: any): string {
+function __invert_MarkdownLeaf_13_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5073,10 +5123,10 @@ function __invert_MarkdownLeaf_13_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_13(captures);
+  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_14_source(value: any): string {
+function __invert_MarkdownLeaf_14_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5092,10 +5142,10 @@ function __invert_MarkdownLeaf_14_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_14(captures);
+  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_15_source(value: any): string {
+function __invert_MarkdownLeaf_15_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5111,10 +5161,10 @@ function __invert_MarkdownLeaf_15_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_15(captures);
+  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_16_source(value: any): string {
+function __invert_MarkdownLeaf_16_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5134,10 +5184,10 @@ function __invert_MarkdownLeaf_16_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_16(captures);
+  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_17_source(value: any): string {
+function __invert_MarkdownLeaf_17_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5153,10 +5203,10 @@ function __invert_MarkdownLeaf_17_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_17(captures);
+  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_18_source(value: any): string {
+function __invert_MarkdownLeaf_18_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5186,10 +5236,10 @@ function __invert_MarkdownLeaf_18_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_18(captures);
+  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_19_source(value: any): string {
+function __invert_MarkdownLeaf_19_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5211,10 +5261,10 @@ function __invert_MarkdownLeaf_19_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_19(captures);
+  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_20_source(value: any): string {
+function __invert_MarkdownLeaf_20_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5236,10 +5286,10 @@ function __invert_MarkdownLeaf_20_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_20(captures);
+  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_21_source(value: any): string {
+function __invert_MarkdownLeaf_21_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5261,10 +5311,10 @@ function __invert_MarkdownLeaf_21_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_21(captures);
+  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_22_source(value: any): string {
+function __invert_MarkdownLeaf_22_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5286,10 +5336,10 @@ function __invert_MarkdownLeaf_22_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_22(captures);
+  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_23_source(value: any): string {
+function __invert_MarkdownLeaf_23_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5311,10 +5361,10 @@ function __invert_MarkdownLeaf_23_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_23(captures);
+  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_24_source(value: any): string {
+function __invert_MarkdownLeaf_24_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5344,10 +5394,10 @@ function __invert_MarkdownLeaf_24_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_24(captures);
+  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_25_source(value: any): string {
+function __invert_MarkdownLeaf_25_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5377,10 +5427,10 @@ function __invert_MarkdownLeaf_25_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_25(captures);
+  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_26_source(value: any): string {
+function __invert_MarkdownLeaf_26_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5410,10 +5460,10 @@ function __invert_MarkdownLeaf_26_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_26(captures);
+  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_27_source(value: any): string {
+function __invert_MarkdownLeaf_27_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5443,10 +5493,10 @@ function __invert_MarkdownLeaf_27_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_27(captures);
+  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_28_source(value: any): string {
+function __invert_MarkdownLeaf_28_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5468,10 +5518,10 @@ function __invert_MarkdownLeaf_28_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_28(captures);
+  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_29_source(value: any): string {
+function __invert_MarkdownLeaf_29_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5485,10 +5535,10 @@ function __invert_MarkdownLeaf_29_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_29(captures);
+  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_30_source(value: any): string {
+function __invert_MarkdownLeaf_30_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5502,10 +5552,10 @@ function __invert_MarkdownLeaf_30_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_30(captures);
+  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_31_source(value: any): string {
+function __invert_MarkdownLeaf_31_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5535,10 +5585,10 @@ function __invert_MarkdownLeaf_31_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_31(captures);
+  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_32_source(value: any): string {
+function __invert_MarkdownLeaf_32_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5562,10 +5612,10 @@ function __invert_MarkdownLeaf_32_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_32(captures);
+  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_33_source(value: any): string {
+function __invert_MarkdownLeaf_33_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5589,10 +5639,10 @@ function __invert_MarkdownLeaf_33_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_33(captures);
+  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_34_source(value: any): string {
+function __invert_MarkdownLeaf_34_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5614,10 +5664,10 @@ function __invert_MarkdownLeaf_34_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_34(captures);
+  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_35_source(value: any): string {
+function __invert_MarkdownLeaf_35_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5655,10 +5705,10 @@ function __invert_MarkdownLeaf_35_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_35(captures);
+  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
 }
 
-function __invert_MarkdownLeaf_36_source(value: any): string {
+function __invert_MarkdownLeaf_36_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5680,10 +5730,10 @@ function __invert_MarkdownLeaf_36_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_36(captures);
+  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
 }
 
-function __invert_MarkdownParagraph_0_source(value: any): string {
+function __invert_MarkdownParagraph_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -5695,252 +5745,252 @@ function __invert_MarkdownParagraph_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownParagraph_0(captures);
+  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
 }
 
-function __dispatchInverse_MarkdownDocument_ast(value: any): string {
+function __dispatchInverse_MarkdownDocument_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "document")) return __invert_MarkdownDocument_0_ast(value);
+    if (Object.is(value.type, "document")) return __invert_MarkdownDocument_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownLeaf_ast(value: any): string {
+function __dispatchInverse_MarkdownLeaf_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "code-block") && "lang" in value) return __invert_MarkdownLeaf_18_ast(value);
-    if (Object.is(value.type, "code-block") && !("lang" in value)) return __invert_MarkdownLeaf_19_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 6)) return __invert_MarkdownLeaf_0_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 5)) return __invert_MarkdownLeaf_1_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 4)) return __invert_MarkdownLeaf_2_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 3)) return __invert_MarkdownLeaf_3_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 2)) return __invert_MarkdownLeaf_4_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 1)) return __invert_MarkdownLeaf_5_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 1) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_6_ast(value);
-    if (Object.is(value.type, "heading") && Object.is(value.depth, 2) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_7_ast(value);
-    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_8_ast(value);
-    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "_")) return __invert_MarkdownLeaf_9_ast(value);
-    if (Object.is(value.type, "thematic-break")) return __invert_MarkdownLeaf_10_ast(value);
-    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, true) && Object.is(value.marker, "x")) return __invert_MarkdownLeaf_11_ast(value);
-    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, false)) return __invert_MarkdownLeaf_12_ast(value);
-    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "+")) return __invert_MarkdownLeaf_13_ast(value);
-    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_14_ast(value);
-    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false)) return __invert_MarkdownLeaf_15_ast(value);
-    if (Object.is(value.type, "list-item") && Object.is(value.ordered, true)) return __invert_MarkdownLeaf_16_ast(value);
-    if (Object.is(value.type, "blockquote")) return __invert_MarkdownLeaf_17_ast(value);
-    if (Object.is(value.type, "bold")) return __invert_MarkdownLeaf_20_ast(value);
-    if (Object.is(value.type, "italic")) return __invert_MarkdownLeaf_21_ast(value);
-    if (Object.is(value.type, "strikethrough")) return __invert_MarkdownLeaf_22_ast(value);
-    if (Object.is(value.type, "inline-code")) return __invert_MarkdownLeaf_23_ast(value);
-    if (Object.is(value.type, "link")) return __invert_MarkdownLeaf_24_ast(value);
-    if (Object.is(value.type, "reference-link")) return __invert_MarkdownLeaf_25_ast(value);
-    if (Object.is(value.type, "image")) return __invert_MarkdownLeaf_26_ast(value);
-    if (Object.is(value.type, "reference-image")) return __invert_MarkdownLeaf_27_ast(value);
-    if (Object.is(value.type, "entity")) return __invert_MarkdownLeaf_28_ast(value);
-    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "plain")) return __invert_MarkdownLeaf_29_ast(value);
-    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "aligned")) return __invert_MarkdownLeaf_30_ast(value);
-    if (Object.is(value.type, "table-row")) return __invert_MarkdownLeaf_31_ast(value);
-    if (Object.is(value.type, "definition")) return __invert_MarkdownLeaf_32_ast(value);
-    if (Object.is(value.type, "footnote-definition")) return __invert_MarkdownLeaf_33_ast(value);
-    if (Object.is(value.type, "footnote-reference")) return __invert_MarkdownLeaf_34_ast(value);
-    if (Object.is(value.type, "html")) return __invert_MarkdownLeaf_35_ast(value);
-    if (Object.is(value.type, "autolink")) return __invert_MarkdownLeaf_36_ast(value);
+    if (Object.is(value.type, "code-block") && "lang" in value) return __invert_MarkdownLeaf_18_ast(value, __indentCol);
+    if (Object.is(value.type, "code-block") && !("lang" in value)) return __invert_MarkdownLeaf_19_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 6)) return __invert_MarkdownLeaf_0_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 5)) return __invert_MarkdownLeaf_1_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 4)) return __invert_MarkdownLeaf_2_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 3)) return __invert_MarkdownLeaf_3_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 2)) return __invert_MarkdownLeaf_4_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 1)) return __invert_MarkdownLeaf_5_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 1) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_6_ast(value, __indentCol);
+    if (Object.is(value.type, "heading") && Object.is(value.depth, 2) && Object.is(value.style, "setext")) return __invert_MarkdownLeaf_7_ast(value, __indentCol);
+    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_8_ast(value, __indentCol);
+    if (Object.is(value.type, "thematic-break") && Object.is(value.marker, "_")) return __invert_MarkdownLeaf_9_ast(value, __indentCol);
+    if (Object.is(value.type, "thematic-break")) return __invert_MarkdownLeaf_10_ast(value, __indentCol);
+    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, true) && Object.is(value.marker, "x")) return __invert_MarkdownLeaf_11_ast(value, __indentCol);
+    if (Object.is(value.type, "task-list-item") && Object.is(value.checked, false)) return __invert_MarkdownLeaf_12_ast(value, __indentCol);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "+")) return __invert_MarkdownLeaf_13_ast(value, __indentCol);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false) && Object.is(value.marker, "*")) return __invert_MarkdownLeaf_14_ast(value, __indentCol);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, false)) return __invert_MarkdownLeaf_15_ast(value, __indentCol);
+    if (Object.is(value.type, "list-item") && Object.is(value.ordered, true)) return __invert_MarkdownLeaf_16_ast(value, __indentCol);
+    if (Object.is(value.type, "blockquote")) return __invert_MarkdownLeaf_17_ast(value, __indentCol);
+    if (Object.is(value.type, "bold")) return __invert_MarkdownLeaf_20_ast(value, __indentCol);
+    if (Object.is(value.type, "italic")) return __invert_MarkdownLeaf_21_ast(value, __indentCol);
+    if (Object.is(value.type, "strikethrough")) return __invert_MarkdownLeaf_22_ast(value, __indentCol);
+    if (Object.is(value.type, "inline-code")) return __invert_MarkdownLeaf_23_ast(value, __indentCol);
+    if (Object.is(value.type, "link")) return __invert_MarkdownLeaf_24_ast(value, __indentCol);
+    if (Object.is(value.type, "reference-link")) return __invert_MarkdownLeaf_25_ast(value, __indentCol);
+    if (Object.is(value.type, "image")) return __invert_MarkdownLeaf_26_ast(value, __indentCol);
+    if (Object.is(value.type, "reference-image")) return __invert_MarkdownLeaf_27_ast(value, __indentCol);
+    if (Object.is(value.type, "entity")) return __invert_MarkdownLeaf_28_ast(value, __indentCol);
+    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "plain")) return __invert_MarkdownLeaf_29_ast(value, __indentCol);
+    if (Object.is(value.type, "table-delimiter") && Object.is(value.variant, "aligned")) return __invert_MarkdownLeaf_30_ast(value, __indentCol);
+    if (Object.is(value.type, "table-row")) return __invert_MarkdownLeaf_31_ast(value, __indentCol);
+    if (Object.is(value.type, "definition")) return __invert_MarkdownLeaf_32_ast(value, __indentCol);
+    if (Object.is(value.type, "footnote-definition")) return __invert_MarkdownLeaf_33_ast(value, __indentCol);
+    if (Object.is(value.type, "footnote-reference")) return __invert_MarkdownLeaf_34_ast(value, __indentCol);
+    if (Object.is(value.type, "html")) return __invert_MarkdownLeaf_35_ast(value, __indentCol);
+    if (Object.is(value.type, "autolink")) return __invert_MarkdownLeaf_36_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownParagraph_ast(value: any): string {
+function __dispatchInverse_MarkdownParagraph_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "paragraph")) return __invert_MarkdownParagraph_0_ast(value);
+    if (Object.is(value.type, "paragraph")) return __invert_MarkdownParagraph_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_ast(value: any): string {
-  return __dispatchInverse_MarkdownDocument_ast(value);
+  return __dispatchInverse_MarkdownDocument_ast(value, 0);
 }
 
-function __dispatchInverse_MarkdownDocument_html(value: any): string {
+function __dispatchInverse_MarkdownDocument_html(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownDocument_0_html(value);
+    return __invert_MarkdownDocument_0_html(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownLeaf_html(value: any): string {
+function __dispatchInverse_MarkdownLeaf_html(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<li><input type=\"checkbox\" checked>")) return __invert_MarkdownLeaf_11_html(value);
-    if (value.startsWith("<div class=\"footnote\" id=\"fn")) return __invert_MarkdownLeaf_33_html(value);
-    if (value.startsWith("<li><input type=\"checkbox\">")) return __invert_MarkdownLeaf_12_html(value);
-    if (value.startsWith("<a class=\"autolink\" href=\"")) return __invert_MarkdownLeaf_36_html(value);
-    if (value.startsWith("<pre><code class=\"lang-")) return __invert_MarkdownLeaf_18_html(value);
-    if (value.startsWith("<sup><a href=\"#fn")) return __invert_MarkdownLeaf_34_html(value);
-    if (value.startsWith("<blockquote>")) return __invert_MarkdownLeaf_17_html(value);
-    if (value.startsWith("<pre><code>")) return __invert_MarkdownLeaf_19_html(value);
-    if (value.startsWith("<img src=\"#")) return __invert_MarkdownLeaf_27_html(value);
-    if (value.startsWith("<a href=\"#")) return __invert_MarkdownLeaf_25_html(value);
-    if (value.startsWith("<img src=\"")) return __invert_MarkdownLeaf_26_html(value);
-    if (value.startsWith("<a href=\"")) return __invert_MarkdownLeaf_24_html(value);
-    if (value.startsWith("<strong>")) return __invert_MarkdownLeaf_20_html(value);
-    if (value.startsWith("<tr><td>")) return __invert_MarkdownLeaf_31_html(value);
-    if (value.startsWith("<code>")) return __invert_MarkdownLeaf_23_html(value);
-    if (value.startsWith("<h6>")) return __invert_MarkdownLeaf_0_html(value);
-    if (value.startsWith("<h5>")) return __invert_MarkdownLeaf_1_html(value);
-    if (value.startsWith("<h4>")) return __invert_MarkdownLeaf_2_html(value);
-    if (value.startsWith("<h3>")) return __invert_MarkdownLeaf_3_html(value);
-    if (value.startsWith("<h2>")) return __invert_MarkdownLeaf_4_html(value);
-    if (value.startsWith("<h1>")) return __invert_MarkdownLeaf_5_html(value);
-    if (value.startsWith("<hr>")) return __invert_MarkdownLeaf_8_html(value);
-    if (value.startsWith("<li>")) return __invert_MarkdownLeaf_13_html(value);
-    if (value.startsWith("<em>")) return __invert_MarkdownLeaf_21_html(value);
-    if (value.startsWith("<s>")) return __invert_MarkdownLeaf_22_html(value);
-    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_html(value);
-    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_html(value);
-    return __invert_MarkdownLeaf_29_html(value);
+    if (value.startsWith("<li><input type=\"checkbox\" checked>")) return __invert_MarkdownLeaf_11_html(value, __indentCol);
+    if (value.startsWith("<div class=\"footnote\" id=\"fn")) return __invert_MarkdownLeaf_33_html(value, __indentCol);
+    if (value.startsWith("<li><input type=\"checkbox\">")) return __invert_MarkdownLeaf_12_html(value, __indentCol);
+    if (value.startsWith("<a class=\"autolink\" href=\"")) return __invert_MarkdownLeaf_36_html(value, __indentCol);
+    if (value.startsWith("<pre><code class=\"lang-")) return __invert_MarkdownLeaf_18_html(value, __indentCol);
+    if (value.startsWith("<sup><a href=\"#fn")) return __invert_MarkdownLeaf_34_html(value, __indentCol);
+    if (value.startsWith("<blockquote>")) return __invert_MarkdownLeaf_17_html(value, __indentCol);
+    if (value.startsWith("<pre><code>")) return __invert_MarkdownLeaf_19_html(value, __indentCol);
+    if (value.startsWith("<img src=\"#")) return __invert_MarkdownLeaf_27_html(value, __indentCol);
+    if (value.startsWith("<a href=\"#")) return __invert_MarkdownLeaf_25_html(value, __indentCol);
+    if (value.startsWith("<img src=\"")) return __invert_MarkdownLeaf_26_html(value, __indentCol);
+    if (value.startsWith("<a href=\"")) return __invert_MarkdownLeaf_24_html(value, __indentCol);
+    if (value.startsWith("<strong>")) return __invert_MarkdownLeaf_20_html(value, __indentCol);
+    if (value.startsWith("<tr><td>")) return __invert_MarkdownLeaf_31_html(value, __indentCol);
+    if (value.startsWith("<code>")) return __invert_MarkdownLeaf_23_html(value, __indentCol);
+    if (value.startsWith("<h6>")) return __invert_MarkdownLeaf_0_html(value, __indentCol);
+    if (value.startsWith("<h5>")) return __invert_MarkdownLeaf_1_html(value, __indentCol);
+    if (value.startsWith("<h4>")) return __invert_MarkdownLeaf_2_html(value, __indentCol);
+    if (value.startsWith("<h3>")) return __invert_MarkdownLeaf_3_html(value, __indentCol);
+    if (value.startsWith("<h2>")) return __invert_MarkdownLeaf_4_html(value, __indentCol);
+    if (value.startsWith("<h1>")) return __invert_MarkdownLeaf_5_html(value, __indentCol);
+    if (value.startsWith("<hr>")) return __invert_MarkdownLeaf_8_html(value, __indentCol);
+    if (value.startsWith("<li>")) return __invert_MarkdownLeaf_13_html(value, __indentCol);
+    if (value.startsWith("<em>")) return __invert_MarkdownLeaf_21_html(value, __indentCol);
+    if (value.startsWith("<s>")) return __invert_MarkdownLeaf_22_html(value, __indentCol);
+    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_html(value, __indentCol);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_html(value, __indentCol);
+    return __invert_MarkdownLeaf_29_html(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownParagraph_html(value: any): string {
+function __dispatchInverse_MarkdownParagraph_html(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<p>")) return __invert_MarkdownParagraph_0_html(value);
+    if (value.startsWith("<p>")) return __invert_MarkdownParagraph_0_html(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_html(value: any): string {
-  return __dispatchInverse_MarkdownDocument_html(value);
+  return __dispatchInverse_MarkdownDocument_html(value, 0);
 }
 
-function __dispatchInverse_MarkdownDocument_source(value: any): string {
+function __dispatchInverse_MarkdownDocument_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownDocument_0_source(value);
+    return __invert_MarkdownDocument_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownLeaf_source(value: any): string {
+function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("| --- | --- |")) return __invert_MarkdownLeaf_29_source(value);
-    if (value.startsWith("|:---|---:|")) return __invert_MarkdownLeaf_30_source(value);
-    if (value.startsWith("###### ")) return __invert_MarkdownLeaf_0_source(value);
-    if (value.startsWith("##### ")) return __invert_MarkdownLeaf_1_source(value);
-    if (value.startsWith("- [x] ")) return __invert_MarkdownLeaf_11_source(value);
-    if (value.startsWith("- [ ] ")) return __invert_MarkdownLeaf_12_source(value);
-    if (value.startsWith("#### ")) return __invert_MarkdownLeaf_2_source(value);
-    if (value.startsWith("### ")) return __invert_MarkdownLeaf_3_source(value);
-    if (value.indexOf(" ===") >= 0) return __invert_MarkdownLeaf_6_source(value);
-    if (value.indexOf(" ---") >= 0) return __invert_MarkdownLeaf_7_source(value);
-    if (value.startsWith("```\n")) return __invert_MarkdownLeaf_19_source(value);
-    if (value.startsWith("## ")) return __invert_MarkdownLeaf_4_source(value);
-    if (value.startsWith("***")) return __invert_MarkdownLeaf_8_source(value);
-    if (value.startsWith("___")) return __invert_MarkdownLeaf_9_source(value);
-    if (value.startsWith("---")) return __invert_MarkdownLeaf_10_source(value);
-    if (value.startsWith("```")) return __invert_MarkdownLeaf_18_source(value);
-    if (value.startsWith("# ")) return __invert_MarkdownLeaf_5_source(value);
-    if (value.startsWith("+ ")) return __invert_MarkdownLeaf_13_source(value);
-    if (value.startsWith("* ")) return __invert_MarkdownLeaf_14_source(value);
-    if (value.startsWith("- ")) return __invert_MarkdownLeaf_15_source(value);
-    if (value.indexOf(". ") >= 0) return __invert_MarkdownLeaf_16_source(value);
-    if (value.startsWith("> ")) return __invert_MarkdownLeaf_17_source(value);
-    if (value.startsWith("**")) return __invert_MarkdownLeaf_20_source(value);
-    if (value.startsWith("~~")) return __invert_MarkdownLeaf_22_source(value);
-    if (value.startsWith("![")) return __invert_MarkdownLeaf_26_source(value);
-    if (value.startsWith("![")) return __invert_MarkdownLeaf_27_source(value);
-    if (value.startsWith("| ")) return __invert_MarkdownLeaf_31_source(value);
-    if (value.startsWith("[^")) return __invert_MarkdownLeaf_33_source(value);
-    if (value.startsWith("[^")) return __invert_MarkdownLeaf_34_source(value);
-    if (value.startsWith("*")) return __invert_MarkdownLeaf_21_source(value);
-    if (value.startsWith("`")) return __invert_MarkdownLeaf_23_source(value);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_24_source(value);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_25_source(value);
-    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_source(value);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_32_source(value);
-    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_source(value);
-    if (value.startsWith("<")) return __invert_MarkdownLeaf_36_source(value);
+    if (value.startsWith("| --- | --- |")) return __invert_MarkdownLeaf_29_source(value, __indentCol);
+    if (value.startsWith("|:---|---:|")) return __invert_MarkdownLeaf_30_source(value, __indentCol);
+    if (value.startsWith("###### ")) return __invert_MarkdownLeaf_0_source(value, __indentCol);
+    if (value.startsWith("##### ")) return __invert_MarkdownLeaf_1_source(value, __indentCol);
+    if (value.startsWith("- [x] ")) return __invert_MarkdownLeaf_11_source(value, __indentCol);
+    if (value.startsWith("- [ ] ")) return __invert_MarkdownLeaf_12_source(value, __indentCol);
+    if (value.startsWith("#### ")) return __invert_MarkdownLeaf_2_source(value, __indentCol);
+    if (value.startsWith("### ")) return __invert_MarkdownLeaf_3_source(value, __indentCol);
+    if (value.indexOf(" ===") >= 0) return __invert_MarkdownLeaf_6_source(value, __indentCol);
+    if (value.indexOf(" ---") >= 0) return __invert_MarkdownLeaf_7_source(value, __indentCol);
+    if (value.startsWith("```\n")) return __invert_MarkdownLeaf_19_source(value, __indentCol);
+    if (value.startsWith("## ")) return __invert_MarkdownLeaf_4_source(value, __indentCol);
+    if (value.startsWith("***")) return __invert_MarkdownLeaf_8_source(value, __indentCol);
+    if (value.startsWith("___")) return __invert_MarkdownLeaf_9_source(value, __indentCol);
+    if (value.startsWith("---")) return __invert_MarkdownLeaf_10_source(value, __indentCol);
+    if (value.startsWith("```")) return __invert_MarkdownLeaf_18_source(value, __indentCol);
+    if (value.startsWith("# ")) return __invert_MarkdownLeaf_5_source(value, __indentCol);
+    if (value.startsWith("+ ")) return __invert_MarkdownLeaf_13_source(value, __indentCol);
+    if (value.startsWith("* ")) return __invert_MarkdownLeaf_14_source(value, __indentCol);
+    if (value.startsWith("- ")) return __invert_MarkdownLeaf_15_source(value, __indentCol);
+    if (value.indexOf(". ") >= 0) return __invert_MarkdownLeaf_16_source(value, __indentCol);
+    if (value.startsWith("> ")) return __invert_MarkdownLeaf_17_source(value, __indentCol);
+    if (value.startsWith("**")) return __invert_MarkdownLeaf_20_source(value, __indentCol);
+    if (value.startsWith("~~")) return __invert_MarkdownLeaf_22_source(value, __indentCol);
+    if (value.startsWith("![")) return __invert_MarkdownLeaf_26_source(value, __indentCol);
+    if (value.startsWith("![")) return __invert_MarkdownLeaf_27_source(value, __indentCol);
+    if (value.startsWith("| ")) return __invert_MarkdownLeaf_31_source(value, __indentCol);
+    if (value.startsWith("[^")) return __invert_MarkdownLeaf_33_source(value, __indentCol);
+    if (value.startsWith("[^")) return __invert_MarkdownLeaf_34_source(value, __indentCol);
+    if (value.startsWith("*")) return __invert_MarkdownLeaf_21_source(value, __indentCol);
+    if (value.startsWith("`")) return __invert_MarkdownLeaf_23_source(value, __indentCol);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_24_source(value, __indentCol);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_25_source(value, __indentCol);
+    if (value.startsWith("&")) return __invert_MarkdownLeaf_28_source(value, __indentCol);
+    if (value.startsWith("[")) return __invert_MarkdownLeaf_32_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_MarkdownLeaf_36_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_MarkdownParagraph_source(value: any): string {
+function __dispatchInverse_MarkdownParagraph_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownParagraph_0_source(value);
+    return __invert_MarkdownParagraph_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_source(value: any): string {
-  return __dispatchInverse_MarkdownDocument_source(value);
+  return __dispatchInverse_MarkdownDocument_source(value, 0);
 }
 
-function __invertSlotFor_MarkdownDocument_ast(v: any): any {
+function __invertSlotFor_MarkdownDocument_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownDocument_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownDocument_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_ast(v[i]);
+      const r = __invertSlotFor_MarkdownDocument_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_ast(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownLeaf_ast(v: any): any {
+function __invertSlotFor_MarkdownLeaf_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_ast(v[i]);
+      const r = __invertSlotFor_MarkdownLeaf_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_ast(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownParagraph_ast(v: any): any {
+function __invertSlotFor_MarkdownParagraph_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownParagraph_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_ast(v[i]);
+      const r = __invertSlotFor_MarkdownParagraph_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_ast(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any): any {
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v[i]);
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_MarkdownLeaf_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -5960,75 +6010,75 @@ function __invertSlotLeaf_ast(v: any): any {
   return String(v);
 }
 
-function __invertSlotFor_MarkdownDocument_html(v: any): any {
+function __invertSlotFor_MarkdownDocument_html(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownDocument_html(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownDocument_html(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_html(v[i]);
+      const r = __invertSlotFor_MarkdownDocument_html(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_html(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_html(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownLeaf_html(v: any): any {
+function __invertSlotFor_MarkdownLeaf_html(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_html(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_html(v[i]);
+      const r = __invertSlotFor_MarkdownLeaf_html(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_html(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_html(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownParagraph_html(v: any): any {
+function __invertSlotFor_MarkdownParagraph_html(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownParagraph_html(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_html(v[i]);
+      const r = __invertSlotFor_MarkdownParagraph_html(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_html(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_html(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any): any {
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_html(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_html(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v[i]);
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_MarkdownLeaf_html(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_html(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -6048,75 +6098,75 @@ function __invertSlotLeaf_html(v: any): any {
   return String(v);
 }
 
-function __invertSlotFor_MarkdownDocument_source(v: any): any {
+function __invertSlotFor_MarkdownDocument_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownDocument_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownDocument_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_source(v[i]);
+      const r = __invertSlotFor_MarkdownDocument_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_source(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownDocument_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownLeaf_source(v: any): any {
+function __invertSlotFor_MarkdownLeaf_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_source(v[i]);
+      const r = __invertSlotFor_MarkdownLeaf_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_source(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_MarkdownParagraph_source(v: any): any {
+function __invertSlotFor_MarkdownParagraph_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownParagraph_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_source(v[i]);
+      const r = __invertSlotFor_MarkdownParagraph_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_source(v);
+  if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any): any {
+function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_MarkdownLeaf_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v[i]);
+      const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_MarkdownLeaf_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_MarkdownParagraph_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -11387,6 +11437,8 @@ function __renderFused(input: string, target: string): string | null {
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -11404,6 +11456,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = parseMarkdownDocument(state);
   if (result === null || state.pos !== input.length) {

@@ -35,6 +35,10 @@ import type {
   ResolvedSpan,
 } from '../model.ts';
 
+// Number of spaces added per indent level. MVP constant; a future phase
+// could expose this as a schema-level `indentWidth` option.
+const INDENT_STEP_SPACES = 2;
+
 // --- Public API ------------------------------------------------------------
 
 export function interpretStringify(
@@ -42,7 +46,7 @@ export function interpretStringify(
   value: unknown,
   target: string,
 ): string {
-  return dispatchNode(schema, schema.rootType, target, value);
+  return dispatchNode(schema, schema.rootType, target, value, 0);
 }
 
 // --- Per-(NodeType, target) dispatcher -------------------------------------
@@ -52,11 +56,19 @@ export function interpretStringify(
 // on literal-field values (with field-name presence breaking ties), array
 // targets on length, template targets on leading-prefix (longest first) or
 // unique embedded literals.
+//
+// `indentCol` is the column at which THIS node's indent-modified children
+// will be placed (0 at the top level). Indent-modified repeats spans pass
+// `indentCol + INDENT_STEP_SPACES` when recursing into their children;
+// non-indent spans pass `indentCol` unchanged. The rebuild step uses
+// `indentCol` to compute the join separator and leading prefix for each
+// indent-modified repeats slot.
 function dispatchNode(
   schema: InferredSchema,
   nodeType: string,
   target: string,
   value: unknown,
+  indentCol: number,
 ): string {
   const info = schema.nodeTypes.get(nodeType);
   if (!info) {
@@ -91,7 +103,7 @@ function dispatchNode(
     const ranked = rankObjectBranches(objects);
     for (const r of ranked) {
       if (objectMatches(value as Record<string, unknown>, r.branch.ir, r.otherFieldNames)) {
-        return invertProduction(schema, r.branch.production, r.branch.ir, target, value);
+        return invertProduction(schema, r.branch.production, r.branch.ir, target, value, indentCol);
       }
     }
     // Ref bodies whose referred span resolves through a multi-role chain can
@@ -99,7 +111,7 @@ function dispatchNode(
     // ref bodies too — the inverter delegates to the recursive slot helper
     // which handles objects correctly.
     for (const b of refs) {
-      return invertProduction(schema, b.production, b.ir, target, value);
+      return invertProduction(schema, b.production, b.ir, target, value, indentCol);
     }
   }
 
@@ -108,7 +120,7 @@ function dispatchNode(
     for (const b of arrays) {
       const ir = b.ir as Extract<InverseIR, { kind: 'array' }>;
       if (value.length === ir.elements.length) {
-        return invertProduction(schema, b.production, b.ir, target, value);
+        return invertProduction(schema, b.production, b.ir, target, value, indentCol);
       }
     }
   }
@@ -118,18 +130,18 @@ function dispatchNode(
     const tplPlans = planTemplateDispatch(templates);
     for (const p of tplPlans) {
       if (p.check === null || p.check(value)) {
-        return invertProduction(schema, p.branch.production, p.branch.ir, target, value);
+        return invertProduction(schema, p.branch.production, p.branch.ir, target, value, indentCol);
       }
     }
     // Bare-ref bodies accept any string.
     for (const b of refs) {
-      return invertProduction(schema, b.production, b.ir, target, value);
+      return invertProduction(schema, b.production, b.ir, target, value, indentCol);
     }
     // Scalar string
     for (const b of scalars) {
       const ir = b.ir as Extract<InverseIR, { kind: 'scalar' }>;
       if (Object.is(value, ir.value)) {
-        return invertProduction(schema, b.production, b.ir, target, value);
+        return invertProduction(schema, b.production, b.ir, target, value, indentCol);
       }
     }
   }
@@ -138,7 +150,7 @@ function dispatchNode(
   for (const b of scalars) {
     const ir = b.ir as Extract<InverseIR, { kind: 'scalar' }>;
     if (Object.is(value, ir.value)) {
-      return invertProduction(schema, b.production, b.ir, target, value);
+      return invertProduction(schema, b.production, b.ir, target, value, indentCol);
     }
   }
 
@@ -338,6 +350,7 @@ function invertProduction(
   ir: InverseIR,
   target: string,
   value: unknown,
+  indentCol: number,
 ): string {
   if (ir.kind === 'scalar') {
     if (!Object.is(value, ir.value)) {
@@ -348,8 +361,8 @@ function invertProduction(
     return production.source.input;
   }
   const captures: Record<string, unknown> = {};
-  walkInverse(schema, ir, value, target, production, captures);
-  return rebuildSource(production, captures);
+  walkInverse(schema, ir, value, target, production, captures, indentCol);
+  return rebuildSource(production, captures, indentCol);
 }
 
 // Walks an InverseIR, populating `captures` from `value`. Mirrors
@@ -361,13 +374,14 @@ function walkInverse(
   target: string,
   production: Production,
   captures: Record<string, unknown>,
+  indentCol: number,
 ): void {
   switch (ir.kind) {
     case 'object':
-      walkInverseObject(schema, ir.fields, value, target, production, captures);
+      walkInverseObject(schema, ir.fields, value, target, production, captures, indentCol);
       return;
     case 'array':
-      walkInverseArray(schema, ir.elements, value, target, production, captures);
+      walkInverseArray(schema, ir.elements, value, target, production, captures, indentCol);
       return;
     case 'scalar':
       if (!Object.is(value, ir.value)) {
@@ -377,10 +391,10 @@ function walkInverse(
       }
       return;
     case 'ref':
-      captures[ir.capture] = invertSlot(schema, ir.capture, production, target, value);
+      captures[ir.capture] = invertSlot(schema, ir.capture, production, target, value, indentCol);
       return;
     case 'template':
-      walkInverseTemplate(schema, ir.segments, ir.captures, value, target, production, captures);
+      walkInverseTemplate(schema, ir.segments, ir.captures, value, target, production, captures, indentCol);
       return;
   }
 }
@@ -392,6 +406,7 @@ function walkInverseObject(
   target: string,
   production: Production,
   captures: Record<string, unknown>,
+  indentCol: number,
 ): void {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`stringify: expected object value, got ${typeof value}`);
@@ -407,7 +422,7 @@ function walkInverseObject(
       }
       continue;
     }
-    walkInverse(schema, field.inverse, v, target, production, captures);
+    walkInverse(schema, field.inverse, v, target, production, captures, indentCol);
   }
 }
 
@@ -418,6 +433,7 @@ function walkInverseArray(
   target: string,
   production: Production,
   captures: Record<string, unknown>,
+  indentCol: number,
 ): void {
   if (!Array.isArray(value) || value.length !== elements.length) {
     throw new Error(
@@ -425,7 +441,7 @@ function walkInverseArray(
     );
   }
   for (let i = 0; i < elements.length; i++) {
-    walkInverse(schema, elements[i]!, value[i], target, production, captures);
+    walkInverse(schema, elements[i]!, value[i], target, production, captures, indentCol);
   }
 }
 
@@ -443,6 +459,7 @@ function walkInverseTemplate(
   target: string,
   production: Production,
   captures: Record<string, unknown>,
+  indentCol: number,
 ): void {
   if (typeof value !== 'string') {
     throw new Error(`stringify: expected string value for template body, got ${typeof value}`);
@@ -472,7 +489,7 @@ function walkInverseTemplate(
       if (isOptional[i] && pos >= s.length) {
         captures[capName] = null;
       } else {
-        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos));
+        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos), indentCol);
         pos = s.length;
       }
       continue;
@@ -487,7 +504,7 @@ function walkInverseTemplate(
     const nextIsTailOptional = nextIdx < captureNames.length && tailOptional[nextIdx];
     if (end < 0) {
       if (nextIsTailOptional) {
-        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos));
+        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos), indentCol);
         pos = s.length;
         for (let k = nextIdx; k < captureNames.length; k++) {
           captures[captureNames[k]!] = null;
@@ -497,7 +514,7 @@ function walkInverseTemplate(
       }
       throw new Error(`stringify: expected separator '${nextSeg}' after capture ${capName}`);
     }
-    captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos, end));
+    captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos, end), indentCol);
     pos = end + nextSeg.length;
   }
   if (pos !== s.length) {
@@ -515,12 +532,19 @@ function walkInverseTemplate(
 //     per-(NodeType, target) dispatcher.
 //   - 2+ roles (multi-role recursive): try each role in declared order,
 //     first to succeed wins.
+//
+// `indentCol` is the column the PARENT node was told its indent children
+// live at. For indent-modified spans, we add INDENT_STEP_SPACES so the
+// child nodes receive the column at which THEIR indent children live.
+// For non-indent spans, `indentCol` is passed through unchanged so the
+// child can still communicate it to its own indent spans.
 function invertSlot(
   schema: InferredSchema,
   capture: string,
   production: Production,
   target: string,
   value: unknown,
+  indentCol: number,
 ): unknown {
   const span = findSpanByName(production, capture);
   if (!span) {
@@ -531,10 +555,15 @@ function invertSlot(
   if (roles.length === 0) {
     return invertLeafValue(value);
   }
+  // Indent-modified spans add INDENT_STEP_SPACES to the column so that
+  // children of indent spans receive the correct column for their own
+  // indent children. Non-indent spans pass indentCol through unchanged.
+  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
+  const childIndentCol = hasIndent ? indentCol + INDENT_STEP_SPACES : indentCol;
   if (roles.length === 1) {
-    return invertNodeSlot(schema, roles[0]!, target, value);
+    return invertNodeSlot(schema, roles[0]!, target, value, childIndentCol);
   }
-  return invertMultiRoleSlot(schema, roles, target, value);
+  return invertMultiRoleSlot(schema, roles, target, value, childIndentCol);
 }
 
 function invertLeafValue(value: unknown): unknown {
@@ -556,6 +585,7 @@ function invertNodeSlot(
   role: string,
   target: string,
   value: unknown,
+  indentCol: number,
 ): unknown {
   if (value === null || value === undefined) return null;
   if (typeof value === 'string') {
@@ -564,7 +594,7 @@ function invertNodeSlot(
     // production accepts the shape, pass through (it's already source-
     // shaped for source-target captures).
     try {
-      return dispatchNode(schema, role, target, value);
+      return dispatchNode(schema, role, target, value, indentCol);
     } catch (_e) {
       return value;
     }
@@ -572,13 +602,13 @@ function invertNodeSlot(
   if (Array.isArray(value)) {
     const out: unknown[] = [];
     for (const v of value) {
-      const r = invertNodeSlot(schema, role, target, v);
+      const r = invertNodeSlot(schema, role, target, v, indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof value === 'object') {
-    return dispatchNode(schema, role, target, value);
+    return dispatchNode(schema, role, target, value, indentCol);
   }
   return String(value);
 }
@@ -588,12 +618,13 @@ function invertMultiRoleSlot(
   roles: ReadonlyArray<string>,
   target: string,
   value: unknown,
+  indentCol: number,
 ): unknown {
   if (value === null || value === undefined) return null;
   if (typeof value === 'string') {
     for (const role of roles) {
       try {
-        return dispatchNode(schema, role, target, value);
+        return dispatchNode(schema, role, target, value, indentCol);
       } catch (_e) {
         /* try next */
       }
@@ -603,7 +634,7 @@ function invertMultiRoleSlot(
   if (Array.isArray(value)) {
     const out: unknown[] = [];
     for (const v of value) {
-      const r = invertMultiRoleSlot(schema, roles, target, v);
+      const r = invertMultiRoleSlot(schema, roles, target, v, indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -611,7 +642,7 @@ function invertMultiRoleSlot(
   if (typeof value === 'object') {
     for (const role of roles) {
       try {
-        return dispatchNode(schema, role, target, value);
+        return dispatchNode(schema, role, target, value, indentCol);
       } catch (_e) {
         /* try next */
       }
@@ -628,7 +659,17 @@ function invertMultiRoleSlot(
 // Port of emit/rebuild.ts → emitOne + piecesToConcat + __rebuildSlot. Walks
 // `production.spans` in declaration order, interpolating captured values
 // between the span's source-position-bounded literal separators.
-function rebuildSource(production: Production, captures: Record<string, unknown>): string {
+//
+// `indentCol` is the column at which THIS production's indent-modified
+// children live. Indent-modified repeats slots use it to compute their
+// join separator (`'\n' + ' '.repeat(indentCol)`) and, when indentCol > 0,
+// prepend a leading `'\n' + ' '.repeat(indentCol)` before the first child
+// so the whole block starts on a new indented line.
+function rebuildSource(
+  production: Production,
+  captures: Record<string, unknown>,
+  indentCol: number,
+): string {
   const input = production.source.input;
   type Piece =
     | { readonly kind: 'literal'; readonly text: string }
@@ -637,6 +678,7 @@ function rebuildSource(production: Production, captures: Record<string, unknown>
         readonly ref: string;
         readonly optional: boolean;
         readonly joinSep: string;
+        readonly isIndent: boolean;
       };
   const pieces: Piece[] = [];
   let cursor = 0;
@@ -679,7 +721,14 @@ function rebuildSource(production: Production, captures: Record<string, unknown>
       }
       continue;
     }
-    built.push(rebuildSlotValue(raw, p.joinSep));
+    // For indent-modified slots, compute the per-level separator and
+    // whether to add a leading prefix (when indentCol > 0 the whole block
+    // starts on a new indented line).
+    const effectiveJoinSep = p.isIndent
+      ? '\n' + ' '.repeat(indentCol)
+      : p.joinSep;
+    const leadingPrefix = p.isIndent && indentCol > 0;
+    built.push(rebuildSlotValue(raw, effectiveJoinSep, leadingPrefix));
   }
   for (const s of built) result += s;
   return result;
@@ -692,40 +741,42 @@ function contributionOf(span: ResolvedSpan):
       readonly ref: string;
       readonly optional: boolean;
       readonly joinSep: string;
+      readonly isIndent: boolean;
     } {
   const optional = isAbsentAllowedSpan(span);
-  const joinSep = joinSeparatorOf(span);
+  const { sep: joinSep, isIndent } = joinSeparatorOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new Error('stringify: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new Error('stringify: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new Error(`stringify: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   if (!span.text) throw new Error('stringify: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
 }
 
-function joinSeparatorOf(span: ResolvedSpan): string {
-  // Detect indent modifier first — indent-modified repeats spans join children
-  // with '\n' (column-0 MVP; Task 7.7 will introduce per-level padding).
+// Returns the join separator for a repeats span AND whether it carries an
+// indent modifier. Callers use `isIndent` to decide whether to apply
+// per-level column padding at runtime (see rebuildSource).
+function joinSeparatorOf(span: ResolvedSpan): { sep: string; isIndent: boolean } {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      if (hasIndent) return '\n';
-      return m.sep === undefined ? ' ' : m.sep;
+      if (hasIndent) return { sep: '\n', isIndent: true };
+      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
     }
   }
-  return '';
+  return { sep: '', isIndent: false };
 }
 
 // Coerces a captured value to its rebuilt-source string. Recursive children
@@ -733,10 +784,16 @@ function joinSeparatorOf(span: ResolvedSpan): string {
 // for nested object/template values). Arrays of children join with the
 // span-declared separator. Primitives stringify naturally. null/undefined
 // → "".
-function rebuildSlotValue(v: unknown, joinSep: string): string {
+//
+// `leadingPrefix`: when true AND the value is a non-empty array, prepend
+// `joinSep` before the first element. This implements the indent-block
+// convention where a nested mapping/sequence starts on a new indented line
+// (e.g. `bar: \n  baz: 2` — the inner block starts with `\n  `).
+function rebuildSlotValue(v: unknown, joinSep: string, leadingPrefix = false): string {
   if (v === null || v === undefined) return '';
   if (Array.isArray(v)) {
-    let out = '';
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : '';
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += rebuildSlotValue(v[i], '');

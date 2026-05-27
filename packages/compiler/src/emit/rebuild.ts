@@ -43,6 +43,11 @@ import {
 } from '../model.ts';
 import { jsString } from './strings.ts';
 
+// Number of spaces added per indent level — kept in sync with
+// interp/stringify.ts `INDENT_STEP_SPACES` and emit/inverse.ts
+// `CODEGEN_INDENT_STEP`.
+export const INDENT_STEP_SPACES = 2;
+
 export function emitRebuild(schema: InferredSchema): string {
   const fns: string[] = [];
   for (const info of schema.nodeTypes.values()) {
@@ -65,11 +70,22 @@ type Piece =
       // (whitespace-separated at parse time). Non-repeating slots carry an
       // empty join separator — the field is unused but type-stable.
       readonly joinSep: string;
+      // True when this slot carries an `.indent()` modifier. When true the
+      // rebuild function receives an `__indentCol` parameter and uses a
+      // dynamic join separator `'\n' + ' '.repeat(__indentCol)` plus a
+      // leading prefix when `__indentCol > 0`.
+      readonly isIndent: boolean;
     };
 
 function emitOne(nodeName: string, prodIdx: number, production: Production): string {
   const pieces = synthesizePieces(production);
+  const hasIndentPiece = pieces.some((p) => p.kind === 'slot' && p.isIndent);
   const expr = piecesToConcat(pieces);
+  if (hasIndentPiece) {
+    return `function ${rebuildFnName(nodeName, prodIdx)}(captures: any, __indentCol: number = 0): string {
+  return ${expr};
+}`;
+  }
   return `function ${rebuildFnName(nodeName, prodIdx)}(captures: any): string {
   return ${expr};
 }`;
@@ -110,23 +126,23 @@ function contributionOf(span: ResolvedSpan): Piece {
   // Treat both .optional() and .repeats({ min: 0 }) as absent-allowed: the
   // captured value may be null and the slot must collapse to "" at runtime.
   const optional = isAbsentAllowed(span);
-  const joinSep = joinSeparatorOf(span);
+  const { sep: joinSep, isIndent } = joinSeparatorOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('rebuild: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new CompilerError('rebuild: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new CompilerError(`rebuild: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, joinSep };
+    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
   if (!span.text) throw new CompilerError('rebuild: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
 }
@@ -140,17 +156,19 @@ function contributionOf(span: ResolvedSpan): Piece {
 // children — rebuild joins with " ". Spans that don't repeat get "" too
 // (unused; arrays only land here for repeats and recursive captures, the
 // latter joined via __rebuildSlot's nested recursion).
-// indent-modified repeats: join with '\n' (column-0 MVP — Task 7.7 will
-// introduce per-level padding when nested blocks at deeper columns land).
-function joinSeparatorOf(span: ResolvedSpan): string {
+//
+// Returns `{ sep, isIndent }` so callers can distinguish indent spans and
+// emit a dynamic join expression (`'\n' + ' '.repeat(__indentCol)`) rather
+// than a static string literal.
+function joinSeparatorOf(span: ResolvedSpan): { sep: string; isIndent: boolean } {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      if (hasIndent) return '\n';
-      return m.sep === undefined ? ' ' : m.sep;
+      if (hasIndent) return { sep: '\n', isIndent: true };
+      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
     }
   }
-  return '';
+  return { sep: '', isIndent: false };
 }
 
 function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
@@ -163,7 +181,19 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       continue;
     }
     const slotAccess = `captures${memberAccess(p.ref)}`;
-    const slotExpr = `__rebuildSlot(${slotAccess}${p.joinSep ? `, ${jsString(p.joinSep)}` : ''})`;
+    // Indent-modified slots use a dynamic join separator and, when
+    // __indentCol > 0, a leading prefix before the first child so the
+    // whole block appears on a new indented line. The `__indentCol`
+    // parameter is only emitted by `emitOne` when the production has at
+    // least one indent-modified slot (see `hasIndentPiece` check above).
+    let slotExpr: string;
+    if (p.isIndent) {
+      // Dynamic join: '\n' + ' '.repeat(__indentCol)
+      // Dynamic leading prefix: __indentCol > 0 → also prefix the first child
+      slotExpr = `__rebuildSlot(${slotAccess}, "\\n" + " ".repeat(__indentCol), __indentCol > 0)`;
+    } else {
+      slotExpr = `__rebuildSlot(${slotAccess}${p.joinSep ? `, ${jsString(p.joinSep)}` : ''})`;
+    }
     if (p.optional) {
       // Fuse the slot with its preceding literal separator (Fix 2 — ports
       // the foldIntoTemplate optional-slot behaviour from the deleted
@@ -233,10 +263,15 @@ function truncate(s: string): string {
 // separator suffix) or a single space when `.repeats()` declares no `sep`
 // (whitespace-separated at parse time). Primitives stringify naturally.
 // null/undefined → "".
-export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any, joinSep: string = ""): string {
+//
+// `leadingPrefix`: when true AND the value is a non-empty array, prepend
+// `joinSep` before the first element. Indent-modified slots set this when
+// `__indentCol > 0` so nested blocks start on a new indented line.
+export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
-    let out = "";
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : "";
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += __rebuildSlot(v[i]);

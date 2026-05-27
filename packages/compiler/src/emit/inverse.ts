@@ -34,8 +34,13 @@ import type {
   Production,
   RenderTargetIR,
 } from '../model.ts';
-import { rebuildFnName } from './rebuild.ts';
+import { INDENT_STEP_SPACES, rebuildFnName } from './rebuild.ts';
 import { jsString } from './strings.ts';
+
+// The indent step in spaces — kept in sync with emit/rebuild.ts.
+// Used when emitting the `__indentCol + N` expression in slot helper calls
+// for indent-modified spans.
+const CODEGEN_INDENT_STEP = INDENT_STEP_SPACES;
 
 export function emitInverse(schema: InferredSchema): string {
   const targets = collectTargets(schema);
@@ -122,17 +127,17 @@ function emitInverter(
   // span value is constant).
   if (ir.kind === 'scalar') {
     const assertion = emitScalarAssertion(ir.value, 'value');
-    return `function ${fnName}(value: any): string {
+    return `function ${fnName}(value: any, __indentCol: number = 0): string {
 ${indent(assertion, 1)}
   return ${jsString(production.source.input)};
 }`;
   }
   const body = emitInverseBody(ir, 'value', target, production);
   const rebuild = rebuildFnName(nodeName, prodIdx);
-  return `function ${fnName}(value: any): string {
+  return `function ${fnName}(value: any, __indentCol: number = 0): string {
   const captures: any = {};
 ${indent(body, 1)}
-  return ${rebuild}(captures);
+  return ${rebuild}(captures, __indentCol);
 }`;
 }
 
@@ -233,11 +238,17 @@ function isOptionalCapture(production: Production, captureName: string): boolean
 // productions only. Otherwise the captured value is a leaf (string or
 // array of strings) and we route through the generic per-target slot
 // helper that just unboxes.
+//
+// `indentColExpr` is a JS expression (typically `"__indentCol"` or a
+// literal like `"0"`) representing the current indent column. For indent-
+// modified spans the child column is `indentColExpr + CODEGEN_INDENT_STEP`;
+// for other spans it is passed through unchanged. Leaf helpers ignore it.
 function slotHelperCall(
   capture: string,
   production: Production,
   target: string,
   valueExpr: string,
+  indentColExpr = '__indentCol',
 ): string {
   for (const span of production.spans) {
     if (span.name !== capture) continue;
@@ -248,14 +259,21 @@ function slotHelperCall(
       // dispatching to any per-node inverter.
       return `__invertSlotLeaf_${jsIdent(target)}(${valueExpr})`;
     }
+    // Indent-modified spans add CODEGEN_INDENT_STEP to the column so child
+    // nodes receive the column at which THEIR indent children will live.
+    // Non-indent spans pass the column through unchanged.
+    const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
+    const childColExpr = hasIndent
+      ? `${indentColExpr} + ${CODEGEN_INDENT_STEP}`
+      : indentColExpr;
     if (roles.length === 1) {
-      return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr})`;
+      return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr}, ${childColExpr})`;
     }
     // Feature 2: multi-role recursive capture. The runtime value at each
     // array element is dispatched to whichever role's per-node inverse
     // dispatcher matches its shape — using the shared per-(roles, target)
     // helper emitted by `emitMultiRoleSlotHelper`.
-    return `${multiRoleSlotHelperName(roles, target)}(${valueExpr})`;
+    return `${multiRoleSlotHelperName(roles, target)}(${valueExpr}, ${childColExpr})`;
   }
   // No span found for this capture — defensive fallback. This shouldn't
   // happen because validate.ts checks that every $.name in a body refers
@@ -457,7 +475,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
   }
   if (branches.length === 0) {
-    return `function ${fnName}(value: any): string {
+    return `function ${fnName}(value: any, __indentCol: number = 0): string {
   throw new Error("stringify: no productions declared for node '${info.name}' target '${target}'");
 }`;
   }
@@ -520,7 +538,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // conditions.
     compiled.sort((x, y) => y.specificity - x.specificity);
     for (const c of compiled) {
-      const call = `${inverterName(c.branch.nodeName, c.branch.prodIdx, c.branch.target)}(value)`;
+      const call = `${inverterName(c.branch.nodeName, c.branch.prodIdx, c.branch.target)}(value, __indentCol)`;
       if (c.cond === 'true') {
         lines.push(`  return ${call};`);
       } else {
@@ -534,7 +552,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // Discriminate by length (already validated as unique in invert.ts).
     for (const b of arrays) {
       const ir = b.ir as Extract<InverseIR, { kind: 'array' }>;
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value)`;
+      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
       lines.push(`  if (value.length === ${ir.elements.length}) return ${call};`);
     }
     lines.push('}');
@@ -621,7 +639,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // fallback branches last. Stable across schemas with the same shape.
     plans.sort((a, b) => b.priority - a.priority);
     for (const p of plans) {
-      const call = `${inverterName(p.branch.nodeName, p.branch.prodIdx, p.branch.target)}(value)`;
+      const call = `${inverterName(p.branch.nodeName, p.branch.prodIdx, p.branch.target)}(value, __indentCol)`;
       if (p.check === null) {
         lines.push(`  return ${call};`);
       } else {
@@ -637,7 +655,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // children render as objects). Accept any non-null, non-array value.
     lines.push('if (value !== null && value !== undefined && !Array.isArray(value)) {');
     for (const b of refs) {
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value)`;
+      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
       lines.push(`  return ${call};`);
     }
     lines.push('}');
@@ -646,14 +664,14 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     for (const b of scalars) {
       const ir = b.ir as Extract<InverseIR, { kind: 'scalar' }>;
       const lit = jsLiteral(ir.value);
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value)`;
+      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
       lines.push(`if (Object.is(value, ${lit})) return ${call};`);
     }
   }
 
   lines.push(`throw new Error("stringify: no production matches for target '${target}' (value: " + JSON.stringify(value) + ")");`);
 
-  return `function ${fnName}(value: any): string {
+  return `function ${fnName}(value: any, __indentCol: number = 0): string {
 ${indent(lines.join('\n'), 1)}
 }`;
 }
@@ -719,20 +737,20 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   //                    dispatcher to recursively rebuild the child into a
   //                    source string.
   //   other          → String(v).
-  return `function ${helper}(v: any): any {
+  return `function ${helper}(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return ${childDispatch}(v); } catch (_e) { return v; }
+    try { return ${childDispatch}(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = ${helper}(v[i]);
+      const r = ${helper}(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return ${childDispatch}(v);
+  if (typeof v === "object") return ${childDispatch}(v, __indentCol);
   return String(v);
 }`;
 }
@@ -762,10 +780,10 @@ function emitMultiRoleSlotHelper(
   for (const role of roles) {
     const childDispatch = nodeDispatcherName(role, target);
     tryCalls.push(
-      `    try { return ${childDispatch}(v); } catch (_e) { /* try next role */ }`,
+      `    try { return ${childDispatch}(v, __indentCol); } catch (_e) { /* try next role */ }`,
     );
   }
-  return `function ${helper}(v: any): any {
+  return `function ${helper}(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
 ${tryCalls.join('\n')}
@@ -774,7 +792,7 @@ ${tryCalls.join('\n')}
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = ${helper}(v[i]);
+      const r = ${helper}(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -815,8 +833,11 @@ function emitLeafSlotHelper(target: string): string {
 function emitRootDispatcher(rootType: string, target: string): string {
   const fnName = `__dispatchInverse_${jsIdent(target)}`;
   const rootCall = nodeDispatcherName(rootType, target);
+  // The root dispatcher always starts with indentCol=0 (top-level context).
+  // Per-node dispatchers accept __indentCol and thread it through but the
+  // public stringify entry point never needs a caller-supplied column.
   return `function ${fnName}(value: any): string {
-  return ${rootCall}(value);
+  return ${rootCall}(value, 0);
 }`;
 }
 

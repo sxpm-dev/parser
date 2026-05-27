@@ -21,6 +21,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -70,6 +76,68 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
+}
+
+function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
+  let lineStart = offset;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
+  let lineEnd = offset;
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  // Headline is generic — the underlying validator's message is attached via
+  // `cause` so callers can drill into it without polluting `.message`. Tests
+  // assert that the headline does NOT include validator-specific text (e.g.
+  // 'Invalid CSS value'), so we deliberately keep the message bare.
+  return new SyntaxError(`Invalid value at position ${offset}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`, cause !== undefined ? { cause } : undefined);
+}
+
 function syntaxErrorAt(input: string, offset: number): SyntaxError {
   let lineStart = offset;
   while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
@@ -80,7 +148,11 @@ function syntaxErrorAt(input: string, offset: number): SyntaxError {
   const source = input.slice(lineStart, lineEnd);
   const gutter = String(line);
   const column = Math.max(0, offset - lineStart);
-  return new SyntaxError(`parse failed at position ${offset}
+  const ch = offset < input.length ? input[offset] : 'EOF';
+  const headline = ch === 'EOF'
+    ? `Unexpected end of input at position ${offset}`
+    : `Unexpected '${ch}' at position ${offset}`;
+  return new SyntaxError(`${headline}
 ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
@@ -349,6 +421,10 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   const target = options?.type ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+  }
+  if (target !== 'ast') {
+    const fused = __renderFused(input, target);
+    if (fused !== null) return fused;
   }
   const fn = __renderDispatch[target];
   if (!fn) {
@@ -712,6 +788,1131 @@ export function stringify(value: unknown, options?: { type?: string }): string {
   return fn(value);
 }
 
+function __fusedRender_ArnResource_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __kind_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __kind_end = off;
+    const kind = input.slice(__kind_start, __kind_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(kind ?? ""));
+    out.push(":");
+    out.push(String(name ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_ArnResource_1_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __kind_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __kind_end = off;
+    const kind = input.slice(__kind_start, __kind_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(kind ?? ""));
+    out.push("/");
+    out.push(String(name ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_ArnResource_2_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __name_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __name_end = off;
+    const name = input.slice(__name_start, __name_end);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(name ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+function __fusedRender_Arn_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.startsWith("arn", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 3;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __partition_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __partition_end = off;
+    const partition = input.slice(__partition_start, __partition_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __service_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __service_end = off;
+    const service = input.slice(__service_start, __service_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __region_start = off;
+    off++;
+    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+    const __region_end = off;
+    const region = input.slice(__region_start, __region_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __account_start = off;
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+    const __account_end = off;
+    const account = input.slice(__account_start, __account_end);
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    off += 1;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    const __slotBuf_resource: string[] = [];
+    let __slotMatched_resource = false;
+    // recursive span (ArnResource) — fused dispatch
+    {
+      const __offBefore = off;
+      state.pos = off;
+      if (off < len) {
+        const __c0 = input.charCodeAt(off);
+        if (__c0 === 45) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 65) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 66) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 67) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 68) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 69) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 70) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 71) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 72) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 73) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 74) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 75) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 76) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 77) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 78) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 79) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 80) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 81) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 82) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 83) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 84) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 85) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 86) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 87) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 88) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 89) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 90) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 95) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 97) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 98) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 99) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 100) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 101) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 102) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 103) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 104) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 105) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 106) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 107) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 108) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 109) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 110) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 111) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 112) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 113) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 114) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 115) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 116) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 117) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 118) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 119) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 120) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 121) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 122) {
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_0_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_1_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+          if (!__slotMatched_resource) {
+            state.pos = __offBefore;
+            __slotBuf_resource.length = 0;
+            if (__fusedRender_ArnResource_2_source(state, __slotBuf_resource)) { __slotMatched_resource = true; off = state.pos; }
+          }
+        }
+      }
+      if (!__slotMatched_resource) __slotBuf_resource.length = 0;
+      if (!__slotMatched_resource) { state.pos = entryOff; return null; }
+    }
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push("arn:");
+    out.push(String(partition ?? ""));
+    out.push(":");
+    out.push(String(service ?? ""));
+    out.push(":");
+    out.push(String(region ?? ""));
+    out.push(":");
+    out.push(String(account ?? ""));
+    out.push(":");
+    for (let __i = 0; __i < __slotBuf_resource.length; __i++) out.push(__slotBuf_resource[__i]);
+    return true;
+  })();
+  return __ok === true;
+}
+
+const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "ArnResource#0": __fusedRender_ArnResource_0_source,
+  "ArnResource#1": __fusedRender_ArnResource_1_source,
+  "ArnResource#2": __fusedRender_ArnResource_2_source,
+  "Arn#0": __fusedRender_Arn_0_source,
+};
+
+const __rootProductionKey: string = "Arn#0";
+
+function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
+  switch (target) {
+    case "source": return __fusedRenderDispatch_source;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): string | null {
+  const table = __fusedRenderDispatchLookup(target);
+  if (table === null) return null;
+  const rootFusedFn = table[__rootProductionKey];
+  if (rootFusedFn === undefined) return null;
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+  const out: string[] = [];
+  const ok = rootFusedFn(state, out);
+  if (!ok) return null;
+  if (state.pos !== input.length) return null;
+  return out.join('');
+}
+
 function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
   const state: State = {
@@ -721,6 +1922,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = parseArn(state);
   if (result === null || state.pos !== input.length) {
@@ -730,7 +1933,7 @@ function __parse(input: string, options?: ParseOptions): unknown {
 }
 
 export function validate(input: string, options?: ParseOptions): void {
-  const state: State = {
+  const __state: State = {
     input,
     len: input.length,
     pos: 0,
@@ -738,9 +1941,9 @@ export function validate(input: string, options?: ParseOptions): void {
     mode: 'fast',
     lineStarts: [],
   };
-  const result = parseArn(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  const __result = parseArn(__state);
+  if (__result === null || __state.pos !== input.length) {
+    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
   }
 }
 

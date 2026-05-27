@@ -21,6 +21,12 @@ type State = {
   maxOff: number;
   readonly mode: ParseMode;
   readonly lineStarts: number[];
+  // Stack of expected column offsets for nested indent scopes. Pushed by
+  // emitRepeatsSpan when the span carries kind:'indent'; popped on exit.
+  // Fixed Int32Array(16) capacity; the runtime fails the parse if depth > 16.
+  // indentStackTop is the count of pushed entries (0 when no indent is active).
+  indentStack: Int32Array;
+  indentStackTop: number;
 };
 
 function computeLineStarts(input: string): number[] {
@@ -68,6 +74,49 @@ function isJsIdentStart(c: number): boolean {
 }
 function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
+}
+
+function columnAt(state: State, off: number): number {
+  // Column (0-indexed) of byte at off within its line — measured as a raw
+  // byte offset from the start of the current line. Tabs are NOT supported
+  // in the indent MVP: each tab counts as a single column, not its display
+  // width. Schemas using .indent() should document this.
+  const input = state.input;
+  let lineStart = off;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
+  return off - lineStart;
+}
+
+function skipBlankLines(state: State): void {
+  // Advance state.pos past any sequence of lines containing only whitespace.
+  // Stops at the first non-whitespace character (without consuming the
+  // leading spaces of that line).
+  //
+  // Blank-line whitespace includes spaces (0x20), tabs (0x09), and CR (0x0d).
+  // After this call, use skipHorizontalWs to consume leading spaces on the
+  // current non-blank line before measuring column via columnAt.
+  const input = state.input;
+  const len = state.len;
+  outer: while (state.pos < len) {
+    let probe = state.pos;
+    while (probe < len) {
+      const c = input.charCodeAt(probe);
+      if (c === 0x0a) { state.pos = probe + 1; continue outer; }
+      if (c === 0x20 || c === 0x09 || c === 0x0d) { probe++; continue; }
+      return;
+    }
+    return;
+  }
+}
+
+function skipHorizontalWs(state: State): void {
+  // Skip ASCII spaces (0x20) only — tabs do not contribute to indent column
+  // (Phase 7 MVP scope decision; see columnAt). Used after skipBlankLines to
+  // land on the first non-space byte of the current line before measuring
+  // column.
+  const input = state.input;
+  const len = state.len;
+  while (state.pos < len && input.charCodeAt(state.pos) === 0x20) state.pos++;
 }
 
 function validatorErrorAt(input: string, offset: number, cause?: unknown): SyntaxError {
@@ -2142,10 +2191,11 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   return fn(captures);
 }
 
-function __rebuildSlot(v: any, joinSep: string = ""): string {
+function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
-    let out = "";
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : "";
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += __rebuildSlot(v[i]);
@@ -2259,7 +2309,7 @@ function __rebuild_Attribute_3(captures: any): string {
   return String(__rebuildSlot(captures.name));
 }
 
-function __invert_HtmlDocument_0_ast(value: any): string {
+function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2270,14 +2320,14 @@ function __invert_HtmlDocument_0_ast(value: any): string {
   if (!Object.is(value.mode, "no-quirks")) {
     throw new Error("stringify: field \"mode\" expected \"no-quirks\", got " + JSON.stringify(value.mode));
   }
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlDocument_0(captures);
+  return __rebuild_HtmlDocument_0(captures, __indentCol);
 }
 
-function __invert_Doctype_0_ast(value: any): string {
+function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2299,10 +2349,10 @@ function __invert_Doctype_0_ast(value: any): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Doctype_0(captures);
+  return __rebuild_Doctype_0(captures, __indentCol);
 }
 
-function __invert_Doctype_1_ast(value: any): string {
+function __invert_Doctype_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2324,10 +2374,10 @@ function __invert_Doctype_1_ast(value: any): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Doctype_1(captures);
+  return __rebuild_Doctype_1(captures, __indentCol);
 }
 
-function __invert_Comment_0_ast(value: any): string {
+function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2339,10 +2389,10 @@ function __invert_Comment_0_ast(value: any): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Comment_0(captures);
+  return __rebuild_Comment_0(captures, __indentCol);
 }
 
-function __invert_HtmlElement_0_ast(value: any): string {
+function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2356,7 +2406,7 @@ function __invert_HtmlElement_0_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 1) {
     throw new Error("stringify: expected array of length 1, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
@@ -2373,10 +2423,10 @@ function __invert_HtmlElement_0_ast(value: any): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_0(captures);
+  return __rebuild_HtmlElement_0(captures, __indentCol);
 }
 
-function __invert_HtmlElement_1_ast(value: any): string {
+function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2389,17 +2439,17 @@ function __invert_HtmlElement_1_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_1(captures);
+  return __rebuild_HtmlElement_1(captures, __indentCol);
 }
 
-function __invert_HtmlElement_2_ast(value: any): string {
+function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2412,17 +2462,17 @@ function __invert_HtmlElement_2_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_2(captures);
+  return __rebuild_HtmlElement_2(captures, __indentCol);
 }
 
-function __invert_HtmlElement_3_ast(value: any): string {
+function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2435,17 +2485,17 @@ function __invert_HtmlElement_3_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_3(captures);
+  return __rebuild_HtmlElement_3(captures, __indentCol);
 }
 
-function __invert_HtmlElement_4_ast(value: any): string {
+function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2458,15 +2508,15 @@ function __invert_HtmlElement_4_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_4(captures);
+  return __rebuild_HtmlElement_4(captures, __indentCol);
 }
 
-function __invert_HtmlElement_5_ast(value: any): string {
+function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2479,15 +2529,15 @@ function __invert_HtmlElement_5_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_5(captures);
+  return __rebuild_HtmlElement_5(captures, __indentCol);
 }
 
-function __invert_HtmlElement_6_ast(value: any): string {
+function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2500,15 +2550,15 @@ function __invert_HtmlElement_6_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_6(captures);
+  return __rebuild_HtmlElement_6(captures, __indentCol);
 }
 
-function __invert_HtmlElement_7_ast(value: any): string {
+function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2521,15 +2571,15 @@ function __invert_HtmlElement_7_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_7(captures);
+  return __rebuild_HtmlElement_7(captures, __indentCol);
 }
 
-function __invert_HtmlElement_8_ast(value: any): string {
+function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2542,15 +2592,15 @@ function __invert_HtmlElement_8_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_8(captures);
+  return __rebuild_HtmlElement_8(captures, __indentCol);
 }
 
-function __invert_HtmlElement_9_ast(value: any): string {
+function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2563,15 +2613,15 @@ function __invert_HtmlElement_9_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_9(captures);
+  return __rebuild_HtmlElement_9(captures, __indentCol);
 }
 
-function __invert_HtmlElement_10_ast(value: any): string {
+function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2584,15 +2634,15 @@ function __invert_HtmlElement_10_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_10(captures);
+  return __rebuild_HtmlElement_10(captures, __indentCol);
 }
 
-function __invert_HtmlElement_11_ast(value: any): string {
+function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2605,15 +2655,15 @@ function __invert_HtmlElement_11_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_11(captures);
+  return __rebuild_HtmlElement_11(captures, __indentCol);
 }
 
-function __invert_HtmlElement_12_ast(value: any): string {
+function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2626,15 +2676,15 @@ function __invert_HtmlElement_12_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_12(captures);
+  return __rebuild_HtmlElement_12(captures, __indentCol);
 }
 
-function __invert_HtmlElement_13_ast(value: any): string {
+function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2647,15 +2697,15 @@ function __invert_HtmlElement_13_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_13(captures);
+  return __rebuild_HtmlElement_13(captures, __indentCol);
 }
 
-function __invert_HtmlElement_14_ast(value: any): string {
+function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2668,15 +2718,15 @@ function __invert_HtmlElement_14_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_14(captures);
+  return __rebuild_HtmlElement_14(captures, __indentCol);
 }
 
-function __invert_HtmlElement_15_ast(value: any): string {
+function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2689,15 +2739,15 @@ function __invert_HtmlElement_15_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_15(captures);
+  return __rebuild_HtmlElement_15(captures, __indentCol);
 }
 
-function __invert_HtmlElement_16_ast(value: any): string {
+function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2711,15 +2761,15 @@ function __invert_HtmlElement_16_ast(value: any): string {
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes);
+  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_16(captures);
+  return __rebuild_HtmlElement_16(captures, __indentCol);
 }
 
-function __invert_TextNode_0_ast(value: any): string {
+function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2731,10 +2781,10 @@ function __invert_TextNode_0_ast(value: any): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_TextNode_0(captures);
+  return __rebuild_TextNode_0(captures, __indentCol);
 }
 
-function __invert_Attribute_0_ast(value: any): string {
+function __invert_Attribute_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2744,10 +2794,10 @@ function __invert_Attribute_0_ast(value: any): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_0(captures);
+  return __rebuild_Attribute_0(captures, __indentCol);
 }
 
-function __invert_Attribute_1_ast(value: any): string {
+function __invert_Attribute_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2757,10 +2807,10 @@ function __invert_Attribute_1_ast(value: any): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_1(captures);
+  return __rebuild_Attribute_1(captures, __indentCol);
 }
 
-function __invert_Attribute_2_ast(value: any): string {
+function __invert_Attribute_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2770,10 +2820,10 @@ function __invert_Attribute_2_ast(value: any): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_2(captures);
+  return __rebuild_Attribute_2(captures, __indentCol);
 }
 
-function __invert_Attribute_3_ast(value: any): string {
+function __invert_Attribute_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -2782,10 +2832,10 @@ function __invert_Attribute_3_ast(value: any): string {
   if (!Object.is(value.value, "")) {
     throw new Error("stringify: field \"value\" expected \"\", got " + JSON.stringify(value.value));
   }
-  return __rebuild_Attribute_3(captures);
+  return __rebuild_Attribute_3(captures, __indentCol);
 }
 
-function __invert_HtmlDocument_0_source(value: any): string {
+function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2795,16 +2845,16 @@ function __invert_HtmlDocument_0_source(value: any): string {
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos), __indentCol);
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlDocument_0(captures);
+  return __rebuild_HtmlDocument_0(captures, __indentCol);
 }
 
-function __invert_Doctype_0_source(value: any): string {
+function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2834,10 +2884,10 @@ function __invert_Doctype_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Doctype_0(captures);
+  return __rebuild_Doctype_0(captures, __indentCol);
 }
 
-function __invert_Doctype_1_source(value: any): string {
+function __invert_Doctype_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2861,10 +2911,10 @@ function __invert_Doctype_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Doctype_1(captures);
+  return __rebuild_Doctype_1(captures, __indentCol);
 }
 
-function __invert_Comment_0_source(value: any): string {
+function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2886,10 +2936,10 @@ function __invert_Comment_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Comment_0(captures);
+  return __rebuild_Comment_0(captures, __indentCol);
 }
 
-function __invert_HtmlElement_0_source(value: any): string {
+function __invert_HtmlElement_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2927,10 +2977,10 @@ function __invert_HtmlElement_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_0(captures);
+  return __rebuild_HtmlElement_0(captures, __indentCol);
 }
 
-function __invert_HtmlElement_1_source(value: any): string {
+function __invert_HtmlElement_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2952,10 +3002,10 @@ function __invert_HtmlElement_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_1(captures);
+  return __rebuild_HtmlElement_1(captures, __indentCol);
 }
 
-function __invert_HtmlElement_2_source(value: any): string {
+function __invert_HtmlElement_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -2977,10 +3027,10 @@ function __invert_HtmlElement_2_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_2(captures);
+  return __rebuild_HtmlElement_2(captures, __indentCol);
 }
 
-function __invert_HtmlElement_3_source(value: any): string {
+function __invert_HtmlElement_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3002,10 +3052,10 @@ function __invert_HtmlElement_3_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_3(captures);
+  return __rebuild_HtmlElement_3(captures, __indentCol);
 }
 
-function __invert_HtmlElement_4_source(value: any): string {
+function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3032,16 +3082,16 @@ function __invert_HtmlElement_4_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</li>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_4(captures);
+  return __rebuild_HtmlElement_4(captures, __indentCol);
 }
 
-function __invert_HtmlElement_5_source(value: any): string {
+function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3068,16 +3118,16 @@ function __invert_HtmlElement_5_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</dt>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_5(captures);
+  return __rebuild_HtmlElement_5(captures, __indentCol);
 }
 
-function __invert_HtmlElement_6_source(value: any): string {
+function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3104,16 +3154,16 @@ function __invert_HtmlElement_6_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tr>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_6(captures);
+  return __rebuild_HtmlElement_6(captures, __indentCol);
 }
 
-function __invert_HtmlElement_7_source(value: any): string {
+function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3140,16 +3190,16 @@ function __invert_HtmlElement_7_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</td>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_7(captures);
+  return __rebuild_HtmlElement_7(captures, __indentCol);
 }
 
-function __invert_HtmlElement_8_source(value: any): string {
+function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3176,16 +3226,16 @@ function __invert_HtmlElement_8_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</p>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 4;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_8(captures);
+  return __rebuild_HtmlElement_8(captures, __indentCol);
 }
 
-function __invert_HtmlElement_9_source(value: any): string {
+function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3212,16 +3262,16 @@ function __invert_HtmlElement_9_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</option>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 9;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_9(captures);
+  return __rebuild_HtmlElement_9(captures, __indentCol);
 }
 
-function __invert_HtmlElement_10_source(value: any): string {
+function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3248,16 +3298,16 @@ function __invert_HtmlElement_10_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</html>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_10(captures);
+  return __rebuild_HtmlElement_10(captures, __indentCol);
 }
 
-function __invert_HtmlElement_11_source(value: any): string {
+function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3284,16 +3334,16 @@ function __invert_HtmlElement_11_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</head>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_11(captures);
+  return __rebuild_HtmlElement_11(captures, __indentCol);
 }
 
-function __invert_HtmlElement_12_source(value: any): string {
+function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3320,16 +3370,16 @@ function __invert_HtmlElement_12_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tbody>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_12(captures);
+  return __rebuild_HtmlElement_12(captures, __indentCol);
 }
 
-function __invert_HtmlElement_13_source(value: any): string {
+function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3356,16 +3406,16 @@ function __invert_HtmlElement_13_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</thead>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_13(captures);
+  return __rebuild_HtmlElement_13(captures, __indentCol);
 }
 
-function __invert_HtmlElement_14_source(value: any): string {
+function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3392,16 +3442,16 @@ function __invert_HtmlElement_14_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tfoot>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_14(captures);
+  return __rebuild_HtmlElement_14(captures, __indentCol);
 }
 
-function __invert_HtmlElement_15_source(value: any): string {
+function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3428,16 +3478,16 @@ function __invert_HtmlElement_15_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</body>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_15(captures);
+  return __rebuild_HtmlElement_15(captures, __indentCol);
 }
 
-function __invert_HtmlElement_16_source(value: any): string {
+function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3461,7 +3511,7 @@ function __invert_HtmlElement_16_source(value: any): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end));
+    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
     __pos = __end + 2;
   }
   {
@@ -3475,10 +3525,10 @@ function __invert_HtmlElement_16_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_16(captures);
+  return __rebuild_HtmlElement_16(captures, __indentCol);
 }
 
-function __invert_TextNode_0_source(value: any): string {
+function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3490,10 +3540,10 @@ function __invert_TextNode_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_TextNode_0(captures);
+  return __rebuild_TextNode_0(captures, __indentCol);
 }
 
-function __invert_Attribute_0_source(value: any): string {
+function __invert_Attribute_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3519,10 +3569,10 @@ function __invert_Attribute_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_0(captures);
+  return __rebuild_Attribute_0(captures, __indentCol);
 }
 
-function __invert_Attribute_1_source(value: any): string {
+function __invert_Attribute_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3548,10 +3598,10 @@ function __invert_Attribute_1_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_1(captures);
+  return __rebuild_Attribute_1(captures, __indentCol);
 }
 
-function __invert_Attribute_2_source(value: any): string {
+function __invert_Attribute_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3571,10 +3621,10 @@ function __invert_Attribute_2_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_2(captures);
+  return __rebuild_Attribute_2(captures, __indentCol);
 }
 
-function __invert_Attribute_3_source(value: any): string {
+function __invert_Attribute_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -3586,264 +3636,264 @@ function __invert_Attribute_3_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_3(captures);
+  return __rebuild_Attribute_3(captures, __indentCol);
 }
 
-function __dispatchInverse_HtmlDocument_ast(value: any): string {
+function __dispatchInverse_HtmlDocument_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.nodeName, "#document") && Object.is(value.mode, "no-quirks") && Object.is(value.parentNode, null)) return __invert_HtmlDocument_0_ast(value);
+    if (Object.is(value.nodeName, "#document") && Object.is(value.mode, "no-quirks") && Object.is(value.parentNode, null)) return __invert_HtmlDocument_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Doctype_ast(value: any): string {
+function __dispatchInverse_Doctype_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value._kind, "doctype") && Object.is(value.nodeName, "#documentType") && Object.is(value.publicId, "") && Object.is(value.systemId, "") && Object.is(value.parentNode, null)) return __invert_Doctype_0_ast(value);
-    if (Object.is(value._kind, "doctype-incomplete") && Object.is(value.nodeName, "#documentType") && Object.is(value.publicId, "") && Object.is(value.systemId, "") && Object.is(value.parentNode, null)) return __invert_Doctype_1_ast(value);
+    if (Object.is(value._kind, "doctype") && Object.is(value.nodeName, "#documentType") && Object.is(value.publicId, "") && Object.is(value.systemId, "") && Object.is(value.parentNode, null)) return __invert_Doctype_0_ast(value, __indentCol);
+    if (Object.is(value._kind, "doctype-incomplete") && Object.is(value.nodeName, "#documentType") && Object.is(value.publicId, "") && Object.is(value.systemId, "") && Object.is(value.parentNode, null)) return __invert_Doctype_1_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Comment_ast(value: any): string {
+function __dispatchInverse_Comment_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.nodeName, "#comment") && Object.is(value.parentNode, null)) return __invert_Comment_0_ast(value);
+    if (Object.is(value.nodeName, "#comment") && Object.is(value.parentNode, null)) return __invert_Comment_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_HtmlElement_ast(value: any): string {
+function __dispatchInverse_HtmlElement_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value._kind, "element-rawtext") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_0_ast(value);
-    if (Object.is(value._kind, "element-void") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_1_ast(value);
-    if (Object.is(value._kind, "element-void-selfclose") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_2_ast(value);
-    if (Object.is(value._kind, "element-selfclose-recovery") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_3_ast(value);
-    if (Object.is(value._kind, "element-li") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_4_ast(value);
-    if (Object.is(value._kind, "element-dt-dd") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_5_ast(value);
-    if (Object.is(value._kind, "element-tr") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_6_ast(value);
-    if (Object.is(value._kind, "element-td-th") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_7_ast(value);
-    if (Object.is(value._kind, "element-p") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_8_ast(value);
-    if (Object.is(value._kind, "element-option") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_9_ast(value);
-    if (Object.is(value._kind, "element-html") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_10_ast(value);
-    if (Object.is(value._kind, "element-head") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_11_ast(value);
-    if (Object.is(value._kind, "element-tbody") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_12_ast(value);
-    if (Object.is(value._kind, "element-thead") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_13_ast(value);
-    if (Object.is(value._kind, "element-tfoot") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_14_ast(value);
-    if (Object.is(value._kind, "element-body") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_15_ast(value);
-    if (Object.is(value._kind, "element") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_16_ast(value);
+    if (Object.is(value._kind, "element-rawtext") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_0_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-void") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_1_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-void-selfclose") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_2_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-selfclose-recovery") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_3_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-li") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_4_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-dt-dd") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_5_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-tr") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_6_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-td-th") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_7_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-p") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_8_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-option") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_9_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-html") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_10_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-head") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_11_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-tbody") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_12_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-thead") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_13_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-tfoot") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_14_ast(value, __indentCol);
+    if (Object.is(value._kind, "element-body") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_15_ast(value, __indentCol);
+    if (Object.is(value._kind, "element") && Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml") && Object.is(value.parentNode, null)) return __invert_HtmlElement_16_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_TextNode_ast(value: any): string {
+function __dispatchInverse_TextNode_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.nodeName, "#text") && Object.is(value.parentNode, null)) return __invert_TextNode_0_ast(value);
+    if (Object.is(value.nodeName, "#text") && Object.is(value.parentNode, null)) return __invert_TextNode_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Attribute_ast(value: any): string {
+function __dispatchInverse_Attribute_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value._quote, "double")) return __invert_Attribute_0_ast(value);
-    if (Object.is(value._quote, "single")) return __invert_Attribute_1_ast(value);
-    if (Object.is(value._quote, "none")) return __invert_Attribute_2_ast(value);
-    if (Object.is(value.value, "")) return __invert_Attribute_3_ast(value);
+    if (Object.is(value._quote, "double")) return __invert_Attribute_0_ast(value, __indentCol);
+    if (Object.is(value._quote, "single")) return __invert_Attribute_1_ast(value, __indentCol);
+    if (Object.is(value._quote, "none")) return __invert_Attribute_2_ast(value, __indentCol);
+    if (Object.is(value.value, "")) return __invert_Attribute_3_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_ast(value: any): string {
-  return __dispatchInverse_HtmlDocument_ast(value);
+  return __dispatchInverse_HtmlDocument_ast(value, 0);
 }
 
-function __dispatchInverse_HtmlDocument_source(value: any): string {
+function __dispatchInverse_HtmlDocument_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_HtmlDocument_0_source(value);
+    return __invert_HtmlDocument_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Doctype_source(value: any): string {
+function __dispatchInverse_Doctype_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<!")) return __invert_Doctype_0_source(value);
-    if (value.startsWith("<!")) return __invert_Doctype_1_source(value);
+    if (value.startsWith("<!")) return __invert_Doctype_0_source(value, __indentCol);
+    if (value.startsWith("<!")) return __invert_Doctype_1_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Comment_source(value: any): string {
+function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<!--")) return __invert_Comment_0_source(value);
+    if (value.startsWith("<!--")) return __invert_Comment_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_HtmlElement_source(value: any): string {
+function __dispatchInverse_HtmlElement_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<")) return __invert_HtmlElement_0_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_1_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_2_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_3_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_4_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_5_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_6_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_7_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_8_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_9_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_10_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_11_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_12_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_13_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_14_source(value);
-    if (value.startsWith("<")) return __invert_HtmlElement_15_source(value);
+    if (value.startsWith("<")) return __invert_HtmlElement_0_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_1_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_2_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_3_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_4_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_5_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_6_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_7_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_8_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_9_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_10_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_11_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_12_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_13_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_14_source(value, __indentCol);
+    if (value.startsWith("<")) return __invert_HtmlElement_15_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_TextNode_source(value: any): string {
+function __dispatchInverse_TextNode_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_TextNode_0_source(value);
+    return __invert_TextNode_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Attribute_source(value: any): string {
+function __dispatchInverse_Attribute_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf("=\"") >= 0) return __invert_Attribute_0_source(value);
-    if (value.indexOf("='") >= 0) return __invert_Attribute_1_source(value);
-    return __invert_Attribute_2_source(value);
-    return __invert_Attribute_3_source(value);
+    if (value.indexOf("=\"") >= 0) return __invert_Attribute_0_source(value, __indentCol);
+    if (value.indexOf("='") >= 0) return __invert_Attribute_1_source(value, __indentCol);
+    return __invert_Attribute_2_source(value, __indentCol);
+    return __invert_Attribute_3_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_source(value: any): string {
-  return __dispatchInverse_HtmlDocument_source(value);
+  return __dispatchInverse_HtmlDocument_source(value, 0);
 }
 
-function __invertSlotFor_HtmlDocument_ast(v: any): any {
+function __invertSlotFor_HtmlDocument_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_HtmlDocument_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_HtmlDocument_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlDocument_ast(v[i]);
+      const r = __invertSlotFor_HtmlDocument_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_HtmlDocument_ast(v);
+  if (typeof v === "object") return __dispatchInverse_HtmlDocument_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Doctype_ast(v: any): any {
+function __invertSlotFor_Doctype_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Doctype_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Doctype_ast(v[i]);
+      const r = __invertSlotFor_Doctype_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Doctype_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Doctype_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Comment_ast(v: any): any {
+function __invertSlotFor_Comment_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_ast(v[i]);
+      const r = __invertSlotFor_Comment_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Comment_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Comment_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_HtmlElement_ast(v: any): any {
+function __invertSlotFor_HtmlElement_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_HtmlElement_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlElement_ast(v[i]);
+      const r = __invertSlotFor_HtmlElement_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_HtmlElement_ast(v);
+  if (typeof v === "object") return __dispatchInverse_HtmlElement_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_TextNode_ast(v: any): any {
+function __invertSlotFor_TextNode_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_TextNode_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_TextNode_ast(v[i]);
+      const r = __invertSlotFor_TextNode_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_TextNode_ast(v);
+  if (typeof v === "object") return __dispatchInverse_TextNode_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Attribute_ast(v: any): any {
+function __invertSlotFor_Attribute_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Attribute_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Attribute_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Attribute_ast(v[i]);
+      const r = __invertSlotFor_Attribute_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Attribute_ast(v);
+  if (typeof v === "object") return __dispatchInverse_Attribute_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any): any {
+function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Doctype_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_HtmlElement_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_TextNode_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v[i]);
+      const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_Doctype_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Comment_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_HtmlElement_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_TextNode_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Doctype, Comment, HtmlElement, TextNode; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -3863,130 +3913,130 @@ function __invertSlotLeaf_ast(v: any): any {
   return String(v);
 }
 
-function __invertSlotFor_HtmlDocument_source(v: any): any {
+function __invertSlotFor_HtmlDocument_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_HtmlDocument_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_HtmlDocument_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlDocument_source(v[i]);
+      const r = __invertSlotFor_HtmlDocument_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_HtmlDocument_source(v);
+  if (typeof v === "object") return __dispatchInverse_HtmlDocument_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Doctype_source(v: any): any {
+function __invertSlotFor_Doctype_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Doctype_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Doctype_source(v[i]);
+      const r = __invertSlotFor_Doctype_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Doctype_source(v);
+  if (typeof v === "object") return __dispatchInverse_Doctype_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Comment_source(v: any): any {
+function __invertSlotFor_Comment_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_source(v[i]);
+      const r = __invertSlotFor_Comment_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Comment_source(v);
+  if (typeof v === "object") return __dispatchInverse_Comment_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_HtmlElement_source(v: any): any {
+function __invertSlotFor_HtmlElement_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_HtmlElement_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlElement_source(v[i]);
+      const r = __invertSlotFor_HtmlElement_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_HtmlElement_source(v);
+  if (typeof v === "object") return __dispatchInverse_HtmlElement_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_TextNode_source(v: any): any {
+function __invertSlotFor_TextNode_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_TextNode_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_TextNode_source(v[i]);
+      const r = __invertSlotFor_TextNode_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_TextNode_source(v);
+  if (typeof v === "object") return __dispatchInverse_TextNode_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_Attribute_source(v: any): any {
+function __invertSlotFor_Attribute_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Attribute_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_Attribute_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Attribute_source(v[i]);
+      const r = __invertSlotFor_Attribute_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_Attribute_source(v);
+  if (typeof v === "object") return __dispatchInverse_Attribute_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any): any {
+function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_Doctype_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_HtmlElement_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_TextNode_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v[i]);
+      const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_Doctype_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_Comment_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_HtmlElement_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_TextNode_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Doctype, Comment, HtmlElement, TextNode; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -9475,6 +9525,8 @@ function __renderFused(input: string, target: string): string | null {
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -9492,6 +9544,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     maxOff: 0,
     mode,
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const result = parseHtmlDocument(state);
   if (result === null || state.pos !== input.length) {

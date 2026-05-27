@@ -256,9 +256,14 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
 //
 // Priority:
 //   1. Indent-modified repeats span → '\n' (structural line break between
-//      siblings in the indented block). Phase 7 MVP joins at column 0;
-//      Task 7.7's yaml-block schema will reveal whether per-level padding
-//      is needed.
+//      siblings in the indented block). The FORWARD render path (parse →
+//      source) uses this for the source target. Per-level indentation
+//      padding is not available here because the forward render templates
+//      don't carry an indentCol context — the source target's forward
+//      render is an approximation that joins at column 0. The INVERSE
+//      stringify path (emit/rebuild.ts + emit/inverse.ts) does carry per-
+//      level indentCol threading (Task 7.7b) and produces correctly
+//      indented output.
 //   2. `.repeats({ sep })` → declared inter-child separator that the parser
 //      consumed between children — children's rebuilt source carries only
 //      their own content, so we re-introduce the declared separator here.

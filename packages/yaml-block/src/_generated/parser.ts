@@ -637,10 +637,11 @@ export function render(input: string, options?: { type?: string; mode?: ParseMod
   return fn(captures);
 }
 
-function __rebuildSlot(v: any, joinSep: string = ""): string {
+function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
   if (v === null || v === undefined) return "";
   if (Array.isArray(v)) {
-    let out = "";
+    const prefix = leadingPrefix && v.length > 0 ? joinSep : "";
+    let out = prefix;
     for (let i = 0; i < v.length; i++) {
       if (i > 0 && joinSep.length > 0) out += joinSep;
       out += __rebuildSlot(v[i]);
@@ -658,16 +659,16 @@ function __rebuild_YamlMappingEntry_0(captures: any): string {
   return __rebuildSlot(captures.key) + ":" + " " + __rebuildSlot(captures.value);
 }
 
-function __rebuild_YamlMapping_0(captures: any): string {
-  return String(__rebuildSlot(captures.entries, "\n"));
+function __rebuild_YamlMapping_0(captures: any, __indentCol: number = 0): string {
+  return String(__rebuildSlot(captures.entries, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __rebuild_YamlSequenceItem_0(captures: any): string {
   return "- " + __rebuildSlot(captures.value);
 }
 
-function __rebuild_YamlSequence_0(captures: any): string {
-  return String(__rebuildSlot(captures.items, "\n"));
+function __rebuild_YamlSequence_0(captures: any, __indentCol: number = 0): string {
+  return String(__rebuildSlot(captures.items, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __rebuild_YamlNode_0(captures: any): string {
@@ -678,13 +679,13 @@ function __rebuild_YamlBlock_0(captures: any): string {
   return String(__rebuildSlot(captures.root));
 }
 
-function __invert_YamlScalar_0_ast(value: any): string {
+function __invert_YamlScalar_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   captures.value = __invertSlotLeaf_ast(value);
-  return __rebuild_YamlScalar_0(captures);
+  return __rebuild_YamlScalar_0(captures, __indentCol);
 }
 
-function __invert_YamlMappingEntry_0_ast(value: any): string {
+function __invert_YamlMappingEntry_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -693,11 +694,11 @@ function __invert_YamlMappingEntry_0_ast(value: any): string {
     throw new Error("stringify: field \"type\" expected \"entry\", got " + JSON.stringify(value.type));
   }
   captures.key = __invertSlotLeaf_ast(value.key);
-  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value);
-  return __rebuild_YamlMappingEntry_0(captures);
+  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value, __indentCol);
+  return __rebuild_YamlMappingEntry_0(captures, __indentCol);
 }
 
-function __invert_YamlMapping_0_ast(value: any): string {
+function __invert_YamlMapping_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -705,11 +706,11 @@ function __invert_YamlMapping_0_ast(value: any): string {
   if (!Object.is(value.type, "mapping")) {
     throw new Error("stringify: field \"type\" expected \"mapping\", got " + JSON.stringify(value.type));
   }
-  captures.entries = __invertSlotFor_YamlMappingEntry_ast(value.entries);
-  return __rebuild_YamlMapping_0(captures);
+  captures.entries = __invertSlotFor_YamlMappingEntry_ast(value.entries, __indentCol + 2);
+  return __rebuild_YamlMapping_0(captures, __indentCol);
 }
 
-function __invert_YamlSequenceItem_0_ast(value: any): string {
+function __invert_YamlSequenceItem_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -717,11 +718,11 @@ function __invert_YamlSequenceItem_0_ast(value: any): string {
   if (!Object.is(value.type, "item")) {
     throw new Error("stringify: field \"type\" expected \"item\", got " + JSON.stringify(value.type));
   }
-  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value);
-  return __rebuild_YamlSequenceItem_0(captures);
+  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value, __indentCol);
+  return __rebuild_YamlSequenceItem_0(captures, __indentCol);
 }
 
-function __invert_YamlSequence_0_ast(value: any): string {
+function __invert_YamlSequence_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
@@ -729,23 +730,23 @@ function __invert_YamlSequence_0_ast(value: any): string {
   if (!Object.is(value.type, "sequence")) {
     throw new Error("stringify: field \"type\" expected \"sequence\", got " + JSON.stringify(value.type));
   }
-  captures.items = __invertSlotFor_YamlSequenceItem_ast(value.items);
-  return __rebuild_YamlSequence_0(captures);
+  captures.items = __invertSlotFor_YamlSequenceItem_ast(value.items, __indentCol + 2);
+  return __rebuild_YamlSequence_0(captures, __indentCol);
 }
 
-function __invert_YamlNode_0_ast(value: any): string {
+function __invert_YamlNode_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.node = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value);
-  return __rebuild_YamlNode_0(captures);
+  captures.node = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value, __indentCol);
+  return __rebuild_YamlNode_0(captures, __indentCol);
 }
 
-function __invert_YamlBlock_0_ast(value: any): string {
+function __invert_YamlBlock_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.root = __invertSlotFor_YamlNode_ast(value);
-  return __rebuild_YamlBlock_0(captures);
+  captures.root = __invertSlotFor_YamlNode_ast(value, __indentCol);
+  return __rebuild_YamlBlock_0(captures, __indentCol);
 }
 
-function __invert_YamlScalar_0_source(value: any): string {
+function __invert_YamlScalar_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -757,10 +758,10 @@ function __invert_YamlScalar_0_source(value: any): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlScalar_0(captures);
+  return __rebuild_YamlScalar_0(captures, __indentCol);
 }
 
-function __invert_YamlMappingEntry_0_source(value: any): string {
+function __invert_YamlMappingEntry_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -775,30 +776,30 @@ function __invert_YamlMappingEntry_0_source(value: any): string {
     captures.key = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 2;
   }
-  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos));
+  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos), __indentCol);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlMappingEntry_0(captures);
+  return __rebuild_YamlMappingEntry_0(captures, __indentCol);
 }
 
-function __invert_YamlMapping_0_source(value: any): string {
+function __invert_YamlMapping_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
   const __s: string = value;
   let __pos = 0;
-  captures.entries = __invertSlotFor_YamlMappingEntry_source(__s.slice(__pos));
+  captures.entries = __invertSlotFor_YamlMappingEntry_source(__s.slice(__pos), __indentCol + 2);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlMapping_0(captures);
+  return __rebuild_YamlMapping_0(captures, __indentCol);
 }
 
-function __invert_YamlSequenceItem_0_source(value: any): string {
+function __invert_YamlSequenceItem_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
@@ -809,304 +810,304 @@ function __invert_YamlSequenceItem_0_source(value: any): string {
     throw new Error("stringify: expected leading literal \"- \" in template body");
   }
   __pos += 2;
-  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos));
+  captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos), __indentCol);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlSequenceItem_0(captures);
+  return __rebuild_YamlSequenceItem_0(captures, __indentCol);
 }
 
-function __invert_YamlSequence_0_source(value: any): string {
+function __invert_YamlSequence_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
   const __s: string = value;
   let __pos = 0;
-  captures.items = __invertSlotFor_YamlSequenceItem_source(__s.slice(__pos));
+  captures.items = __invertSlotFor_YamlSequenceItem_source(__s.slice(__pos), __indentCol + 2);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlSequence_0(captures);
+  return __rebuild_YamlSequence_0(captures, __indentCol);
 }
 
-function __invert_YamlNode_0_source(value: any): string {
+function __invert_YamlNode_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
   const __s: string = value;
   let __pos = 0;
-  captures.node = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos));
+  captures.node = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(__s.slice(__pos), __indentCol);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlNode_0(captures);
+  return __rebuild_YamlNode_0(captures, __indentCol);
 }
 
-function __invert_YamlBlock_0_source(value: any): string {
+function __invert_YamlBlock_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
   const __s: string = value;
   let __pos = 0;
-  captures.root = __invertSlotFor_YamlNode_source(__s.slice(__pos));
+  captures.root = __invertSlotFor_YamlNode_source(__s.slice(__pos), __indentCol);
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlBlock_0(captures);
+  return __rebuild_YamlBlock_0(captures, __indentCol);
 }
 
-function __dispatchInverse_YamlScalar_ast(value: any): string {
+function __dispatchInverse_YamlScalar_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && value !== undefined && !Array.isArray(value)) {
-    return __invert_YamlScalar_0_ast(value);
+    return __invert_YamlScalar_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlMappingEntry_ast(value: any): string {
+function __dispatchInverse_YamlMappingEntry_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "entry")) return __invert_YamlMappingEntry_0_ast(value);
+    if (Object.is(value.type, "entry")) return __invert_YamlMappingEntry_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlMapping_ast(value: any): string {
+function __dispatchInverse_YamlMapping_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "mapping")) return __invert_YamlMapping_0_ast(value);
+    if (Object.is(value.type, "mapping")) return __invert_YamlMapping_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlSequenceItem_ast(value: any): string {
+function __dispatchInverse_YamlSequenceItem_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "item")) return __invert_YamlSequenceItem_0_ast(value);
+    if (Object.is(value.type, "item")) return __invert_YamlSequenceItem_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlSequence_ast(value: any): string {
+function __dispatchInverse_YamlSequence_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "sequence")) return __invert_YamlSequence_0_ast(value);
+    if (Object.is(value.type, "sequence")) return __invert_YamlSequence_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlNode_ast(value: any): string {
+function __dispatchInverse_YamlNode_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && value !== undefined && !Array.isArray(value)) {
-    return __invert_YamlNode_0_ast(value);
+    return __invert_YamlNode_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlBlock_ast(value: any): string {
+function __dispatchInverse_YamlBlock_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && value !== undefined && !Array.isArray(value)) {
-    return __invert_YamlBlock_0_ast(value);
+    return __invert_YamlBlock_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_ast(value: any): string {
-  return __dispatchInverse_YamlBlock_ast(value);
+  return __dispatchInverse_YamlBlock_ast(value, 0);
 }
 
-function __dispatchInverse_YamlScalar_source(value: any): string {
+function __dispatchInverse_YamlScalar_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlScalar_0_source(value);
+    return __invert_YamlScalar_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlMappingEntry_source(value: any): string {
+function __dispatchInverse_YamlMappingEntry_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(": ") >= 0) return __invert_YamlMappingEntry_0_source(value);
+    if (value.indexOf(": ") >= 0) return __invert_YamlMappingEntry_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlMapping_source(value: any): string {
+function __dispatchInverse_YamlMapping_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlMapping_0_source(value);
+    return __invert_YamlMapping_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlSequenceItem_source(value: any): string {
+function __dispatchInverse_YamlSequenceItem_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("- ")) return __invert_YamlSequenceItem_0_source(value);
+    if (value.startsWith("- ")) return __invert_YamlSequenceItem_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlSequence_source(value: any): string {
+function __dispatchInverse_YamlSequence_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlSequence_0_source(value);
+    return __invert_YamlSequence_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlNode_source(value: any): string {
+function __dispatchInverse_YamlNode_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlNode_0_source(value);
+    return __invert_YamlNode_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_YamlBlock_source(value: any): string {
+function __dispatchInverse_YamlBlock_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlBlock_0_source(value);
+    return __invert_YamlBlock_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_source(value: any): string {
-  return __dispatchInverse_YamlBlock_source(value);
+  return __dispatchInverse_YamlBlock_source(value, 0);
 }
 
-function __invertSlotFor_YamlScalar_ast(v: any): any {
+function __invertSlotFor_YamlScalar_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlScalar_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlScalar_ast(v[i]);
+      const r = __invertSlotFor_YamlScalar_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlScalar_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlScalar_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlMappingEntry_ast(v: any): any {
+function __invertSlotFor_YamlMappingEntry_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMappingEntry_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMappingEntry_ast(v[i]);
+      const r = __invertSlotFor_YamlMappingEntry_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlMapping_ast(v: any): any {
+function __invertSlotFor_YamlMapping_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMapping_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMapping_ast(v[i]);
+      const r = __invertSlotFor_YamlMapping_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlMapping_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlMapping_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlSequenceItem_ast(v: any): any {
+function __invertSlotFor_YamlSequenceItem_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlSequenceItem_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequenceItem_ast(v[i]);
+      const r = __invertSlotFor_YamlSequenceItem_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlSequence_ast(v: any): any {
+function __invertSlotFor_YamlSequence_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlSequence_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequence_ast(v[i]);
+      const r = __invertSlotFor_YamlSequence_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlSequence_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlSequence_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlNode_ast(v: any): any {
+function __invertSlotFor_YamlNode_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlNode_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlNode_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlNode_ast(v[i]);
+      const r = __invertSlotFor_YamlNode_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlNode_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlNode_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlBlock_ast(v: any): any {
+function __invertSlotFor_YamlBlock_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlBlock_ast(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlBlock_ast(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlBlock_ast(v[i]);
+      const r = __invertSlotFor_YamlBlock_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlBlock_ast(v);
+  if (typeof v === "object") return __dispatchInverse_YamlBlock_ast(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v: any): any {
+function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMapping_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlSequence_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlScalar_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v[i]);
+      const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_YamlMapping_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlSequence_ast(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlScalar_ast(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: YamlMapping, YamlSequence, YamlScalar; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
@@ -1126,145 +1127,145 @@ function __invertSlotLeaf_ast(v: any): any {
   return String(v);
 }
 
-function __invertSlotFor_YamlScalar_source(v: any): any {
+function __invertSlotFor_YamlScalar_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlScalar_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlScalar_source(v[i]);
+      const r = __invertSlotFor_YamlScalar_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlScalar_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlScalar_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlMappingEntry_source(v: any): any {
+function __invertSlotFor_YamlMappingEntry_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMappingEntry_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlMappingEntry_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMappingEntry_source(v[i]);
+      const r = __invertSlotFor_YamlMappingEntry_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlMapping_source(v: any): any {
+function __invertSlotFor_YamlMapping_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMapping_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMapping_source(v[i]);
+      const r = __invertSlotFor_YamlMapping_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlMapping_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlMapping_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlSequenceItem_source(v: any): any {
+function __invertSlotFor_YamlSequenceItem_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlSequenceItem_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlSequenceItem_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequenceItem_source(v[i]);
+      const r = __invertSlotFor_YamlSequenceItem_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlSequence_source(v: any): any {
+function __invertSlotFor_YamlSequence_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlSequence_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequence_source(v[i]);
+      const r = __invertSlotFor_YamlSequence_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlSequence_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlSequence_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlNode_source(v: any): any {
+function __invertSlotFor_YamlNode_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlNode_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlNode_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlNode_source(v[i]);
+      const r = __invertSlotFor_YamlNode_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlNode_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlNode_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotFor_YamlBlock_source(v: any): any {
+function __invertSlotFor_YamlBlock_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlBlock_source(v); } catch (_e) { return v; }
+    try { return __dispatchInverse_YamlBlock_source(v, __indentCol); } catch (_e) { return v; }
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlBlock_source(v[i]);
+      const r = __invertSlotFor_YamlBlock_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
-  if (typeof v === "object") return __dispatchInverse_YamlBlock_source(v);
+  if (typeof v === "object") return __dispatchInverse_YamlBlock_source(v, __indentCol);
   return String(v);
 }
 
-function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v: any): any {
+function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
-    try { return __dispatchInverse_YamlMapping_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlSequence_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlScalar_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v[i]);
+      const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
   }
   if (typeof v === "object") {
-    try { return __dispatchInverse_YamlMapping_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlSequence_source(v); } catch (_e) { /* try next role */ }
-    try { return __dispatchInverse_YamlScalar_source(v); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: YamlMapping, YamlSequence, YamlScalar; value: " + JSON.stringify(v) + ")");
   }
   return String(v);

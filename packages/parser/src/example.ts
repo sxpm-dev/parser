@@ -257,7 +257,8 @@ class ExampleBuilder {
     return new SpanBuilder(this, name, text, recursiveRoles);
   }
 
-  // Sugar: equivalent to .span(name, '', roles).indent(). Returns a
+  // Sugar: equivalent to .span(name, undefined, roles).indent() — a recursive
+  // span with no literal text, marked as an indent scope. Returns a
   // SpanBuilder so the caller can chain .repeats(...) etc.
   indent(name: string, roles: ReadonlyArray<string>): SpanBuilder {
     const builder = new SpanBuilder(this, name, undefined, roles);

@@ -44,10 +44,12 @@ type State = {
 
 // --- Indent helpers --------------------------------------------------------
 
-// Return the column (0-indexed) of the byte at `pos` within its line.
-// Column = number of characters since the start of the current line.
-// Tabs are NOT supported in the MVP — schemas with tabs return non-deterministic
-// columns relative to the surrounding text.
+// Return the column (0-indexed) of the byte at `pos` within its line —
+// specifically, the raw byte offset from the start of the current line.
+// Tabs are NOT supported in the MVP: each tab counts as a single column, not
+// its display width. Schemas that mix tabs and spaces for indentation will
+// produce wrong but deterministic column values. Document this in any schema
+// that uses `.indent()`.
 function columnAt(state: State, pos: number): number {
   let lineStart = pos;
   while (lineStart > 0 && state.input.charCodeAt(lineStart - 1) !== 0x0a) lineStart--;
@@ -761,7 +763,18 @@ function parseRepeatsSpan(
   // column of the first child and push it onto the indent stack. Each
   // subsequent iteration checks that the next non-blank line's column
   // matches the captured column; mismatches exit the loop cleanly.
+  //
+  // Combining `.indent()` with `.repeats({ sep })` is unsupported in Phase 7:
+  // the sep-sweep advances state.pos past leading whitespace before the
+  // column check runs, which makes the column reading stale. No current
+  // schema uses this combination; fail fast so future authors see the
+  // limitation rather than silently miscomputing columns.
   const isIndented = hasModifier(span, 'indent');
+  if (isIndented && sep !== undefined) {
+    throw new Error(
+      `interp: span '${span.name ?? '<unnamed>'}' combines .indent() with .repeats({ sep }); this is unsupported in Phase 7.`,
+    );
+  }
   let indentPushed = false;
   if (isIndented) {
     skipBlankLines(state);

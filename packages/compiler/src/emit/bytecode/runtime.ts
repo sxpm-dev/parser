@@ -133,6 +133,43 @@ export function runParse(state: RuntimeState, startOffset: number): unknown {
         break;
       }
 
+      case Op.CAPTURE_VALUE_FROM_STACK: {
+        const nameIdx = readU32(state);
+        const name = state.stringPool[nameIdx]!;
+        const frame = frames[frames.length - 1]!;
+        const captures = frame.captures;
+        if (captures === null) {
+          throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK before PUSH_NEW_CAPTURES at pc=${state.pc}`);
+        }
+        if (state.valueStack.length === 0) {
+          throw new Error(`bytecode runtime: CAPTURE_VALUE_FROM_STACK with empty value stack at pc=${state.pc}`);
+        }
+        const value = state.valueStack.pop();
+        captures[name] = value as unknown;
+        break;
+      }
+
+      case Op.CAPTURE_VALUE_APPEND: {
+        const nameIdx = readU32(state);
+        const name = state.stringPool[nameIdx]!;
+        const frame = frames[frames.length - 1]!;
+        const captures = frame.captures;
+        if (captures === null) {
+          throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND before PUSH_NEW_CAPTURES at pc=${state.pc}`);
+        }
+        if (state.valueStack.length === 0) {
+          throw new Error(`bytecode runtime: CAPTURE_VALUE_APPEND with empty value stack at pc=${state.pc}`);
+        }
+        const value = state.valueStack.pop();
+        const existing = captures[name];
+        if (Array.isArray(existing)) {
+          (existing as unknown[]).push(value);
+        } else {
+          captures[name] = [value];
+        }
+        break;
+      }
+
       case Op.SCAN_CLASS: {
         const kind = readU8(state);
         // Refinement-key pool index — for Task 6.3 we use it only as a

@@ -316,6 +316,13 @@ function emitClassSpan(
 // we call the prod directly. Optional and repeats spans wrap the call in a
 // JUMP_IF_NULL guard so the runtime's null-return is treated as "absent"
 // (optional) or "loop exit" (repeats) rather than a hard production fail.
+//
+// Captures completeness (Task 6.4 fix): for recursive spans we no longer
+// stamp `captures[name] = input.slice(start, end)` — that gave render only
+// the raw source string. Instead we capture the CHILD CAPTURES OBJECT
+// returned by the recursive call via CAPTURE_VALUE_FROM_STACK
+// (single calls) or CAPTURE_VALUE_APPEND (repeats). Render walks the
+// captures tree by routing each child through `__dispatchRender_<target>`.
 function emitRecursiveSpan(
   state: EncoderState,
   span: ResolvedSpan,
@@ -340,14 +347,13 @@ function emitRecursiveSpan(
   //   [loop-top]
   //   CALL_PRODUCTION <role>
   //   JUMP_IF_NULL +<bytes-to-loop-exit>
+  //   CAPTURE_VALUE_APPEND <nameIdx>   (consumes the child captures)
+  //   SKIP_WS                          (between repeats children)
   //   JUMP <back-to-loop-top>
   //   [loop-exit]
-  // The runtime's JUMP_IF_NULL pops the top-of-stack and branches when the
-  // call returned null. On a non-null return the call's result remains on
-  // the value stack — Task 6.4 (render) will accumulate these into an
-  // array; for the Task 6.3 parse-only path we just discard them. The
-  // outer CAPTURE_SLICE below stamps the parent's captures[name] with the
-  // raw input slice spanning all matched iterations.
+  // On JUMP_IF_NULL taken, the null sentinel has been popped — nothing
+  // more to do. On non-taken, the child captures is on the value stack;
+  // CAPTURE_VALUE_APPEND consumes it.
   if (opts.isRepeats) {
     for (const role of span.recursiveRoles) {
       const loopTop = state.len;
@@ -364,6 +370,14 @@ function emitRecursiveSpan(
       writeI32(state, 0);
       const jinAfter = state.len;
 
+      if (span.name) {
+        writeOp(state, Op.CAPTURE_VALUE_APPEND);
+        writeU32(state, internString(state, span.name));
+      }
+      // Inter-iteration whitespace (repeats children are whitespace-
+      // separated by default policy).
+      writeOp(state, Op.SKIP_WS);
+
       // JUMP back to loopTop.
       writeOp(state, Op.JUMP);
       const jbAfter = state.len + 4;
@@ -373,78 +387,92 @@ function emitRecursiveSpan(
       const loopExit = state.len;
       writeI32At(state, jinOperandSite, loopExit - jinAfter);
     }
-  } else {
-    // Single (non-repeats) call site per role. For optional spans we emit a
-    // JUMP_IF_NULL guard around the post-call SAVE_OFF + CAPTURE_SLICE so a
-    // null return is treated as "absent" instead of a hard fail. For
-    // required spans the runtime propagates a null return by emitting
-    // RETURN_NULL on the JUMP_IF_NULL branch — see the recursive-span
-    // success/failure handling below.
-    if (opts.isOptional) {
-      // For each role, emit CALL_PRODUCTION; JUMP_IF_NULL +skip-capture.
-      // The skip target lands AFTER the post-call SAVE_OFF + CAPTURE_SLICE
-      // block emitted at the tail of this function. We back-patch once we
-      // know that offset.
-      const skipPatches: number[] = [];
-      const skipAfterOperands: number[] = [];
-      for (const role of span.recursiveRoles) {
-        const targetKey = targetKeyForRole(role);
-        writeOp(state, Op.CALL_PRODUCTION);
-        const site = state.len;
-        writeU32(state, 0xffffffff);
-        state.pendingCalls.push({ site, targetKey });
+    writeOp(state, Op.SAVE_OFF);
+    writeU8(state, endSlot);
+    return nextSlot + 2;
+  }
 
-        writeOp(state, Op.JUMP_IF_NULL);
-        skipPatches.push(state.len);
-        writeI32(state, 0); // placeholder
-        skipAfterOperands.push(state.len);
-      }
-
-      // Post-call: capture the slice span [startSlot, endSlot] under the
-      // span's name (or no capture if anonymous).
-      writeOp(state, Op.SAVE_OFF);
-      writeU8(state, endSlot);
-      if (span.name) {
-        writeOp(state, Op.CAPTURE_SLICE);
-        writeU8(state, startSlot);
-        writeU8(state, endSlot);
-        writeU32(state, internString(state, span.name));
-      }
-
-      // Back-patch each JUMP_IF_NULL to land here (after capture).
-      const skipTarget = state.len;
-      for (let i = 0; i < skipPatches.length; i++) {
-        const operandSite = skipPatches[i]!;
-        const afterOperand = skipAfterOperands[i]!;
-        writeI32At(state, operandSite, skipTarget - afterOperand);
-      }
-      return nextSlot + 2;
-    }
-
-    // Required (non-repeats, non-optional) recursive span. CALL_PRODUCTION
-    // leaves the child captures on the value stack on success or null on
-    // failure. The runtime currently bubbles a null up to the parent's
-    // RETURN_NULL via the encoder's per-call fail-path; for cron's
-    // hot path no required recursive spans on a single Cron production
-    // need this beyond what the runtime already handles.
+  // Single (non-repeats) call site per role.
+  if (opts.isOptional) {
+    // For each role, emit CALL_PRODUCTION; JUMP_IF_NULL +skip-capture.
+    // On non-taken branch: CAPTURE_VALUE_FROM_STACK consumes child captures
+    // into captures[name]. On taken branch: null is popped by JUMP_IF_NULL;
+    // captures[name] is left absent.
+    const skipPatches: number[] = [];
+    const skipAfterOperands: number[] = [];
     for (const role of span.recursiveRoles) {
       const targetKey = targetKeyForRole(role);
       writeOp(state, Op.CALL_PRODUCTION);
       const site = state.len;
       writeU32(state, 0xffffffff);
       state.pendingCalls.push({ site, targetKey });
+
+      writeOp(state, Op.JUMP_IF_NULL);
+      skipPatches.push(state.len);
+      writeI32(state, 0); // placeholder
+      skipAfterOperands.push(state.len);
     }
+
+    // Post-call: capture the child captures object under the span's name.
+    if (span.name) {
+      writeOp(state, Op.CAPTURE_VALUE_FROM_STACK);
+      writeU32(state, internString(state, span.name));
+    }
+    writeOp(state, Op.SAVE_OFF);
+    writeU8(state, endSlot);
+
+    // Back-patch each JUMP_IF_NULL to land here (after capture).
+    const skipTarget = state.len;
+    for (let i = 0; i < skipPatches.length; i++) {
+      const operandSite = skipPatches[i]!;
+      const afterOperand = skipAfterOperands[i]!;
+      writeI32At(state, operandSite, skipTarget - afterOperand);
+    }
+    return nextSlot + 2;
+  }
+
+  // Required (non-repeats, non-optional) recursive span. CALL_PRODUCTION
+  // leaves the child captures on the value stack on success or null on
+  // failure. We use a JUMP_IF_NULL to detect failure; on null we fall
+  // through to RETURN_NULL (failProduction). On success we capture the
+  // child via CAPTURE_VALUE_FROM_STACK.
+  for (const role of span.recursiveRoles) {
+    const targetKey = targetKeyForRole(role);
+    writeOp(state, Op.CALL_PRODUCTION);
+    const site = state.len;
+    writeU32(state, 0xffffffff);
+    state.pendingCalls.push({ site, targetKey });
+
+    // JUMP_IF_NULL +<bytes-to-RETURN_NULL>. On null, branch into a
+    // RETURN_NULL that fails the parent production. On non-null, fall
+    // through to CAPTURE_VALUE_FROM_STACK.
+    writeOp(state, Op.JUMP_IF_NULL);
+    const jinOperandSite = state.len;
+    writeI32(state, 0); // placeholder
+    const jinAfter = state.len;
+
+    if (span.name) {
+      writeOp(state, Op.CAPTURE_VALUE_FROM_STACK);
+      writeU32(state, internString(state, span.name));
+    }
+    // JUMP past the failure block.
+    writeOp(state, Op.JUMP);
+    const jOperandSite = state.len;
+    writeI32(state, 0); // placeholder
+    const jAfter = state.len;
+
+    // Failure block: RETURN_NULL.
+    const failTarget = state.len;
+    writeI32At(state, jinOperandSite, failTarget - jinAfter);
+    writeOp(state, Op.RETURN_NULL);
+
+    // After-success target.
+    const afterTarget = state.len;
+    writeI32At(state, jOperandSite, afterTarget - jAfter);
   }
 
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, endSlot);
-
-  if (span.name) {
-    writeOp(state, Op.CAPTURE_SLICE);
-    writeU8(state, startSlot);
-    writeU8(state, endSlot);
-    writeU32(state, internString(state, span.name));
-  }
   return nextSlot + 2;
 }
 

@@ -36,6 +36,15 @@ export enum Op {
   // operands: u8 startSlot, u8 endSlot, u32 stringPool index (capture name)
   // → push captures[name] = input.slice(start, end).
   CAPTURE_SLICE = 0x12,
+  // operand: u32 stringPool index (capture name) → pop top of value stack
+  // (a child captures object returned by a recursive CALL_PRODUCTION) and
+  // store into captures[name]. Used by recursive spans so render can walk
+  // a captures tree (rather than re-parsing source strings).
+  CAPTURE_VALUE_FROM_STACK = 0x13,
+  // operand: u32 stringPool index (capture name) → pop top of value stack
+  // and append to captures[name], initializing as an empty array on first
+  // call. Used by .repeats() recursive spans.
+  CAPTURE_VALUE_APPEND = 0x14,
 
   // --- Scan primitives -----------------------------------------------------
   // operands: u8 class-kind enum, u32 refinement-key stringPool index
@@ -132,6 +141,8 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.SAVE_OFF]: [1],
   [Op.RESTORE_OFF]: [1],
   [Op.CAPTURE_SLICE]: [1, 1, 4],
+  [Op.CAPTURE_VALUE_FROM_STACK]: [4],
+  [Op.CAPTURE_VALUE_APPEND]: [4],
 
   [Op.SCAN_CLASS]: [1, 4],
   [Op.SCAN_UNTIL]: [4, 4], // count + token-class bitmask (variable u32s follow)

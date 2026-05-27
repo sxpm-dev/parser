@@ -235,20 +235,12 @@ function emitLiteralSpan(
   const startSlot = nextSlot;
   const endSlot = nextSlot + 1;
 
-  // Optional: emit SAVE_OFF + literal attempt + JUMP_IF_NULL skip-block.
-  // Task 6.2's stub for optional: we save off, try the consume, and rely on
-  // Task 6.3's runtime to either advance or no-op. We don't emit a real
-  // skip-on-fail jump because the runtime's CONSUME_LITERAL semantics for
-  // optional spans aren't finalized here; Task 6.3 will lock that contract.
-  // For now we just emit the consume and a SAVE_OFF marker so the runtime
-  // has the bytes it needs.
-  if (isOptional) {
-    writeOp(state, Op.SAVE_OFF);
-    writeU8(state, startSlot);
-  } else {
-    writeOp(state, Op.SAVE_OFF);
-    writeU8(state, startSlot);
-  }
+  // TODO(6.3): wrap the consume below with a JUMP_IF_NULL skip-forward when
+  // isOptional is true. For Task 6.2 we emit the same SAVE_OFF marker in
+  // either case — the runtime's optional semantics aren't finalized here.
+  void isOptional;
+  writeOp(state, Op.SAVE_OFF);
+  writeU8(state, startSlot);
 
   writeOp(state, Op.CONSUME_LITERAL);
   writeU32(state, internString(state, span.text));
@@ -526,10 +518,10 @@ function internString(state: EncoderState, s: string): number {
 }
 
 // Reserved for future PUSH_NUMBER_FIELD emit. Not called by Task 6.2's
-// encoder (cron doesn't bake number constants into captures), but kept here
-// so the dedup machinery is symmetric with internString — Task 6.3+ will
-// need it.
-export function internNumber(state: EncoderState, n: number): number {
+// encoder (cron doesn't bake number constants into captures). Kept module-
+// private to avoid exporting a helper whose parameter type (EncoderState)
+// is not part of the public API — Task 6.3+ can re-export both together.
+function internNumber(state: EncoderState, n: number): number {
   const existing = state.numbers.get(n);
   if (existing !== undefined) return existing;
   const idx = state.numbers.size;

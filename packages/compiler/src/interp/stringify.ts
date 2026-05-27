@@ -709,8 +709,12 @@ function contributionOf(span: ResolvedSpan):
 }
 
 function joinSeparatorOf(span: ResolvedSpan): string {
+  // Detect indent modifier first — indent-modified repeats spans join children
+  // with '\n' (column-0 MVP; Task 7.7 will introduce per-level padding).
+  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
+      if (hasIndent) return '\n';
       return m.sep === undefined ? ' ' : m.sep;
     }
   }

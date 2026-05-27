@@ -140,9 +140,13 @@ function contributionOf(span: ResolvedSpan): Piece {
 // children — rebuild joins with " ". Spans that don't repeat get "" too
 // (unused; arrays only land here for repeats and recursive captures, the
 // latter joined via __rebuildSlot's nested recursion).
+// indent-modified repeats: join with '\n' (column-0 MVP — Task 7.7 will
+// introduce per-level padding when nested blocks at deeper columns land).
 function joinSeparatorOf(span: ResolvedSpan): string {
+  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
+      if (hasIndent) return '\n';
       return m.sep === undefined ? ' ' : m.sep;
     }
   }

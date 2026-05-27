@@ -8,10 +8,13 @@ import { buildTokenizerProgram } from './infer/tokenizer.ts';
 import { validate } from './infer/validate.ts';
 import { checkRoundTrip } from './check/round-trip.ts';
 import { checkDispatch } from './check/dispatch.ts';
-import { emitV2Parser } from './emit/v2/index.ts';
+import type { Backend } from './emit/backend.ts';
+import { TS_BACKEND } from './emit/ts.ts';
 import type { InferredSchema } from './model.ts';
 
 export type { InferredSchema } from './model.ts';
+export type { Backend } from './emit/backend.ts';
+export { TS_BACKEND } from './emit/ts.ts';
 
 export type GenerateOptions = {
   // Identifier used in the generated file header and as the package name
@@ -19,6 +22,11 @@ export type GenerateOptions = {
   // behavior. Defaults to 'parser' if not supplied — keep it explicit at
   // CLI / package-build level.
   readonly packageName?: string;
+  // Code-emission backend. Defaults to the TS backend (emit/v2), which
+  // preserves byte-identical output for existing callers. The bytecode
+  // backend (forthcoming) is selected by passing BYTECODE_BACKEND here or
+  // via the CLI's --backend bytecode flag.
+  readonly backend?: Backend;
 };
 
 export function inferSchema(
@@ -65,5 +73,6 @@ export function generateParser(
   options: GenerateOptions = {},
 ): string {
   const schema = inferSchema(root, validation, options);
-  return emitV2Parser(schema);
+  const backend = options.backend ?? TS_BACKEND;
+  return backend.emit(schema);
 }

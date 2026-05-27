@@ -239,10 +239,114 @@ production-quality cron parser.
     clone that hasn't run `tsc -b` will fail to import. Future: add a
     fallback condition.
 
+## Phase 7 closeout (2026-05-27)
+
+Column-significant indentation lands as a span-level modifier. The compiler,
+reference interpreter, and inverse stringify all gain matching support. The
+exit gate is satisfied by `packages/yaml-block` — a 7-node YAML-subset schema
+that exercises flat scalars, nested mappings, and nested sequences through both
+backends and the round-trip theorem.
+
+### Design summary
+
+Phase 7 added a column-significant indentation primitive (`.indent()`) as a
+`SpanModifier` variant. The modifier path was chosen over an IR primitive at
+phase start because:
+
+1. Less invasive — `SpanModifier` already had a discriminated union with 7
+   variants; adding one more was minimally disruptive.
+2. Indent semantics co-locate with `.repeats()` — every real use case is "an
+   indented block of repeated children."
+3. Reversible — if a future phase needs explicit scope objects, the modifier
+   becomes the obvious migration target.
+
+The runtime carries an `indentStack: Int32Array(16)` of expected column
+offsets. On entry to an indent-modified repeats span, the first child's column
+is captured and pushed; subsequent iterations must match that column (after
+skipping blank lines and horizontal whitespace); the loop exits on dedent or
+over-indent. The reference interpreter, v2 codegen, and inverse stringify
+(interp + emit) all gained matching support. Bytecode backend remains
+untouched — cron stays the only bytecode-tested schema.
+
+Nested round-trip was closed by Task 7.7b: a per-level `indentCol` parameter
+threads through the stringify pipeline, with `INDENT_STEP_SPACES = 2` added at
+each indent-modified span boundary. The `Piece` type and `INDENT_STEP_SPACES`
+constant are now shared between `interp/stringify.ts` and `emit/rebuild.ts` to
+prevent drift.
+
+### What landed (Phase 7)
+
+| Task | Commit(s) | What landed |
+| --- | --- | --- |
+| 7.1 | `df37859` + `6e60ccf` | `SpanModifier { kind: 'indent' }` variant added to `packages/parser/src/types.ts`. `SpanBuilder.indent()` modifier method and `ExampleBuilder.indent(name, roles)` sugar added to `packages/parser/src/example.ts`. 3 tests in `packages/parser/test/indent.test.ts`. |
+| 7.2 | `b8944d7` + `ac283eb` | Reference interpreter (`packages/compiler/src/interp/parse.ts`) handles indent on recursive-repeats spans. State extended with `indentStack: number[]`; `columnAt` + `skipBlankLines` helpers added. `parseRepeatsSpan` pushes first child's column, checks column per iteration, pops on exit. Guard throws if `.indent()` combined with `.repeats({ sep })`. 3 tests in `packages/compiler/test/indent-interp.test.ts`. |
+| 7.3 | `e251002` + `a522058` | v2 runtime preamble (`packages/compiler/src/emit/v2/runtime.ts`) gains `indentStack: Int32Array(16)` + `indentStackTop: number` on the State type, plus `columnAt` / `skipBlankLines` / `skipHorizontalWs` helpers in V2_RUNTIME. Two State literals in `packages/compiler/src/emit/v2/index.ts` updated to allocate the new fields. 4 tests in `packages/compiler/test/indent-runtime.test.ts`. |
+| 7.4 | `d94b54e` + `3424616` | v2 codegen (`packages/compiler/src/emit/v2/span.ts`) emits indent-aware repeats loop: prologue captures + pushes first child's column, per-iteration gate checks column, epilogue pops. Same `.indent() + .repeats({ sep })` guard as Task 7.2. 3 tests in `packages/compiler/test/indent-emit.test.ts`. |
+| 7.5 | `beb245f` + `7989658` | Inverse stringify emits `'\n'` between indent-modified repeats children. Three sibling join-separator functions updated: `joinSeparatorOf` in `interp/stringify.ts`, `joinSeparatorOf` in `emit/rebuild.ts`, and `repeatsJoinSeparator` in `emit/render.ts` (the third was caught by code-quality review). 2 tests in `packages/compiler/test/indent-stringify.test.ts` (interp path + emitter path). |
+| 7.6 | `6bc11b5` + `c9ffb99` | Explicit round-trip test for indent schema. Discovered `inferSchema` already calls `checkRoundTrip` internally, so test simplified to a bare `inferSchema(schema)` call (throws on failure). Test name corrected to honestly describe `checkRoundTrip`'s value-stability property (it skips the `ast` target). 1 test in `packages/compiler/test/indent-roundtrip.test.ts`. |
+| 7.7 | `0663fd7` + `912c373` | `packages/yaml-block` exit-gate package: 7 node types (YamlScalar, YamlMappingEntry, YamlMapping, YamlSequenceItem, YamlSequence, YamlNode, YamlBlock). Supports flat and nested mappings/sequences. The prior-task commit `0663fd7` fixed a real bug surfaced by yaml-block: the inverse dispatcher in `emit/inverse.ts` and `interp/stringify.ts` only handled string values for ref-IR nodes — yaml-block's `YamlBlock.render('ast', $.root)` exposed the gap because `$.root` references a multi-role node whose values are objects. 5 initial tests in `packages/yaml-block/test/`. |
+| 7.7b | `64ff66a` + `cdeb792` | Nested round-trip closed. Threaded `indentCol: number` (default 0) through every stringify function in `interp/stringify.ts` and the codegen functions in `emit/rebuild.ts` + `emit/inverse.ts`. Indent-modified spans add `INDENT_STEP_SPACES (=2)` when recursing into children. Generated `__rebuild_*` and `__invert_*` functions accept a `__indentCol` parameter. Fixup commit `cdeb792` shared the `Piece` type and `INDENT_STEP_SPACES` constant between `emit/rebuild.ts` (source of truth) and `interp/stringify.ts` to prevent drift. 4 additional nested round-trip tests (yaml-block at 9/9). |
+| 7.8 | (this commit) | Documentation closeout. |
+
+### Phase 7 exit gate status
+
+| Criterion | Status | Note |
+| --- | --- | --- |
+| Real YAML-subset schema parses 50 lines of representative input through v2 TS backend | **PASS** | `packages/yaml-block/test/yaml-block.test.ts` — 50-line input with flat scalars, nested mappings (compiler, server, tls), and nested sequences (tags, ports) parses correctly. |
+| Same schema parses through reference interpreter | **PASS** | Verified by `inferSchema` calling `checkRoundTrip` internally during schema construction (interp path is exercised). |
+| Round-trip theorem holds | **PASS** | 9/9 yaml-block tests cover flat, single-entry, special-char-value, 5-entry, nested mapping, nested sequence, mixed, and 3-level nested round-trips. Source-shape assertions in `round-trip.test.ts` lock the per-level indent invariant. |
+
+### Phase 7 follow-ups (deferrable)
+
+These are real gaps that yaml-block works around or doesn't exercise. Each will
+need to be addressed if a future schema exposes the gap.
+
+1. **Forward source render (`render(input, { type: 'source' })`) doesn't pad
+   nested children.** The forward render path in
+   `packages/compiler/src/emit/render.ts` does not thread `indentCol`. Task
+   7.7b only fixed the inverse stringify path (`stringify(value, opts)`).
+   Calling `render('bar:\n  baz: 2', { type: 'source' })` produces
+   `"bar: baz: 2"` (flat). Documented inline at `repeatsJoinSeparator` in
+   `emit/render.ts`. Fix would mirror Task 7.7b for the forward direction.
+
+2. **`synthesizePieces` requires literal text on indent spans with `min: 1`.**
+   The yaml-block schema works around `rebuild.ts`'s `findSpanStart` returning
+   null for empty-text indent spans by giving them the full example string as
+   `text` (e.g., `.span('entries', 'foo: 1\nbar: 2', ['YamlMappingEntry']).indent().repeats({ min: 1 })`).
+   This text is only used at compile time for offset calculation and ignored at
+   runtime. The compiler should recognize required-recursive-repeats spans and
+   synthesize their slot directly without requiring text.
+
+3. **Bytecode backend has no indent support.** Phase 6 left cron as the only
+   bytecode-tested schema; Phase 7 adds indent only to the v2 TS backend.
+   Adding indent to bytecode (`packages/compiler/src/emit/bytecode/runtime.ts`
+   + encoder) is a follow-up.
+
+4. **Tab characters not supported.** `columnAt` counts raw bytes, so tabs count
+   as a single column rather than their display width. Documented in both
+   `interp/parse.ts` and `emit/v2/runtime.ts`. Schemas using `.indent()` should
+   use ASCII spaces only.
+
+5. **Nested indent depth limited to 16.** `Int32Array(16)` hard-coded; deeper
+   nesting fails the parse with a stack-overflow check.
+
+6. **`INDENT_STEP_SPACES` hardcoded to 2.** No schema-level `indentWidth`
+   option. YAML-convention 2-space indent is the only supported value.
+
+7. **Coverage gap in plan-specified inline test schemas.** The 3 plan-specified
+   tests in Tasks 7.2 and 7.4 (simple inline YamlList) pass even if the indent
+   code path is absent — the surrounding `skipWs` machinery accidentally
+   consumes the same characters. Real coverage of the indent code paths lives
+   in `packages/yaml-block/test/` where nested inputs force the column check.
+   The simple-case tests remain useful for forward-compatibility but should not
+   be treated as the primary regression suite.
+
+8. **`mac` and `css-color` packages have pre-existing test failures unrelated
+   to Phase 7.** Confirmed by code-quality reviewer during Task 7.7b. Not
+   introduced by Phase 7; flagged for awareness.
+
 ## Where to next
 
-Phases 1 + 1.5 + 5 + 6 are closed. Next phase per the engine overhaul plan
+Phases 1 + 1.5 + 5 + 6 + 7 are closed. Next phase per the engine overhaul plan
 (`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`) is
-Phase 7 — indentation primitive (modifier-vs-IR decision at phase start,
-then the YAML/Pug/indented-markdown unlock). Re-plan that phase at
-step-level granularity before dispatching its first task.
+Phase 8 — Unicode / case-insensitive policy.

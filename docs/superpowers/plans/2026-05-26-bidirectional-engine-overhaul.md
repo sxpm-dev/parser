@@ -743,6 +743,8 @@ Tracked in detail in `docs/v2-migration-status.md` under "Phase 6 follow-ups":
 
 ## Phase 7 — Indentation primitive
 
+**Status: CLOSED 2026-05-27.** See `docs/v2-migration-status.md` § "Phase 7 closeout" for details.
+
 **Goal:** Add `.indent(...)` as a schema-level span modifier (or as a new IR primitive — decide at phase start). Unlocks YAML, Python, Pug, indented Markdown lists. After this phase, adding a YAML schema requires only writing `packages/yaml/src/schema.ts`.
 
 **Decision point at phase start:** modifier vs IR primitive. The modifier approach is less invasive (`SpanModifier` gains a `kind: 'indent'` variant); the IR primitive approach makes scopes explicit (`IndentScope` containing child spans).

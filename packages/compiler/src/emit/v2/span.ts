@@ -525,6 +525,15 @@ while (${literalMatchExpr(sep, 'off')}) {
     // We only run this when a column was actually pushed (the first item's
     // column exceeded the parent's); if __indentPushed is false the loop
     // exits via the normal __cand === null path on the first attempt.
+    //
+    // Note for nested-indent work (Task 7.5 onwards): the prologue above
+    // already ran skipBlankLines/skipHorizontalWs/off=state.pos to find
+    // __indentCol, so on the FIRST iteration this block re-runs the same
+    // skip and re-measures __col against the position the prologue settled
+    // on. The result is __col === __indentCol — a tautology that costs a
+    // few instructions but doesn't break correctness. The reference
+    // interpreter has the identical layout; do not "optimize away" the
+    // first-iteration check unless both sides change together.
     lines.push(`  if (__indentPushed) {`);
     lines.push(`    state.pos = off;`);
     lines.push(`    skipBlankLines(state);`);

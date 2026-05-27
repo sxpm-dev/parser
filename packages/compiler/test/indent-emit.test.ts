@@ -55,7 +55,11 @@ test('emit v2: indent-aware repeats parses two top-level items', async () => {
   }
 });
 
-test('emit v2: dedent terminates the repeats loop', async () => {
+// Note: the inline schema here is column-0 only, so this test exercises the
+// EOF-terminates-loop path rather than the dedent (column-mismatch) path.
+// Real dedent coverage lives in Task 7.7's yaml-block schema where nested
+// blocks at different columns force the column-check break.
+test('emit v2: items array length matches input items (no spurious empties)', async () => {
   const { mod, dir } = await loadGeneratedParser();
   try {
     const ast = mod.render('- a\n- b\n', { type: 'ast' });

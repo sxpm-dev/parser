@@ -31,10 +31,11 @@ export type RuntimeState = {
   pc: number;
   maxOff: number;
   valueStack: unknown[];
-  // Render/stringify routing table — set by runRender / runStringify.
-  // Optional so parse-only callers (existing Task 6.3 callers) can omit it.
-  // RENDER_DISPATCH throws if it's missing at dispatch time.
+  // Render/stringify routing tables — set by runRender / runStringify.
+  // Optional so parse-only callers (existing Task 6.3 callers) can omit them.
+  // RENDER_DISPATCH / STRINGIFY_DISPATCH throw if missing at dispatch time.
   renderOffsets?: ReadonlyMap<string, number>;
+  stringifyOffsetsByNodeType?: ReadonlyMap<string, ReadonlyArray<number>>;
 };
 
 // Per-production locals. Allocated when a CALL_PRODUCTION (or the top-level
@@ -144,6 +145,7 @@ function runRenderNested(
 ): unknown {
   // Save current pc so we can restore after the nested run.
   const savedPc = state.pc;
+  const baseDepth = state.valueStack.length;
 
   // Build a NEW frames array for the nested execution. Sharing parentFrames
   // would mean the nested RENDER_RETURN's `frames.length === 0` check would
@@ -152,7 +154,7 @@ function runRenderNested(
   frames.push({
     kind: 'render',
     returnPc: -1,
-    stackBase: state.valueStack.length,
+    stackBase: baseDepth,
     slots: [],
     entryOff: state.off,
     captures,
@@ -161,6 +163,92 @@ function runRenderNested(
   const result = runInterpreterLoop(state, frames);
   state.pc = savedPc;
   void parentFrames;
+  // Defensive: ensure no orphan values remain on the parent's stack from
+  // a failed nested execution.
+  if (state.valueStack.length > baseDepth) {
+    state.valueStack.length = baseDepth;
+  }
+  return result;
+}
+
+// stringifySlot — handles polymorphic stringify dispatch:
+//   - null/undefined → "" (rebuild's slot helper pattern)
+//   - array          → recursively stringify each element, join with " "
+//                       (cron's default whitespace policy)
+//   - primitive (string/number/bool) → String(v)
+//   - object         → chain-try each production of <nodeType, target>
+//                       via runStringifyNested; the first non-null result
+//                       wins.
+function stringifySlot(
+  state: RuntimeState,
+  value: unknown,
+  nodeType: string,
+  target: string,
+): unknown {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) {
+    const parts: string[] = [];
+    for (let i = 0; i < value.length; i++) {
+      const r = stringifySlot(state, value[i], nodeType, target);
+      if (r === null || r === undefined || r === '') continue;
+      parts.push(String(r));
+    }
+    return parts.join(' ');
+  }
+  if (typeof value !== 'object') {
+    return String(value);
+  }
+  const offsetsByNodeType = state.stringifyOffsetsByNodeType;
+  if (!offsetsByNodeType) {
+    throw new Error('bytecode runtime: STRINGIFY_DISPATCH without stringifyOffsetsByNodeType');
+  }
+  const key = `${nodeType}:${target}`;
+  const offsets = offsetsByNodeType.get(key);
+  if (!offsets || offsets.length === 0) {
+    throw new Error(`bytecode runtime: no stringify offsets for '${key}'`);
+  }
+  for (const offset of offsets) {
+    const result = runStringifyNested(state, value, offset);
+    if (result !== null) return result;
+  }
+  // All alts failed — surface a descriptive error.
+  throw new Error(`bytecode runtime: no production matched for stringify '${key}' (value: ${safeJson(value)})`);
+}
+
+function safeJson(value: unknown): string {
+  try { return JSON.stringify(value); } catch { return String(value); }
+}
+
+// Like runRenderNested but for stringify. Pushes a stringify frame, places
+// the input value on the value stack, and runs the block starting at
+// `startOffset`. Returns the rebuilt string (or null on assertion mismatch).
+function runStringifyNested(
+  state: RuntimeState,
+  value: unknown,
+  startOffset: number,
+): unknown {
+  const savedPc = state.pc;
+  const baseDepth = state.valueStack.length;
+  const frames: Frame[] = [];
+  frames.push({
+    kind: 'stringify',
+    returnPc: -1,
+    stackBase: baseDepth,
+    slots: [],
+    entryOff: state.off,
+    captures: null,
+  });
+  state.valueStack.push(value);
+  state.pc = startOffset;
+  const result = runInterpreterLoop(state, frames);
+  state.pc = savedPc;
+  // Ensure value stack returns to its pre-call depth. RETURN_NULL pushes
+  // a null sentinel (consumed by RETURN's pop only when frames.length === 0
+  // after the pop, which the inner check handles asymmetrically across
+  // success/failure). Defensive clamp:
+  if (state.valueStack.length > baseDepth) {
+    state.valueStack.length = baseDepth;
+  }
   return result;
 }
 
@@ -474,6 +562,18 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.STRINGIFY_DISPATCH: {
+      const nodeTypeIdx = readU32(state);
+      const targetIdx = readU32(state);
+      const nodeType = state.stringPool[nodeTypeIdx]!;
+      const target = state.stringPool[targetIdx]!;
+      if (state.valueStack.length === 0) throw new Error(`bytecode runtime: STRINGIFY_DISPATCH empty stack`);
+      const value = state.valueStack.pop();
+      const result = stringifySlot(state, value, nodeType, target);
+      state.valueStack.push(result);
+      return { kind: 'continue' };
+    }
+
     case Op.PEEK_FIELD: {
       const nameIdx = readU32(state);
       const name = state.stringPool[nameIdx]!;
@@ -557,38 +657,40 @@ export function runRender(
 }
 
 // Public entry: stringify a value into source text for the given target.
+// Routes through the per-(rootType, target) chain-try: tries each of the
+// root NodeType's productions in order, taking the first whose
+// discriminator block succeeds. The chain-try happens in JS via
+// stringifySlot, matching the runtime-side dispatch used by recursive
+// STRINGIFY_DISPATCH inside template slots.
 export function runStringify(
   encoded: EncodedSchema,
   value: unknown,
   target: string,
 ): string {
-  const dispatcherOffset = encoded.stringifyDispatcherOffsets.get(target);
-  if (dispatcherOffset === undefined) {
-    throw new Error(`bytecode runtime: no stringify dispatcher for target '${target}'`);
-  }
+  // Identify the root NodeType from rootProductionKey ('<NodeType>#<idx>'
+  // or '<NodeType>#dispatch'). We don't bake rootType separately, so we
+  // parse it out of the key.
+  const rootKey = encoded.rootProductionKey;
+  const hashIdx = rootKey.indexOf('#');
+  const rootNodeType = hashIdx >= 0 ? rootKey.slice(0, hashIdx) : rootKey;
+
+  // Build a runtime state for the chain-try (no parse, no off).
   const state: RuntimeState = {
     input: '',
     ops: encoded.ops,
     stringPool: encoded.stringPool,
     numberPool: encoded.numberPool,
     off: 0,
-    pc: dispatcherOffset,
+    pc: 0,
     maxOff: 0,
-    valueStack: [value],
+    valueStack: [],
     renderOffsets: encoded.renderOffsets,
+    stringifyOffsetsByNodeType: encoded.stringifyOffsetsByNodeType,
   };
-  const frames: Frame[] = [];
-  frames.push({
-    kind: 'stringify',
-    returnPc: -1,
-    stackBase: 0,
-    slots: [],
-    entryOff: 0,
-    captures: null,
-  });
-  const result = runInterpreterLoop(state, frames);
+
+  const result = stringifySlot(state, value, rootNodeType, target);
   if (typeof result !== 'string') {
-    throw new Error(`bytecode runtime: stringify returned non-string (${JSON.stringify(result)})`);
+    throw new Error(`bytecode runtime: stringify returned non-string (${safeJson(result)})`);
   }
   return result;
 }

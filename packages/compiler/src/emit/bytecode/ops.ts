@@ -101,9 +101,13 @@ export enum Op {
   // frame, and jumps to the production's render block. Inline-handles
   // arrays (recursive dispatch per element) and primitives (pass-through).
   RENDER_DISPATCH = 0x70,
-  // operand: u32 target stringPool index → top of value stack is a value
-  // to stringify (AST node etc.). Dispatches through the per-target
-  // discriminator. Used by inverse stringify (Task 6.4 Commit 3).
+  // operands: u32 nodeType stringPool index, u32 target stringPool index
+  // → top of value stack is a value to stringify (AST node, primitive, or
+  // array). Routes through the per-(nodeType, target) stringify
+  // dispatcher (chain-tries each production of that NodeType). Inline-
+  // handles arrays (recursive dispatch per element) and primitives
+  // (pass-through as a string). Used by inverse stringify (Task 6.4
+  // Commit 3) when rendering sub-AST values back to source.
   STRINGIFY_DISPATCH = 0x71,
 
   // --- Render value primitives (Task 6.4) ---------------------------------
@@ -210,7 +214,7 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.PUSH_BOOL_FIELD]: [4, 1],
 
   [Op.RENDER_DISPATCH]: [4],
-  [Op.STRINGIFY_DISPATCH]: [4],
+  [Op.STRINGIFY_DISPATCH]: [4, 4],
 
   [Op.PUSH_STRING]: [4],
   [Op.PUSH_NULL]: [],

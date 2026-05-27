@@ -631,8 +631,11 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     lines.push('}');
   }
   if (refs.length > 0) {
-    // Bare-ref bodies accept any string. At most one per target post-validation.
-    lines.push('if (typeof value === "string") {');
+    // Bare-ref bodies pass the value through to the inverter which delegates
+    // to the recursive slot helper. The slot helper handles both strings and
+    // objects (e.g. when the ref resolves through a multi-role chain whose
+    // children render as objects). Accept any non-null, non-array value.
+    lines.push('if (value !== null && value !== undefined && !Array.isArray(value)) {');
     for (const b of refs) {
       const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value)`;
       lines.push(`  return ${call};`);

@@ -94,6 +94,13 @@ function dispatchNode(
         return invertProduction(schema, r.branch.production, r.branch.ir, target, value);
       }
     }
+    // Ref bodies whose referred span resolves through a multi-role chain can
+    // produce object-shaped values. If no object-body production matched, try
+    // ref bodies too — the inverter delegates to the recursive slot helper
+    // which handles objects correctly.
+    for (const b of refs) {
+      return invertProduction(schema, b.production, b.ir, target, value);
+    }
   }
 
   // Array-shape dispatch

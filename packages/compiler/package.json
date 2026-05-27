@@ -11,7 +11,8 @@
     "fuzz:60s": "tsx bin/fuzz.ts --duration 60"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./bytecode/runtime": "./dist/emit/bytecode/runtime.js"
   },
   "dependencies": {
     "@parser2/parser": "0.0.0"

@@ -788,3 +788,71 @@ function readI32(state: RuntimeState): number {
   // Sign-extend by left-shifting into a Int32 view via `| 0`.
   return (a | (b << 8) | (c << 16) | (d << 24)) | 0;
 }
+
+// --- Task 6.5 helpers: generated-file support ------------------------------
+//
+// `decodeSchema` rebuilds an `EncodedSchema` from the JSON + base64 payload
+// that the bytecode backend's `emit()` inlines into the generated `.bcode.ts`
+// file. The shape must match exactly what `encodeSchema()` produced — Task
+// 6.5's roundtrip test verifies this end-to-end against cron.
+//
+// The JSON payload carries every Map as an array-of-tuples (the standard
+// `Array.from(map.entries())` round-trip). The ops Uint8Array travels as
+// base64 so the generated file stays single-line per opaque blob and
+// human-greppable around it.
+
+export type DecodedSchemaJson = {
+  readonly stringPool: ReadonlyArray<string>;
+  readonly numberPool: ReadonlyArray<number>;
+  readonly productionOffsets: ReadonlyArray<readonly [string, number]>;
+  readonly renderOffsets: ReadonlyArray<readonly [string, number]>;
+  readonly stringifyOffsets: ReadonlyArray<readonly [string, number]>;
+  readonly stringifyOffsetsByNodeType: ReadonlyArray<readonly [string, ReadonlyArray<number>]>;
+  readonly stringifyDispatcherOffsets: ReadonlyArray<readonly [string, number]>;
+  readonly rootProductionKey: string;
+  readonly targets: ReadonlyArray<string>;
+  readonly defaultTarget?: string;
+};
+
+export function decodeSchema(schemaJson: string, opsB64: string): EncodedSchema {
+  const json = JSON.parse(schemaJson) as DecodedSchemaJson;
+  // Node-only base64 decode — the bytecode runtime is Node-targeted.
+  const opsBuf = Buffer.from(opsB64, 'base64');
+  const ops = new Uint8Array(opsBuf.buffer, opsBuf.byteOffset, opsBuf.byteLength);
+  return {
+    ops,
+    stringPool: json.stringPool,
+    numberPool: json.numberPool,
+    productionOffsets: new Map(json.productionOffsets),
+    renderOffsets: new Map(json.renderOffsets),
+    stringifyOffsets: new Map(json.stringifyOffsets),
+    stringifyOffsetsByNodeType: new Map(json.stringifyOffsetsByNodeType),
+    stringifyDispatcherOffsets: new Map(json.stringifyDispatcherOffsets),
+    rootProductionKey: json.rootProductionKey,
+    targets: json.targets,
+    defaultTarget: json.defaultTarget,
+  };
+}
+
+// Mirrors the TS backend's `syntaxErrorAt` (packages/compiler/src/emit/v2/
+// runtime.ts) so the bytecode-emitted parser surfaces parse failures with
+// the same message shape — caller code that catches SyntaxError on parse
+// failure works identically across backends.
+export function syntaxErrorAt(input: string, offset: number): SyntaxError {
+  let lineStart = offset;
+  while (lineStart > 0 && input.charCodeAt(lineStart - 1) !== 0x0a && input.charCodeAt(lineStart - 1) !== 0x0d) lineStart--;
+  let lineEnd = offset;
+  while (lineEnd < input.length && input.charCodeAt(lineEnd) !== 0x0a && input.charCodeAt(lineEnd) !== 0x0d) lineEnd++;
+  let line = 1;
+  for (let i = 0; i < lineStart; i++) if (input.charCodeAt(i) === 0x0a) line++;
+  const source = input.slice(lineStart, lineEnd);
+  const gutter = String(line);
+  const column = Math.max(0, offset - lineStart);
+  const ch = offset < input.length ? input[offset] : 'EOF';
+  const headline = ch === 'EOF'
+    ? `Unexpected end of input at position ${offset}`
+    : `Unexpected '${ch}' at position ${offset}`;
+  return new SyntaxError(`${headline}
+${gutter} | ${source}
+${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
+}

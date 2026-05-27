@@ -72,6 +72,10 @@ export type EncodedSchema = {
   readonly rootProductionKey: string;
   // Sorted list of declared render targets (e.g. ['ast', 'source']).
   readonly targets: ReadonlyArray<string>;
+  // Schema-level default render target (e.g. 'source'); undefined when the
+  // schema did not declare one. The generated `render()` / `stringify()`
+  // entries use this when the caller omits `options.type`.
+  readonly defaultTarget?: string;
 };
 
 // Internal: mutable encoder state. Kept out of EncodedSchema (which is the
@@ -261,6 +265,7 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     stringifyDispatcherOffsets: state.stringifyDispatcherOffsets,
     rootProductionKey: rootKey,
     targets,
+    defaultTarget: schema.defaultTarget,
   };
 }
 

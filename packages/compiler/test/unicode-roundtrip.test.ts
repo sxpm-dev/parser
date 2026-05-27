@@ -89,6 +89,10 @@ test('unicode roundtrip emit: re-parse of stringified source is stable', async (
     // First round-trip: NFD → NFC.
     const firstAst = mod.render(`${NFD_LOCAL}@example.com`, { type: 'ast' });
     const firstSource = mod.stringify(firstAst, { type: 'ast' });
+    // Anchor: the fixed point MUST be NFC (precomposed). A consistently-NFD
+    // stringifier would still satisfy the idempotence checks below — this
+    // line is what distinguishes "stable" from "stable but wrong".
+    assert.equal(firstSource, `${NFC_LOCAL}@example.com`);
     // Second round-trip: NFC → NFC (identity).
     const secondAst = mod.render(firstSource, { type: 'ast' });
     const secondSource = mod.stringify(secondAst, { type: 'ast' });

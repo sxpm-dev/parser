@@ -175,6 +175,43 @@ export class SpanNode {
       modifiers: this.data.modifiers,
     } as SpanDef;
   }
+
+  static validateInputAgainstProgram(
+    nodeType: string,
+    input: string,
+    items: ReadonlyArray<SpanNode>,
+  ): void {
+    let cursor = 0;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
+      const text = item.data.text;
+      if (text === undefined || text === '') continue;
+      // Skip optional spans entirely — their text need not appear in the input.
+      if (item.data.modifiers.some((m) => m.kind === 'optional')) continue;
+      // Skip any leading whitespace at cursor (standard policy: inter-span
+      // whitespace is optional), UNLESS the span's own example text is itself
+      // whitespace (e.g. a whitespace-class span whose text is ' ').
+      if (!/^\s+$/.test(text)) {
+        while (cursor < input.length && /\s/.test(input[cursor]!)) cursor++;
+      }
+      const idx = input.indexOf(text, cursor);
+      if (idx < 0) {
+        const label =
+          item.data.name === undefined
+            ? `literal '${text}'`
+            : `span '${item.data.name}' example '${text}'`;
+        throw new Error(
+          `relation('${nodeType}'): ${label} not found in input starting at offset ${cursor}`,
+        );
+      }
+      if (idx !== cursor) {
+        // Allow it — the gap is intervening whitespace (already skipped) or
+        // content that belongs to a previous `.until(...)` span. We trust
+        // the compiler's stricter IR-layer validation as the final word.
+      }
+      cursor = idx + text.length;
+    }
+  }
 }
 
 // ---------- Type brands (compile-time only) --------------------------------
@@ -253,6 +290,8 @@ export function relation(nodeType: string, body: RelationBody): ExampleDef {
   if (parseProgram === undefined) {
     throw new Error(`relation '${nodeType}': missing parse-program encoding`);
   }
+
+  SpanNode.validateInputAgainstProgram(nodeType, body.input, parseProgram.items);
 
   const status: ExampleStatus = body.status ?? { kind: 'valid' };
 

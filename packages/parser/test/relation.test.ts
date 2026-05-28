@@ -522,3 +522,45 @@ test('relation: immutable — chaining does not mutate the original SpanNode', (
   assert.equal(withIdent.toSpanDef().class, 'ident');
   assert.equal(withNumber.toSpanDef().class, 'number');
 });
+
+test('relation: rejects when input is missing literal span text', () => {
+  assert.throws(
+    () =>
+      relation('Bad', {
+        input: 'foo',
+        encodings: {
+          src: parse([literal('#'), span('text', 'foo').until('\n')]),
+          ast: { text: $.text },
+        },
+      }),
+    /literal '#' not found in input/i,
+  );
+});
+
+test('relation: rejects when named span example text not found in input', () => {
+  assert.throws(
+    () =>
+      relation('Bad', {
+        input: '# elsewhere',
+        encodings: {
+          src: parse([literal('#'), span('text', 'Release notes').until('\n')]),
+          ast: { text: $.text },
+        },
+      }),
+    /span 'text' example 'Release notes' not found in input/i,
+  );
+});
+
+test('relation: accepts whitespace gaps between adjacent spans (standard policy)', () => {
+  // input has two-space gap between '#' and 'foo' — standard whitespace
+  // policy treats inter-span whitespace as optional, so validation must
+  // tolerate a non-zero gap.
+  const def = relation('Heading', {
+    input: '#  foo',
+    encodings: {
+      src: parse([literal('#'), span('text', 'foo').until('\n')]),
+      ast: { text: $.text },
+    },
+  });
+  assert.equal(def.input, '#  foo');
+});

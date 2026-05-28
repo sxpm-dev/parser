@@ -15,27 +15,29 @@
 // The same yamlList schema is used in Tasks 7.2, 7.4, 7.5, and 7.6 tests.
 
 import test from 'node:test';
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 
 const yamlListSchema = defineSchema({
   rootType: 'YamlList',
   examples: [
-    ex('- a')
-      .as('YamlItem')
-      .span('- ')
-      .span('value', 'a').until('\n')
-      .render('ast', $.value)
-      .render('source', tpl`- ${$.value}`)
-      .build(),
+    relation('YamlItem', {
+      input: '- a',
+      encodings: {
+        src: parse([literal('- '), span('value', 'a').until('\n')]),
+        ast: $.value,
+        source: tpl`- ${$.value}`,
+      },
+    }),
 
-    ex(`- a
-- b`)
-      .as('YamlList')
-      .indent('items', ['YamlItem']).repeats({ min: 0 })
-      .render('ast', { type: 'list', items: $.items })
-      .render('source', tpl`${$.items}`)
-      .build(),
+    relation('YamlList', {
+      input: `- a\n- b`,
+      encodings: {
+        src: parse([span('items').of('YamlItem').indent().repeats({ min: 0 })]),
+        ast: { type: 'list', items: $.items },
+        source: tpl`${$.items}`,
+      },
+    }),
   ],
 });
 

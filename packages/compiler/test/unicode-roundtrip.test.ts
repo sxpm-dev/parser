@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 import { interpretParse } from '../src/interp/index.ts';
 import { emitV2Parser } from '../src/emit/v2/index.ts';
@@ -18,14 +18,18 @@ const emailSchema = defineSchema({
   rootType: 'Email',
   unicode: 'NFC',
   examples: [
-    ex('user@example.com')
-      .as('Email')
-      .span('local', 'user').until('@')
-      .span('@')
-      .span('domain', 'example.com').until('\n')
-      .render('ast', { type: 'email', local: $.local, domain: $.domain })
-      .render('source', tpl`${$.local}@${$.domain}`)
-      .build(),
+    relation('Email', {
+      input: 'user@example.com',
+      encodings: {
+        src: parse([
+          span('local', 'user').until('@'),
+          literal('@'),
+          span('domain', 'example.com').until('\n'),
+        ]),
+        ast: { type: 'email', local: $.local, domain: $.domain },
+        source: tpl`${$.local}@${$.domain}`,
+      },
+    }),
   ],
 });
 
@@ -48,7 +52,7 @@ async function loadEmitted(): Promise<{ mod: any; dir: string }> {
 //   NFC: precomposed 'é' = U+00E9, total length 4.
 //   NFD: 'e' + combining acute U+0301, total length 5.
 const NFC_LOCAL = 'josé';
-const NFD_LOCAL = 'josé';
+const NFD_LOCAL = 'josé';
 
 test('unicode roundtrip interp: NFD input → NFC capture', () => {
   const schema = inferSchema(emailSchema);

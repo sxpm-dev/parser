@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 import { emitV2Parser } from '../src/emit/v2/index.ts';
 import { interpretParse } from '../src/interp/index.ts';
@@ -36,18 +36,22 @@ function makeTagSchema(caseSensitive: boolean) {
     rootType: 'Tag',
     caseSensitive,
     examples: [
-      ex('<div>x</div>')
-        .as('Tag')
-        .span('<')
-        .span('open', 'div')
-        .span('>')
-        .span('body', 'x').until('</')
-        .span('</')
-        .span('close', 'div')
-        .span('>')
-        .render('ast', { open: $.open, body: $.body, close: $.close })
-        .render('source', tpl`<${$.open}>${$.body}</${$.close}>`)
-        .build(),
+      relation('Tag', {
+        input: '<div>x</div>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('open', 'div'),
+            literal('>'),
+            span('body', 'x').until('</'),
+            literal('</'),
+            span('close', 'div'),
+            literal('>'),
+          ]),
+          ast: { open: $.open, body: $.body, close: $.close },
+          source: tpl`<${$.open}>${$.body}</${$.close}>`,
+        },
+      }),
     ],
   });
 }

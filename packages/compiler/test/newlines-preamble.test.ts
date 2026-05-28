@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, parse, relation, span, tpl } from '@parser2/parser';
 import { inferSchema } from '../src/index.ts';
 import { emitV2Parser } from '../src/emit/v2/index.ts';
 import { interpretParse } from '../src/interp/index.ts';
@@ -35,12 +35,14 @@ function rawSchema(opts: { newlines: 'LF' | 'CRLF' | 'either-preserve' }) {
     rootType: 'Doc',
     newlines: opts.newlines,
     examples: [
-      ex('a\nb')
-        .as('Doc')
-        .span('all', 'a\nb').rawUntil([])
-        .render('ast', $.all)
-        .render('source', tpl`${$.all}`)
-        .build(),
+      relation('Doc', {
+        input: 'a\nb',
+        encodings: {
+          src: parse([span('all', 'a\nb').rawUntil([])]),
+          ast: $.all,
+          source: tpl`${$.all}`,
+        },
+      }),
     ],
   });
 }

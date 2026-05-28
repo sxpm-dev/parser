@@ -25,8 +25,8 @@ const inputs = [
 
 for (const input of inputs) {
   test(`source-target self-round-trip stringify parity: ${JSON.stringify(input).slice(0, 40)}`, () => {
-    const direct = render(input, { type: 'source' });
-    const indirect = stringify(render(input, { type: 'source' }), { type: 'source' });
+    const direct = render(input, { target: 'source' });
+    const indirect = stringify(render(input, { target: 'source' }), { target: 'source' });
     assert.equal(direct, indirect);
   });
 }

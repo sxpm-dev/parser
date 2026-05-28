@@ -901,10 +901,10 @@ ${entries}
 }
 
 function emitPublicStringify(): string {
-  return `export function stringify(value: unknown, options?: { type?: string }): string {
-  const target = options?.type ?? __defaultTarget;
+  return `export function stringify(value: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? __defaultTarget;
   if (!target) {
-    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("stringify: missing target; pass options.target or set defaultTarget on the schema");
   }
   const fn = __inverseDispatch[target];
   if (!fn) {

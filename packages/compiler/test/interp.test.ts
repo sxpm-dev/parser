@@ -39,9 +39,9 @@ const markdownInferred = inferSchema(markdownSchema);
 async function expectMarkdownEquivalent(input: string): Promise<void> {
   const interpAst = interpretParse(markdownInferred, input);
   const { render } = (await import('../../markdown/src/_generated/parser.ts')) as {
-    render: (input: string, options?: { type?: string }) => unknown;
+    render: (input: string, options?: { target?: string }) => unknown;
   };
-  const v2Ast = render(input, { type: 'ast' });
+  const v2Ast = render(input, { target: 'ast' });
   assert.deepEqual(
     stripSource(interpAst),
     stripSource(v2Ast),
@@ -128,9 +128,9 @@ test('interp css — single declaration', async () => {
   const input = 'a { color: red; }';
   const interpAst = interpretParse(cssInferred, input);
   const { render } = (await import('../../css/src/_generated/parser.ts')) as {
-    render: (input: string, options?: { type?: string }) => unknown;
+    render: (input: string, options?: { target?: string }) => unknown;
   };
-  const v2Ast = render(input, { type: 'ast' });
+  const v2Ast = render(input, { target: 'ast' });
   // CSS has many edge cases (raws, comments, etc.) that the slow
   // interpreter intentionally doesn't recompute byte-for-byte. We compare
   // top-level shape only — if this passes the interpreter handles the
@@ -151,9 +151,9 @@ test('interp html — single paragraph element', async () => {
   const input = '<p>hello</p>';
   const interpAst = interpretParse(htmlInferred, input);
   const { render } = (await import('../../html/src/_generated/parser.ts')) as {
-    render: (input: string, options?: { type?: string }) => unknown;
+    render: (input: string, options?: { target?: string }) => unknown;
   };
-  const v2Ast = render(input, { type: 'ast' });
+  const v2Ast = render(input, { target: 'ast' });
   // Same caveat as CSS — top-level shape only.
   const interpRoot = stripSource(interpAst) as Record<string, unknown>;
   const v2Root = stripSource(v2Ast) as Record<string, unknown>;

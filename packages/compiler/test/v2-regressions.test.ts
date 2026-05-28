@@ -18,18 +18,18 @@ import { generateParser } from '../src/index.ts';
 // Helper: write generated v2 source to a temp .ts file and dynamic-import it
 // via tsx's loader so the test can call into the emitted parser. The v2
 // emit exports `render(input, options)` (which internally calls `__parse`)
-// and `validate(input)`. We use `render(input, { type: 'ast' })` as the
+// and `validate(input)`. We use `render(input, { target: 'ast' })` as the
 // test entry point — when the schema only declares an 'ast' render, the
 // render dispatcher returns the captures map directly.
 async function loadV2Parser(code: string): Promise<{
-  render: (input: string, options?: { type?: string; mode?: 'fast' | 'raws' }) => unknown;
+  render: (input: string, options?: { target?: string; mode?: 'fast' | 'raws' }) => unknown;
   validate?: (input: string) => void;
 }> {
   const dir = mkdtempSync(join(tmpdir(), 'parser3-v2-'));
   const file = join(dir, 'parser.ts');
   writeFileSync(file, code);
   const mod = (await import(pathToFileURL(file).href)) as {
-    render?: (input: string, options?: { type?: string; mode?: 'fast' | 'raws' }) => unknown;
+    render?: (input: string, options?: { target?: string; mode?: 'fast' | 'raws' }) => unknown;
     validate?: (input: string) => void;
   };
   if (typeof mod.render !== 'function') {
@@ -59,7 +59,7 @@ test('v2 emits scan-until for balanced .until() capture', async () => {
   assert.match(code, /function parseDecl\(/);
 
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('color: red;') as { type: string; prop: string; value: string };
   assert.equal(result.type, 'decl');
   assert.equal(result.prop, 'color');
@@ -85,7 +85,7 @@ test('v2 .until() respects balanced brackets', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('expr: f(a;b);') as { prop: string; value: string };
   assert.equal(result.prop, 'expr');
   assert.equal(result.value, 'f(a;b)');
@@ -108,7 +108,7 @@ test('v2 .until() trims trailing whitespace from capture', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   // `   red   ` is the captured slice between `:` and `;` ws-included. The
   // .until() trim policy strips both sides, so the captured value is `red`
   // and the parser's `off` is positioned at the trailing ws so the `;`
@@ -134,7 +134,7 @@ test('v2 .until() honors rejectSuffix by returning null (no throws)', async () =
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const ok = __parse('a { }') as { sel: string };
   assert.equal(ok.sel, 'a');
   // `--foo:` ends with the rejectSuffix `:` — the production must fail.
@@ -164,7 +164,7 @@ test('v2 .until({ trim: false }) preserves surrounding whitespace', async () => 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('foo:bar;') as { prop: string; value: string };
   assert.equal(result.prop, 'foo');
   assert.equal(result.value, 'bar');
@@ -186,7 +186,7 @@ test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('<script>x=1</script>') as { body: string };
   assert.equal(result.body, 'x=1');
 });
@@ -228,7 +228,7 @@ test('v2 emits multi-role repeats loop using role-dispatch ladder', async () => 
   assert.doesNotMatch(code, /tryRoles\b/);
 
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('/foo\n#bar\n') as { items: Array<{ type: string; text: string }> };
   assert.equal(result.items.length, 2);
   assert.equal(result.items[0]?.type, 'slash');
@@ -267,7 +267,7 @@ test('v2 multi-role repeats honors min by failing when count too low', async () 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   // 1 item satisfies min:1.
   const ok = __parse('/foo\n') as { items: Array<{ type: string }> };
   assert.equal(ok.items.length, 1);
@@ -312,7 +312,7 @@ test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
   // `<` is 0x3c = 60 in decimal.
   assert.match(code, /__sb === 60/);
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('[/foo\n#bar\n</>]') as { items: Array<{ type: string }> };
   assert.equal(result.items.length, 2);
   assert.equal(result.items[0]?.type, 'slash');
@@ -345,7 +345,7 @@ test('v2 multi-role repeats with separator threads items together', async () => 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('abc,42') as { items: Array<{ kind: string; v: string }> };
   assert.equal(result.items.length, 2);
   assert.equal(result.items[0]?.kind, 'word');
@@ -373,7 +373,7 @@ test('v2 multi-role repeats honors trailing: "forbidden"', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   // Plain non-trailing case still works.
   const ok = __parse('[a]') as { items: Array<{ v: string }> };
   assert.equal(ok.items.length, 1);
@@ -397,7 +397,7 @@ test('v2 multi-role repeats honors trailing: "required"', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const ok = __parse('a;b;') as { items: Array<{ v: string }> };
   assert.equal(ok.items.length, 2);
   // Missing trailing sep — fails.
@@ -432,7 +432,7 @@ test('v2 repeats-sep tolerates items that consumed their own optional sep', asyn
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('{ a: 1; b: 2 }') as { decls: Array<{ prop: string; value: string }> };
   assert.equal(result.decls.length, 2);
   assert.equal(result.decls[0]?.prop, 'a');
@@ -461,7 +461,7 @@ test('v2 multi-role repeats honors max by failing when count too high', async ()
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const ok = __parse('a,b') as { items: Array<{ v: string }> };
   assert.equal(ok.items.length, 2);
   // 3 items exceeds max:2 — fails.
@@ -496,7 +496,7 @@ test('v2 role-ladder treats until-leading role as fallthrough catch-all', async 
   assert.match(code, /parseText\(state\)/);
 
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const hash = __parse('#hi') as { item: { type: string; text: string } };
   assert.equal(hash.item.type, 'hash');
   assert.equal(hash.item.text, 'hi');
@@ -533,7 +533,7 @@ test('v2 role-ladder uses sentinel speculation for multiple fallthrough roles', 
   // The ladder must NOT use throw/catch for speculation.
   assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const left = __parse('foo:') as { item: { kind: string; text: string } };
   assert.equal(left.item.kind, 'left');
   assert.equal(left.item.text, 'foo');
@@ -576,7 +576,7 @@ test('v2 role-ladder uses sentinel speculation for same-byte literal roles', asy
   assert.match(code, /__c0 === 60/);
   assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const doc = __parse('<!DOCTYPE>') as { item: { kind: string; keyword: string } };
   assert.equal(doc.item.kind, 'doctype');
   assert.equal(doc.item.keyword, 'DOCTYPE');
@@ -613,7 +613,7 @@ test('v2 role-ladder fallthrough speculation respects author declaration order',
   assert.match(code, /parseUnderlined\(state\)[\s\S]*?if \(__r === null\) \{ __r = parseParagraph/);
   assert.doesNotMatch(code, /\bthrow\b.*new SyntaxError/);
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const heading = __parse('hi===') as { item: { kind: string; text: string } };
   assert.equal(heading.item.kind, 'heading');
   assert.equal(heading.item.text, 'hi');
@@ -656,7 +656,7 @@ test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () =
   assert.doesNotMatch(code, /tryRoles\b/);
 
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const commentResult = __parse('/foo') as { item: { type: string; text: string } };
   assert.equal(commentResult.item.type, 'comment');
   assert.equal(commentResult.item.text, 'foo');
@@ -686,7 +686,7 @@ test('v2 number scanner with .int() (default) accepts only digits', async () => 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const ok = __parse('42px') as { value: string; unit: string };
   assert.equal(ok.value, '42');
   assert.equal(ok.unit, 'px');
@@ -710,7 +710,7 @@ test('v2 number scanner honors .float() — accepts digits and digits.fraction',
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   // float with fraction
   const a = __parse('1.5px') as { value: string; unit: string };
   assert.equal(a.value, '1.5');
@@ -740,7 +740,7 @@ test('v2 number scanner honors .scientific() — float + optional exponent', asy
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   assert.equal((__parse('1.5e10') as { value: string }).value, '1.5e10');
   assert.equal((__parse('2E-3') as { value: string }).value, '2E-3');
   assert.equal((__parse('1e+5') as { value: string }).value, '1e+5');
@@ -764,7 +764,7 @@ test('v2 number scanner honors .separator("_") — allows underscores between di
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   assert.equal((__parse('1_000') as { value: string }).value, '1_000');
   assert.equal((__parse('42') as { value: string }).value, '42');
   assert.equal((__parse('1_000_000') as { value: string }).value, '1_000_000');
@@ -799,7 +799,7 @@ test('v2 .until() balanced:true tracks {} depth (not just () and [])', async () 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('prop: { nested };') as { prop: string; value: string };
   assert.equal(result.prop, 'prop');
   // Without {} brace tracking, the inner `}` would be treated as a stop and
@@ -827,7 +827,7 @@ test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   const result = __parse('p: { a: { b: c } };') as { prop: string; value: string };
   assert.equal(result.prop, 'p');
   assert.equal(result.value, '{ a: { b: c } }');
@@ -881,7 +881,7 @@ test('v2 byte-prefix group orders tag-restricted (.oneOf) alts before unrestrict
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: any[] };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { items: any[] };
   // `<li></li>` must dispatch to the tag-restricted alt (type:'li'),
   // not the catch-all (type:'el', closeTag:'li').
   assert.equal(__parse('<li></li>').items[0]!.type, 'li');
@@ -933,7 +933,7 @@ test('v2 speculation chain orders same-first-byte literals by descending prefix 
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { type: string };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { type: string };
   // The "```\\n…" alt must win on the no-lang input.
   assert.equal(__parse('```\nplain\n```').type, 'code-plain');
   // The shorter "```" alt still wins when followed by an ident.
@@ -960,7 +960,7 @@ test('v2 .until() always trims trailing whitespace from the captured slice', asy
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { data: string };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { data: string };
   assert.equal(__parse('<!-- hello -->').data, 'hello');
   assert.equal(__parse('<!--   hello   -->').data, 'hello');
   assert.equal(__parse('<!---->').data, '');
@@ -986,7 +986,7 @@ test('v2 comment-class span returns interior text and trims surrounding ws', asy
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { text: string };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { text: string };
   assert.equal(__parse('/* foo */').text, 'foo');
   assert.equal(__parse('/*foo*/').text, 'foo');
   assert.equal(__parse('/* hello world */').text, 'hello world');
@@ -1029,7 +1029,7 @@ test('v2 inter-span gap before optional literal is ws-only (preserve trailing co
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: { type: string }[] };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { items: { type: string }[] };
   // The trailing /* */ comment must surface as a separate Comment node, not
   // be silently absorbed by the gap before the optional `;`.
   const r = __parse('a /* trailing */');
@@ -1063,7 +1063,7 @@ test('v2 repeats sweeps LEADING separators before the first item', async () => {
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: unknown[] };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { items: unknown[] };
   // Leading seps before any item.
   assert.equal(__parse('{;}').items.length, 0);
   assert.equal(__parse('{;;}').items.length, 0);
@@ -1102,7 +1102,7 @@ test('v2 leading skip is ws-only when first span is a comment-class span', async
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' }) as { items: { type: string }[] };
+  const __parse = (input: string) => render(input, { target: 'ast' }) as { items: { type: string }[] };
   const r = __parse('/* x */ a /* y */');
   assert.deepEqual(r.items.map((it) => it.type), ['comment', 'word', 'comment']);
 });
@@ -1127,7 +1127,7 @@ test('v2 inter-span ws skip also skips /* */ comments when schema declares comme
   });
   const code = generateParser(schema, undefined, {});
   const { render } = await loadV2Parser(code);
-  const __parse = (input: string) => render(input, { type: 'ast' });
+  const __parse = (input: string) => render(input, { target: 'ast' });
   // No comments: baseline.
   assert.deepEqual(__parse('a {}'), { selector: 'a' });
   // Trailing /* */ comment between selector trim boundary and `{` must be
@@ -1177,7 +1177,7 @@ test('v2 .until() with 3+ unbalanced stops uses Aho-Corasick scanner', async () 
 
   const { render } = await loadV2Parser(code);
   const firstText = (input: string): string => {
-    const r = render(input, { type: 'ast' }) as {
+    const r = render(input, { target: 'ast' }) as {
       items: Array<{ type: string; text: string }>;
     };
     return r.items[0]!.text;
@@ -1270,7 +1270,7 @@ test('v2 role-ladder emits switch dispatch for ≥4 byte-arm roles', async () =>
   // Runtime correctness across every case + the absence of any byte arm.
   const { render } = await loadV2Parser(code);
   const __parse = (input: string) =>
-    render(input, { type: 'ast' }) as { item: { kind: string; text: string } };
+    render(input, { target: 'ast' }) as { item: { kind: string; text: string } };
   assert.equal(__parse('#hello').item.kind, 'hash');
   assert.equal(__parse('#hello').item.text, 'hello');
   assert.equal(__parse('@user').item.kind, 'at');
@@ -1314,7 +1314,7 @@ test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
 
   const { render } = await loadV2Parser(code);
   const __parse = (input: string) =>
-    render(input, { type: 'ast' }) as { item: { kind: string; text: string } };
+    render(input, { target: 'ast' }) as { item: { kind: string; text: string } };
   assert.equal(__parse('#hi').item.kind, 'hash');
   assert.equal(__parse('@me').item.kind, 'at');
   assert.equal(__parse('+plus').item.kind, 'plus');
@@ -1396,7 +1396,7 @@ test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', 
 
   const { render } = await loadV2Parser(code);
   const __parse = (input: string) =>
-    render(input, { type: 'ast' }) as { item: { kind: string; text?: string; name?: string } };
+    render(input, { target: 'ast' }) as { item: { kind: string; text?: string; name?: string } };
   assert.equal(__parse('<!--hi-->').item.kind, 'comment');
   assert.equal(__parse('<div>').item.kind, 'tag');
   assert.equal(__parse('<div>').item.name, 'div');

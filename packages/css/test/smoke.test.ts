@@ -17,7 +17,7 @@ import { render } from '../src/index.ts';
 // reachable via render(input, { type: 'ast' }); the raws-mode toggle is
 // a no-op (every AST is the same regardless of mode).
 function parse(input: string, _options?: { mode?: 'fast' | 'raws' }): unknown {
-  return render(input, { type: 'ast' });
+  return render(input, { target: 'ast' });
 }
 
 test('parses single rule with simple selector', () => {

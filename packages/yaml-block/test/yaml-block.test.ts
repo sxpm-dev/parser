@@ -67,7 +67,7 @@ preserveWatchOutput: false
 assumeChangesOnlyAffectDirectDependencies: true`;
 
 test('yaml-block: 50-line representative input parses', () => {
-  const ast = render(FIFTY_LINE_INPUT, { type: 'ast' });
+  const ast = render(FIFTY_LINE_INPUT, { target: 'ast' });
   assert.ok(ast !== null, 'render returned null');
   const mapping = ast as { type: string; entries: unknown[] };
   assert.equal(mapping.type, 'mapping', `expected type='mapping', got '${mapping.type}'`);

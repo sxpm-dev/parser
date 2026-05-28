@@ -60,7 +60,7 @@ import * as bcodeBackend from '../../cron/src/_generated/parser.bcode.ts';
 // API choice. The plan compares `tsBackend.__parse` vs
 // `bcBackend.__parse`. The TS backend does not export `__parse` (only
 // `render`/`stringify`/`validate` — see Task 6.6's bytecode-equivalence
-// test). We compare `render(input, { type: 'ast' })` on both backends,
+// test). We compare `render(input, { target: 'ast' })` on both backends,
 // the closest comparable observable API.
 //
 // Flakiness note. Wall-clock perf is sensitive to system load. The budget
@@ -104,19 +104,19 @@ test('bytecode budget: cron throughput within budget of TS', () => {
   // tier-up cost rather than steady-state throughput.
   const WARMUP_ITERATIONS = 2000;
   for (let i = 0; i < WARMUP_ITERATIONS; i++) {
-    tsBackend.render(PERF_INPUT, { type: 'ast' });
-    bcodeBackend.render(PERF_INPUT, { type: 'ast' });
+    tsBackend.render(PERF_INPUT, { target: 'ast' });
+    bcodeBackend.render(PERF_INPUT, { target: 'ast' });
   }
 
   const tsStart = performance.now();
   for (let i = 0; i < PERF_ITERATIONS; i++) {
-    tsBackend.render(PERF_INPUT, { type: 'ast' });
+    tsBackend.render(PERF_INPUT, { target: 'ast' });
   }
   const tsMs = performance.now() - tsStart;
 
   const bcStart = performance.now();
   for (let i = 0; i < PERF_ITERATIONS; i++) {
-    bcodeBackend.render(PERF_INPUT, { type: 'ast' });
+    bcodeBackend.render(PERF_INPUT, { target: 'ast' });
   }
   const bcMs = performance.now() - bcStart;
 

@@ -96,7 +96,7 @@ test('case-insensitive emit: uppercase input produces lowercase captures', async
   const { mod, dir } = await loadGeneratedParser(makeTagSchema(false));
   try {
     assert.deepEqual(
-      mod.render('<DIV>x</DIV>', { type: 'ast' }),
+      mod.render('<DIV>x</DIV>', { target: 'ast' }),
       { open: 'div', body: 'x', close: 'div' },
     );
   } finally {
@@ -108,7 +108,7 @@ test('case-insensitive emit: mixed-case input produces lowercase captures', asyn
   const { mod, dir } = await loadGeneratedParser(makeTagSchema(false));
   try {
     assert.deepEqual(
-      mod.render('<DiV>x</dIv>', { type: 'ast' }),
+      mod.render('<DiV>x</dIv>', { target: 'ast' }),
       { open: 'div', body: 'x', close: 'div' },
     );
   } finally {
@@ -120,7 +120,7 @@ test('case-sensitive default emit: uppercase input fails to parse', async () => 
   const { mod, dir } = await loadGeneratedParser(makeTagSchema(true));
   try {
     assert.throws(
-      () => mod.render('<DIV>x</DIV>', { type: 'ast' }),
+      () => mod.render('<DIV>x</DIV>', { target: 'ast' }),
       SyntaxError,
     );
   } finally {

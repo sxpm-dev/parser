@@ -8,7 +8,7 @@ import { render, validate } from '../src/index.ts';
 // during parse is no longer available on render — call validate(input,
 // { validate: true }) directly to exercise that codepath instead.
 function parse(input: string): { readonly nodes: readonly unknown[] } {
-  return render(input, { type: 'ast' }) as { readonly nodes: readonly unknown[] };
+  return render(input, { target: 'ast' }) as { readonly nodes: readonly unknown[] };
 }
 
 test('default render accepts invalid property values', () => {

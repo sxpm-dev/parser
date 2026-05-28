@@ -37,19 +37,19 @@ export function __parse(input: string, options?: { mode?: string }): unknown {
   return captures;
 }
 
-export function render(input: string, options?: { type?: string; mode?: string }): unknown {
-  const target = options?.type ?? __defaultTarget;
+export function render(input: string, options?: { target?: string; mode?: string }): unknown {
+  const target = options?.target ?? __defaultTarget;
   if (target === undefined) {
-    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
   const captures = __parse(input, options);
   return runRender(__DECODED, captures, target);
 }
 
-export function stringify(value: unknown, options?: { type?: string }): string {
-  const target = options?.type ?? __defaultTarget;
+export function stringify(value: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? __defaultTarget;
   if (target === undefined) {
-    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("stringify: missing target; pass options.target or set defaultTarget on the schema");
   }
   return runStringify(__DECODED, value, target);
 }

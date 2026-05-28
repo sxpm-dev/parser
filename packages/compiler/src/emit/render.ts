@@ -365,10 +365,10 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   // root entry, partial parse, or runtime failure); we then fall back to
   // the captures-based path so semantics stay identical. Task 5.3 closes
   // recursive-slot eligibility so the fast path covers full schemas.
-  return `export function render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
-  const target = options?.type ?? __defaultTarget;
+  return `export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+  const target = options?.target ?? __defaultTarget;
   if (!target) {
-    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
   if (target !== 'ast') {
     const fused = __renderFused(input, target);

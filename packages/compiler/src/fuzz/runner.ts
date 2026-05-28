@@ -37,7 +37,7 @@ export type SchemaSetup = {
 
 export type V2Render = (
   input: string,
-  options?: { type?: string },
+  options?: { target?: string },
 ) => unknown;
 
 export type Divergence = {
@@ -135,7 +135,7 @@ export function compareOne(
   let v2Ast: unknown;
   let v2Threw = false;
   try {
-    v2Ast = render(input, { type: 'ast' });
+    v2Ast = render(input, { target: 'ast' });
   } catch {
     v2Threw = true;
   }
@@ -196,7 +196,7 @@ export function compareOne(
     let fromV2: unknown;
     let v2RenderThrew = false;
     try {
-      fromV2 = render(input, { type: target });
+      fromV2 = render(input, { target });
     } catch (e) {
       v2RenderThrew = true;
       return divergence(name, candidate, 'render-mismatch', {
@@ -223,7 +223,7 @@ export function compareOne(
   for (const target of setup.roundTripTargets) {
     let original: unknown;
     try {
-      original = render(input, { type: target });
+      original = render(input, { target });
     } catch {
       continue;
     }
@@ -239,7 +239,7 @@ export function compareOne(
     }
     let round: unknown;
     try {
-      round = render(reconstructed, { type: target });
+      round = render(reconstructed, { target });
     } catch (e) {
       return divergence(name, candidate, 'round-trip-mismatch', {
         target,

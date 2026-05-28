@@ -26,7 +26,7 @@ import htmlSchema from '../../html/src/schema.ts';
 import { inferSchema } from '../src/index.ts';
 import { interpretStringify } from '../src/interp/stringify.ts';
 
-type RenderFn = (input: string, options?: { type?: string }) => unknown;
+type RenderFn = (input: string, options?: { target?: string }) => unknown;
 
 // Strip `source` positions recursively before AST comparison — the
 // interpreter doesn't recompute byte offsets and round-tripped source
@@ -87,10 +87,10 @@ for (const input of markdownInputs) {
   for (const target of ['source', 'html', 'ast'] as const) {
     test(`interp stringify markdown ${target} — ${JSON.stringify(input)}`, async () => {
       const render = await getMarkdownRender();
-      const original = render(input, { type: target });
+      const original = render(input, { target });
       const reconstructed = interpretStringify(markdownInferred, original, target);
       // Re-parse and re-render to the same target via v2.
-      const round = render(reconstructed as string, { type: target });
+      const round = render(reconstructed as string, { target });
       assert.deepEqual(
         stripSource(round),
         stripSource(original),
@@ -132,9 +132,9 @@ for (const input of cssInputs) {
   for (const target of ['source'] as const) {
     test(`interp stringify css ${target} — ${JSON.stringify(input)}`, async () => {
       const render = await getCssRender();
-      const original = render(input, { type: target });
+      const original = render(input, { target });
       const reconstructed = interpretStringify(cssInferred, original, target);
-      const round = render(reconstructed as string, { type: target });
+      const round = render(reconstructed as string, { target });
       assert.deepEqual(
         stripSource(round),
         stripSource(original),
@@ -180,9 +180,9 @@ for (const input of htmlInputs) {
   for (const target of ['source'] as const) {
     test(`interp stringify html ${target} — ${JSON.stringify(input)}`, async () => {
       const render = await getHtmlRender();
-      const original = render(input, { type: target });
+      const original = render(input, { target });
       const reconstructed = interpretStringify(htmlInferred, original, target);
-      const round = render(reconstructed as string, { type: target });
+      const round = render(reconstructed as string, { target });
       assert.deepEqual(
         stripSource(round),
         stripSource(original),

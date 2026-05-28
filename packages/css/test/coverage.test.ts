@@ -11,7 +11,7 @@ import { render } from '../src/index.ts';
 // render(input, { type: 'ast' }); the mode toggle is a no-op (raws were
 // removed from the AST during the Phase 6 .render(target, body) migration).
 function parse(input: string, _options?: { mode?: 'fast' | 'raws' }): unknown {
-  return render(input, { type: 'ast' });
+  return render(input, { target: 'ast' });
 }
 
 const here = dirname(fileURLToPath(import.meta.url));

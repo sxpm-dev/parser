@@ -264,17 +264,17 @@ test('inverse: cron-like three-template field round-trips via unique-literal dis
   const mod = await loadGenerated(schema, 'fix1-cronlike');
   // Test forward: render to source preserves the input.
   for (const input of ['*', '*/5', '9', '1-5']) {
-    const v1 = mod.render(input, { type: 'source' });
+    const v1 = mod.render(input, { target: 'source' });
     assert.equal(v1, input);
   }
   // Test the inverse round-trip including the AST target so we exercise
   // the unique-literal dispatch (each AST shape is distinct, so a
   // misrouted inverse would produce a different AST).
   for (const input of ['*', '*/5', '9', '1-5']) {
-    const ast1 = mod.render(input, { type: 'ast' });
-    const sourceText = mod.render(input, { type: 'source' });
-    const back = mod.stringify(sourceText, { type: 'source' });
-    const ast2 = mod.render(back, { type: 'ast' });
+    const ast1 = mod.render(input, { target: 'ast' });
+    const sourceText = mod.render(input, { target: 'source' });
+    const back = mod.stringify(sourceText, { target: 'source' });
+    const ast2 = mod.render(back, { target: 'ast' });
     assert.deepEqual(ast2, ast1, `roundtrip for ${input}`);
   }
 });
@@ -300,9 +300,9 @@ test('rebuild: optional trailing span absent collapses both slot and preceding s
   });
   const mod = await loadGenerated(schema, 'fix2-optional-fusion');
   // With optional subject present: full source rebuilds verbatim.
-  assert.equal(mod.stringify(mod.render('hi there', { type: 'ast' }), { type: 'ast' }), 'hi there');
+  assert.equal(mod.stringify(mod.render('hi there', { target: 'ast' }), { target: 'ast' }), 'hi there');
   // With optional subject ABSENT: no trailing space should remain.
-  assert.equal(mod.stringify(mod.render('hi', { type: 'ast' }), { type: 'ast' }), 'hi');
+  assert.equal(mod.stringify(mod.render('hi', { target: 'ast' }), { target: 'ast' }), 'hi');
 });
 
 // Fix 3: `.repeats()` without an explicit `sep` should join children with a
@@ -324,10 +324,10 @@ test('rebuild: .repeats() without sep joins children with a single space', async
     ],
   });
   const mod = await loadGenerated(schema, 'fix3-repeats-join');
-  const ast = mod.render('npm test', { type: 'ast' });
+  const ast = mod.render('npm test', { target: 'ast' });
   assert.deepEqual(ast, { type: 'command', words: ['npm', 'test'] });
   // Round-trip through stringify must preserve the inter-child space.
-  const src = mod.stringify(ast, { type: 'ast' });
+  const src = mod.stringify(ast, { target: 'ast' });
   assert.equal(src, 'npm test');
 });
 
@@ -355,10 +355,10 @@ test('render template body null-coerces missing optional captures to ""', async 
   });
   const mod = await loadGenerated(schema, 'fix4-template-null');
   // With optional subject present: rendered HTML contains the captured text.
-  assert.equal(mod.render('hi there', { type: 'html' }), '<g>hi<s>there</s></g>');
+  assert.equal(mod.render('hi there', { target: 'html' }), '<g>hi<s>there</s></g>');
   // With optional subject absent: rendered HTML must use "" — NOT "null"
   // or "undefined".
-  assert.equal(mod.render('hi', { type: 'html' }), '<g>hi<s></s></g>');
+  assert.equal(mod.render('hi', { target: 'html' }), '<g>hi<s></s></g>');
 });
 
 // ---------- Round-trip via generated parser -------------------------------
@@ -378,9 +378,9 @@ test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-ast');
   const original = '# title';
-  const v1 = mod.render(original, { type: 'ast' });
-  const src = mod.stringify(v1, { type: 'ast' });
-  const v2 = mod.render(src, { type: 'ast' });
+  const v1 = mod.render(original, { target: 'ast' });
+  const src = mod.stringify(v1, { target: 'ast' });
+  const v2 = mod.render(src, { target: 'ast' });
   assert.deepEqual(v2, v1);
 });
 
@@ -399,9 +399,9 @@ test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for htm
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-html');
   const original = '# title';
-  const v1 = mod.render(original, { type: 'html' });
-  const src = mod.stringify(v1, { type: 'html' });
-  const v2 = mod.render(src, { type: 'html' });
+  const v1 = mod.render(original, { target: 'html' });
+  const src = mod.stringify(v1, { target: 'html' });
+  const v2 = mod.render(src, { target: 'html' });
   assert.deepEqual(v2, v1);
 });
 
@@ -418,8 +418,8 @@ test('stringify(value, { type: "ast" }) reconstructs source', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-stringify-ast');
-  const value = mod.render('# title', { type: 'ast' });
-  assert.equal(mod.stringify(value, { type: 'ast' }), '# title');
+  const value = mod.render('# title', { target: 'ast' });
+  assert.equal(mod.stringify(value, { target: 'ast' }), '# title');
 });
 
 test('stringify with missing target throws', async () => {
@@ -447,7 +447,7 @@ test('stringify with unknown target throws', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-stringify-unknown');
-  assert.throws(() => mod.stringify({ type: 'word', v: 'hi' }, { type: 'bogus' }), /stringify: unknown target 'bogus'/);
+  assert.throws(() => mod.stringify({ type: 'word', v: 'hi' }, { target: 'bogus' }), /stringify: unknown target 'bogus'/);
 });
 
 test('round-trip: array body with positional captures', async () => {
@@ -464,10 +464,10 @@ test('round-trip: array body with positional captures', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-array');
-  const v1 = mod.render('a b', { type: 'arr' });
+  const v1 = mod.render('a b', { target: 'arr' });
   assert.deepEqual(v1, ['a', 'b']);
-  const src = mod.stringify(v1, { type: 'arr' });
-  const v2 = mod.render(src, { type: 'arr' });
+  const src = mod.stringify(v1, { target: 'arr' });
+  const v2 = mod.render(src, { target: 'arr' });
   assert.deepEqual(v2, v1);
 });
 
@@ -484,12 +484,12 @@ test('round-trip: scalar body asserts equality and rebuilds source', async () =>
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-scalar');
   // forward: render -> true
-  assert.equal(mod.render('yes', { type: 'flag' }), true);
+  assert.equal(mod.render('yes', { target: 'flag' }), true);
   // inverse: stringify(true, flag) -> source
-  assert.equal(mod.stringify(true, { type: 'flag' }), 'yes');
+  assert.equal(mod.stringify(true, { target: 'flag' }), 'yes');
   // mismatched scalar throws (no production matches because the scalar
   // dispatcher routes only on equal value).
-  assert.throws(() => mod.stringify(false, { type: 'flag' }), /stringify: no production matches/);
+  assert.throws(() => mod.stringify(false, { target: 'flag' }), /stringify: no production matches/);
 });
 
 // Feature 1: Two productions whose template bodies are structurally
@@ -525,17 +525,17 @@ test('inverse: structurally-identical template bodies do NOT collide; dispatcher
   assert.doesNotThrow(() => inferSchema(schema));
   const mod = await loadGenerated(schema, 'feature1-identical-templates');
   // Forward: each input renders to the same HTML.
-  const htmlA = mod.render('# title', { type: 'html' });
-  const htmlB = mod.render('! title', { type: 'html' });
+  const htmlA = mod.render('# title', { target: 'html' });
+  const htmlB = mod.render('! title', { target: 'html' });
   assert.equal(htmlA, '<h1>title</h1>');
   assert.equal(htmlB, '<h1>title</h1>');
   // Inverse: stringify must not throw; it picks the lowest-index
   // production (hash form). The re-rendered HTML matches the original.
-  const back = mod.stringify(htmlA, { type: 'html' });
+  const back = mod.stringify(htmlA, { target: 'html' });
   // Lowest-index production is the hash form, so back rebuilds to `# title`.
   assert.equal(back, '# title');
   // Value-stable round-trip: render(stringify(html)) === html.
-  const html2 = mod.render(back, { type: 'html' });
+  const html2 = mod.render(back, { target: 'html' });
   assert.equal(html2, htmlA);
 });
 
@@ -573,7 +573,7 @@ test('inverse: multi-role recursive capture dispatches per array element', async
   assert.doesNotThrow(() => inferSchema(schema));
   const mod = await loadGenerated(schema, 'feature2-multi-role');
   // Forward: parser yields heterogeneous children array.
-  const ast = mod.render('foo|!bar|foo', { type: 'ast' });
+  const ast = mod.render('foo|!bar|foo', { target: 'ast' });
   assert.deepEqual(ast, {
     type: 'doc',
     children: [
@@ -584,8 +584,8 @@ test('inverse: multi-role recursive capture dispatches per array element', async
   });
   // Round-trip: stringify(render(input, ast), ast) re-renders to the
   // same value (value-stable, not byte-stable per spec rule 5).
-  const src = mod.stringify(ast, { type: 'ast' });
-  const ast2 = mod.render(src, { type: 'ast' });
+  const src = mod.stringify(ast, { target: 'ast' });
+  const ast2 = mod.render(src, { target: 'ast' });
   assert.deepEqual(ast2, ast);
   // Verify order and types are preserved.
   const kids = (ast2 as { children: Array<{ type: string }> }).children;
@@ -618,8 +618,8 @@ test('generateParser emits public render and public stringify', async () => {
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {
-  render: (input: string, options?: { type?: string }) => unknown;
-  stringify: (value: unknown, options?: { type?: string }) => string;
+  render: (input: string, options?: { target?: string }) => unknown;
+  stringify: (value: unknown, options?: { target?: string }) => string;
 };
 
 async function loadGenerated(schema: unknown, name: string): Promise<GeneratedModule> {

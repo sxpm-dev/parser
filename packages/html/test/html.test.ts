@@ -8,7 +8,7 @@ const HTML_NS = 'http://www.w3.org/1999/xhtml';
 // refactor. The AST shape that used to be returned by parse() is now
 // reachable via `render(input, { type: 'ast' })`.
 function parse(input: string): unknown {
-  return render(input, { type: 'ast' });
+  return render(input, { target: 'ast' });
 }
 
 // After the Phase 6 schema migration, every render('ast', ...) emits a

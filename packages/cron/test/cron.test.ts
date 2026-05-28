@@ -8,7 +8,7 @@ import { render, stringify, validate } from '../src/index.ts';
 // the schema declares under `.render('ast', { ... })`.
 
 function parseAst(input: string): unknown {
-  return render(input, { type: 'ast' });
+  return render(input, { target: 'ast' });
 }
 
 test('cron parses wildcard, step, value, and range fields', () => {
@@ -74,7 +74,7 @@ test('cron stringify(render(input, ast), ast) round-trips for canonical inputs',
   // canonical fixtures too — see round-trip.test.ts for that contract.
   for (const input of ['* * * * *', '0 0 * * *', '*/5 * * * *', '0 1-3 * * *']) {
     const ast = parseAst(input);
-    const src = stringify(ast, { type: 'ast' });
+    const src = stringify(ast, { target: 'ast' });
     assert.deepEqual(parseAst(src), ast, input);
   }
 });

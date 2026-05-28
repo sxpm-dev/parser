@@ -17,7 +17,7 @@ import htmlSchema from '../../html/src/schema.ts';
 import { inferSchema } from '../src/index.ts';
 import { interpretRenderFromInput } from '../src/interp/render.ts';
 
-type RenderFn = (input: string, options?: { type?: string }) => unknown;
+type RenderFn = (input: string, options?: { target?: string }) => unknown;
 
 // --- Markdown ---------------------------------------------------------------
 
@@ -59,7 +59,7 @@ for (const input of markdownInputs) {
   test(`interp render markdown html — ${JSON.stringify(input)}`, async () => {
     const render = await getMarkdownRender();
     const fromInterp = interpretRenderFromInput(markdownInferred, input, 'html');
-    const fromV2 = render(input, { type: 'html' });
+    const fromV2 = render(input, { target: 'html' });
     assert.equal(
       fromInterp,
       fromV2,
@@ -70,7 +70,7 @@ for (const input of markdownInputs) {
   test(`interp render markdown source — ${JSON.stringify(input)}`, async () => {
     const render = await getMarkdownRender();
     const fromInterp = interpretRenderFromInput(markdownInferred, input, 'source');
-    const fromV2 = render(input, { type: 'source' });
+    const fromV2 = render(input, { target: 'source' });
     assert.equal(
       fromInterp,
       fromV2,
@@ -113,7 +113,7 @@ for (const input of cssInputs) {
   test(`interp render css source — ${JSON.stringify(input)}`, async () => {
     const render = await getCssRender();
     const fromInterp = interpretRenderFromInput(cssInferred, input, 'source');
-    const fromV2 = render(input, { type: 'source' });
+    const fromV2 = render(input, { target: 'source' });
     assert.equal(
       fromInterp,
       fromV2,
@@ -153,7 +153,7 @@ for (const input of htmlInputs) {
   test(`interp render html source — ${JSON.stringify(input)}`, async () => {
     const render = await getHtmlRender();
     const fromInterp = interpretRenderFromInput(htmlInferred, input, 'source');
-    const fromV2 = render(input, { type: 'source' });
+    const fromV2 = render(input, { target: 'source' });
     assert.equal(
       fromInterp,
       fromV2,

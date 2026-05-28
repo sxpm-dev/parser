@@ -22,7 +22,7 @@ import { render } from '../src/index.ts';
 // from both sides before comparison.
 
 function parse(input: string, options?: { mode?: 'fast' | 'raws' }): unknown {
-  return render(input, { type: 'ast', mode: options?.mode ?? 'raws' });
+  return render(input, { target: 'ast', mode: options?.mode ?? 'raws' });
 }
 
 function stripFormat(value: unknown): unknown {

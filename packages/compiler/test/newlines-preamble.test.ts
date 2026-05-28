@@ -82,9 +82,9 @@ test('newlines: either-preserve rewrites both \\r\\n and lone \\r to \\n', () =>
 test('emit newlines: LF leaves CR and CRLF untouched (lossless)', async () => {
   const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'LF' }));
   try {
-    assert.equal(mod.render('a\nb', { type: 'ast' }), 'a\nb');
-    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\rb');
-    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\r\nb');
+    assert.equal(mod.render('a\nb', { target: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\rb', { target: 'ast' }), 'a\rb');
+    assert.equal(mod.render('a\r\nb', { target: 'ast' }), 'a\r\nb');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -93,9 +93,9 @@ test('emit newlines: LF leaves CR and CRLF untouched (lossless)', async () => {
 test('emit newlines: CRLF rewrites \\r\\n to \\n', async () => {
   const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'CRLF' }));
   try {
-    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\r\nb', { target: 'ast' }), 'a\nb');
     // Lone \r is NOT a CRLF sequence — strict CRLF mode leaves it alone.
-    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\rb');
+    assert.equal(mod.render('a\rb', { target: 'ast' }), 'a\rb');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -104,9 +104,9 @@ test('emit newlines: CRLF rewrites \\r\\n to \\n', async () => {
 test('emit newlines: either-preserve rewrites both \\r\\n and lone \\r to \\n', async () => {
   const { mod, dir } = await loadGeneratedParser(rawSchema({ newlines: 'either-preserve' }));
   try {
-    assert.equal(mod.render('a\r\nb', { type: 'ast' }), 'a\nb');
-    assert.equal(mod.render('a\rb', { type: 'ast' }), 'a\nb');
-    assert.equal(mod.render('a\nb', { type: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\r\nb', { target: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\rb', { target: 'ast' }), 'a\nb');
+    assert.equal(mod.render('a\nb', { target: 'ast' }), 'a\nb');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

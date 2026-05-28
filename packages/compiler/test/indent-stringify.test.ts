@@ -64,7 +64,7 @@ test('emit v2: generated stringify emits items at column 0 with newline separati
   try {
     const mod = await import(pathToFileURL(file).href);
     const ast = { type: 'list', items: ['a', 'b'] };
-    const out = mod.stringify(ast, { type: 'ast' });
+    const out = mod.stringify(ast, { target: 'ast' });
     assert.equal(out, '- a\n- b');
   } finally {
     rmSync(dir, { recursive: true, force: true });

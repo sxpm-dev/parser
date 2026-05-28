@@ -21,8 +21,8 @@
 import assert from 'node:assert/strict';
 
 export type RoundTripModule = {
-  readonly render: (input: string, opts: { type: string }) => unknown;
-  readonly stringify: (value: unknown, opts: { type: string }) => string;
+  readonly render: (input: string, opts: { target: string }) => unknown;
+  readonly stringify: (value: unknown, opts: { target: string }) => string;
 };
 
 export function assertRoundTrip(
@@ -31,9 +31,9 @@ export function assertRoundTrip(
   fixtures: ReadonlyArray<string>,
 ): void {
   for (const input of fixtures) {
-    const v1 = module.render(input, { type: target });
-    const src = module.stringify(v1, { type: target });
-    const v2 = module.render(src, { type: target });
+    const v1 = module.render(input, { target });
+    const src = module.stringify(v1, { target });
+    const v2 = module.render(src, { target });
     assert.deepEqual(
       v2,
       v1,

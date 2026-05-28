@@ -65,7 +65,7 @@ test('unicode roundtrip interp: NFC input is identity', () => {
 test('unicode roundtrip emit: NFD input through generated parser → NFC capture', async () => {
   const { mod, dir } = await loadEmitted();
   try {
-    const ast = mod.render(`${NFD_LOCAL}@example.com`, { type: 'ast' });
+    const ast = mod.render(`${NFD_LOCAL}@example.com`, { target: 'ast' });
     assert.deepEqual(ast, { type: 'email', local: NFC_LOCAL, domain: 'example.com' });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -75,8 +75,8 @@ test('unicode roundtrip emit: NFD input through generated parser → NFC capture
 test('unicode roundtrip emit: stringify produces NFC source', async () => {
   const { mod, dir } = await loadEmitted();
   try {
-    const ast = mod.render(`${NFD_LOCAL}@example.com`, { type: 'ast' });
-    const source = mod.stringify(ast, { type: 'ast' });
+    const ast = mod.render(`${NFD_LOCAL}@example.com`, { target: 'ast' });
+    const source = mod.stringify(ast, { target: 'ast' });
     assert.equal(source, `${NFC_LOCAL}@example.com`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -87,15 +87,15 @@ test('unicode roundtrip emit: re-parse of stringified source is stable', async (
   const { mod, dir } = await loadEmitted();
   try {
     // First round-trip: NFD → NFC.
-    const firstAst = mod.render(`${NFD_LOCAL}@example.com`, { type: 'ast' });
-    const firstSource = mod.stringify(firstAst, { type: 'ast' });
+    const firstAst = mod.render(`${NFD_LOCAL}@example.com`, { target: 'ast' });
+    const firstSource = mod.stringify(firstAst, { target: 'ast' });
     // Anchor: the fixed point MUST be NFC (precomposed). A consistently-NFD
     // stringifier would still satisfy the idempotence checks below — this
     // line is what distinguishes "stable" from "stable but wrong".
     assert.equal(firstSource, `${NFC_LOCAL}@example.com`);
     // Second round-trip: NFC → NFC (identity).
-    const secondAst = mod.render(firstSource, { type: 'ast' });
-    const secondSource = mod.stringify(secondAst, { type: 'ast' });
+    const secondAst = mod.render(firstSource, { target: 'ast' });
+    const secondSource = mod.stringify(secondAst, { target: 'ast' });
     assert.equal(secondSource, firstSource);
     assert.deepEqual(secondAst, firstAst);
   } finally {

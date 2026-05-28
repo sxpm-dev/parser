@@ -169,7 +169,7 @@ test('interp preamble: unicode none leaves input as-is', () => {
 test('emit preamble: BOM allow strips leading U+FEFF', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'allow' }));
   try {
-    assert.equal(mod.render('﻿hello', { type: 'ast' }), 'hello');
+    assert.equal(mod.render('﻿hello', { target: 'ast' }), 'hello');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -178,7 +178,7 @@ test('emit preamble: BOM allow strips leading U+FEFF', async () => {
 test('emit preamble: BOM reject throws if BOM is present', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'reject' }));
   try {
-    assert.throws(() => mod.render('﻿hello', { type: 'ast' }), /BOM/);
+    assert.throws(() => mod.render('﻿hello', { target: 'ast' }), /BOM/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -187,7 +187,7 @@ test('emit preamble: BOM reject throws if BOM is present', async () => {
 test('emit preamble: BOM require strips BOM when present (happy path)', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'require' }));
   try {
-    assert.equal(mod.render('﻿hello', { type: 'ast' }), 'hello');
+    assert.equal(mod.render('﻿hello', { target: 'ast' }), 'hello');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -196,7 +196,7 @@ test('emit preamble: BOM require strips BOM when present (happy path)', async ()
 test('emit preamble: BOM require throws if BOM is absent', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'require' }));
   try {
-    assert.throws(() => mod.render('hello', { type: 'ast' }), /BOM/);
+    assert.throws(() => mod.render('hello', { target: 'ast' }), /BOM/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -205,7 +205,7 @@ test('emit preamble: BOM require throws if BOM is absent', async () => {
 test('emit preamble: BOM allow is a no-op when absent (happy path)', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'allow' }));
   try {
-    assert.equal(mod.render('hello', { type: 'ast' }), 'hello');
+    assert.equal(mod.render('hello', { target: 'ast' }), 'hello');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -214,7 +214,7 @@ test('emit preamble: BOM allow is a no-op when absent (happy path)', async () =>
 test('emit preamble: BOM reject is a no-op when BOM is absent (happy path)', async () => {
   const { mod, dir } = await loadGeneratedParser(makeLineSchema({ bom: 'reject' }));
   try {
-    assert.equal(mod.render('hello', { type: 'ast' }), 'hello');
+    assert.equal(mod.render('hello', { target: 'ast' }), 'hello');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -238,7 +238,7 @@ test('emit preamble: unicode NFC normalizes NFD input', async () => {
     }),
   );
   try {
-    const result = mod.render(nfd, { type: 'ast' }) as string;
+    const result = mod.render(nfd, { target: 'ast' }) as string;
     assert.equal(result, nfc);
     assert.equal(result.length, 4);
   } finally {
@@ -265,7 +265,7 @@ test('emit preamble: unicode NFD decomposes precomposed input', async () => {
     }),
   );
   try {
-    const result = mod.render(nfc, { type: 'ast' }) as string;
+    const result = mod.render(nfc, { target: 'ast' }) as string;
     assert.equal(result, nfd);
     assert.equal(result.length, 5);
   } finally {
@@ -290,7 +290,7 @@ test('emit preamble: unicode none leaves NFD input as-is', async () => {
   );
   try {
     const nfd = 'café';  // 'cafe' + combining acute (length 5)
-    const result = mod.render(nfd, { type: 'ast' }) as string;
+    const result = mod.render(nfd, { target: 'ast' }) as string;
     assert.equal(result, nfd);
     assert.equal(result.length, 5);
   } finally {

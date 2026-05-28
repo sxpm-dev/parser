@@ -620,10 +620,10 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
-  const target = options?.type ?? __defaultTarget;
+export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+  const target = options?.target ?? __defaultTarget;
   if (!target) {
-    throw new Error("render: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
   if (target !== 'ast') {
     const fused = __renderFused(input, target);
@@ -1290,10 +1290,10 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
-export function stringify(value: unknown, options?: { type?: string }): string {
-  const target = options?.type ?? __defaultTarget;
+export function stringify(value: unknown, options?: { target?: string }): string {
+  const target = options?.target ?? __defaultTarget;
   if (!target) {
-    throw new Error("stringify: missing target; pass options.type or set defaultTarget on the schema");
+    throw new Error("stringify: missing target; pass options.target or set defaultTarget on the schema");
   }
   const fn = __inverseDispatch[target];
   if (!fn) {

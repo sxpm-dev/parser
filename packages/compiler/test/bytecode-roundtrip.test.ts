@@ -22,14 +22,14 @@ test('bytecode backend: cron emits a runnable parser', async () => {
     const mod = await import(pathToFileURL(file).href);
     const captures = mod.__parse('* * * * * date');
     assert.equal((captures as { __production: string }).__production, 'Cron#0');
-    const rendered = mod.render('* * * * * date', { type: 'source' });
+    const rendered = mod.render('* * * * * date', { target: 'source' });
     assert.equal(rendered, '* * * * * date');
     // Inverse stringify of an AST value rebuilds the source. (Cron's
     // inverse only encodes ast-shaped productions in the bytecode runtime
     // today, so the dispatch key is 'ast' even though the output is source
     // text.)
-    const ast = mod.render('* * * * * date', { type: 'ast' });
-    const back = mod.stringify(ast, { type: 'ast' });
+    const ast = mod.render('* * * * * date', { target: 'ast' });
+    const back = mod.stringify(ast, { target: 'ast' });
     assert.equal(back, '* * * * * date');
     // Missing target raises a helpful error (cron doesn't set defaultTarget).
     assert.throws(

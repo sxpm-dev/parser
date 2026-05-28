@@ -50,6 +50,6 @@ const cases: Case[] = [
 
 for (const { input, html } of cases) {
   test(`render html: ${JSON.stringify(input).slice(0, 60)}`, () => {
-    assert.equal(render(input, { type: 'html' }), html);
+    assert.equal(render(input, { target: 'html' }), html);
   });
 }

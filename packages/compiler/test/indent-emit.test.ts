@@ -48,7 +48,7 @@ async function loadGeneratedParser() {
 test('emit v2: indent-aware repeats parses two top-level items', async () => {
   const { mod, dir } = await loadGeneratedParser();
   try {
-    const ast = mod.render('- a\n- b\n', { type: 'ast' });
+    const ast = mod.render('- a\n- b\n', { target: 'ast' });
     assert.deepEqual(ast, { type: 'list', items: ['a', 'b'] });
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -62,7 +62,7 @@ test('emit v2: indent-aware repeats parses two top-level items', async () => {
 test('emit v2: items array length matches input items (no spurious empties)', async () => {
   const { mod, dir } = await loadGeneratedParser();
   try {
-    const ast = mod.render('- a\n- b\n', { type: 'ast' });
+    const ast = mod.render('- a\n- b\n', { target: 'ast' });
     assert.equal((ast as { items: string[] }).items.length, 2);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -72,7 +72,7 @@ test('emit v2: items array length matches input items (no spurious empties)', as
 test('emit v2: blank lines inside the indent block are skipped', async () => {
   const { mod, dir } = await loadGeneratedParser();
   try {
-    const ast = mod.render('- a\n\n- b\n', { type: 'ast' });
+    const ast = mod.render('- a\n\n- b\n', { target: 'ast' });
     assert.deepEqual((ast as { items: string[] }).items, ['a', 'b']);
   } finally {
     rmSync(dir, { recursive: true, force: true });

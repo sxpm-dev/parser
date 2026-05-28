@@ -31,7 +31,7 @@ import { interpretParseCaptures } from '../src/interp/parse.ts';
 import { interpretRender } from '../src/interp/render.ts';
 import type { InferredSchema, Production } from '../src/model.ts';
 
-type RenderFn = (input: string, options?: { type?: string }) => unknown;
+type RenderFn = (input: string, options?: { target?: string }) => unknown;
 
 type SchemaFixture = {
   readonly name: string;
@@ -169,7 +169,7 @@ for (const fixture of SCHEMAS) {
         // these in scope.
         if (isExcluded(nodeType, target, example)) continue;
 
-        const v2Output = render(example, { type: target });
+        const v2Output = render(example, { target });
         const canonical = interpretRender(schema, captures, target);
 
         assert.deepStrictEqual(

@@ -65,6 +65,6 @@ test("round-trip 'html' (value-stable)", () => {
 // for the canonical form is a markdown-specific stronger invariant.
 for (const input of FIXTURES) {
   test(`canonical source: ${JSON.stringify(input).slice(0, 50)}`, () => {
-    assert.equal(mod.render(input, { type: 'source' }), input);
+    assert.equal(mod.render(input, { target: 'source' }), input);
   });
 }

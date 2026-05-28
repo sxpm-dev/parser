@@ -40,7 +40,7 @@ test('fusion: render() entry tries __renderFused before __renderDispatch', async
   assert.match(src, /const __rootProductionKey: string = "MarkdownDocument#0";/);
   // Public render() body — match it as a single chunk and verify the
   // __renderFused call appears BEFORE the __renderDispatch lookup.
-  const renderMatch = src.match(/export function render\(input: string, options\?: \{ type\?: string; mode\?: ParseMode \}\): unknown \{[\s\S]*?\n\}/);
+  const renderMatch = src.match(/export function render\(input: string, options\?: \{ target\?: string; mode\?: ParseMode \}\): unknown \{[\s\S]*?\n\}/);
   assert.ok(renderMatch, 'public render() body must be locatable');
   const body = renderMatch![0];
   const fusedIdx = body.indexOf('__renderFused(');
@@ -57,7 +57,7 @@ test('fusion: render() entry tries __renderFused before __renderDispatch', async
 // for Task 5.2 (Task 5.3 closes recursive eligibility).
 test('fusion: markdown render(input, {type:html}) produces correct html via fused path', async () => {
   const { render } = await import('../../markdown/src/index.ts');
-  assert.equal(render('# Hello\n', { type: 'html' }), '<h1>Hello</h1>');
+  assert.equal(render('# Hello\n', { target: 'html' }), '<h1>Hello</h1>');
 });
 
 // Task 5.3 — recursive children fusion. With the eligibility check
@@ -70,7 +70,7 @@ test('fusion: markdown render(input, {type:html}) produces correct html via fuse
 test('fusion: markdown Document renders complete document html', async () => {
   const { render } = await import('../../markdown/src/index.ts');
   const md = '# Heading\n\nParagraph text.\n';
-  const html = render(md, { type: 'html' }) as string;
+  const html = render(md, { target: 'html' }) as string;
   assert.match(html, /<h1>Heading<\/h1>/);
   assert.match(html, /<p>Paragraph text\.<\/p>/);
 });

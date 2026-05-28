@@ -16,8 +16,8 @@ type TextNode = { nodeName: '#text'; value: string };
 type Doc = { childNodes: ReadonlyArray<Element> };
 
 test('html case-insensitive: <DIV> and <div> produce identical AST', () => {
-  const uppercaseAst = render('<DIV>foo</DIV>', { type: 'ast' });
-  const lowercaseAst = render('<div>foo</div>', { type: 'ast' });
+  const uppercaseAst = render('<DIV>foo</DIV>', { target: 'ast' });
+  const lowercaseAst = render('<div>foo</div>', { target: 'ast' });
   assert.deepEqual(uppercaseAst, lowercaseAst);
 });
 
@@ -26,7 +26,7 @@ test('html case-insensitive: <Script> opens a raw-text element', () => {
   // start a child element, but inside <script> raw text it's just data.
   // Pin down the structural property: the script element has exactly one
   // child (a text node) whose value contains the literal `< 2;` substring.
-  const ast = render('<Script>var x = 1 < 2;</Script>', { type: 'ast' }) as Doc;
+  const ast = render('<Script>var x = 1 < 2;</Script>', { target: 'ast' }) as Doc;
   const script = ast.childNodes[0] as Element;
   assert.equal(script.tagName, 'script', 'top-level child should be a <script> element');
   assert.equal(script.childNodes.length, 1, 'script body should be a single text node');
@@ -40,7 +40,7 @@ test('html case-insensitive: <Script> opens a raw-text element', () => {
 
 test('html case-insensitive: attribute names are lowercased', () => {
   // Structured access into attrs[0].name pins down the actual field.
-  const ast = render('<a HREF="x">y</a>', { type: 'ast' }) as Doc;
+  const ast = render('<a HREF="x">y</a>', { target: 'ast' }) as Doc;
   const anchor = ast.childNodes[0] as Element;
   assert.equal(anchor.tagName, 'a');
   assert.equal(anchor.attrs.length, 1);
@@ -50,7 +50,7 @@ test('html case-insensitive: attribute names are lowercased', () => {
 
 test('html case-insensitive: <BR> void element parses without close tag', () => {
   // Pin down void-element shape: tagName 'br' with empty childNodes.
-  const ast = render('<BR>', { type: 'ast' }) as Doc;
+  const ast = render('<BR>', { target: 'ast' }) as Doc;
   const br = ast.childNodes[0] as Element;
   assert.equal(br.tagName, 'br');
   assert.equal(br.childNodes.length, 0, '<br> is a void element — no children');

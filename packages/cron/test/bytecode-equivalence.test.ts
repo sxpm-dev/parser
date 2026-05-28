@@ -92,20 +92,20 @@ function stripSource(value: unknown): unknown {
 for (const input of EXAMPLES) {
   test(`bytecode equivalence: cron ${JSON.stringify(input)}`, () => {
     // Forward render: object-shaped AST target.
-    const tsAst = tsBackend.render(input, { type: 'ast' });
-    const bcAst = bcodeBackend.render(input, { type: 'ast' });
+    const tsAst = tsBackend.render(input, { target: 'ast' });
+    const bcAst = bcodeBackend.render(input, { target: 'ast' });
     assert.deepStrictEqual(stripSource(bcAst), stripSource(tsAst));
 
     // Forward render: string source target.
-    const tsSource = tsBackend.render(input, { type: 'source' });
-    const bcSource = bcodeBackend.render(input, { type: 'source' });
+    const tsSource = tsBackend.render(input, { target: 'source' });
+    const bcSource = bcodeBackend.render(input, { target: 'source' });
     assert.equal(bcSource, tsSource);
 
     // Inverse stringify: ast -> source. Both backends should reconstruct
     // the canonical source from the AST. We use the TS-side AST as the
     // canonical input shape (the bytecode AST is shown above to be
     // deep-equal to it after stripping metadata).
-    const bcBack = bcodeBackend.stringify(tsAst, { type: 'ast' });
+    const bcBack = bcodeBackend.stringify(tsAst, { target: 'ast' });
     assert.equal(bcBack, input);
   });
 }

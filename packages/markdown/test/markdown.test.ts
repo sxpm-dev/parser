@@ -8,7 +8,7 @@ import { render, validate } from '../src/index.ts';
 // reachable via `render(input, { type: 'ast' })`. Wrap once so the rest of
 // the test reads the same as before.
 function parse(input: string): unknown {
-  return render(input, { type: 'ast' });
+  return render(input, { target: 'ast' });
 }
 
 type Case = {

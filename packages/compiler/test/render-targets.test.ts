@@ -164,7 +164,7 @@ test('render(input, { type: "html" }) returns the templated HTML', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-render-html');
-  assert.equal(mod.render('# title', { type: 'html' }), '<h1>title</h1>');
+  assert.equal(mod.render('# title', { target: 'html' }), '<h1>title</h1>');
 });
 
 test('render(input, { type: "ast" }) returns the structured AST', async () => {
@@ -181,7 +181,7 @@ test('render(input, { type: "ast" }) returns the structured AST', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-render-ast');
-  assert.deepEqual(mod.render('# title', { type: 'ast' }), { type: 'heading', text: 'title' });
+  assert.deepEqual(mod.render('# title', { target: 'ast' }), { type: 'heading', text: 'title' });
 });
 
 // ---------- Targeted body-shape tests (TDD) -------------------------------
@@ -198,7 +198,7 @@ test('forward emit: scalar body returns the literal', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-scalar-body');
-  assert.equal(mod.render('yes', { type: 'flag' }), true);
+  assert.equal(mod.render('yes', { target: 'flag' }), true);
 });
 
 test('forward emit: bare $.name body returns the captured value', async () => {
@@ -213,7 +213,7 @@ test('forward emit: bare $.name body returns the captured value', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-ref-body');
-  assert.equal(mod.render('hello', { type: 'raw' }), 'hello');
+  assert.equal(mod.render('hello', { target: 'raw' }), 'hello');
 });
 
 test('forward emit: array body allocates an array', async () => {
@@ -230,7 +230,7 @@ test('forward emit: array body allocates an array', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-array-body');
-  assert.deepEqual(mod.render('a b', { type: 'arr' }), ['a', 'b']);
+  assert.deepEqual(mod.render('a b', { target: 'arr' }), ['a', 'b']);
 });
 
 // ---------- Default-target behaviour --------------------------------------
@@ -281,7 +281,7 @@ test('render(input, { type: "bogus" }) throws unknown target', async () => {
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-unknown-target');
-  assert.throws(() => mod.render('# title', { type: 'bogus' }), /render: unknown target 'bogus'/);
+  assert.throws(() => mod.render('# title', { target: 'bogus' }), /render: unknown target 'bogus'/);
 });
 
 // ---------- Forward template fusion: optional-absent slots (Gap A) -------
@@ -309,9 +309,9 @@ test('forward template: optional-absent slot suppresses preceding separator', as
   });
   const mod = await loadGenerated(schema, 'gap-a-optional-trailing');
   // Present case unchanged.
-  assert.equal(mod.render('a b', { type: 'source' }), 'a b');
+  assert.equal(mod.render('a b', { target: 'source' }), 'a b');
   // Absent case must NOT include a trailing space.
-  assert.equal(mod.render('a', { type: 'source' }), 'a');
+  assert.equal(mod.render('a', { target: 'source' }), 'a');
 });
 
 // ---------- Forward template slot joinSep for .repeats() arrays (Gap B) --
@@ -342,9 +342,9 @@ test('forward template: .repeats() slot joins array with declared separator', as
     ],
   });
   const mod = await loadGenerated(schema, 'gap-b-repeats-join');
-  assert.equal(mod.render('npm test', { type: 'source' }), 'npm test');
-  assert.equal(mod.render('npm', { type: 'source' }), 'npm');
-  assert.equal(mod.render('npm test deploy', { type: 'source' }), 'npm test deploy');
+  assert.equal(mod.render('npm test', { target: 'source' }), 'npm test');
+  assert.equal(mod.render('npm', { target: 'source' }), 'npm');
+  assert.equal(mod.render('npm test deploy', { target: 'source' }), 'npm test deploy');
 });
 
 test('forward + rebuild: .repeats({sep}) slot joins array with declared separator', async () => {
@@ -377,22 +377,22 @@ test('forward + rebuild: .repeats({sep}) slot joins array with declared separato
     ],
   });
   const mod = await loadGenerated(schema, 'repeats-sep-join') as GeneratedModule & {
-    stringify: (v: unknown, opts?: { type?: string }) => string;
+    stringify: (v: unknown, opts?: { target?: string }) => string;
   };
   // Forward: 'source' target must preserve the '&' separator (not drop it).
   assert.equal(
-    mod.render('q=hello&tag=one', { type: 'source' }),
+    mod.render('q=hello&tag=one', { target: 'source' }),
     'q=hello&tag=one',
   );
   // Round-trip via 'source': render -> stringify -> render must be stable.
-  const src = mod.render('q=hello&tag=one', { type: 'source' });
-  const back = mod.stringify(src, { type: 'source' });
+  const src = mod.render('q=hello&tag=one', { target: 'source' });
+  const back = mod.stringify(src, { target: 'source' });
   assert.equal(back, 'q=hello&tag=one');
   // Round-trip via 'ast': render -> stringify -> render must produce the
   // same AST value.
   const target = 'source' as const;
-  const v1 = mod.render('q=hello&tag=one', { type: target });
-  const v2 = mod.render(mod.stringify(v1, { type: target }), { type: target });
+  const v1 = mod.render('q=hello&tag=one', { target });
+  const v2 = mod.render(mod.stringify(v1, { target }), { target });
   assert.deepEqual(v2, v1);
 });
 
@@ -438,7 +438,7 @@ test('inverse dispatch: stringify routes via root productions, not sub-productio
     ],
   });
   const mod = await loadGenerated(schema, 'gap-c-root-dispatch') as GeneratedModule & {
-    stringify: (v: unknown, opts?: { type?: string }) => string;
+    stringify: (v: unknown, opts?: { target?: string }) => string;
   };
   // Root-level round trip via 'source' target. The intermediate string
   // `* 9` would historically (pre-Gap C) be mis-dispatched: the global
@@ -446,18 +446,18 @@ test('inverse dispatch: stringify routes via root productions, not sub-productio
   // to the sub-production Field (wildcard), not to Pair. With per-root
   // dispatch, the dispatcher only considers Pair's productions and the
   // input round-trips correctly.
-  const src = mod.render('* 9', { type: 'source' });
+  const src = mod.render('* 9', { target: 'source' });
   assert.equal(src, '* 9');
-  const back = mod.stringify(src, { type: 'source' });
+  const back = mod.stringify(src, { target: 'source' });
   assert.equal(back, '* 9', 'root-level source round-trip must dispatch via Pair, not Field');
   // Sub-production recursion remains reachable — Pair's source contains
   // a `*` child and a `9` child, and stringify must invoke the Field
   // dispatcher for each child via the parent's __invert.
-  const ast = mod.render('* 9', { type: 'ast' }) as Record<string, unknown>;
+  const ast = mod.render('* 9', { target: 'ast' }) as Record<string, unknown>;
   assert.equal(ast.type, 'pair');
   assert.deepEqual(ast.a, { type: 'wild' });
   assert.equal((ast.b as Record<string, unknown>).type, 'value');
-  const backAst = mod.stringify(ast, { type: 'ast' });
+  const backAst = mod.stringify(ast, { target: 'ast' });
   assert.equal(backAst, '* 9');
 });
 
@@ -525,17 +525,17 @@ test('recovery production interleaved with valid productions: __production keys 
   // targets. Misrouted dispatch would either throw "unknown production
   // X#3" (the builder doesn't exist) or, worse, silently invoke the
   // recovery builder and return `{ type: 'bad', rest: 'v' }`.
-  assert.deepEqual(mod.render('<c>v</c>', { type: 'ast' }), { type: 'c', v: 'v' });
-  assert.equal(mod.render('<c>v</c>', { type: 'html' }), '<c>v</c>');
+  assert.deepEqual(mod.render('<c>v</c>', { target: 'ast' }), { type: 'c', v: 'v' });
+  assert.equal(mod.render('<c>v</c>', { target: 'html' }), '<c>v</c>');
   // Sanity: the index-0 production still routes correctly.
-  assert.deepEqual(mod.render('<a>v</a>', { type: 'ast' }), { type: 'a', v: 'v' });
-  assert.equal(mod.render('<a>v</a>', { type: 'html' }), '<a>v</a>');
+  assert.deepEqual(mod.render('<a>v</a>', { target: 'ast' }), { type: 'a', v: 'v' });
+  assert.equal(mod.render('<a>v</a>', { target: 'html' }), '<a>v</a>');
 });
 
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {
-  render: (input: string, options?: { type?: string }) => unknown;
+  render: (input: string, options?: { target?: string }) => unknown;
 };
 
 async function loadGenerated(schema: unknown, name: string): Promise<GeneratedModule> {

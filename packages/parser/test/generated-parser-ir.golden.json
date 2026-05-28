@@ -1,0 +1,26 @@
+{
+  "_comment": "SHA256 byte-equality gate for in-scope generated parsers. Replaces packages/parser/src/relation-ir-equivalence.test.ts (deleted in Phase 9). If a relation() builder or codegen change legitimately changes the IR, regenerate via `npm run generate` in the affected package and update the hash here in the same commit.",
+  "algorithm": "sha256",
+  "packages": {
+    "css": {
+      "path": "packages/css/src/_generated/parser.ts",
+      "sha256": "0c9363dacf6b9342fbf24b30889090da04a489405ccf5258e4df23220599c733"
+    },
+    "html": {
+      "path": "packages/html/src/_generated/parser.ts",
+      "sha256": "e00b13b62f07c4209ceea8a330bef650ddd3c774932e76ae50d0942119176c8f"
+    },
+    "markdown": {
+      "path": "packages/markdown/src/_generated/parser.ts",
+      "sha256": "7a9ec04fb076dc02b22a1dfc19bc467f4a58414303268e3cd6fea715b3989420"
+    },
+    "cron": {
+      "path": "packages/cron/src/_generated/parser.ts",
+      "sha256": "c36984c2bb3ef36f455b4417f9c36dd3b621863ea508c7fdb755f7d01522146b"
+    },
+    "yaml-block": {
+      "path": "packages/yaml-block/src/_generated/parser.ts",
+      "sha256": "59a1721f37e75bb660aab4fba7ee7f26d107fc360824c8c4ccd67e65db01ee5e"
+    }
+  }
+}

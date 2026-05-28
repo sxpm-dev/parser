@@ -94,3 +94,64 @@ test('codegen inlines sub-schema as validator with unique prefix', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('codegen deduplicates inline validators by SchemaDef reference identity', async () => {
+  // When two validation rules reference the SAME SchemaDef (object identity),
+  // the compiler must emit the sub-schema's source ONCE (single __v0_ block)
+  // but TWO __validator_N aliases (one per rule). This invariant matters in
+  // Phase D: the CSS schema has multiple rules pointing at colorSchema +
+  // multiple at lengthPercentageSchema, and we'd inflate the parser by ~30%
+  // if dedup broke.
+  const { $, defineSchema, defineValidation, literal, parse, relation, span } = await import('@parser2/parser');
+
+  const shared = defineSchema({
+    rootType: 'Token',
+    punctuators: {},
+    tokens: [],
+    examples: [
+      relation('Token', {
+        input: 'foo',
+        encodings: {
+          parse: parse([span('value', 'foo').ident().css().oneOf(['foo', 'bar', 'baz'])]),
+          ast: { type: 'token', value: $.value },
+        },
+      }),
+    ],
+  });
+
+  const parent = defineSchema({
+    rootType: 'Pair',
+    punctuators: { eq: '=' },
+    tokens: [],
+    examples: [
+      relation('Pair', {
+        input: 'a=foo',
+        encodings: {
+          parse: parse([
+            span('key', 'a').ident().css().oneOf(['a', 'b']),
+            literal('='),
+            span('val', 'foo').until('\n'),
+          ]),
+          ast: { type: 'pair', key: $.key, val: $.val },
+        },
+      }),
+    ],
+  });
+
+  const validation = defineValidation(parent)
+    .node('Pair').field('val').match('key', ['a']).validate(shared)
+    .node('Pair').field('val').match('key', ['b']).validate(shared)
+    .build();
+
+  const source = generateParser(parent, validation, { packageName: 'host' });
+
+  // Exactly ONE inlined sub-schema block (banner appears once).
+  const bannerCount = (source.match(/Inlined validator: Token/g) ?? []).length;
+  assert.equal(bannerCount, 1, `expected exactly 1 banner for shared SchemaDef, got ${bannerCount}`);
+  // Exactly ONE prefixed parse fn declaration.
+  const parseFnCount = (source.match(/function __v0_parseToken\b/g) ?? []).length;
+  assert.equal(parseFnCount, 1, `expected exactly 1 __v0_parseToken declaration, got ${parseFnCount}`);
+  // TWO aliases, one per rule.
+  assert.match(source, /function __validator_0\b/);
+  assert.match(source, /function __validator_1\b/);
+});

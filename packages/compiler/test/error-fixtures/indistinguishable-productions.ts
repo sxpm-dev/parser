@@ -14,21 +14,25 @@
 // two object-body productions with identical field-name sets and zero
 // literal fields — the dispatcher would have no information to route on.
 
-import { $, defineSchema, ex } from '@parser2/parser';
+import { $, defineSchema, relation, parse, span } from '@parser2/parser';
 
 export const fixture = defineSchema({
   rootType: 'A',
   examples: [
-    ex('foo')
-      .as('A')
-      .span('v', 'foo').ident()
-      .render('ast', { v: $.v })
-      .build(),
-    ex('bar')
-      .as('A')
-      .span('v', 'bar').ident()
-      .render('ast', { v: $.v })
-      .build(),
+    relation('A', {
+      input: 'foo',
+      encodings: {
+        src: parse([span('v', 'foo').ident()]),
+        ast: { v: $.v },
+      },
+    }),
+    relation('A', {
+      input: 'bar',
+      encodings: {
+        src: parse([span('v', 'bar').ident()]),
+        ast: { v: $.v },
+      },
+    }),
   ],
 });
 

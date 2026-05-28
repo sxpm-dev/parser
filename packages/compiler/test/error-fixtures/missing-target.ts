@@ -5,24 +5,28 @@
 // per-target dispatcher would silently fall through for the missing
 // production at runtime.
 
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, relation, parse, span, tpl } from '@parser2/parser';
 
 export const fixture = defineSchema({
   rootType: 'A',
   examples: [
-    ex('one')
-      .as('A')
-      .span('v', 'one').ident()
-      .render('ast', { type: 'a', v: $.v })
-      .render('html', tpl`<a>${$.v}</a>`)
-      .build(),
+    relation('A', {
+      input: 'one',
+      encodings: {
+        src: parse([span('v', 'one').ident()]),
+        ast: { type: 'a', v: $.v },
+        html: tpl`<a>${$.v}</a>`,
+      },
+    }),
     // Second production for the SAME node type 'A' — declares 'ast' only,
     // omitting 'html'. enforcePerTargetCompleteness must reject this.
-    ex('two')
-      .as('A')
-      .span('w', 'two').ident()
-      .render('ast', { type: 'a', v: $.w })
-      .build(),
+    relation('A', {
+      input: 'two',
+      encodings: {
+        src: parse([span('w', 'two').ident()]),
+        ast: { type: 'a', v: $.w },
+      },
+    }),
   ],
 });
 

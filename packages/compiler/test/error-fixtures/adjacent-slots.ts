@@ -5,18 +5,19 @@
 // extent against, so the inverse cannot be derived from the template
 // alone — the author has to supply an explicit options.inverse.
 
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, relation, parse, span, tpl } from '@parser2/parser';
 
 export const fixture = defineSchema({
   rootType: 'A',
   examples: [
-    ex('ab')
-      .as('A')
-      .span('a', 'a').ident()
-      .span('b', 'b').ident()
-      .render('ast', { type: 'a', a: $.a, b: $.b })
-      .render('compact', tpl`${$.a}${$.b}`)
-      .build(),
+    relation('A', {
+      input: 'ab',
+      encodings: {
+        src: parse([span('a', 'a').ident(), span('b', 'b').ident()]),
+        ast: { type: 'a', a: $.a, b: $.b },
+        compact: tpl`${$.a}${$.b}`,
+      },
+    }),
   ],
 });
 

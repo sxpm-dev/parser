@@ -194,15 +194,24 @@ export class SpanNode {
       if (!/^\s/.test(text)) {
         while (cursor < input.length && /\s/.test(input[cursor]!)) cursor++;
       }
-      const idx = input.indexOf(text, cursor);
+      let idx = input.indexOf(text, cursor);
       if (idx < 0) {
-        const label =
-          item.data.name === undefined
-            ? `literal '${text}'`
-            : `span '${item.data.name}' example '${text}'`;
-        throw new Error(
-          `relation('${nodeType}'): ${label} not found in input starting at offset ${cursor}`,
-        );
+        // Fallback: Unicode-normalization mismatch. Schemas using
+        // unicode: 'NFC' or 'NFD' often write inputs in one form and span
+        // example texts in another (or vice-versa). The runtime preamble
+        // normalizes before parsing, so the strict byte-comparison here
+        // produces false positives. Try the NFC-equivalent before failing.
+        const nfcIdx = input.normalize('NFC').indexOf(text.normalize('NFC'), cursor);
+        if (nfcIdx < 0) {
+          const label =
+            item.data.name === undefined
+              ? `literal '${text}'`
+              : `span '${item.data.name}' example '${text}'`;
+          throw new Error(
+            `relation('${nodeType}'): ${label} not found in input starting at offset ${cursor}`,
+          );
+        }
+        idx = nfcIdx;
       }
       // idx may be > cursor when the gap is covered by a previous .until(...) span;
       // the compiler's IR-layer validation is the final word on ordering.

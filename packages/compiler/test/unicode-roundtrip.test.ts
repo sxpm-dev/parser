@@ -51,8 +51,8 @@ async function loadEmitted(): Promise<{ mod: any; dir: string }> {
 // Explicit escape forms (no visually-ambiguous literal diacritics):
 //   NFC: precomposed 'é' = U+00E9, total length 4.
 //   NFD: 'e' + combining acute U+0301, total length 5.
-const NFC_LOCAL = 'josé';
-const NFD_LOCAL = 'josé';
+const NFC_LOCAL = 'jos\u00e9';
+const NFD_LOCAL = 'jose\u0301';
 
 test('unicode roundtrip interp: NFD input → NFC capture', () => {
   const schema = inferSchema(emailSchema);

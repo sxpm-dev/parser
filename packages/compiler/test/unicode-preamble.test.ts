@@ -84,7 +84,7 @@ test('interp preamble: unicode NFC normalizes NFD input', () => {
   // 'é' as NFD = 'e' + combining acute (U+0301). After normalize('NFC') the
   // input becomes the NFC form 'é' (U+00E9). The captured value is whatever
   // the (post-preamble) input contained until newline.
-  const nfd = 'café';   // 'cafe' + combining acute (length 5)
+  const nfd = 'cafe\u0301';   // 'cafe' + combining acute (length 5)
   const nfc = 'café';    // 'café' precomposed (length 4)
   const schemaWithDiacritic = inferSchema(
     defineSchema({
@@ -112,7 +112,7 @@ test('interp preamble: unicode NFC normalizes NFD input', () => {
 test('interp preamble: unicode NFD decomposes precomposed input', () => {
   // Inverse of the NFC test: feed NFC input, assert preamble produced NFD.
   const nfc = 'café';   // 'café' precomposed (length 4)
-  const nfd = 'café';  // 'cafe' + combining acute (length 5)
+  const nfd = 'cafe\u0301';  // 'cafe' + combining acute (length 5)
   const schemaNfd = inferSchema(
     defineSchema({
       rootType: 'Line',
@@ -154,7 +154,7 @@ test('interp preamble: unicode none leaves input as-is', () => {
     }),
   );
   const nfc = 'café';   // precomposed (length 4)
-  const nfd = 'café';  // 'cafe' + combining acute (length 5)
+  const nfd = 'cafe\u0301';  // 'cafe' + combining acute (length 5)
   // NFC input passes through untouched.
   assert.equal(interpretParse(schemaWithDiacritic, nfc), nfc);
   // NFD input is left as NFD when unicode='none' — the captured value still
@@ -229,7 +229,7 @@ test('emit preamble: BOM reject is a no-op when BOM is absent (happy path)', asy
 });
 
 test('emit preamble: unicode NFC normalizes NFD input', async () => {
-  const nfd = 'café';   // 'cafe' + combining acute (length 5)
+  const nfd = 'cafe\u0301';   // 'cafe' + combining acute (length 5)
   const nfc = 'café';    // precomposed (length 4)
   const { mod, dir } = await loadGeneratedParser(
     defineSchema({
@@ -259,7 +259,7 @@ test('emit preamble: unicode NFC normalizes NFD input', async () => {
 test('emit preamble: unicode NFD decomposes precomposed input', async () => {
   // Inverse of the NFC test: feed NFC input, assert post-preamble is NFD.
   const nfc = 'café';   // precomposed (length 4)
-  const nfd = 'café';  // 'cafe' + combining acute (length 5)
+  const nfd = 'cafe\u0301';  // 'cafe' + combining acute (length 5)
   const { mod, dir } = await loadGeneratedParser(
     defineSchema({
       rootType: 'Line',
@@ -303,7 +303,7 @@ test('emit preamble: unicode none leaves NFD input as-is', async () => {
     }),
   );
   try {
-    const nfd = 'café';  // 'cafe' + combining acute (length 5)
+    const nfd = 'cafe\u0301';  // 'cafe' + combining acute (length 5)
     const result = mod.render(nfd, { target: 'ast' }) as string;
     assert.equal(result, nfd);
     assert.equal(result.length, 5);

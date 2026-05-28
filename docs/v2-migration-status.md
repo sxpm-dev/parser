@@ -485,10 +485,61 @@ tests work around or don't exercise.
     to Phase 8.** Same as Phase 7 follow-up #8 — confirmed unrelated; flagged
     for awareness.
 
-## Where to next
+## Phase 9 closeout (2026-05-28)
 
-Phases 1 + 1.5 + 5 + 6 + 7 + 8 are closed. Next phase per the engine overhaul
-plan (`docs/superpowers/plans/2026-05-26-bidirectional-engine-overhaul.md`) is
-Phase 9 — DSL clean break (`ex()` → `relation()`). Phase 9 is cosmetic on top
-of the working engine and is gated on a re-plan session to fold in lessons
-from Phases 5-8 (fusion + indent + dials).
+The bidirectional-engine overhaul is complete. Phase 9 landed the `relation()` DSL clean break: all 5 in-scope schemas (css, html, markdown, cron, yaml-block) are now expressed via the new declarative form, `ex()` is deleted, and the 8 out-of-scope packages (arn, js, log, mac, proto, url, css-color, css-length-percentage) are gone.
+
+### What landed (Phase 9)
+
+| Task | Commit | Description |
+|---|---|---|
+| 9.1 | `a5f711e` | feat(parser): introduce relation() DSL alongside ex() |
+| 9.1 review | `6fb110a` | fix(parser): relation() build + private data + tightened parse() |
+| 9.2 | `4c01019` | feat(parser): relation() cross-validates input vs parse program |
+| 9.2 review | `d1e50f9` | fix(parser): tighten cross-validation loop + add optional-skip self-doc test |
+| 9.3 | `d2ce16e` | test(parser): IR-equivalence harness for relation() vs ex() |
+| 9.4 | `1dfaf23` | refactor(api): rename render/stringify option 'type' to 'target' |
+| 9.4 review | `6993d24` | docs(tests): update stale comments referencing { type: 'ast' } API |
+| 9.5 | `d64ba0c` | refactor(cron): rewrite schema onto relation() DSL |
+| 9.6 | `066a749` | refactor(yaml-block): rewrite schema onto relation() DSL |
+| 9.7 | `a04e43f` | refactor(markdown): rewrite schema onto relation() DSL |
+| 9.8 | `e926faf` | refactor(html): rewrite schema onto relation() DSL |
+| 9.9 | `f347a6d` | refactor(css): rewrite schema onto relation() DSL |
+| 9.10a | `8c3e730` | feat(parser): withInverse() encoding wrapper for relation() |
+| 9.10b (4 commits) | `5c13b60` `fda142c` `c055c68` `ecf4135` | refactor(test-fixtures + tests): bulk-migrate 17 test files |
+| 9.10b unicode fix | `095896f` | fix(tests): unicode escape literals + NFC-fallback in relation() validator |
+| 9.10c | `56b383d` | refactor(parser): delete ex() builder; relation() is now the only DSL |
+| 9.11 | `b65ebcf` | chore: delete 8 out-of-scope packages |
+| 9.12 | `TBD` | docs: Phase 9 relation() DSL closeout (this commit) |
+
+### Final state
+
+- parser: 75/75 (after spike + ir-equivalence deletion in Task 9.12) ✅
+- compiler: 374/374 ✅
+- css: 56/57 (1 intentional skip) ✅
+- html: 34/34 ✅
+- markdown: 76/76 ✅
+- cron: 15/15 ✅
+- yaml-block: 9/9 ✅
+
+### Phase 9 deviations from plan
+
+1. **Task 9.10 scope expansion.** The plan estimated Task 9.10 as a single step deleting `example.ts`. Reality: 226 `ex()` usages across 21 test files (3 in parser, 17 in compiler + 3 error-fixture schemas) required bulk migration. Resolved by splitting into 9.10a (withInverse API), 9.10b (bulk migrate), 9.10c (delete ex). Total 9.10 commits: 7.
+
+2. **Task 9.11 cross-package dependencies.** The plan assumed "no cross-package imports existed" for the 8 out-of-scope packages. Reality: `packages/css` depended on `@parser2/css-color` and `@parser2/css-length-percentage` for runtime validators. Resolved by inlining ~2300 lines of validator code from those packages into `packages/css/src/_generated/parser.ts` with `__cc_`/`__cl_` prefix namespacing. CSS schema validation simplified to `defineValidation(cssSchema)`.
+
+3. **Unicode literal corruption.** During Task 9.10b migration, the file write normalized NFD diacritics in `unicode-preamble.test.ts` and `unicode-roundtrip.test.ts` to NFC, breaking the NFC-vs-NFD invariants. Resolved by replacing visually-ambiguous literals with explicit `\u` escape sequences (addresses Phase 8 follow-up #12). Net: compiler tests grew from 372 → 374 because 2 previously-masked tests now run cleanly.
+
+4. **TAP lexer crash on unicode error messages.** The `relation()` validator's strict byte-comparison emitted error messages containing NFD combining characters, crashing TAP's lexer mid-test-file. Resolved by adding NFC-normalize fallback in `SpanNode.validateInputAgainstProgram`.
+
+### Phase 9 follow-ups (deferrable)
+
+1. **CSS generated parser has inlined validators.** Regenerating CSS via `npm run generate -w "@parser2/css"` would fail because the schema no longer imports from `@parser2/css-color` / `@parser2/css-length-percentage` (deleted) but the generated parser includes their inlined code. Resolution paths: (a) teach codegen to inline validator deps; (b) reborn the two color/length packages under relation(); (c) refactor CSS schema to define validators inline. None blocks current functionality.
+
+2. **`relation-ir-equivalence.test.ts` deleted.** The load-bearing IR-equivalence test (relation() ≡ ex() deep-equal) was deleted along with ex(). Future refactors of the relation() builder lose this guard. If `relation()` IR output ever drifts subtly, no in-tree test will catch it directly — schema rewrites would need to be re-validated via byte-equality of generated parsers (which is still enforceable manually).
+
+### Bidirectional-engine overhaul — overall closeout
+
+All 9 phases complete. The engine is proven (Phases 1-7); the schema-level dials are in place (Phase 8); the DSL is uniform (Phase 9). The in-scope packages (parser, compiler, css, html, markdown, cron, yaml-block) are the supported surface. The 8 out-of-scope packages have been removed.
+
+Total commits across the 9-phase overhaul: see `git log --oneline` from the start of Phase 1 through this closeout.

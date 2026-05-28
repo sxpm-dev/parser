@@ -839,6 +839,8 @@ The new builder's exact shape depends on what we've learned from Phases 1–8. I
 
 **Phase 9 exit gate:** css, html, markdown schemas converted to `relation()` form; all tests green; all gates green; `ex()` and its types deleted from `packages/parser/src/`.
 
+**Status: CLOSED (2026-05-28).** See `docs/v2-migration-status.md` § "Phase 9 closeout" and `docs/superpowers/plans/2026-05-30-phase-9-relation-dsl.md` for the executed task breakdown.
+
 ---
 
 ## Self-review

@@ -1,6 +1,6 @@
 import * as cssColor from "@parser2/css-color";
 import * as cssLengthPercentage from "@parser2/css-length-percentage";
-import { $, defineSchema, defineValidation, ex, tpl } from "@parser2/parser";
+import { $, defineSchema, defineValidation, literal, parse, relation, span, tpl } from "@parser2/parser";
 import type { ValidationDef } from "@parser2/parser";
 
 // CSS schema. All node types live in one schema because Rule, AtRule, and
@@ -176,16 +176,19 @@ const cssSchema = defineSchema({
     // gap is documented as a follow-up (Phase 7); the canonical-string
     // round-trip for comments is excluded from the round-trip fixture
     // set below.
-    ex("/* foo */")
-      .as("Comment")
-      .span("text", "/* foo */")
-      .comment()
-      .render('ast', {
-        type: "comment",
-        text: $.text,
-      })
-      .render('source', tpl`${$.text}`)
-      .build(),
+    relation('Comment', {
+      input: '/* foo */',
+      encodings: {
+        parse: parse([
+          span('text', '/* foo */').comment(),
+        ]),
+        ast: {
+          type: "comment",
+          text: $.text,
+        },
+        source: tpl`${$.text}`,
+      },
+    }),
 
     // ---- Declaration with !important ----------------------------------
     // Listed first so speculative dispatch tries the longer match before
@@ -195,59 +198,59 @@ const cssSchema = defineSchema({
     // Limitations (deferred to comment-normalization work): cases where a
     // comment sits between `!` and `important`, or trails the value before
     // `!`, will not match this variant and fall through to the plain form.
-    ex("color: red !important;")
-      .as("Declaration")
-      .span("prop", "color")
-      .until([":", ";", "}"])
-      .span(":")
-      .span("value", "red")
-      .until([";", "}", "!"])
-      .span("!")
-      // `important` is matched as a named ident so the rebuild can read
-      // `captures.important` and emit the literal keyword. The AST body
-      // surfaces the captured string (`"important"` or upper-case
-      // variants) verbatim — this differs from the PostCSS convention of a
-      // boolean `important: true`, but preserves byte-stable round-trip.
-      .span("important", "important")
-      .ident()
-      .css()
-      .span(";")
-      .optional()
-      // `important: true` is a literal discriminator the inverse
-      // dispatcher matches on (vs the regular Declaration#1 form which
-      // has no `important` field). `_important` carries the case-
-      // preserving captured keyword (`"important"`, `"IMPORTANT"`, etc.)
-      // so the source rebuild can emit it verbatim — the AST's
-      // user-facing `important: true` is a coarsened boolean.
-      .render('ast', {
-        type: "decl",
-        prop: $.prop,
-        value: $.value,
-        important: true,
-        _important: $.important,
-      })
-      .render('source', tpl`${$.prop}: ${$.value} !${$.important};`)
-      .build(),
+    relation('Declaration', {
+      input: 'color: red !important;',
+      encodings: {
+        parse: parse([
+          span('prop', 'color').until([':', ';', '}']),
+          literal(':'),
+          span('value', 'red').until([';', '}', '!']),
+          literal('!'),
+          // `important` is matched as a named ident so the rebuild can read
+          // `captures.important` and emit the literal keyword. The AST body
+          // surfaces the captured string (`"important"` or upper-case
+          // variants) verbatim — this differs from the PostCSS convention of a
+          // boolean `important: true`, but preserves byte-stable round-trip.
+          span('important', 'important').ident().css(),
+          literal(';').optional(),
+        ]),
+        // `important: true` is a literal discriminator the inverse
+        // dispatcher matches on (vs the regular Declaration#1 form which
+        // has no `important` field). `_important` carries the case-
+        // preserving captured keyword (`"important"`, `"IMPORTANT"`, etc.)
+        // so the source rebuild can emit it verbatim — the AST's
+        // user-facing `important: true` is a coarsened boolean.
+        ast: {
+          type: "decl",
+          prop: $.prop,
+          value: $.value,
+          important: true,
+          _important: $.important,
+        },
+        source: tpl`${$.prop}: ${$.value} !${$.important};`,
+      },
+    }),
 
     // ---- Declaration --------------------------------------------------
     // The trailing `;` is consumed here (not by the parent repeats loop) so
     // the declaration's source range includes it, matching PostCSS.
-    ex("color: red;")
-      .as("Declaration")
-      .span("prop", "color")
-      .until([":", ";", "}"])
-      .span(":")
-      .span("value", "red")
-      .until([";", "}"])
-      .span(";")
-      .optional()
-      .render('ast', {
-        type: "decl",
-        prop: $.prop,
-        value: $.value,
-      })
-      .render('source', tpl`${$.prop}: ${$.value};`)
-      .build(),
+    relation('Declaration', {
+      input: 'color: red;',
+      encodings: {
+        parse: parse([
+          span('prop', 'color').until([':', ';', '}']),
+          literal(':'),
+          span('value', 'red').until([';', '}']),
+          literal(';').optional(),
+        ]),
+        ast: {
+          type: "decl",
+          prop: $.prop,
+          value: $.value,
+        },
+        source: tpl`${$.prop}: ${$.value};`,
+      },
+    }),
 
     // ---- Rule (selector + body) ---------------------------------------
     // Body children may be Declaration, nested Rule, or nested AtRule. Rule
@@ -262,109 +265,112 @@ const cssSchema = defineSchema({
     // so the `;` stop in Rule selector falls outside the brackets after
     // the closing `}` — Rule's selector consumes the whole `--name: {...}`
     // block, then needs a `{` next, sees `;`, fails, and Declaration wins.
-    ex(".foo:hover { color: red }")
-      .as("Rule")
-      .span("selector", ".foo:hover")
-      .until(["{", ";"], {
-        rejectSuffix: [":", ",", ">", "+", "~"],
-        nonEmpty: true,
-      })
-      // `{` / `}` are UNNAMED literal spans so the rebuild emits them as
-      // string literals rather than slot reads. Named brace spans land in
-      // captures, but the AST body doesn't surface them — AST→source
-      // round-trip would then drop the braces. Unnamed spans contribute
-      // their text directly at compile time and never require a capture.
-      .span("{")
-      .span("nodes", "color: red", ["Comment", "AtRule", "Rule", "Declaration"])
-      .repeats({ sep: ";", trailing: "allowed" })
-      .span("}")
-      .render('ast', {
-        type: "rule",
-        selector: $.selector,
-        nodes: $.nodes,
-      })
-      .render('source', tpl`${$.selector} {${$.nodes}}`)
-      .build(),
+    relation('Rule', {
+      input: '.foo:hover { color: red }',
+      encodings: {
+        parse: parse([
+          span('selector', '.foo:hover').until(['{', ';'], {
+            rejectSuffix: [':', ',', '>', '+', '~'],
+            nonEmpty: true,
+          }),
+          // `{` / `}` are UNNAMED literal spans so the rebuild emits them as
+          // string literals rather than slot reads. Named brace spans land in
+          // captures, but the AST body doesn't surface them — AST→source
+          // round-trip would then drop the braces. Unnamed spans contribute
+          // their text directly at compile time and never require a capture.
+          literal('{'),
+          span('nodes', 'color: red').of('Comment', 'AtRule', 'Rule', 'Declaration')
+            .repeats({ sep: ';', trailing: 'allowed' }),
+          literal('}'),
+        ]),
+        ast: {
+          type: "rule",
+          selector: $.selector,
+          nodes: $.nodes,
+        },
+        source: tpl`${$.selector} {${$.nodes}}`,
+      },
+    }),
 
     // ---- AtRule, block form (has { ... }) -----------------------------
     // Block form is listed first so speculative dispatch tries the greedier
     // match before falling back to the statement form. If statement form
     // were first it would succeed at `@supports (--var)` before the `{`,
     // leaving the body to be mis-parsed as a separate Rule.
-    ex("@media screen { color: red }")
-      .as("AtRule")
-      .span("@")
-      .span("name", "media")
-      .ident()
-      .css()
-      .span("params", "screen")
-      .until([";", "{"])
-      // Unnamed `{`/`}` literal spans for the same reason as Rule above —
-      // the rebuild contributes their text directly without needing a
-      // capture that the AST body doesn't surface.
-      .span("{")
-      .span("nodes", "color: red", ["Comment", "AtRule", "Rule", "Declaration"])
-      .repeats({ sep: ";", trailing: "allowed" })
-      .span("}")
-      .render('ast', {
-        type: "atrule",
-        name: $.name,
-        params: $.params,
-        nodes: $.nodes,
-      })
-      .render('source', tpl`@${$.name} ${$.params} {${$.nodes}}`)
-      .build(),
+    relation('AtRule', {
+      input: '@media screen { color: red }',
+      encodings: {
+        parse: parse([
+          literal('@'),
+          span('name', 'media').ident().css(),
+          span('params', 'screen').until([';', '{']),
+          // Unnamed `{`/`}` literal spans for the same reason as Rule above —
+          // the rebuild contributes their text directly without needing a
+          // capture that the AST body doesn't surface.
+          literal('{'),
+          span('nodes', 'color: red').of('Comment', 'AtRule', 'Rule', 'Declaration')
+            .repeats({ sep: ';', trailing: 'allowed' }),
+          literal('}'),
+        ]),
+        ast: {
+          type: "atrule",
+          name: $.name,
+          params: $.params,
+          nodes: $.nodes,
+        },
+        source: tpl`@${$.name} ${$.params} {${$.nodes}}`,
+      },
+    }),
 
     // ---- AtRule, statement form (optional trailing ;) ------------------
     // `;` is optional so `@charset "UTF-8";` and `@charset "UTF-8"` both work.
     // Adding `}` to the until-stops lets statement at-rules end naturally
     // at the close of an enclosing block (e.g. `a { @import "x" }`).
-    ex('@charset "UTF-8";')
-      .as("AtRule")
-      .span("@")
-      .span("name", "charset")
-      .ident()
-      .css()
-      .span("params", '"UTF-8"')
-      .until([";", "{", "}"])
-      // Unnamed optional `;` — when present the rebuild contributes the
-      // literal; when absent the optional fusion (Gap A) drops it. Keeping
-      // it unnamed means the AST doesn't have to surface `semi` for the
-      // rebuild to find it.
-      .span(";")
-      .optional()
-      .render('ast', {
-        type: "atrule",
-        name: $.name,
-        params: $.params,
-      })
-      // Statement at-rules always re-emit `;` because the optional `;`
-      // span is absent in the rebuild's example baseline (`@charset
-      // "UTF-8";` has it) — value-stable (the trailing `;` round-trips
-      // through itself) but not byte-stable for the semicolon-less form.
-      .render('source', tpl`@${$.name} ${$.params};`)
-      .build(),
+    relation('AtRule', {
+      input: '@charset "UTF-8";',
+      encodings: {
+        parse: parse([
+          literal('@'),
+          span('name', 'charset').ident().css(),
+          span('params', '"UTF-8"').until([';', '{', '}']),
+          // Unnamed optional `;` — when present the rebuild contributes the
+          // literal; when absent the optional fusion (Gap A) drops it. Keeping
+          // it unnamed means the AST doesn't have to surface `semi` for the
+          // rebuild to find it.
+          literal(';').optional(),
+        ]),
+        ast: {
+          type: "atrule",
+          name: $.name,
+          params: $.params,
+        },
+        // Statement at-rules always re-emit `;` because the optional `;`
+        // span is absent in the rebuild's example baseline (`@charset
+        // "UTF-8";` has it) — value-stable (the trailing `;` round-trips
+        // through itself) but not byte-stable for the semicolon-less form.
+        source: tpl`@${$.name} ${$.params};`,
+      },
+    }),
 
     // ---- Stylesheet (root) --------------------------------------------
     // Top-level children = Comment | AtRule | Rule | Declaration. PostCSS
     // tolerates top-level declarations (e.g. SCSS-style or fragments), so
     // Declaration is included even though strict CSS forbids it outside a
     // block.
-    ex(".foo { color: red }")
-      .as("Stylesheet")
-      .span("nodes", ".foo { color: red }", [
-        "Comment",
-        "AtRule",
-        "Rule",
-        "Declaration",
-      ])
-      .repeats({ min: 0, sep: ";", trailing: "allowed" })
-      .render('ast', {
-        type: "root",
-        nodes: $.nodes,
-      })
-      .render('source', tpl`${$.nodes}`)
-      .build(),
+    relation('Stylesheet', {
+      input: '.foo { color: red }',
+      encodings: {
+        parse: parse([
+          span('nodes', '.foo { color: red }').of('Comment', 'AtRule', 'Rule', 'Declaration')
+            .repeats({ min: 0, sep: ';', trailing: 'allowed' }),
+        ]),
+        ast: {
+          type: "root",
+          nodes: $.nodes,
+        },
+        source: tpl`${$.nodes}`,
+      },
+    }),
   ],
 });
 

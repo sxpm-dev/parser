@@ -205,17 +205,25 @@ production-quality cron parser.
    bytecode→JS specialization at decode time — effectively regenerating
    what the TS backend already produces, which questions the value of the
    bytecode backend entirely. Test enforces 50× as a regression guard while
-   the design question is open.
+   the design question is open. **Status: Accepted as documented constraint
+   (2026-05-29 triage)** — closing the gap is effectively reproducing the TS
+   backend; deferred indefinitely until/unless a clear motivation arises.
 
 5. **Bytecode `__parse` only supports `'fast'` mode.** Raws mode
    (source-position metadata) intentionally out of scope for bytecode per
    the master plan. Schemas needing raws fall back to TS.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   working as designed per master plan; TS-backend fallback is the chosen
+   path.
 
 6. **TS backend doesn't export `__parse` for cross-backend test
    comparison.** Task 6.6's equivalence test compares via
    `render(input, { type: 'ast' })` instead, which is the closest observable
    API. Future task: consider exporting `__parse` from the TS backend's
    emit for easier cross-backend testing.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   `render(..., { target: 'ast' })` is the supported public surface; no
+   pain in practice.
 
 7. **Multi-role recursive spans not supported in bytecode encoder.** For
    schemas where a single span legitimately references multiple node types
@@ -233,6 +241,9 @@ production-quality cron parser.
    `V2_RUNTIME` constant) and
    `packages/compiler/src/emit/bytecode/runtime.ts` (exported for the
    bytecode-emitted file). Future: extract to a shared utility.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   ~10 lines of duplication across two backends; cleanup with no
+   functional impact.
 
 10. **`@parser2/compiler/bytecode/runtime` exports entry has no `"types"`
     / `"source"` condition.** Resolves only via `./dist/...js`. A fresh
@@ -321,17 +332,30 @@ need to be addressed if a future schema exposes the gap.
    bytecode-tested schema; Phase 7 adds indent only to the v2 TS backend.
    Adding indent to bytecode (`packages/compiler/src/emit/bytecode/runtime.ts`
    + encoder) is a follow-up.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   bytecode parity is deferred indefinitely (see Phase 6 follow-up #4);
+   any future bytecode push would address all such gaps as a single
+   workstream.
 
 4. **Tab characters not supported.** `columnAt` counts raw bytes, so tabs count
    as a single column rather than their display width. Documented in both
    `interp/parse.ts` and `emit/v2/runtime.ts`. Schemas using `.indent()` should
    use ASCII spaces only.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   ASCII-spaces-only is the documented design contract for `.indent()`;
+   yaml-block (only consumer) complies.
 
 5. **Nested indent depth limited to 16.** `Int32Array(16)` hard-coded; deeper
    nesting fails the parse with a stack-overflow check.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   16 levels exceeds any realistic indent-based grammar; fixed-size
+   stack is the chosen tradeoff vs dynamic allocation.
 
 6. **`INDENT_STEP_SPACES` hardcoded to 2.** No schema-level `indentWidth`
    option. YAML-convention 2-space indent is the only supported value.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   2-space YAML convention is the documented design intent; no schema
+   needs a different value.
 
 7. **Coverage gap in plan-specified inline test schemas.** The 3 plan-specified
    tests in Tasks 7.2 and 7.4 (simple inline YamlList) pass even if the indent
@@ -340,10 +364,16 @@ need to be addressed if a future schema exposes the gap.
    in `packages/yaml-block/test/` where nested inputs force the column check.
    The simple-case tests remain useful for forward-compatibility but should not
    be treated as the primary regression suite.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   informational; effective coverage comes from yaml-block nested tests.
+   The inline tests are kept as forward-compatibility smoke.
 
 8. **`mac` and `css-color` packages have pre-existing test failures unrelated
    to Phase 7.** Confirmed by code-quality reviewer during Task 7.7b. Not
    introduced by Phase 7; flagged for awareness.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   resolved by Phase 9 Task 9.11: both packages were deleted as
+   out-of-scope. No longer reachable.
 
 ## Phase 8 closeout (2026-05-28)
 
@@ -419,6 +449,9 @@ tests work around or don't exercise.
    `toLocaleLowerCase('tr')` path with the Turkish dotless-i gotcha), which is
    right for ASCII tag names. Grammars with non-ASCII tokens (e.g. Greek
    letters in math notation) may hit edge cases.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   ASCII-correctness is the documented design intent for `caseSensitive`;
+   HTML (only consumer) is ASCII-tag-named.
 
 3. **`caseSensitive: false` lowercases the ENTIRE input, not just tag/attribute
    names.** Surfaced by Task 8.6 — text content and attribute values are also
@@ -427,16 +460,24 @@ tests work around or don't exercise.
    Pre-existing HTML tests that asserted on mixed-case text content were
    updated to canonical lowercase. Inline `conformance.test.ts` normalizer
    lowercases parse5's text/attr-value sides before comparison.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   working as designed; preamble-once architecture (vs per-pattern fold)
+   is the chosen tradeoff. The design contract is documented and tested.
 
 4. **`newlines: 'either-preserve'` is value-stable but not byte-stable for
    CRLF input.** Round-trip emits LF only. "Preserve" in the name is a
    misnomer kept for master-plan compatibility; true byte preservation would
    require per-newline metadata in captures and is out of scope.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   true byte-preservation is out-of-scope per documentation; value-stable
+   round-trip is the chosen semantic.
 
 5. **`bom: 'allow'` changes behavior for inputs with a BOM.** Pre-Phase-8
    schemas would fail on BOM-prefixed input; post-Phase-8 they strip the BOM
    silently. This is a strict expansion of accepted inputs (no schema that
    previously parsed now fails).
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   strict input expansion; documented as the chosen default.
 
 6. **No per-pattern case-insensitive escape hatch.** Phase 8 dials are
    schema-wide. The existing `.oneOf({ caseInsensitive: true })` refinement is
@@ -452,27 +493,42 @@ tests work around or don't exercise.
    is forward-safety only — if a future task adds `bom: 'strip-silently'` the
    switch will silently no-op. Adding `default: throw new Error(...)` to both
    switches in BOTH files (to avoid interp/emit drift) is the fix.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   forward-safety hygiene only; type union is closed today and any future
+   addition would touch both files together. Re-open if the union grows.
 
 8. **Preamble cost is O(n) per parse call.** For very large inputs with many
    parse calls (e.g. streaming-style use), the per-call `.normalize` /
    `.toLowerCase` cost may dominate. The schema-level dial design assumes
    per-document parsing.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   per-document parsing is the documented design assumption; no measured
+   pain. Streaming use is out of scope.
 
 9. **`checkRoundTrip` does not exercise non-canonical inputs.** Schemas with
    `caseSensitive: false` or `newlines: 'either-preserve'` must write examples
    in canonical form (lowercase, LF) for the theorem to hold. Non-canonical
    inputs are tested via separate package-level tests.
+   **Status: Accepted as documented constraint (2026-05-29 triage)** —
+   canonical-form-only is the documented design contract; non-canonical
+   coverage lives at the package level (html, etc.).
 
 10. **CSS `_generated/parser.ts` drifted during prior tasks.** Task 8.5's
     regen absorbed Phase 7 indent helpers (`indentStack`/`columnAt`/etc.) that
     were emitted by the compiler but never regenerated in the CSS package.
     The regen mechanism that produces drift is worth investigating — running
     css tests should not be silently regenerating the parser.
+    **Status: Accepted as documented constraint (2026-05-29 triage)** —
+    superseded by Phase 9 follow-up #1 (CSS regen now broken entirely due
+    to inlined validators). The CSS regen story is being addressed as a
+    single workstream there.
 
 11. **`packages/parser/src/index.ts` re-export drift.** Task 8.1 added
     `BomPolicy`/`UnicodeForm`/`NewlinePolicy` to the parser barrel because
     `compiler/src/model.ts` imports them. Plan oversight; the re-export is
     additive and safe.
+    **Status: Accepted as documented constraint (2026-05-29 triage)** —
+    additive and safe by author's own note; no action needed.
 
 12. **Literal diacritics in `unicode-roundtrip.test.ts:50-51`.** `NFC_LOCAL`
     and `NFD_LOCAL` use visually-ambiguous literal characters
@@ -536,7 +592,7 @@ The bidirectional-engine overhaul is complete. Phase 9 landed the `relation()` D
 
 1. **CSS generated parser has inlined validators.** Regenerating CSS via `npm run generate -w "@parser2/css"` would fail because the schema no longer imports from `@parser2/css-color` / `@parser2/css-length-percentage` (deleted) but the generated parser includes their inlined code. Resolution paths: (a) teach codegen to inline validator deps; (b) reborn the two color/length packages under relation(); (c) refactor CSS schema to define validators inline. None blocks current functionality.
 
-2. **`relation-ir-equivalence.test.ts` deleted.** The load-bearing IR-equivalence test (relation() ≡ ex() deep-equal) was deleted along with ex(). Future refactors of the relation() builder lose this guard. If `relation()` IR output ever drifts subtly, no in-tree test will catch it directly — schema rewrites would need to be re-validated via byte-equality of generated parsers (which is still enforceable manually).
+2. **`relation-ir-equivalence.test.ts` deleted.** The load-bearing IR-equivalence test (relation() ≡ ex() deep-equal) was deleted along with ex(). Future refactors of the relation() builder lose this guard. If `relation()` IR output ever drifts subtly, no in-tree test will catch it directly — schema rewrites would need to be re-validated via byte-equality of generated parsers (which is still enforceable manually). **Status: Resolved (`7169658`, 2026-05-29)** — added `packages/parser/test/generated-parser-ir.test.ts` + `generated-parser-ir.golden.json`, a SHA256 byte-equality gate over each in-scope schema's `src/_generated/parser.ts` (css, html, markdown, cron, yaml-block). Runs under `npm run test -w "@parser2/parser"`; node:crypto only, no new deps. Verified to fail on a single whitespace edit. Strongest engine-invariant guard per the handoff: any IR drift surfaces immediately as a hash mismatch.
 
 ### Bidirectional-engine overhaul — overall closeout
 

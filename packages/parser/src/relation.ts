@@ -2,6 +2,7 @@ import type {
   ExampleDef,
   ExampleStatus,
   Refinement,
+  RenderBody,
   RenderTargetDef,
   SpanClass,
   SpanDef,
@@ -22,7 +23,7 @@ type SpanData = {
 };
 
 export class SpanNode {
-  constructor(readonly data: SpanData) {}
+  constructor(private readonly data: SpanData) {}
 
   private withData(patch: Partial<SpanData>): SpanNode {
     return new SpanNode({ ...this.data, ...patch });
@@ -230,7 +231,7 @@ export function literal(text: string): Literal {
   }) as Literal;
 }
 
-export function parse(items: ReadonlyArray<SpanNode>): ParseProgram {
+export function parse(items: ReadonlyArray<Span | Literal>): ParseProgram {
   return { __parse: true, items };
 }
 
@@ -246,7 +247,7 @@ export function relation(nodeType: string, body: RelationBody): ExampleDef {
       parseProgram = value;
       continue;
     }
-    renders.push({ target, body: value as Template | object });
+    renders.push({ target, body: value as RenderBody });
   }
 
   if (parseProgram === undefined) {

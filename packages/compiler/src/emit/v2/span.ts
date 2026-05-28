@@ -270,7 +270,7 @@ function emitRecursiveSpan(
       }
       return `state.pos = off;
 const ${startVar} = off;
-const ${v} = parse${role}(state);
+const ${v} = ${ctx.symbolPrefix}parse${role}(state);
 off = state.pos;
 const ${endVar} = off;
 ${v === '__unnamed' ? `if (${v} !== null) {} /* result discarded */` : ''}`;
@@ -282,13 +282,13 @@ ${v === '__unnamed' ? `if (${v} !== null) {} /* result discarded */` : ''}`;
       bindings.endOffExpr.set(span.name, endVar);
       return `state.pos = off;
 const ${startVar} = off;
-const ${v} = parse${role}(state);
+const ${v} = ${ctx.symbolPrefix}parse${role}(state);
 if (${v} === null) { state.pos = ${ctx.entryOffVar}; return null; }
 off = state.pos;
 const ${endVar} = off;`;
     }
     return `state.pos = off;
-const __r = parse${role}(state);
+const __r = ${ctx.symbolPrefix}parse${role}(state);
 if (__r === null) { state.pos = ${ctx.entryOffVar}; return null; }
 off = state.pos;`;
   }
@@ -386,7 +386,7 @@ function emitRepeatsSpan(
   // `__cand === null` means "no match at this position" — the loop breaks.
   const tryItemBlock = roles.length === 1
     ? `state.pos = off;
-__cand = parse${roles[0]!}(state);
+__cand = ${ctx.symbolPrefix}parse${roles[0]!}(state);
 if (__cand !== null) { off = state.pos; }`
     // emitRoleLadder skips inter-role ws, peeks the first byte, dispatches.
     // On success it sets __cand and updates state.pos; the next line aligns

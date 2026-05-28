@@ -88,7 +88,12 @@ ${indent(body, 1)}
 // in emit/render.ts but with a distinct prefix so the two never collide. The
 // schema's `symbolPrefix` is prepended (default '' is byte-identical to the
 // prior code path) so multiple fused parsers can be composed without collisions.
-export function fusedRenderFnName(schema: InferredSchema, nodeName: string, prodIdx: number, target: string): string {
+export function fusedRenderFnName(
+  schema: Pick<InferredSchema, 'symbolPrefix'>,
+  nodeName: string,
+  prodIdx: number,
+  target: string,
+): string {
   return `${schema.symbolPrefix}__fusedRender_${jsIdent(nodeName)}_${prodIdx}_${jsIdent(target)}`;
 }
 
@@ -435,7 +440,7 @@ function emitByteDispatch(
     }
   }
   const branchSrc = (cand: FusedCandidate): string => {
-    const fn = `${ctx.symbolPrefix}__fusedRender_${jsIdent(cand.nodeName)}_${cand.prodIdx}_${jsIdent(target)}`;
+    const fn = fusedRenderFnName({ symbolPrefix: ctx.symbolPrefix }, cand.nodeName, cand.prodIdx, target);
     return [
       `if (!${opts.matchedVar}) {`,
       `  state.pos = ${opts.offResetVar};`,

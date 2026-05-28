@@ -1835,6 +1835,16 @@ test('symbolPrefix non-empty value prepends every emitted parse function name', 
   // Public exports MUST NOT be prefixed — keep the caller-facing API stable.
   assert.match(prefixed, /export function (validate|render|stringify)\b/);
   assert.doesNotMatch(prefixed, /export function __v0_(parse|validate|render|stringify)\b/);
+  // Call sites must consult the prefix too — otherwise C.3 composition would
+  // produce dangling references. Any `parse<NodeType>(state)` call inside the
+  // emitted body that does NOT carry the prefix is a leak. Cron's role names
+  // (Cron, CronField, Command, CommandWord) all start with an uppercase letter,
+  // so we can scan for the prefixed and unprefixed forms.
+  assert.doesNotMatch(prefixed, /(?<!__v0_)\bparseCron(?:Field)?\(state\)/);
+  assert.doesNotMatch(prefixed, /(?<!__v0_)\bparseCommand(?:Word)?\(state\)/);
+  // And confirm the prefixed call form IS present (so the regex above isn't
+  // vacuously satisfied by an empty body).
+  assert.match(prefixed, /\b__v0_parseCronField\(state\)/);
 });
 
 test('v2 validate() invokes per-field validators from ValidationDef', () => {

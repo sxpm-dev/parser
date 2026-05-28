@@ -1,39 +1,48 @@
 import test from 'node:test';
 import { strict as assert } from 'node:assert';
-import { ex } from '../src/example.ts';
+import { parse, relation, span } from '../src/index.ts';
 import type { SpanModifier } from '../src/types.ts';
 
-test('indent: SpanBuilder.indent() appends kind:indent modifier', () => {
-  const example = ex('- a')
-    .as('YamlList')
-    .span('children', '', ['YamlItem']).indent().repeats({ min: 0 })
-    .build();
-  const span = example.spans[0]!;
-  const indentMod = span.modifiers.find((m: SpanModifier) => m.kind === 'indent');
+test('indent: SpanNode.indent() appends kind:indent modifier', () => {
+  const example = relation('YamlList', {
+    input: '- a',
+    encodings: {
+      src: parse([span('children').of('YamlItem').indent().repeats({ min: 0 })]),
+      ast: {},
+    },
+  });
+  const s = example.spans[0]!;
+  const indentMod = s.modifiers.find((m: SpanModifier) => m.kind === 'indent');
   assert.ok(indentMod, 'expected an indent modifier on the recursive-repeats span');
   // Strict shape check: catches accidental field additions in future refactors.
   assert.deepEqual(indentMod, { kind: 'indent' });
 });
 
-test('indent: ExampleBuilder.indent(name, roles) sugar creates an indented recursive span', () => {
-  const example = ex('- a')
-    .as('YamlList')
-    .indent('children', ['YamlItem']).repeats({ min: 0 })
-    .build();
-  const span = example.spans[0]!;
-  assert.equal(span.name, 'children');
-  assert.deepEqual([...span.recursiveRoles], ['YamlItem']);
-  assert.ok(span.modifiers.find((m: SpanModifier) => m.kind === 'indent'),
-    'sugar form must install the indent modifier');
-  assert.ok(span.modifiers.find((m: SpanModifier) => m.kind === 'repeats'),
-    '.repeats() must still chain after the sugar form');
+test('indent: span().of(roles).indent() creates an indented recursive span', () => {
+  const example = relation('YamlList', {
+    input: '- a',
+    encodings: {
+      src: parse([span('children').of('YamlItem').indent().repeats({ min: 0 })]),
+      ast: {},
+    },
+  });
+  const s = example.spans[0]!;
+  assert.equal(s.name, 'children');
+  assert.deepEqual([...s.recursiveRoles], ['YamlItem']);
+  assert.ok(s.modifiers.find((m: SpanModifier) => m.kind === 'indent'),
+    'must have the indent modifier');
+  assert.ok(s.modifiers.find((m: SpanModifier) => m.kind === 'repeats'),
+    '.repeats() must still chain after the indent');
 });
 
 test('indent: modifier order preserved — indent before repeats', () => {
-  const example = ex('- a')
-    .as('YamlList')
-    .span('children', '', ['YamlItem']).indent().repeats({ min: 0 })
-    .build();
+  const example = relation('YamlList', {
+    input: '- a',
+    encodings: {
+      src: parse([span('children').of('YamlItem').indent().repeats({ min: 0 })]),
+      ast: {},
+    },
+  });
   const kinds = example.spans[0]!.modifiers.map((m) => m.kind);
   assert.deepEqual(kinds, ['indent', 'repeats']);
 });

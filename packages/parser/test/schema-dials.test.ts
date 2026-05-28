@@ -1,13 +1,15 @@
 import test from 'node:test';
 import { strict as assert } from 'node:assert';
-import { defineSchema, ex } from '../src/index.ts';
+import { defineSchema, literal, parse, relation } from '../src/index.ts';
 
-const minimalExample = ex('a')
-  .as('Leaf')
-  .span('a')
-  .render('ast', 'a')
-  .render('source', 'a')
-  .build();
+const minimalExample = relation('Leaf', {
+  input: 'a',
+  encodings: {
+    src: parse([literal('a')]),
+    ast: 'a',
+    source: 'a',
+  },
+});
 
 test('schema dials: defaults match documented values', () => {
   const schema = defineSchema({

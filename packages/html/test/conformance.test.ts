@@ -24,7 +24,7 @@ import { render } from '../src/index.ts';
 
 // Public `parse()` was removed in Phase 5 of the unified-render-targets
 // refactor. The AST shape that used to be returned by parse() is now
-// reachable via `render(input, { type: 'ast' })`. Wrap once so the rest of
+// reachable via `render(input, { target: 'ast' })`. Wrap once so the rest of
 // the test reads the same as before.
 function ourParse(input: string): unknown {
   return render(input, { target: 'ast' });

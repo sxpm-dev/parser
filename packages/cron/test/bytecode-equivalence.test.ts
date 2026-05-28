@@ -10,9 +10,9 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 // bytecode backend (`parser.bcode.ts`) for the same input set.
 //
 // What is compared:
-//   - render(input, { type: 'ast' })    — object-shape AST
+//   - render(input, { target: 'ast' })    — object-shape AST
 //   - render(input, { type: 'source' }) — canonical source text
-//   - stringify(ast, { type: 'ast' })   — inverse: ast -> source
+//   - stringify(ast, { target: 'ast' })   — inverse: ast -> source
 //
 // Notable deviations from the original plan, documented inline:
 //
@@ -31,7 +31,7 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 //      target='ast' as the input-shape identifier (the dispatcher routes
 //      on the AST's `.type` field, and the output is always source
 //      text). Template-form inverse for target='source' is a Task 6.4
-//      deferred follow-up. We therefore pass `{ type: 'ast' }` to both
+//      deferred follow-up. We therefore pass `{ target: 'ast' }` to both
 //      backends here; both produce source text via their respective
 //      inverse dispatchers.
 //

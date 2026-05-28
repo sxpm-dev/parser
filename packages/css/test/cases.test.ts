@@ -13,7 +13,7 @@ import { render } from '../src/index.ts';
 //
 // Phase 5 removed the public parse() export. The AST that used to be
 // returned by parse(input, { mode: 'raws' }) is reachable via
-// render(input, { type: 'ast' }); raws were dropped from the AST in the
+// render(input, { target: 'ast' }); raws were dropped from the AST in the
 // Phase 6 unified-render-targets migration because the compiler's
 // inverse-derivation pass rejects $.gap / $.tail / $.endsWith /
 // $.commentLeft / $.commentRight synthetic refs in object-body render

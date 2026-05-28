@@ -4,7 +4,7 @@ import { render, stringify, validate } from '../src/index.ts';
 
 // Note: public `parse()` was removed in Phase 5 of the unified-render-targets
 // refactor. The previous `parse(input)` call is replaced by
-// `render(input, { type: 'ast' })`, which yields the object-shape AST that
+// `render(input, { target: 'ast' })`, which yields the object-shape AST that
 // the schema declares under `.render('ast', { ... })`.
 
 function parseAst(input: string): unknown {

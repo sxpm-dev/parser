@@ -3,7 +3,7 @@ import test from 'node:test';
 import { render, validate } from '../src/index.ts';
 
 // Phase 5 removed the public parse() export. The AST that used to be
-// returned by parse(input) is now reachable via render(input, { type: 'ast' }).
+// returned by parse(input) is now reachable via render(input, { target: 'ast' }).
 // The { validate: true } option that triggered the property-value validator
 // during parse is no longer available on render — call validate(input,
 // { validate: true }) directly to exercise that codepath instead.

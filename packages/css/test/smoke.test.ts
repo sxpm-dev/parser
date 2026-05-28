@@ -14,7 +14,7 @@ import { render } from '../src/index.ts';
 
 // Phase 5 removed the public parse() export from generated parsers. The
 // AST that used to be returned by parse(input, { mode: 'raws' }) is now
-// reachable via render(input, { type: 'ast' }); the raws-mode toggle is
+// reachable via render(input, { target: 'ast' }); the raws-mode toggle is
 // a no-op (every AST is the same regardless of mode).
 function parse(input: string, _options?: { mode?: 'fast' | 'raws' }): unknown {
   return render(input, { target: 'ast' });

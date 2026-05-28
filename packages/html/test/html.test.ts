@@ -6,7 +6,7 @@ const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
 // Public `parse()` was removed in Phase 5 of the unified-render-targets
 // refactor. The AST shape that used to be returned by parse() is now
-// reachable via `render(input, { type: 'ast' })`.
+// reachable via `render(input, { target: 'ast' })`.
 function parse(input: string): unknown {
   return render(input, { target: 'ast' });
 }

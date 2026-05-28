@@ -18,17 +18,21 @@ import { generateParser, inferSchema } from '../src/index.ts';
 // ---------- IR-level checks (attachRenderTargets) -------------------------
 
 test('attachRenderTargets collects every declared target onto Production.renders', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('# title')
-        .as('Atom')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: [$.first] })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Atom', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: [$.first] },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -43,76 +47,109 @@ test('attachRenderTargets collects every declared target onto Production.renders
 });
 
 test('duplicate render target on one production is rejected', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
+  // relation() validates encodings at construction time — duplicate target
+  // would be impossible since it's a plain object key. Instead, use two
+  // separate relation() calls with the same nodeType and same target.
+  // Actually, with the relation() DSL a duplicate key in encodings is a
+  // JS object, and later keys silently overwrite earlier ones — this test
+  // would not catch that the same way. Let's use the inferSchema-level
+  // check by supplying a manually constructed ExampleDef.
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident()
-        .render('ast', { type: 'atom', v: $.v })
-        .render('html', tpl`<a>${$.v}</a>`)
-        .render('html', tpl`<b>${$.v}</b>`)
-        .build(),
+      {
+        input: 'x',
+        nodeType: 'Atom',
+        spans: [{ name: 'v', text: 'x', recursiveRoles: [], class: 'ident', refinements: [], modifiers: [] }],
+        status: { kind: 'valid' },
+        renders: [
+          { target: 'ast', body: { type: 'atom', v: $.v } },
+          { target: 'html', body: tpl`<a>${$.v}</a>` },
+          { target: 'html', body: tpl`<b>${$.v}</b>` },
+        ],
+      },
     ],
   });
   assert.throws(() => inferSchema(schema), /duplicate render target 'html'/);
 });
 
 test('template slot referencing unknown span is rejected', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident()
-        .render('ast', { type: 'atom', v: $.v })
-        .render('html', tpl`<a>${$.missing}</a>`)
-        .build(),
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          src: parse([span('v', 'x').ident()]),
+          ast: { type: 'atom', v: $.v },
+          html: tpl`<a>${$.missing}</a>`,
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
 });
 
 test('object-body $.name ref to unknown span is rejected', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident()
-        .render('ast', { type: 'atom', wrong: $.missing })
-        .build(),
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          src: parse([span('v', 'x').ident()]),
+          ast: { type: 'atom', wrong: $.missing },
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
 });
 
 test('inverse-template slot referencing unknown span is rejected', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl, withInverse } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident()
-        .render('ast', { type: 'atom', v: $.v })
-        .render('html', tpl`<a>${$.v}</a>`, { inverse: tpl`<a>${$.missing}</a>` })
-        .build(),
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          src: parse([span('v', 'x').ident()]),
+          ast: { type: 'atom', v: $.v },
+          html: withInverse(tpl`<a>${$.v}</a>`, tpl`<a>${$.missing}</a>`),
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /slot \$\.missing references unknown span/);
 });
 
 test('per-target completeness: every production of a node type must declare the same set of targets', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   // Two productions of the same node type — one declares 'html', the other
   // doesn't. attachRenderTargets must reject this so dispatch tables don't
   // have to handle a "missing template" runtime case.
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident()
-        .render('ast', { type: 'atom', v: $.v })
-        .render('html', tpl`<a>${$.v}</a>`)
-        .build(),
-      ex('y').as('Atom').span('v', 'y').ident()
-        .render('ast', { type: 'atom', v: $.v })
-        .build(),
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          src: parse([span('v', 'x').ident()]),
+          ast: { type: 'atom', v: $.v },
+          html: tpl`<a>${$.v}</a>`,
+        },
+      }),
+      relation('Atom', {
+        input: 'y',
+        encodings: {
+          src: parse([span('v', 'y').ident()]),
+          ast: { type: 'atom', v: $.v },
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /missing render target\(s\) 'html'/);
@@ -121,16 +158,21 @@ test('per-target completeness: every production of a node type must declare the 
 // ---------- Emit checks (generateParser) ----------------------------------
 
 test('generateParser emits both public render and public stringify (Phase 4)', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, { packageName: 'test' });
@@ -151,16 +193,21 @@ test('generateParser emits both public render and public stringify (Phase 4)', a
 });
 
 test('render(input, { type: "html" }) returns the templated HTML', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-render-html');
@@ -168,16 +215,21 @@ test('render(input, { type: "html" }) returns the templated HTML', async () => {
 });
 
 test('render(input, { type: "ast" }) returns the structured AST', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-render-ast');
@@ -187,14 +239,18 @@ test('render(input, { type: "ast" }) returns the structured AST', async () => {
 // ---------- Targeted body-shape tests (TDD) -------------------------------
 
 test('forward emit: scalar body returns the literal', async () => {
-  const { defineSchema, ex } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Yes',
     examples: [
-      ex('yes').as('Yes').span('y', 'yes').ident()
-        .render('ast', { type: 'yes' })
-        .render('flag', true)
-        .build(),
+      relation('Yes', {
+        input: 'yes',
+        encodings: {
+          src: parse([span('y', 'yes').ident()]),
+          ast: { type: 'yes' },
+          flag: true,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-scalar-body');
@@ -202,14 +258,18 @@ test('forward emit: scalar body returns the literal', async () => {
 });
 
 test('forward emit: bare $.name body returns the captured value', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Word',
     examples: [
-      ex('hello').as('Word').span('v', 'hello').ident()
-        .render('ast', { type: 'word', v: $.v })
-        .render('raw', $.v)
-        .build(),
+      relation('Word', {
+        input: 'hello',
+        encodings: {
+          src: parse([span('v', 'hello').ident()]),
+          ast: { type: 'word', v: $.v },
+          raw: $.v,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-ref-body');
@@ -217,16 +277,21 @@ test('forward emit: bare $.name body returns the captured value', async () => {
 });
 
 test('forward emit: array body allocates an array', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('a b').as('Pair')
-        .span('a', 'a').ident()
-        .span('b', 'b').ident()
-        .render('ast', { type: 'pair', a: $.a, b: $.b })
-        .render('arr', [$.a, $.b])
-        .build(),
+      relation('Pair', {
+        input: 'a b',
+        encodings: {
+          src: parse([
+            span('a', 'a').ident(),
+            span('b', 'b').ident(),
+          ]),
+          ast: { type: 'pair', a: $.a, b: $.b },
+          arr: [$.a, $.b],
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-array-body');
@@ -236,16 +301,21 @@ test('forward emit: array body allocates an array', async () => {
 // ---------- Default-target behaviour --------------------------------------
 
 test('render(input) without type uses schema.defaultTarget', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     defaultTarget: 'ast',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-default-target');
@@ -253,15 +323,20 @@ test('render(input) without type uses schema.defaultTarget', async () => {
 });
 
 test('render(input) throws when neither type nor defaultTarget is set', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-no-default-target');
@@ -269,15 +344,20 @@ test('render(input) throws when neither type nor defaultTarget is set', async ()
 });
 
 test('render(input, { type: "bogus" }) throws unknown target', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase3-unknown-target');
@@ -295,16 +375,21 @@ test('forward template: optional-absent slot suppresses preceding separator', as
   // Schema models a minimal "head [opt-tail]" production where tail is
   // .optional(); the source template puts the optional last with a leading
   // space separator. Without fusion the renderer emits a trailing space.
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('a b').as('Pair')
-        .span('head', 'a').ident()
-        .span('body', 'b').ident().optional()
-        .render('ast', { type: 'pair', head: $.head, body: $.body })
-        .render('source', tpl`${$.head} ${$.body}`)
-        .build(),
+      relation('Pair', {
+        input: 'a b',
+        encodings: {
+          src: parse([
+            span('head', 'a').ident(),
+            span('body', 'b').ident().optional(),
+          ]),
+          ast: { type: 'pair', head: $.head, body: $.body },
+          source: tpl`${$.head} ${$.body}`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'gap-a-optional-trailing');
@@ -323,22 +408,26 @@ test('forward template: .repeats() slot joins array with declared separator', as
   // (single space for plain .repeats(), empty string for .repeats({ sep })).
   // Without the joinSep thread, JS coerces arrays via toString → comma-join,
   // producing 'npm,test' instead of 'npm test'.
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Cmd',
     examples: [
-      ex('npm')
-        .as('Word')
-        .span('value', 'npm').ident().css()
-        .render('ast', $.value)
-        .render('source', tpl`${$.value}`)
-        .build(),
-      ex('npm test')
-        .as('Cmd')
-        .span('words', 'npm', 'Word').repeats({ min: 1 })
-        .render('ast', { type: 'cmd', words: $.words })
-        .render('source', tpl`${$.words}`)
-        .build(),
+      relation('Word', {
+        input: 'npm',
+        encodings: {
+          src: parse([span('value', 'npm').ident().css()]),
+          ast: $.value,
+          source: tpl`${$.value}`,
+        },
+      }),
+      relation('Cmd', {
+        input: 'npm test',
+        encodings: {
+          src: parse([span('words', 'npm').of('Word').repeats({ min: 1 })]),
+          ast: { type: 'cmd', words: $.words },
+          source: tpl`${$.words}`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'gap-b-repeats-join');
@@ -356,24 +445,30 @@ test('forward + rebuild: .repeats({sep}) slot joins array with declared separato
   // with "" therefore dropped every inter-child separator.
   //
   // Schema mirrors url's Query production: `.repeats({ sep: '&', min: 1 })`.
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Query',
     examples: [
-      ex('q=hello')
-        .as('Pair')
-        .span('key', 'q').ident().css()
-        .span('=')
-        .span('value', 'hello').ident().css()
-        .render('ast', { type: 'pair', key: $.key, value: $.value })
-        .render('source', tpl`${$.key}=${$.value}`)
-        .build(),
-      ex('q=hello&tag=one')
-        .as('Query')
-        .span('pairs', 'q=hello', 'Pair').repeats({ sep: '&', min: 1 })
-        .render('ast', { type: 'query', pairs: $.pairs })
-        .render('source', tpl`${$.pairs}`)
-        .build(),
+      relation('Pair', {
+        input: 'q=hello',
+        encodings: {
+          src: parse([
+            span('key', 'q').ident().css(),
+            literal('='),
+            span('value', 'hello').ident().css(),
+          ]),
+          ast: { type: 'pair', key: $.key, value: $.value },
+          source: tpl`${$.key}=${$.value}`,
+        },
+      }),
+      relation('Query', {
+        input: 'q=hello&tag=one',
+        encodings: {
+          src: parse([span('pairs', 'q=hello').of('Pair').repeats({ sep: '&', min: 1 })]),
+          ast: { type: 'query', pairs: $.pairs },
+          source: tpl`${$.pairs}`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'repeats-sep-join') as GeneratedModule & {
@@ -412,29 +507,37 @@ test('inverse dispatch: stringify routes via root productions, not sub-productio
   // wildcard pair `{ type: 'pair', a: {type:'wild'}, b: {type:'wild'} }`
   // whose source form is `* *`, and the dispatcher must return `* *` (root
   // Pair), NOT `*` (sub-production Field) just because `* *` starts with `*`.
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('*')
-        .as('Field')
-        .span('*')
-        .render('ast', { type: 'wild' })
-        .render('source', tpl`*`)
-        .build(),
-      ex('9')
-        .as('Field')
-        .span('v', '9').number().int()
-        .render('ast', { type: 'value', value: $.v })
-        .render('source', tpl`${$.v}`)
-        .build(),
-      ex('* 9')
-        .as('Pair')
-        .span('a', '*', 'Field')
-        .span('b', '9', 'Field')
-        .render('ast', { type: 'pair', a: $.a, b: $.b })
-        .render('source', tpl`${$.a} ${$.b}`)
-        .build(),
+      relation('Field', {
+        input: '*',
+        encodings: {
+          src: parse([literal('*')]),
+          ast: { type: 'wild' },
+          source: tpl`*`,
+        },
+      }),
+      relation('Field', {
+        input: '9',
+        encodings: {
+          src: parse([span('v', '9').number().int()]),
+          ast: { type: 'value', value: $.v },
+          source: tpl`${$.v}`,
+        },
+      }),
+      relation('Pair', {
+        input: '* 9',
+        encodings: {
+          src: parse([
+            span('a', '*').of('Field'),
+            span('b', '9').of('Field'),
+          ]),
+          ast: { type: 'pair', a: $.a, b: $.b },
+          source: tpl`${$.a} ${$.b}`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'gap-c-root-dispatch') as GeneratedModule & {
@@ -479,37 +582,52 @@ test('inverse dispatch: stringify routes via root productions, not sub-productio
 // recovery builder.
 
 test('recovery production interleaved with valid productions: __production keys preserve full-info indices', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
       // index 0: valid — `<a>v</a>`
-      ex('<a>v</a>').as('X')
-        .span('<a>')
-        .span('v', 'v').ident()
-        .span('</a>')
-        .render('ast', { type: 'a', v: $.v })
-        .render('html', tpl`<a>${$.v}</a>`)
-        .build(),
+      relation('X', {
+        input: '<a>v</a>',
+        encodings: {
+          src: parse([
+            literal('<a>'),
+            span('v', 'v').ident(),
+            literal('</a>'),
+          ]),
+          ast: { type: 'a', v: $.v },
+          html: tpl`<a>${$.v}</a>`,
+        },
+      }),
       // index 1: recovery — `!` followed by raw text up to `;`
-      ex('!bad;').as('X')
-        .span('!')
-        .span('rest', 'bad').rawUntil([';'])
-        .span(';')
-        .recovers({ syncAt: [';'], drop: 'x-bad' })
-        .render('ast', { type: 'bad', rest: $.rest })
-        .render('html', tpl`<!--${$.rest}-->`)
-        .build(),
+      relation('X', {
+        input: '!bad;',
+        status: { kind: 'recovered', recovery: { syncAt: [';'], drop: 'x-bad' } },
+        encodings: {
+          src: parse([
+            literal('!'),
+            span('rest', 'bad').rawUntil([';']),
+            literal(';'),
+          ]),
+          ast: { type: 'bad', rest: $.rest },
+          html: tpl`<!--${$.rest}-->`,
+        },
+      }),
       // index 2: valid — `<c>v</c>`. THIS is the indexing risk: the buggy
       // path would stamp this with `X#1` (the subset index inside the
       // filtered valid list), routing it to the recovery builder.
-      ex('<c>v</c>').as('X')
-        .span('<c>')
-        .span('v', 'v').ident()
-        .span('</c>')
-        .render('ast', { type: 'c', v: $.v })
-        .render('html', tpl`<c>${$.v}</c>`)
-        .build(),
+      relation('X', {
+        input: '<c>v</c>',
+        encodings: {
+          src: parse([
+            literal('<c>'),
+            span('v', 'v').ident(),
+            literal('</c>'),
+          ]),
+          ast: { type: 'c', v: $.v },
+          html: tpl`<c>${$.v}</c>`,
+        },
+      }),
     ],
   });
   const code = generateParser(schema as Parameters<typeof generateParser>[0], undefined, { packageName: 'recovery-interleave' });

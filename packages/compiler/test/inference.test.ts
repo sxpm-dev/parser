@@ -9,46 +9,66 @@ import { generateParser, inferSchema } from '../src/index.ts';
 // across; Phase 7 adds round-trip tests that supersede that smoke check.
 
 test('inference rejects schemas with unresolved recursive roles', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const broken = defineSchema({
     rootType: 'Outer',
     examples: [
-      ex('x').as('Outer').span('inner', 'x', 'NoSuchType').render('ast', { inner: $.inner }).build(),
+      relation('Outer', {
+        input: 'x',
+        encodings: {
+          src: parse([span('inner', 'x').of('NoSuchType')]),
+          ast: { inner: $.inner },
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(broken), /Recursive role 'NoSuchType'/);
 });
 
 test('inference rejects ambiguous recursive span text', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const ambiguous = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('x x')
-        .as('Pair')
-        .span('left', 'x', 'Atom')
-        .span('right', 'x', 'Atom')
-        .render('ast', { left: $.left, right: $.right })
-        .build(),
-      ex('y').as('Atom').span('v', 'y').ident().js().render('ast', { v: $.v }).build(),
+      relation('Pair', {
+        input: 'x x',
+        encodings: {
+          src: parse([
+            span('left', 'x').of('Atom'),
+            span('right', 'x').of('Atom'),
+          ]),
+          ast: { left: $.left, right: $.right },
+        },
+      }),
+      relation('Atom', {
+        input: 'y',
+        encodings: {
+          src: parse([span('v', 'y').ident().js()]),
+          ast: { v: $.v },
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(ambiguous), /appears multiple times/);
 });
 
 test('validation metadata is separate from SchemaDef and reaches inferSchema', async () => {
-  const { defineSchema, defineValidation, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, defineValidation, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Declaration',
     examples: [
-      ex('color: red;')
-        .as('Declaration')
-        .span('prop', 'color').until(':')
-        .span(':')
-        .span('value', 'red').until(';')
-        .span(';')
-        .render('ast', { type: 'decl', prop: $.prop, value: $.value })
-        .build(),
+      relation('Declaration', {
+        input: 'color: red;',
+        encodings: {
+          src: parse([
+            span('prop', 'color').until(':'),
+            literal(':'),
+            span('value', 'red').until(';'),
+            literal(';'),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const valueValidator = Object.assign(
@@ -74,7 +94,7 @@ test('validation metadata is separate from SchemaDef and reaches inferSchema', a
 });
 
 test('emitter factors shared recursive repeats before literal branch points', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Node',
     punctuators: {
@@ -85,33 +105,45 @@ test('emitter factors shared recursive repeats before literal branch points', as
     },
     tokens: ['string'],
     examples: [
-      ex('key="value"')
-        .as('Pair')
-        .span('name', 'key').ident().css()
-        .span('=')
-        .span('value', '"value"').string().doubleQuoted()
-        .render('ast', { name: $.name, value: $.value })
-        .build(),
-      ex('<box key="value">body</box>')
-        .as('Node')
-        .span('<')
-        .span('tag', 'box').ident().css()
-        .span('pairs', 'key="value"', 'Pair').repeats({ min: 0 })
-        .span('>')
-        .span('body', 'body').until('</')
-        .span('</')
-        .span('closeTag', 'box').ident().css()
-        .span('>')
-        .render('ast', { tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag })
-        .build(),
-      ex('<box />')
-        .as('Node')
-        .span('<')
-        .span('tag', 'box').ident().css()
-        .span('pairs', '', 'Pair').repeats({ min: 0 })
-        .span('/>')
-        .render('ast', { tag: $.tag, pairs: $.pairs, selfClosing: true })
-        .build(),
+      relation('Pair', {
+        input: 'key="value"',
+        encodings: {
+          src: parse([
+            span('name', 'key').ident().css(),
+            literal('='),
+            span('value', '"value"').string().doubleQuoted(),
+          ]),
+          ast: { name: $.name, value: $.value },
+        },
+      }),
+      relation('Node', {
+        input: '<box key="value">body</box>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'box').ident().css(),
+            span('pairs', 'key="value"').of('Pair').repeats({ min: 0 }),
+            literal('>'),
+            span('body', 'body').until('</'),
+            literal('</'),
+            span('closeTag', 'box').ident().css(),
+            literal('>'),
+          ]),
+          ast: { tag: $.tag, pairs: $.pairs, body: $.body, closeTag: $.closeTag },
+        },
+      }),
+      relation('Node', {
+        input: '<box />',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'box').ident().css(),
+            span('pairs', '').of('Pair').repeats({ min: 0 }),
+            literal('/>'),
+          ]),
+          ast: { tag: $.tag, pairs: $.pairs, selfClosing: true },
+        },
+      }),
     ],
   });
 
@@ -129,11 +161,17 @@ test('emitter factors shared recursive repeats before literal branch points', as
 });
 
 test('inferSchema attaches an empty renders map to a production with no .render entries', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Atom',
     examples: [
-      ex('x').as('Atom').span('v', 'x').ident().render('ast', { type: 'atom', v: $.v }).build(),
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          src: parse([span('v', 'x').ident()]),
+          ast: { type: 'atom', v: $.v },
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);

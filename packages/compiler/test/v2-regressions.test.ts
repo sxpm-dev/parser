@@ -39,18 +39,22 @@ async function loadV2Parser(code: string): Promise<{
 }
 
 test('v2 emits scan-until for balanced .until() capture', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('color: red;')
-        .as('Decl')
-        .span('prop', 'color').until(':')
-        .span(':')
-        .span('value', 'red').until(';')
-        .span(';')
-        .render('ast', { type: 'decl', prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'color: red;',
+        encodings: {
+          src: parse([
+            span('prop', 'color').until(':'),
+            literal(':'),
+            span('value', 'red').until(';'),
+            literal(';'),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   // Today this throws "until/rawUntil span not yet supported". After Task 1.3a
@@ -67,20 +71,24 @@ test('v2 emits scan-until for balanced .until() capture', async () => {
 });
 
 test('v2 .until() respects balanced brackets', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // The `;` inside `f(a;b)` must NOT terminate the capture, because the
   // balanced-bracket tracking keeps depth > 0 while we're inside `(...)`.
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('expr: f(a;b);')
-        .as('Decl')
-        .span('prop', 'expr').until(':')
-        .span(':')
-        .span('value', 'f(a;b)').until(';')
-        .span(';')
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'expr: f(a;b);',
+        encodings: {
+          src: parse([
+            span('prop', 'expr').until(':'),
+            literal(':'),
+            span('value', 'f(a;b)').until(';'),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -92,18 +100,22 @@ test('v2 .until() respects balanced brackets', async () => {
 });
 
 test('v2 .until() trims trailing whitespace from capture', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('color: red;')
-        .as('Decl')
-        .span('prop', 'color').until(':')
-        .span(':')
-        .span('value', 'red').until(';')
-        .span(';')
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'color: red;',
+        encodings: {
+          src: parse([
+            span('prop', 'color').until(':'),
+            literal(':'),
+            span('value', 'red').until(';'),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -119,17 +131,21 @@ test('v2 .until() trims trailing whitespace from capture', async () => {
 });
 
 test('v2 .until() honors rejectSuffix by returning null (no throws)', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Rule',
     examples: [
-      ex('a { }')
-        .as('Rule')
-        .span('selector', 'a').until(['{'], { rejectSuffix: ':' })
-        .span('{')
-        .span('}')
-        .render('ast', { sel: $.selector })
-        .build(),
+      relation('Rule', {
+        input: 'a { }',
+        encodings: {
+          src: parse([
+            span('selector', 'a').until(['{'], { rejectSuffix: ':' }),
+            literal('{'),
+            literal('}'),
+          ]),
+          ast: { sel: $.selector },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -143,23 +159,27 @@ test('v2 .until() honors rejectSuffix by returning null (no throws)', async () =
 });
 
 test('v2 .until({ trim: false }) preserves surrounding whitespace', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('foo:bar;')
-        .as('Decl')
-        // trim:false so the capture keeps both leading & trailing ws inside
-        // the slice. Note the inter-span ws-skip still moves `off` past
-        // outer ws before/after the span — this only suppresses the
-        // capture-internal trim. With no leading/trailing ws in the input
-        // the trim=false path is just exercised for code coverage.
-        .span('prop', 'foo').until([':'], { trim: false })
-        .span(':')
-        .span('value', 'bar').until([';'], { trim: false })
-        .span(';')
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'foo:bar;',
+        encodings: {
+          src: parse([
+            // trim:false so the capture keeps both leading & trailing ws inside
+            // the slice. Note the inter-span ws-skip still moves `off` past
+            // outer ws before/after the span — this only suppresses the
+            // capture-internal trim. With no leading/trailing ws in the input
+            // the trim=false path is just exercised for code coverage.
+            span('prop', 'foo').until([':'], { trim: false }),
+            literal(':'),
+            span('value', 'bar').until([';'], { trim: false }),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -171,17 +191,21 @@ test('v2 .until({ trim: false }) preserves surrounding whitespace', async () => 
 });
 
 test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Tag',
     examples: [
-      ex('<script>x=1</script>')
-        .as('Tag')
-        .span('<script>')
-        .span('body', 'x=1').rawUntil(['</script>'])
-        .span('</script>')
-        .render('ast', { body: $.body })
-        .build(),
+      relation('Tag', {
+        input: '<script>x=1</script>',
+        encodings: {
+          src: parse([
+            literal('<script>'),
+            span('body', 'x=1').rawUntil(['</script>']),
+            literal('</script>'),
+          ]),
+          ast: { body: $.body },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -192,7 +216,7 @@ test('v2 .rawUntil() captures opaque text up to a literal stop', async () => {
 });
 
 test('v2 emits multi-role repeats loop using role-dispatch ladder', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Doc collects 0..N children, each of which is either a SlashItem or
   // HashItem — distinct first bytes so the ladder can dispatch unambiguously.
   // The repeats span has no separator and no min — the loop just keeps
@@ -200,23 +224,33 @@ test('v2 emits multi-role repeats loop using role-dispatch ladder', async () => 
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('/foo')
-        .as('SlashItem')
-        .span('/')
-        .span('text', 'foo').until(['\n', '@'])
-        .render('ast', { type: 'slash', text: $.text })
-        .build(),
-      ex('#bar')
-        .as('HashItem')
-        .span('#')
-        .span('text', 'bar').until(['\n', '@'])
-        .render('ast', { type: 'hash', text: $.text })
-        .build(),
-      ex('/foo\n#bar\n')
-        .as('Doc')
-        .span('items', '/foo\n#bar\n', ['SlashItem', 'HashItem']).repeats({ min: 0 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('SlashItem', {
+        input: '/foo',
+        encodings: {
+          src: parse([
+            literal('/'),
+            span('text', 'foo').until(['\n', '@']),
+          ]),
+          ast: { type: 'slash', text: $.text },
+        },
+      }),
+      relation('HashItem', {
+        input: '#bar',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('text', 'bar').until(['\n', '@']),
+          ]),
+          ast: { type: 'hash', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '/foo\n#bar\n',
+        encodings: {
+          src: parse([span('items', '/foo\n#bar\n').of('SlashItem', 'HashItem').repeats({ min: 0 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   // Until Task 1.3c lands, this throws `v2: multi-role repeats not yet
@@ -242,27 +276,31 @@ test('v2 emits multi-role repeats loop using role-dispatch ladder', async () => 
 });
 
 test('v2 multi-role repeats honors min by failing when count too low', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('/foo')
-        .as('SlashItem')
-        .span('/')
-        .span('text', 'foo').until(['\n', '@'])
-        .render('ast', { type: 'slash', text: $.text })
-        .build(),
-      ex('#bar')
-        .as('HashItem')
-        .span('#')
-        .span('text', 'bar').until(['\n', '@'])
-        .render('ast', { type: 'hash', text: $.text })
-        .build(),
-      ex('/foo\n')
-        .as('Doc')
-        .span('items', '/foo\n', ['SlashItem', 'HashItem']).repeats({ min: 1 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('SlashItem', {
+        input: '/foo',
+        encodings: {
+          src: parse([literal('/'), span('text', 'foo').until(['\n', '@'])]),
+          ast: { type: 'slash', text: $.text },
+        },
+      }),
+      relation('HashItem', {
+        input: '#bar',
+        encodings: {
+          src: parse([literal('#'), span('text', 'bar').until(['\n', '@'])]),
+          ast: { type: 'hash', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '/foo\n',
+        encodings: {
+          src: parse([span('items', '/foo\n').of('SlashItem', 'HashItem').repeats({ min: 1 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -276,7 +314,7 @@ test('v2 multi-role repeats honors min by failing when count too low', async () 
 });
 
 test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Mimics HTML <li> implicit-close: a Container holds 0..N items where each
   // item is either a SlashItem or HashItem. When the upcoming source begins
   // with `</`, the children loop must stop without consuming — the parent
@@ -284,27 +322,33 @@ test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
   const schema = defineSchema({
     rootType: 'Container',
     examples: [
-      ex('/foo')
-        .as('SlashItem')
-        .span('/')
-        .span('text', 'foo').until(['\n', '<'])
-        .render('ast', { type: 'slash', text: $.text })
-        .build(),
-      ex('#bar')
-        .as('HashItem')
-        .span('#')
-        .span('text', 'bar').until(['\n', '<'])
-        .render('ast', { type: 'hash', text: $.text })
-        .build(),
-      ex('[/foo\n#bar\n</>]')
-        .as('Container')
-        .span('[')
-        .span('items', '/foo\n#bar\n', ['SlashItem', 'HashItem'])
-          .repeats({ min: 0, stopBefore: ['</'] })
-        .span('</>')
-        .span(']')
-        .render('ast', { items: $.items })
-        .build(),
+      relation('SlashItem', {
+        input: '/foo',
+        encodings: {
+          src: parse([literal('/'), span('text', 'foo').until(['\n', '<'])]),
+          ast: { type: 'slash', text: $.text },
+        },
+      }),
+      relation('HashItem', {
+        input: '#bar',
+        encodings: {
+          src: parse([literal('#'), span('text', 'bar').until(['\n', '<'])]),
+          ast: { type: 'hash', text: $.text },
+        },
+      }),
+      relation('Container', {
+        input: '[/foo\n#bar\n</>]',
+        encodings: {
+          src: parse([
+            literal('['),
+            span('items', '/foo\n#bar\n').of('SlashItem', 'HashItem')
+              .repeats({ min: 0, stopBefore: ['</'] }),
+            literal('</>'),
+            literal(']'),
+          ]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -320,27 +364,33 @@ test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
 });
 
 test('v2 multi-role repeats with separator threads items together', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Comma-separated list of (Word | Number) items. Sep=',' splits children;
   // when the next non-ws char isn't a comma, the loop breaks.
   const schema = defineSchema({
     rootType: 'List',
     examples: [
-      ex('abc')
-        .as('Word')
-        .span('value', 'abc').ident().css()
-        .render('ast', { kind: 'word', v: $.value })
-        .build(),
-      ex('42')
-        .as('Number')
-        .span('value', '42').number().int()
-        .render('ast', { kind: 'num', v: $.value })
-        .build(),
-      ex('abc,42')
-        .as('List')
-        .span('items', 'abc,42', ['Word', 'Number']).repeats({ min: 0, sep: ',' })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('Word', {
+        input: 'abc',
+        encodings: {
+          src: parse([span('value', 'abc').ident().css()]),
+          ast: { kind: 'word', v: $.value },
+        },
+      }),
+      relation('Number', {
+        input: '42',
+        encodings: {
+          src: parse([span('value', '42').number().int()]),
+          ast: { kind: 'num', v: $.value },
+        },
+      }),
+      relation('List', {
+        input: 'abc,42',
+        encodings: {
+          src: parse([span('items', 'abc,42').of('Word', 'Number').repeats({ min: 0, sep: ',' })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -355,20 +405,31 @@ test('v2 multi-role repeats with separator threads items together', async () => 
 });
 
 test('v2 multi-role repeats honors trailing: "forbidden"', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Trailing comma must NOT be consumed: `off` rewinds to before the last
   // sep when the post-sep slot has no item. Surrounding `[ ... ]` brackets
   // let us assert the parser left the comma in place for the outer `]`.
   const schema = defineSchema({
     rootType: 'List',
     examples: [
-      ex('a').as('Word').span('value', 'a').ident().css()
-        .render('ast', { v: $.value }).build(),
-      ex('[a]').as('List')
-        .span('[')
-        .span('items', 'a', ['Word']).repeats({ min: 0, sep: ',', trailing: 'forbidden' })
-        .span(']')
-        .render('ast', { items: $.items }).build(),
+      relation('Word', {
+        input: 'a',
+        encodings: {
+          src: parse([span('value', 'a').ident().css()]),
+          ast: { v: $.value },
+        },
+      }),
+      relation('List', {
+        input: '[a]',
+        encodings: {
+          src: parse([
+            literal('['),
+            span('items', 'a').of('Word').repeats({ min: 0, sep: ',', trailing: 'forbidden' }),
+            literal(']'),
+          ]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -382,17 +443,26 @@ test('v2 multi-role repeats honors trailing: "forbidden"', async () => {
 });
 
 test('v2 multi-role repeats honors trailing: "required"', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Each item MUST be followed by a sep, even the last one. So `a;b;` parses
   // but `a;b` does not.
   const schema = defineSchema({
     rootType: 'List',
     examples: [
-      ex('a').as('Word').span('value', 'a').ident().css()
-        .render('ast', { v: $.value }).build(),
-      ex('a;').as('List')
-        .span('items', 'a', ['Word']).repeats({ min: 0, sep: ';', trailing: 'required' })
-        .render('ast', { items: $.items }).build(),
+      relation('Word', {
+        input: 'a',
+        encodings: {
+          src: parse([span('value', 'a').ident().css()]),
+          ast: { v: $.value },
+        },
+      }),
+      relation('List', {
+        input: 'a;',
+        encodings: {
+          src: parse([span('items', 'a').of('Word').repeats({ min: 0, sep: ';', trailing: 'required' })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -405,7 +475,7 @@ test('v2 multi-role repeats honors trailing: "required"', async () => {
 });
 
 test('v2 repeats-sep tolerates items that consumed their own optional sep', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // CSS-shape regression (Task 1.3j): the Decl production ends with
   // `.span(';').optional()`. When a Decl consumed its trailing `;`, the
   // parent Rule's `repeats({ sep: ';' })` would find NO `;` between the
@@ -415,19 +485,29 @@ test('v2 repeats-sep tolerates items that consumed their own optional sep', asyn
   const schema = defineSchema({
     rootType: 'Rule',
     examples: [
-      ex('prop: val').as('Decl')
-        .span('prop', 'prop').until([':', ';', '}'])
-        .span(':')
-        .span('value', 'val').until([';', '}'])
-        .span(';').optional()
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
-      ex('{ a: 1; b: 2 }').as('Rule')
-        .span('{')
-        .span('decls', 'a: 1; b: 2', ['Decl']).repeats({ sep: ';', trailing: 'allowed', min: 0 })
-        .span('}')
-        .render('ast', { decls: $.decls })
-        .build(),
+      relation('Decl', {
+        input: 'prop: val',
+        encodings: {
+          src: parse([
+            span('prop', 'prop').until([':', ';', '}']),
+            literal(':'),
+            span('value', 'val').until([';', '}']),
+            literal(';').optional(),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
+      relation('Rule', {
+        input: '{ a: 1; b: 2 }',
+        encodings: {
+          src: parse([
+            literal('{'),
+            span('decls', 'a: 1; b: 2').of('Decl').repeats({ sep: ';', trailing: 'allowed', min: 0 }),
+            literal('}'),
+          ]),
+          ast: { decls: $.decls },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -447,16 +527,25 @@ test('v2 repeats-sep tolerates items that consumed their own optional sep', asyn
 });
 
 test('v2 multi-role repeats honors max by failing when count too high', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Cap at 2 items. 2 ok, 3 fails.
   const schema = defineSchema({
     rootType: 'List',
     examples: [
-      ex('a').as('Word').span('value', 'a').ident().css()
-        .render('ast', { v: $.value }).build(),
-      ex('a,b').as('List')
-        .span('items', 'a,b', ['Word']).repeats({ min: 0, max: 2, sep: ',' })
-        .render('ast', { items: $.items }).build(),
+      relation('Word', {
+        input: 'a',
+        encodings: {
+          src: parse([span('value', 'a').ident().css()]),
+          ast: { v: $.value },
+        },
+      }),
+      relation('List', {
+        input: 'a,b',
+        encodings: {
+          src: parse([span('items', 'a,b').of('Word').repeats({ min: 0, max: 2, sep: ',' })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -469,7 +558,7 @@ test('v2 multi-role repeats honors max by failing when count too high', async ()
 });
 
 test('v2 role-ladder treats until-leading role as fallthrough catch-all', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Hash starts with `#` so its first-byte signature is { 0x23 }. Text has
   // a `.until('\n')` first span so it has no fixed first byte — the ladder
   // must treat it as the fallthrough catch-all and dispatch to it whenever
@@ -477,16 +566,27 @@ test('v2 role-ladder treats until-leading role as fallthrough catch-all', async 
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('#hi').as('Hash')
-        .span('#')
-        .span('text', 'hi').until(['\n'])
-        .render('ast', { type: 'hash', text: $.text }).build(),
-      ex('plain').as('Text')
-        .span('text', 'plain').until(['\n'])
-        .render('ast', { type: 'text', text: $.text }).build(),
-      ex('#hi').as('Doc')
-        .span('item', '#hi', ['Hash', 'Text'])
-        .render('ast', { item: $.item }).build(),
+      relation('Hash', {
+        input: '#hi',
+        encodings: {
+          src: parse([literal('#'), span('text', 'hi').until(['\n'])]),
+          ast: { type: 'hash', text: $.text },
+        },
+      }),
+      relation('Text', {
+        input: 'plain',
+        encodings: {
+          src: parse([span('text', 'plain').until(['\n'])]),
+          ast: { type: 'text', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '#hi',
+        encodings: {
+          src: parse([span('item', '#hi').of('Hash', 'Text')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -506,7 +606,7 @@ test('v2 role-ladder treats until-leading role as fallthrough catch-all', async 
 });
 
 test('v2 role-ladder uses sentinel speculation for multiple fallthrough roles', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Two roles, both with `.until(...)` first spans — neither has a fixed
   // first byte. Task 1.3f resolves this via sentinel speculation in author
   // declaration order: Left is tried first, and Right fires only when Left's
@@ -516,17 +616,27 @@ test('v2 role-ladder uses sentinel speculation for multiple fallthrough roles', 
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('foo:').as('Left')
-        .span('text', 'foo').until([':'])
-        .span(':')
-        .render('ast', { kind: 'left', text: $.text }).build(),
-      ex('bar;').as('Right')
-        .span('text', 'bar').until([';'])
-        .span(';')
-        .render('ast', { kind: 'right', text: $.text }).build(),
-      ex('foo:').as('Doc')
-        .span('item', 'foo:', ['Left', 'Right'])
-        .render('ast', { item: $.item }).build(),
+      relation('Left', {
+        input: 'foo:',
+        encodings: {
+          src: parse([span('text', 'foo').until([':']), literal(':')]),
+          ast: { kind: 'left', text: $.text },
+        },
+      }),
+      relation('Right', {
+        input: 'bar;',
+        encodings: {
+          src: parse([span('text', 'bar').until([';']), literal(';')]),
+          ast: { kind: 'right', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: 'foo:',
+        encodings: {
+          src: parse([span('item', 'foo:').of('Left', 'Right')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -544,7 +654,7 @@ test('v2 role-ladder uses sentinel speculation for multiple fallthrough roles', 
 });
 
 test('v2 role-ladder uses sentinel speculation for same-byte literal roles', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Mirrors HTML's Doctype-vs-Comment conflict: both roles start with the
   // same byte `<` but have different literal prefixes (`<!` vs `<!--`). The
   // ladder groups them under one byte-dispatch arm and emits sentinel
@@ -552,22 +662,35 @@ test('v2 role-ladder uses sentinel speculation for same-byte literal roles', asy
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('<!DOCTYPE>').as('Doctype')
-        .span('<!')
-        .span('keyword', 'DOCTYPE').ident().html().oneOf(['DOCTYPE'])
-        .span('>')
-        .render('ast', { kind: 'doctype', keyword: $.keyword })
-        .build(),
-      ex('<!--hi-->').as('Comment')
-        .span('<!--')
-        .span('text', 'hi').until('-->', { trim: false })
-        .span('-->')
-        .render('ast', { kind: 'comment', text: $.text })
-        .build(),
-      ex('<!DOCTYPE>').as('Doc')
-        .span('item', '<!DOCTYPE>', ['Doctype', 'Comment'])
-        .render('ast', { item: $.item })
-        .build(),
+      relation('Doctype', {
+        input: '<!DOCTYPE>',
+        encodings: {
+          src: parse([
+            literal('<!'),
+            span('keyword', 'DOCTYPE').ident().html().oneOf(['DOCTYPE']),
+            literal('>'),
+          ]),
+          ast: { kind: 'doctype', keyword: $.keyword },
+        },
+      }),
+      relation('Comment', {
+        input: '<!--hi-->',
+        encodings: {
+          src: parse([
+            literal('<!--'),
+            span('text', 'hi').until('-->', { trim: false }),
+            literal('-->'),
+          ]),
+          ast: { kind: 'comment', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '<!DOCTYPE>',
+        encodings: {
+          src: parse([span('item', '<!DOCTYPE>').of('Doctype', 'Comment')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -586,7 +709,7 @@ test('v2 role-ladder uses sentinel speculation for same-byte literal roles', asy
 });
 
 test('v2 role-ladder fallthrough speculation respects author declaration order', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Two fallthrough roles with overlapping shapes; the second only matches
   // when the first would fail. The schema must list the more-specific role
   // first — that's the contract sentinel speculation rests on.
@@ -596,16 +719,27 @@ test('v2 role-ladder fallthrough speculation respects author declaration order',
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('hi===').as('Underlined')
-        .span('text', 'hi').until('===')
-        .span('===')
-        .render('ast', { kind: 'heading', text: $.text }).build(),
-      ex('hello').as('Paragraph')
-        .span('text', 'hello').until([])
-        .render('ast', { kind: 'paragraph', text: $.text }).build(),
-      ex('hi===').as('Doc')
-        .span('item', 'hi===', ['Underlined', 'Paragraph'])
-        .render('ast', { item: $.item }).build(),
+      relation('Underlined', {
+        input: 'hi===',
+        encodings: {
+          src: parse([span('text', 'hi').until('==='), literal('===')]),
+          ast: { kind: 'heading', text: $.text },
+        },
+      }),
+      relation('Paragraph', {
+        input: 'hello',
+        encodings: {
+          src: parse([span('text', 'hello').until([])]),
+          ast: { kind: 'paragraph', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: 'hi===',
+        encodings: {
+          src: parse([span('item', 'hi===').of('Underlined', 'Paragraph')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -624,30 +758,34 @@ test('v2 role-ladder fallthrough speculation respects author declaration order',
 });
 
 test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Doc wraps a single child that can be either a Comment (starts with `/`)
   // or a Hash (starts with `#`). The two roles have distinct first bytes so
   // byte-prefix dispatch is unambiguous — exactly the case 1.3b targets.
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('/foo')
-        .as('Comment')
-        .span('/')
-        .span('text', 'foo').until(['\n', '@'])
-        .render('ast', { type: 'comment', text: $.text })
-        .build(),
-      ex('#bar')
-        .as('Hash')
-        .span('#')
-        .span('text', 'bar').until(['\n', '@'])
-        .render('ast', { type: 'hash', text: $.text })
-        .build(),
-      ex('/foo')
-        .as('Doc')
-        .span('item', '/foo', ['Comment', 'Hash'])
-        .render('ast', { item: $.item })
-        .build(),
+      relation('Comment', {
+        input: '/foo',
+        encodings: {
+          src: parse([literal('/'), span('text', 'foo').until(['\n', '@'])]),
+          ast: { type: 'comment', text: $.text },
+        },
+      }),
+      relation('Hash', {
+        input: '#bar',
+        encodings: {
+          src: parse([literal('#'), span('text', 'bar').until(['\n', '@'])]),
+          ast: { type: 'hash', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '/foo',
+        encodings: {
+          src: parse([span('item', '/foo').of('Comment', 'Hash')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -672,16 +810,20 @@ test('v2 emits role-dispatch ladder for multi-role non-repeats span', async () =
 // pin the per-refinement behavior so codegen honors what the schema declares.
 
 test('v2 number scanner with .int() (default) accepts only digits', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('42px')
-        .as('Decl')
-        .span('value', '42').number().int()
-        .span('unit', 'px').ident().css()
-        .render('ast', { value: $.value, unit: $.unit })
-        .build(),
+      relation('Decl', {
+        input: '42px',
+        encodings: {
+          src: parse([
+            span('value', '42').number().int(),
+            span('unit', 'px').ident().css(),
+          ]),
+          ast: { value: $.value, unit: $.unit },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -696,16 +838,20 @@ test('v2 number scanner with .int() (default) accepts only digits', async () => 
 });
 
 test('v2 number scanner honors .float() — accepts digits and digits.fraction', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('1.5px')
-        .as('Decl')
-        .span('value', '1.5').number().float()
-        .span('unit', 'px').ident().css()
-        .render('ast', { value: $.value, unit: $.unit })
-        .build(),
+      relation('Decl', {
+        input: '1.5px',
+        encodings: {
+          src: parse([
+            span('value', '1.5').number().float(),
+            span('unit', 'px').ident().css(),
+          ]),
+          ast: { value: $.value, unit: $.unit },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -727,18 +873,34 @@ test('v2 number scanner honors .float() — accepts digits and digits.fraction',
 });
 
 test('v2 number scanner honors .scientific() — float + optional exponent', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Lit',
     examples: [
-      ex('1.5e10')
-        .as('Lit')
-        .span('value', '1.5e10').number().scientific()
-        .render('ast', { value: $.value })
-        .build(),
+      relation('Lit', {
+        input: '1.5e10',
+        encodings: {
+          src: parse([span('value', '1.5e10').number().scientific()]),
+          ast: { value: span('value', '1.5e10') },
+        },
+      }),
     ],
   });
-  const code = generateParser(schema, undefined, {});
+  // Need $ for the ast body — let me re-import
+  const { defineSchema: ds2, relation: r2, parse: p2, span: s2, $ } = await import('@parser2/parser');
+  const schema2 = ds2({
+    rootType: 'Lit',
+    examples: [
+      r2('Lit', {
+        input: '1.5e10',
+        encodings: {
+          src: p2([s2('value', '1.5e10').number().scientific()]),
+          ast: { value: $.value },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema2, undefined, {});
   const { render } = await loadV2Parser(code);
   const __parse = (input: string) => render(input, { target: 'ast' });
   assert.equal((__parse('1.5e10') as { value: string }).value, '1.5e10');
@@ -751,15 +913,17 @@ test('v2 number scanner honors .scientific() — float + optional exponent', asy
 });
 
 test('v2 number scanner honors .separator("_") — allows underscores between digits', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Lit',
     examples: [
-      ex('1_000')
-        .as('Lit')
-        .span('value', '1_000').number().separator('_')
-        .render('ast', { value: $.value })
-        .build(),
+      relation('Lit', {
+        input: '1_000',
+        encodings: {
+          src: parse([span('value', '1_000').number().separator('_')]),
+          ast: { value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -781,20 +945,25 @@ test('v2 number scanner honors .separator("_") — allows underscores between di
 // `{ a: { b: c } }` to exercise depth > 1.
 
 test('v2 .until() balanced:true tracks {} depth (not just () and [])', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // The `;` and the inner `}` inside `{ nested }` must NOT terminate the
   // capture — the balanced-bracket tracking keeps depth > 0 while inside
   // `{...}`. The outer `;` (depth 0) is the stop that fires.
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('prop: { nested };').as('Decl')
-        .span('prop', 'prop').until(':')
-        .span(':')
-        .span('value', '{ nested }').until([';', '}'])
-        .span(';')
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'prop: { nested };',
+        encodings: {
+          src: parse([
+            span('prop', 'prop').until(':'),
+            literal(':'),
+            span('value', '{ nested }').until([';', '}']),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -809,20 +978,25 @@ test('v2 .until() balanced:true tracks {} depth (not just () and [])', async () 
 });
 
 test('v2 .until() balanced:true tracks deeply-nested {} depth', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Doubly-nested `{ a: { b: c } }`. Inner `}` decrements to depth=1, outer
   // `}` decrements to depth=0. The next char after the outer `}` is `;` at
   // depth=0 — that's the stop that fires.
   const schema = defineSchema({
     rootType: 'Decl',
     examples: [
-      ex('p: { a: { b: c } };').as('Decl')
-        .span('prop', 'p').until(':')
-        .span(':')
-        .span('value', '{ a: { b: c } }').until([';', '}'])
-        .span(';')
-        .render('ast', { prop: $.prop, value: $.value })
-        .build(),
+      relation('Decl', {
+        input: 'p: { a: { b: c } };',
+        encodings: {
+          src: parse([
+            span('prop', 'p').until(':'),
+            literal(':'),
+            span('value', '{ a: { b: c } }').until([';', '}']),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, value: $.value },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -849,34 +1023,47 @@ test('v2 byte-prefix group orders tag-restricted (.oneOf) alts before unrestrict
   // The fix prioritizes alts whose spans contain a `.oneOf(...)` refinement
   // — these signal a tag-name discriminator and must be tried first so the
   // catch-all only sees inputs no specific alt can claim.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
       // li implicit-close form, declared SECOND. Has `.oneOf(['li'])`.
-      ex('<li></li>').as('El')
-        .span('<')
-        .span('tag', 'li').ident().oneOf(['li'])
-        .span('>')
-        .span('children', '', ['El']).repeats({ min: 0, stopBefore: ['<li>', '</ol>'] })
-        .span('</li>').optional()
-        .render('ast', { type: 'li', tag: $.tag })
-        .build(),
+      relation('El', {
+        input: '<li></li>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'li').ident().oneOf(['li']),
+            literal('>'),
+            span('children').of('El').repeats({ min: 0, stopBefore: ['<li>', '</ol>'] }),
+            literal('</li>').optional(),
+          ]),
+          ast: { type: 'li', tag: $.tag },
+        },
+      }),
       // Catch-all regular form, declared FIRST so we can verify reorder.
-      ex('<x></x>').as('El')
-        .span('<')
-        .span('tag', 'x').ident()
-        .span('>')
-        .span('children', '', ['El']).repeats({ min: 0 })
-        .span('</')
-        .span('closeTag', 'x').ident()
-        .span('>')
-        .render('ast', { type: 'el', tag: $.tag, closeTag: $.closeTag })
-        .build(),
-      ex('<x></x>').as('Doc')
-        .span('items', '<x></x>', ['El']).repeats({ min: 0 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('El', {
+        input: '<x></x>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'x').ident(),
+            literal('>'),
+            span('children').of('El').repeats({ min: 0 }),
+            literal('</'),
+            span('closeTag', 'x').ident(),
+            literal('>'),
+          ]),
+          ast: { type: 'el', tag: $.tag, closeTag: $.closeTag },
+        },
+      }),
+      relation('Doc', {
+        input: '<x></x>',
+        encodings: {
+          src: parse([span('items', '<x></x>').of('El').repeats({ min: 0 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -901,34 +1088,49 @@ test('v2 speculation chain orders same-first-byte literals by descending prefix 
   // longer-literal alt must be tried first within the same-first-byte
   // group. v1 does this via its byte-prefix dispatcher; v2 now mirrors
   // the order inside emitSpeculationChain.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Leaf',
     examples: [
       // Decoy alt with no fixed first byte — forces emitDispatcher to
       // fall through to emitSpeculationChain. Use a leading non-backtick
       // anchor so this alt never matches a `'```...'` input.
-      ex('Setext\n===').as('Leaf')
-        .span('text', 'Setext').until('\n===', { balanced: false })
-        .span('\n===')
-        .render('ast', { type: 'setext', text: $.text })
-        .build(),
+      relation('Leaf', {
+        input: 'Setext\n===',
+        encodings: {
+          src: parse([
+            span('text', 'Setext').until('\n===', { balanced: false }),
+            literal('\n==='),
+          ]),
+          ast: { type: 'setext', text: $.text },
+        },
+      }),
       // Alt with shorter literal prefix.
-      ex('```js\nsample\n```').as('Leaf')
-        .span('```')
-        .span('lang', 'js').ident().css()
-        .span('body', 'sample').until('```', { balanced: false })
-        .span('```')
-        .render('ast', { type: 'code-lang', lang: $.lang, body: $.body })
-        .build(),
+      relation('Leaf', {
+        input: '```js\nsample\n```',
+        encodings: {
+          src: parse([
+            literal('```'),
+            span('lang', 'js').ident().css(),
+            span('body', 'sample').until('```', { balanced: false }),
+            literal('```'),
+          ]),
+          ast: { type: 'code-lang', lang: $.lang, body: $.body },
+        },
+      }),
       // Alt with longer literal prefix — declared SECOND but should be
       // tried first against `'```\\n...'`-shaped input.
-      ex('```\nplain\n```').as('Leaf')
-        .span('```\n')
-        .span('body', 'plain').until('```', { balanced: false })
-        .span('```')
-        .render('ast', { type: 'code-plain', body: $.body })
-        .build(),
+      relation('Leaf', {
+        input: '```\nplain\n```',
+        encodings: {
+          src: parse([
+            literal('```\n'),
+            span('body', 'plain').until('```', { balanced: false }),
+            literal('```'),
+          ]),
+          ast: { type: 'code-plain', body: $.body },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -946,16 +1148,21 @@ test('v2 .until() always trims trailing whitespace from the captured slice', asy
   // declares trim:false but v1's emitter ignores the option (always trims).
   // The AST shape expects the trimmed interior (data === 'hello'), not the
   // raw ' hello '. v2 must match.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'C',
     examples: [
-      ex('<!-- hello -->').as('C')
-        .span('<!--')
-        .span('data', ' hello ').until('-->', { trim: false })
-        .span('-->')
-        .render('ast', { data: $.data })
-        .build(),
+      relation('C', {
+        input: '<!-- hello -->',
+        encodings: {
+          src: parse([
+            literal('<!--'),
+            span('data', ' hello ').until('-->', { trim: false }),
+            literal('-->'),
+          ]),
+          ast: { data: $.data },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -973,15 +1180,18 @@ test('v2 comment-class span returns interior text and trims surrounding ws', asy
   // expects the INTERIOR text (no `/*` `*/` delimiters, leading/trailing
   // whitespace trimmed). v2 had been returning the raw byte slice
   // including the delimiters. The fix lives in emitClassSpanValueExpr.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'C',
     tokens: ['comment'],
     examples: [
-      ex('/* foo */').as('C')
-        .span('text', '/* foo */').comment()
-        .render('ast', { type: 'comment', text: $.text })
-        .build(),
+      relation('C', {
+        input: '/* foo */',
+        encodings: {
+          src: parse([span('text', '/* foo */').comment()]),
+          ast: { type: 'comment', text: $.text },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1006,25 +1216,35 @@ test('v2 inter-span gap before optional literal is ws-only (preserve trailing co
   // the offset before the gap and rewinds when the optional doesn't
   // match — v2 just suppresses the comment-skip before an optional span
   // so the comment stays available for the parent's repeats body.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Body',
     tokens: ['comment'],
     examples: [
-      ex('/* foo */').as('Comment')
-        .span('text', '/* foo */').comment()
-        .render('ast', { type: 'comment', text: $.text })
-        .build(),
-      ex('a').as('Decl')
-        .span('prop', 'a').ident()
-        .span(';').optional()
-        .render('ast', { type: 'decl', prop: $.prop })
-        .build(),
-      ex('a /* x */').as('Body')
-        .span('items', 'a', ['Comment', 'Decl'])
-        .repeats({ min: 0 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('Comment', {
+        input: '/* foo */',
+        encodings: {
+          src: parse([span('text', '/* foo */').comment()]),
+          ast: { type: 'comment', text: $.text },
+        },
+      }),
+      relation('Decl', {
+        input: 'a',
+        encodings: {
+          src: parse([
+            span('prop', 'a').ident(),
+            literal(';').optional(),
+          ]),
+          ast: { type: 'decl', prop: $.prop },
+        },
+      }),
+      relation('Body', {
+        input: 'a /* x */',
+        encodings: {
+          src: parse([span('items', 'a').of('Comment', 'Decl').repeats({ min: 0 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1042,23 +1262,28 @@ test('v2 repeats sweeps LEADING separators before the first item', async () => {
   // list.length > 0, which made the body fail on a leading `;` before any
   // declaration. After the fix, leading seps are absorbed silently on the
   // first iteration without affecting trailing-policy state.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Body',
     examples: [
-      ex('a')
-        .as('Item')
-        .span('name', 'a').ident()
-        .render('ast', { name: $.name })
-        .build(),
-      ex('{ a; b }')
-        .as('Body')
-        .span('{')
-        .span('items', 'a; b', ['Item'])
-        .repeats({ min: 0, sep: ';', trailing: 'allowed' })
-        .span('}')
-        .render('ast', { items: $.items })
-        .build(),
+      relation('Item', {
+        input: 'a',
+        encodings: {
+          src: parse([span('name', 'a').ident()]),
+          ast: { name: $.name },
+        },
+      }),
+      relation('Body', {
+        input: '{ a; b }',
+        encodings: {
+          src: parse([
+            literal('{'),
+            span('items', 'a; b').of('Item').repeats({ min: 0, sep: ';', trailing: 'allowed' }),
+            literal('}'),
+          ]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1080,24 +1305,32 @@ test('v2 leading skip is ws-only when first span is a comment-class span', async
   // (between consecutive spans of the same production) skips comments;
   // the LEADING skip stays ws-only so a `/* … */` body remains available
   // for the comment span to consume.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Doc',
     tokens: ['comment'],
     examples: [
-      ex('/* x */').as('Comment')
-        .span('text', '/* x */').comment()
-        .render('ast', { type: 'comment', text: $.text })
-        .build(),
-      ex('a').as('Word')
-        .span('name', 'a').ident()
-        .render('ast', { type: 'word', name: $.name })
-        .build(),
-      ex('a').as('Doc')
-        .span('items', 'a', ['Comment', 'Word'])
-        .repeats({ min: 0 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('Comment', {
+        input: '/* x */',
+        encodings: {
+          src: parse([span('text', '/* x */').comment()]),
+          ast: { type: 'comment', text: $.text },
+        },
+      }),
+      relation('Word', {
+        input: 'a',
+        encodings: {
+          src: parse([span('name', 'a').ident()]),
+          ast: { type: 'word', name: $.name },
+        },
+      }),
+      relation('Doc', {
+        input: 'a',
+        encodings: {
+          src: parse([span('items', 'a').of('Comment', 'Word').repeats({ min: 0 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1112,17 +1345,22 @@ test('v2 inter-span ws skip also skips /* */ comments when schema declares comme
   // Between two spans of the SAME production, v1's emit skips both whitespace
   // and `/* */` comments. v2 only skipped ws, so a comment between a captured
   // selector and its `{` left `off` parked on `/`, failing the literal match.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Rule',
     tokens: ['comment'],
     examples: [
-      ex('a { }').as('Rule')
-        .span('selector', 'a').until(['{', ';'])
-        .span('{')
-        .span('}')
-        .render('ast', { selector: $.selector })
-        .build(),
+      relation('Rule', {
+        input: 'a { }',
+        encodings: {
+          src: parse([
+            span('selector', 'a').until(['{', ';']),
+            literal('{'),
+            literal('}'),
+          ]),
+          ast: { selector: $.selector },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1138,7 +1376,7 @@ test('v2 inter-span ws skip also skips /* */ comments when schema declares comme
 });
 
 test('v2 .until() with 3+ unbalanced stops uses Aho-Corasick scanner', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Markdown's PARAGRAPH_STOPS is the motivating example: 14 multi-byte
   // stops, unbalanced, no string/comment tokens. The compiler should pick
   // the AC fast-path here — verified by grepping for the state-machine
@@ -1155,16 +1393,20 @@ test('v2 .until() with 3+ unbalanced stops uses Aho-Corasick scanner', async () 
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('Plain paragraph')
-        .as('Paragraph')
-        .span('text', 'Plain paragraph').until([...PARAGRAPH_STOPS], { balanced: false })
-        .render('ast', { type: 'paragraph', text: $.text })
-        .build(),
-      ex('Plain paragraph')
-        .as('Doc')
-        .span('items', 'Plain paragraph', ['Paragraph']).repeats({ min: 1 })
-        .render('ast', { items: $.items })
-        .build(),
+      relation('Paragraph', {
+        input: 'Plain paragraph',
+        encodings: {
+          src: parse([span('text', 'Plain paragraph').until([...PARAGRAPH_STOPS], { balanced: false })]),
+          ast: { type: 'paragraph', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: 'Plain paragraph',
+        encodings: {
+          src: parse([span('items', 'Plain paragraph').of('Paragraph').repeats({ min: 1 })]),
+          ast: { items: $.items },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1197,17 +1439,20 @@ test('v2 .until() with 3+ unbalanced stops uses Aho-Corasick scanner', async () 
 });
 
 test('v2 .until() with <3 stops still uses per-stop compare chain (no AC)', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Two stops, unbalanced — below the AC_MIN_STOPS threshold. The emitter
   // should pick the byte-walk loop with the compare-chain stopExpr, not
   // the AC scanner.
   const schema = defineSchema({
     rootType: 'P',
     examples: [
-      ex('hi').as('P')
-        .span('text', 'hi').until(['\n', '@'], { balanced: false })
-        .render('ast', { text: $.text })
-        .build(),
+      relation('P', {
+        input: 'hi',
+        encodings: {
+          src: parse([span('text', 'hi').until(['\n', '@'], { balanced: false })]),
+          ast: { text: $.text },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1225,7 +1470,7 @@ test('v2 .until() with <3 stops still uses per-stop compare chain (no AC)', asyn
 // jump table; chained ifs rely on branch prediction. See role-ladder.ts.
 
 test('v2 role-ladder emits switch dispatch for ≥4 byte-arm roles', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Five roles, each with a distinct literal first byte — Hash `#`, At `@`,
   // Plus `+`, Star `*`, Minus `-`. Above the DISPATCH_SWITCH_MIN_BYTES
   // threshold (4) so the ladder must emit a `switch (__c0)` jump table
@@ -1233,24 +1478,48 @@ test('v2 role-ladder emits switch dispatch for ≥4 byte-arm roles', async () =>
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('#h').as('Hash')
-        .span('#').span('text', 'h').until(['\n'])
-        .render('ast', { kind: 'hash', text: $.text }).build(),
-      ex('@a').as('At')
-        .span('@').span('text', 'a').until(['\n'])
-        .render('ast', { kind: 'at', text: $.text }).build(),
-      ex('+p').as('Plus')
-        .span('+').span('text', 'p').until(['\n'])
-        .render('ast', { kind: 'plus', text: $.text }).build(),
-      ex('*s').as('Star')
-        .span('*').span('text', 's').until(['\n'])
-        .render('ast', { kind: 'star', text: $.text }).build(),
-      ex('-m').as('Minus')
-        .span('-').span('text', 'm').until(['\n'])
-        .render('ast', { kind: 'minus', text: $.text }).build(),
-      ex('#h').as('Doc')
-        .span('item', '#h', ['Hash', 'At', 'Plus', 'Star', 'Minus'])
-        .render('ast', { item: $.item }).build(),
+      relation('Hash', {
+        input: '#h',
+        encodings: {
+          src: parse([literal('#'), span('text', 'h').until(['\n'])]),
+          ast: { kind: 'hash', text: $.text },
+        },
+      }),
+      relation('At', {
+        input: '@a',
+        encodings: {
+          src: parse([literal('@'), span('text', 'a').until(['\n'])]),
+          ast: { kind: 'at', text: $.text },
+        },
+      }),
+      relation('Plus', {
+        input: '+p',
+        encodings: {
+          src: parse([literal('+'), span('text', 'p').until(['\n'])]),
+          ast: { kind: 'plus', text: $.text },
+        },
+      }),
+      relation('Star', {
+        input: '*s',
+        encodings: {
+          src: parse([literal('*'), span('text', 's').until(['\n'])]),
+          ast: { kind: 'star', text: $.text },
+        },
+      }),
+      relation('Minus', {
+        input: '-m',
+        encodings: {
+          src: parse([literal('-'), span('text', 'm').until(['\n'])]),
+          ast: { kind: 'minus', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '#h',
+        encodings: {
+          src: parse([span('item', '#h').of('Hash', 'At', 'Plus', 'Star', 'Minus')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1280,7 +1549,7 @@ test('v2 role-ladder emits switch dispatch for ≥4 byte-arm roles', async () =>
 });
 
 test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Three roles with distinct first bytes — below the threshold. The
   // ladder must NOT emit a switch; the chained `if (__c0 === N) else if
   // (__c0 === M)` shape stays so the JIT keeps using branch prediction.
@@ -1290,18 +1559,34 @@ test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('#h').as('Hash')
-        .span('#').span('text', 'h').until(['\n'])
-        .render('ast', { kind: 'hash', text: $.text }).build(),
-      ex('@a').as('At')
-        .span('@').span('text', 'a').until(['\n'])
-        .render('ast', { kind: 'at', text: $.text }).build(),
-      ex('+p').as('Plus')
-        .span('+').span('text', 'p').until(['\n'])
-        .render('ast', { kind: 'plus', text: $.text }).build(),
-      ex('#h').as('Doc')
-        .span('item', '#h', ['Hash', 'At', 'Plus'])
-        .render('ast', { item: $.item }).build(),
+      relation('Hash', {
+        input: '#h',
+        encodings: {
+          src: parse([literal('#'), span('text', 'h').until(['\n'])]),
+          ast: { kind: 'hash', text: $.text },
+        },
+      }),
+      relation('At', {
+        input: '@a',
+        encodings: {
+          src: parse([literal('@'), span('text', 'a').until(['\n'])]),
+          ast: { kind: 'at', text: $.text },
+        },
+      }),
+      relation('Plus', {
+        input: '+p',
+        encodings: {
+          src: parse([literal('+'), span('text', 'p').until(['\n'])]),
+          ast: { kind: 'plus', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '#h',
+        encodings: {
+          src: parse([span('item', '#h').of('Hash', 'At', 'Plus')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1321,19 +1606,23 @@ test('v2 role-ladder keeps chained if for <4 byte-arm roles', async () => {
 });
 
 test('v2 syntaxErrorAt: includes unexpected byte and position in headline', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // A minimal schema — just enough for generateParser to emit the v2 runtime
   // preamble (which contains syntaxErrorAt). We only check the emitted source.
   const schema = defineSchema({
     rootType: 'R',
     examples: [
-      ex('a { }')
-        .as('R')
-        .span('selector', 'a').until(['{'], { rejectSuffix: ':' })
-        .span('{')
-        .span('}')
-        .render('ast', { sel: $.selector })
-        .build(),
+      relation('R', {
+        input: 'a { }',
+        encodings: {
+          src: parse([
+            span('selector', 'a').until(['{'], { rejectSuffix: ':' }),
+            literal('{'),
+            literal('}'),
+          ]),
+          ast: { sel: $.selector },
+        },
+      }),
     ],
   });
   const source = generateParser(schema, undefined, {});
@@ -1347,7 +1636,7 @@ test('v2 syntaxErrorAt: includes unexpected byte and position in headline', asyn
 });
 
 test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Four byte-arm roles where two share the same first byte (`<`). The
   // ladder must:
   //   1. Group the two `<`-leading roles under a single `case 60:` arm
@@ -1358,27 +1647,59 @@ test('v2 role-ladder switch dispatch handles same-byte groups and fallthrough', 
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('<!--c-->').as('Comment')
-        .span('<!--').span('text', 'c').until(['-->'], { trim: false }).span('-->')
-        .render('ast', { kind: 'comment', text: $.text }).build(),
-      ex('<tag>').as('Tag')
-        .span('<').span('name', 'tag').ident().html().span('>')
-        .render('ast', { kind: 'tag', name: $.name }).build(),
-      ex('#h').as('Hash')
-        .span('#').span('text', 'h').until(['\n'])
-        .render('ast', { kind: 'hash', text: $.text }).build(),
-      ex('@a').as('At')
-        .span('@').span('text', 'a').until(['\n'])
-        .render('ast', { kind: 'at', text: $.text }).build(),
-      ex('+p').as('Plus')
-        .span('+').span('text', 'p').until(['\n'])
-        .render('ast', { kind: 'plus', text: $.text }).build(),
-      ex('text').as('Text')
-        .span('text', 'text').until(['\n'])
-        .render('ast', { kind: 'text', text: $.text }).build(),
-      ex('<tag>').as('Doc')
-        .span('item', '<tag>', ['Comment', 'Tag', 'Hash', 'At', 'Plus', 'Text'])
-        .render('ast', { item: $.item }).build(),
+      relation('Comment', {
+        input: '<!--c-->',
+        encodings: {
+          src: parse([
+            literal('<!--'),
+            span('text', 'c').until(['-->'], { trim: false }),
+            literal('-->'),
+          ]),
+          ast: { kind: 'comment', text: $.text },
+        },
+      }),
+      relation('Tag', {
+        input: '<tag>',
+        encodings: {
+          src: parse([literal('<'), span('name', 'tag').ident().html(), literal('>')]),
+          ast: { kind: 'tag', name: $.name },
+        },
+      }),
+      relation('Hash', {
+        input: '#h',
+        encodings: {
+          src: parse([literal('#'), span('text', 'h').until(['\n'])]),
+          ast: { kind: 'hash', text: $.text },
+        },
+      }),
+      relation('At', {
+        input: '@a',
+        encodings: {
+          src: parse([literal('@'), span('text', 'a').until(['\n'])]),
+          ast: { kind: 'at', text: $.text },
+        },
+      }),
+      relation('Plus', {
+        input: '+p',
+        encodings: {
+          src: parse([literal('+'), span('text', 'p').until(['\n'])]),
+          ast: { kind: 'plus', text: $.text },
+        },
+      }),
+      relation('Text', {
+        input: 'text',
+        encodings: {
+          src: parse([span('text', 'text').until(['\n'])]),
+          ast: { kind: 'text', text: $.text },
+        },
+      }),
+      relation('Doc', {
+        input: '<tag>',
+        encodings: {
+          src: parse([span('item', '<tag>').of('Comment', 'Tag', 'Hash', 'At', 'Plus', 'Text')]),
+          ast: { item: $.item },
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, {});
@@ -1414,21 +1735,25 @@ test("v2 .until() with unknownChars:'reject' rejects undeclared bytes at depth 0
   // The schema declares an ident class so that the guard is active: with no
   // class declarations, knownBytes would be trivially narrow (whitespace +
   // literal first bytes only) and the guard is suppressed.
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Doc',
     unknownChars: 'reject',
     examples: [
       // The prop span uses .ident() so that schema.classes is non-empty and
       // the unknownChars guard is active on the value's .until() body.
-      ex('prop: value;')
-        .as('Doc')
-        .span('prop', 'prop').ident()
-        .span(':')
-        .span('v', 'value').until([';'])
-        .span(';')
-        .render('ast', { prop: $.prop, v: $.v })
-        .build(),
+      relation('Doc', {
+        input: 'prop: value;',
+        encodings: {
+          src: parse([
+            span('prop', 'prop').ident(),
+            literal(':'),
+            span('v', 'value').until([';']),
+            literal(';'),
+          ]),
+          ast: { prop: $.prop, v: $.v },
+        },
+      }),
     ],
   });
   const src = generateParser(schema, undefined, {});
@@ -1439,16 +1764,20 @@ test("v2 .until() with unknownChars:'reject' rejects undeclared bytes at depth 0
 });
 
 test('v2 .until() honors nonEmpty + rejectSuffix array', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'R',
     examples: [
-      ex('.foo{')
-        .as('R')
-        .span('s', '.foo').until(['{'], { rejectSuffix: [':', ',', '>'], nonEmpty: true })
-        .span('{')
-        .render('ast', { s: $.s })
-        .build(),
+      relation('R', {
+        input: '.foo{',
+        encodings: {
+          src: parse([
+            span('s', '.foo').until(['{'], { rejectSuffix: [':', ',', '>'], nonEmpty: true }),
+            literal('{'),
+          ]),
+          ast: { s: $.s },
+        },
+      }),
     ],
   });
   const src = generateParser(schema, undefined, {});
@@ -1457,16 +1786,20 @@ test('v2 .until() honors nonEmpty + rejectSuffix array', async () => {
 });
 
 test('v2 .until() with requireStop fails on EOF without stop match', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'R',
     examples: [
-      ex('value"')
-        .as('R')
-        .span('v', 'value').until(['"'], { requireStop: true })
-        .span('"')
-        .render('ast', { v: $.v })
-        .build(),
+      relation('R', {
+        input: 'value"',
+        encodings: {
+          src: parse([
+            span('v', 'value').until(['"'], { requireStop: true }),
+            literal('"'),
+          ]),
+          ast: { v: $.v },
+        },
+      }),
     ],
   });
   const src = generateParser(schema, undefined, {});

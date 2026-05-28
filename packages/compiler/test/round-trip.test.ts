@@ -37,21 +37,26 @@ test('checkRoundTrip — html schema passes', async () => {
 // the value capture didn't take the quote into account. Surfaces the
 // `reparse failed` branch of the check.
 test('checkRoundTrip — schema whose stringify breaks reparse fails at codegen', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('x="content"').as('X')
-        .span('x=')
-        .span('q', '"')
-        .span('val', 'content').until('"')
-        .span('q2', '"')
-        .render('ast', { type: 'x', val: $.val })
-        // Body uses a `y=` prefix the source rebuild does not emit.
-        // The mismatch between body template and production-span
-        // rebuild trips the reparse check.
-        .render('source', tpl`y=${$.val}`)
-        .build(),
+      relation('X', {
+        input: 'x="content"',
+        encodings: {
+          src: parse([
+            literal('x='),
+            span('q', '"'),
+            span('val', 'content').until('"'),
+            span('q2', '"'),
+          ]),
+          ast: { type: 'x', val: $.val },
+          // Body uses a `y=` prefix the source rebuild does not emit.
+          // The mismatch between body template and production-span
+          // rebuild trips the reparse check.
+          source: tpl`y=${$.val}`,
+        },
+      }),
     ],
   });
   let threw: unknown;
@@ -68,16 +73,21 @@ test('checkRoundTrip — schema whose stringify breaks reparse fails at codegen'
 // Positive: a schema whose forward render and inverse line up — body
 // uses the same shape parse expects.
 test('checkRoundTrip — coherent schema passes', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('hi:abc').as('X')
-        .span('hi:')
-        .span('content', 'abc').ident().css()
-        .render('ast', { type: 'x', content: $.content })
-        .render('source', tpl`hi:${$.content}`)
-        .build(),
+      relation('X', {
+        input: 'hi:abc',
+        encodings: {
+          src: parse([
+            literal('hi:'),
+            span('content', 'abc').ident().css(),
+          ]),
+          ast: { type: 'x', content: $.content },
+          source: tpl`hi:${$.content}`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -88,19 +98,24 @@ test('checkRoundTrip — coherent schema passes', async () => {
 // trip enforcement. The schema author asserts inverse correctness via
 // their own tests when supplying an override.
 test('checkRoundTrip — explicit inverse override is exempt', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl, withInverse } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('hi:abc').as('X')
-        .span('hi:')
-        .span('content', 'abc').ident().css()
-        .render('ast', { type: 'x', content: $.content })
-        // body forward: hi:abc | inverse-override: hi:abc (same here,
-        // but override path is still exercised: see invert.test.ts for
-        // the structurally-different-override case).
-        .render('source', tpl`hi:${$.content}`, { inverse: tpl`hi:${$.content}` })
-        .build(),
+      relation('X', {
+        input: 'hi:abc',
+        encodings: {
+          src: parse([
+            literal('hi:'),
+            span('content', 'abc').ident().css(),
+          ]),
+          ast: { type: 'x', content: $.content },
+          // body forward: hi:abc | inverse-override: hi:abc (same here,
+          // but override path is still exercised: see invert.test.ts for
+          // the structurally-different-override case).
+          source: withInverse(tpl`hi:${$.content}`, tpl`hi:${$.content}`),
+        },
+      }),
     ],
   });
   // No throw.

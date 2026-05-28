@@ -15,16 +15,20 @@ import { generateParser, inferSchema } from '../src/index.ts';
 // ---------- Per-derivation-case IR shape ----------------------------------
 
 test('inverse derivation: object body -> InverseIR.object with literal + inverse fields', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title')
-        .as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -47,16 +51,21 @@ test('inverse derivation: object body -> InverseIR.object with literal + inverse
 });
 
 test('inverse derivation: array body -> InverseIR.array with per-element inverse', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('a b').as('Pair')
-        .span('a', 'a').ident()
-        .span('b', 'b').ident()
-        .render('ast', { type: 'pair', a: $.a, b: $.b })
-        .render('arr', [$.a, $.b])
-        .build(),
+      relation('Pair', {
+        input: 'a b',
+        encodings: {
+          src: parse([
+            span('a', 'a').ident(),
+            span('b', 'b').ident(),
+          ]),
+          ast: { type: 'pair', a: $.a, b: $.b },
+          arr: [$.a, $.b],
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -71,14 +80,18 @@ test('inverse derivation: array body -> InverseIR.array with per-element inverse
 });
 
 test('inverse derivation: scalar body -> InverseIR.scalar with literal value', async () => {
-  const { defineSchema, ex } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Yes',
     examples: [
-      ex('yes').as('Yes').span('y', 'yes').ident()
-        .render('ast', { type: 'yes' })
-        .render('flag', true)
-        .build(),
+      relation('Yes', {
+        input: 'yes',
+        encodings: {
+          src: parse([span('y', 'yes').ident()]),
+          ast: { type: 'yes' },
+          flag: true,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -90,14 +103,18 @@ test('inverse derivation: scalar body -> InverseIR.scalar with literal value', a
 });
 
 test('inverse derivation: bare $.name body -> InverseIR.ref', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Word',
     examples: [
-      ex('hello').as('Word').span('v', 'hello').ident()
-        .render('ast', { type: 'word', v: $.v })
-        .render('raw', $.v)
-        .build(),
+      relation('Word', {
+        input: 'hello',
+        encodings: {
+          src: parse([span('v', 'hello').ident()]),
+          ast: { type: 'word', v: $.v },
+          raw: $.v,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -109,16 +126,21 @@ test('inverse derivation: bare $.name body -> InverseIR.ref', async () => {
 });
 
 test('inverse derivation: template body -> InverseIR.template with segments+captures', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -132,9 +154,9 @@ test('inverse derivation: template body -> InverseIR.template with segments+capt
 });
 
 test('inverse derivation: explicit options.inverse overrides body-derived inverse', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl, withInverse } = await import('@parser2/parser');
   // The override path: the schema author explicitly supplies an inverse
-  // template via `options.inverse`. The derived InverseIR carries the
+  // template via `withInverse()`. The derived InverseIR carries the
   // override's segments, not the body's. When body and override are not
   // mutually round-trippable, the codegen's round-trip closure check
   // (Task 3.1) skips this entry — see check/round-trip.ts header — but
@@ -142,12 +164,17 @@ test('inverse derivation: explicit options.inverse overrides body-derived invers
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`, { inverse: tpl`<H>${$.first}</H>` })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: withInverse(tpl`<h1>${$.first}</h1>`, tpl`<H>${$.first}</H>`),
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -163,34 +190,47 @@ test('inverse derivation: explicit options.inverse overrides body-derived invers
 // ---------- Compile-time precondition errors ------------------------------
 
 test('inverse: adjacent slots in template body -> CompilerError', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'AB',
     examples: [
-      ex('ab').as('AB')
-        .span('a', 'a').ident()
-        .span('b', 'b').ident()
-        .render('ast', { type: 'ab', a: $.a, b: $.b })
-        .render('compact', tpl`${$.a}${$.b}`)
-        .build(),
+      relation('AB', {
+        input: 'ab',
+        encodings: {
+          src: parse([
+            span('a', 'a').ident(),
+            span('b', 'b').ident(),
+          ]),
+          ast: { type: 'ab', a: $.a, b: $.b },
+          compact: tpl`${$.a}${$.b}`,
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /slots \$\.a and \$\.b are adjacent with no separator/);
 });
 
 test('inverse: indistinguishable productions on object target -> CompilerError', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Two productions of node 'Item' both render `{ type: 'item', v: $.v }` to
   // 'ast'. Inverse dispatcher cannot tell them apart from the value alone.
   const schema = defineSchema({
     rootType: 'Item',
     examples: [
-      ex('alpha').as('Item').span('v', 'alpha').ident()
-        .render('ast', { type: 'item', v: $.v })
-        .build(),
-      ex('beta').as('Item').span('v', 'beta').ident()
-        .render('ast', { type: 'item', v: $.v })
-        .build(),
+      relation('Item', {
+        input: 'alpha',
+        encodings: {
+          src: parse([span('v', 'alpha').ident()]),
+          ast: { type: 'item', v: $.v },
+        },
+      }),
+      relation('Item', {
+        input: 'beta',
+        encodings: {
+          src: parse([span('v', 'beta').ident()]),
+          ast: { type: 'item', v: $.v },
+        },
+      }),
     ],
   });
   assert.throws(() => inferSchema(schema), /indistinguishable productions/);
@@ -200,7 +240,7 @@ test('inverse: indistinguishable productions on object target -> CompilerError',
 // one of them carries a unique embedded literal segment — that segment is a
 // runtime discriminator the inverse dispatcher can match on.
 test('inverse: two templates with shared empty leading prefix but differing embedded literals do NOT collide', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   // Two productions of 'Field': ${$.value} vs ${$.start}-${$.end}. Both
   // start with a capture (empty leading prefix). The second has an
   // embedded `-` literal between its two captures — that's the runtime
@@ -208,17 +248,26 @@ test('inverse: two templates with shared empty leading prefix but differing embe
   const schema = defineSchema({
     rootType: 'Field',
     examples: [
-      ex('5').as('Field').span('value', '5').number().int()
-        .render('ast', { type: 'value', value: $.value })
-        .render('source', tpl`${$.value}`)
-        .build(),
-      ex('1-5').as('Field')
-        .span('start', '1').number().int()
-        .span('-')
-        .span('end', '5').number().int()
-        .render('ast', { type: 'range', start: $.start, end: $.end })
-        .render('source', tpl`${$.start}-${$.end}`)
-        .build(),
+      relation('Field', {
+        input: '5',
+        encodings: {
+          src: parse([span('value', '5').number().int()]),
+          ast: { type: 'value', value: $.value },
+          source: tpl`${$.value}`,
+        },
+      }),
+      relation('Field', {
+        input: '1-5',
+        encodings: {
+          src: parse([
+            span('start', '1').number().int(),
+            literal('-'),
+            span('end', '5').number().int(),
+          ]),
+          ast: { type: 'range', start: $.start, end: $.end },
+          source: tpl`${$.start}-${$.end}`,
+        },
+      }),
     ],
   });
   // Inference should succeed — the `-` literal in the second template
@@ -227,7 +276,7 @@ test('inverse: two templates with shared empty leading prefix but differing embe
 });
 
 test('inverse: cron-like three-template field round-trips via unique-literal dispatch', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   // Mimics CronField:
   //   ${$.value}          (no embedded literals)
   //   ${$.start}-${$.end} (embedded '-')
@@ -237,27 +286,46 @@ test('inverse: cron-like three-template field round-trips via unique-literal dis
     rootType: 'Field',
     punctuators: { star: '*', slash: '/', dash: '-' },
     examples: [
-      ex('*').as('Field').span('*')
-        .render('ast', { type: 'wildcard' })
-        .render('source', tpl`*`)
-        .build(),
-      ex('*/5').as('Field')
-        .span('*').span('/').span('step', '5').number().int()
-        .render('ast', { type: 'step', step: $.step })
-        .render('source', tpl`*/${$.step}`)
-        .build(),
-      ex('9').as('Field')
-        .span('value', '9').number().int()
-        .render('ast', { type: 'value', value: $.value })
-        .render('source', tpl`${$.value}`)
-        .build(),
-      ex('1-5').as('Field')
-        .span('start', '1').number().int()
-        .span('-')
-        .span('end', '5').number().int()
-        .render('ast', { type: 'range', start: $.start, end: $.end })
-        .render('source', tpl`${$.start}-${$.end}`)
-        .build(),
+      relation('Field', {
+        input: '*',
+        encodings: {
+          src: parse([literal('*')]),
+          ast: { type: 'wildcard' },
+          source: tpl`*`,
+        },
+      }),
+      relation('Field', {
+        input: '*/5',
+        encodings: {
+          src: parse([
+            literal('*'),
+            literal('/'),
+            span('step', '5').number().int(),
+          ]),
+          ast: { type: 'step', step: $.step },
+          source: tpl`*/${$.step}`,
+        },
+      }),
+      relation('Field', {
+        input: '9',
+        encodings: {
+          src: parse([span('value', '9').number().int()]),
+          ast: { type: 'value', value: $.value },
+          source: tpl`${$.value}`,
+        },
+      }),
+      relation('Field', {
+        input: '1-5',
+        encodings: {
+          src: parse([
+            span('start', '1').number().int(),
+            literal('-'),
+            span('end', '5').number().int(),
+          ]),
+          ast: { type: 'range', start: $.start, end: $.end },
+          source: tpl`${$.start}-${$.end}`,
+        },
+      }),
     ],
   });
   assert.doesNotThrow(() => inferSchema(schema));
@@ -283,19 +351,27 @@ test('inverse: cron-like three-template field round-trips via unique-literal dis
 // that separator so an absent optional doesn't leave a dangling separator
 // in the rebuilt source.
 test('rebuild: optional trailing span absent collapses both slot and preceding separator', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Greeting',
     examples: [
-      ex('hi there').as('Greeting')
-        .span('verb', 'hi').ident()
-        .span('subject', 'there', 'Word').optional()
-        .render('ast', { type: 'greeting', verb: $.verb, subject: $.subject })
-        .build(),
-      ex('there').as('Word')
-        .span('w', 'there').ident()
-        .render('ast', $.w)
-        .build(),
+      relation('Greeting', {
+        input: 'hi there',
+        encodings: {
+          src: parse([
+            span('verb', 'hi').ident(),
+            span('subject', 'there').of('Word').optional(),
+          ]),
+          ast: { type: 'greeting', verb: $.verb, subject: $.subject },
+        },
+      }),
+      relation('Word', {
+        input: 'there',
+        encodings: {
+          src: parse([span('w', 'there').ident()]),
+          ast: $.w,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'fix2-optional-fusion');
@@ -309,18 +385,24 @@ test('rebuild: optional trailing span absent collapses both slot and preceding s
 // single space at rebuild time (whitespace-separated at parse time —
 // children don't carry their own trailing separator).
 test('rebuild: .repeats() without sep joins children with a single space', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Command',
     examples: [
-      ex('npm test').as('Command')
-        .span('words', 'npm', 'Word').repeats({ min: 1 })
-        .render('ast', { type: 'command', words: $.words })
-        .build(),
-      ex('npm').as('Word')
-        .span('w', 'npm').ident()
-        .render('ast', $.w)
-        .build(),
+      relation('Command', {
+        input: 'npm test',
+        encodings: {
+          src: parse([span('words', 'npm').of('Word').repeats({ min: 1 })]),
+          ast: { type: 'command', words: $.words },
+        },
+      }),
+      relation('Word', {
+        input: 'npm',
+        encodings: {
+          src: parse([span('w', 'npm').ident()]),
+          ast: $.w,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'fix3-repeats-join');
@@ -335,22 +417,30 @@ test('rebuild: .repeats() without sep joins children with a single space', async
 // when the captured value is null, not as the literal string "null" or
 // "undefined".
 test('render template body null-coerces missing optional captures to ""', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Greeting',
     examples: [
-      ex('hi there').as('Greeting')
-        .span('verb', 'hi').ident()
-        .span(' ').optional()
-        .span('subject', 'there', 'Word').optional()
-        .render('ast', { type: 'greeting', verb: $.verb, subject: $.subject })
-        .render('html', tpl`<g>${$.verb}<s>${$.subject}</s></g>`)
-        .build(),
-      ex('there').as('Word')
-        .span('w', 'there').ident()
-        .render('ast', $.w)
-        .render('html', tpl`${$.w}`)
-        .build(),
+      relation('Greeting', {
+        input: 'hi there',
+        encodings: {
+          src: parse([
+            span('verb', 'hi').ident(),
+            literal(' ').optional(),
+            span('subject', 'there').of('Word').optional(),
+          ]),
+          ast: { type: 'greeting', verb: $.verb, subject: $.subject },
+          html: tpl`<g>${$.verb}<s>${$.subject}</s></g>`,
+        },
+      }),
+      relation('Word', {
+        input: 'there',
+        encodings: {
+          src: parse([span('w', 'there').ident()]),
+          ast: $.w,
+          html: tpl`${$.w}`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'fix4-template-null');
@@ -364,16 +454,21 @@ test('render template body null-coerces missing optional captures to ""', async 
 // ---------- Round-trip via generated parser -------------------------------
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-ast');
@@ -385,16 +480,21 @@ test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for ast
 });
 
 test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for html', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-html');
@@ -406,15 +506,20 @@ test('round-trip: render(stringify(render(x, T), T), T) === render(x, T) for htm
 });
 
 test('stringify(value, { type: "ast" }) reconstructs source', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-stringify-ast');
@@ -423,13 +528,17 @@ test('stringify(value, { type: "ast" }) reconstructs source', async () => {
 });
 
 test('stringify with missing target throws', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Word',
     examples: [
-      ex('hi').as('Word').span('v', 'hi').ident()
-        .render('ast', { type: 'word', v: $.v })
-        .build(),
+      relation('Word', {
+        input: 'hi',
+        encodings: {
+          src: parse([span('v', 'hi').ident()]),
+          ast: { type: 'word', v: $.v },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-stringify-missing');
@@ -437,13 +546,17 @@ test('stringify with missing target throws', async () => {
 });
 
 test('stringify with unknown target throws', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Word',
     examples: [
-      ex('hi').as('Word').span('v', 'hi').ident()
-        .render('ast', { type: 'word', v: $.v })
-        .build(),
+      relation('Word', {
+        input: 'hi',
+        encodings: {
+          src: parse([span('v', 'hi').ident()]),
+          ast: { type: 'word', v: $.v },
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-stringify-unknown');
@@ -451,16 +564,21 @@ test('stringify with unknown target throws', async () => {
 });
 
 test('round-trip: array body with positional captures', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Pair',
     examples: [
-      ex('a b').as('Pair')
-        .span('a', 'a').ident()
-        .span('b', 'b').ident()
-        .render('ast', { type: 'pair', a: $.a, b: $.b })
-        .render('arr', [$.a, $.b])
-        .build(),
+      relation('Pair', {
+        input: 'a b',
+        encodings: {
+          src: parse([
+            span('a', 'a').ident(),
+            span('b', 'b').ident(),
+          ]),
+          ast: { type: 'pair', a: $.a, b: $.b },
+          arr: [$.a, $.b],
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-array');
@@ -472,14 +590,18 @@ test('round-trip: array body with positional captures', async () => {
 });
 
 test('round-trip: scalar body asserts equality and rebuilds source', async () => {
-  const { defineSchema, ex } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Yes',
     examples: [
-      ex('yes').as('Yes').span('y', 'yes').ident()
-        .render('ast', { type: 'yes' })
-        .render('flag', true)
-        .build(),
+      relation('Yes', {
+        input: 'yes',
+        encodings: {
+          src: parse([span('y', 'yes').ident()]),
+          ast: { type: 'yes' },
+          flag: true,
+        },
+      }),
     ],
   });
   const mod = await loadGenerated(schema, 'phase4-roundtrip-scalar');
@@ -498,7 +620,7 @@ test('round-trip: scalar body asserts equality and rebuilds source', async () =>
 // is value-stable, not byte-stable (Design rule 5). The chosen production
 // is the lowest-index one for determinism.
 test('inverse: structurally-identical template bodies do NOT collide; dispatcher picks lowest-index production', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   // Two heading productions render IDENTICAL HTML — `<h1>${text}</h1>`.
   // Their AST shapes differ ({type:'h1-hash'} vs {type:'h1-bang'}) so the
   // AST target stays unambiguous; the HTML target is the one we're
@@ -507,18 +629,28 @@ test('inverse: structurally-identical template bodies do NOT collide; dispatcher
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('text', 'title').ident().css()
-        .render('ast', { type: 'h1-hash', text: $.text })
-        .render('html', tpl`<h1>${$.text}</h1>`)
-        .build(),
-      ex('! title').as('Heading')
-        .span('!')
-        .span('text', 'title').ident().css()
-        .render('ast', { type: 'h1-bang', text: $.text })
-        .render('html', tpl`<h1>${$.text}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('text', 'title').ident().css(),
+          ]),
+          ast: { type: 'h1-hash', text: $.text },
+          html: tpl`<h1>${$.text}</h1>`,
+        },
+      }),
+      relation('Heading', {
+        input: '! title',
+        encodings: {
+          src: parse([
+            literal('!'),
+            span('text', 'title').ident().css(),
+          ]),
+          ast: { type: 'h1-bang', text: $.text },
+          html: tpl`<h1>${$.text}</h1>`,
+        },
+      }),
     ],
   });
   // Inference must succeed even though both `html` templates are identical.
@@ -546,26 +678,37 @@ test('inverse: structurally-identical template bodies do NOT collide; dispatcher
 // matches each array element. Children dispatch via the per-(NodeType,
 // target) inverse dispatcher already established by Gap C.
 test('inverse: multi-role recursive capture dispatches per array element', async () => {
-  const { defineSchema, ex, $ } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   // Parent 'Doc' captures a heterogeneous children array. Two child node
   // types (Foo / Bar) discriminate by `value.type`. Mimics html's
   // `children: ['Doctype', 'Comment', 'HtmlElement', 'TextNode']` shape.
   const schema = defineSchema({
     rootType: 'Doc',
     examples: [
-      ex('foo').as('Doc')
-        .span('children', 'foo', ['Foo', 'Bar']).repeats({ min: 1, sep: '|' })
-        .render('ast', { type: 'doc', children: $.children })
-        .build(),
-      ex('foo').as('Foo')
-        .span('text', 'foo').ident()
-        .render('ast', { type: 'foo', text: $.text })
-        .build(),
-      ex('!bar').as('Bar')
-        .span('!')
-        .span('text', 'bar').ident()
-        .render('ast', { type: 'bar', text: $.text })
-        .build(),
+      relation('Doc', {
+        input: 'foo',
+        encodings: {
+          src: parse([span('children', 'foo').of('Foo', 'Bar').repeats({ min: 1, sep: '|' })]),
+          ast: { type: 'doc', children: $.children },
+        },
+      }),
+      relation('Foo', {
+        input: 'foo',
+        encodings: {
+          src: parse([span('text', 'foo').ident()]),
+          ast: { type: 'foo', text: $.text },
+        },
+      }),
+      relation('Bar', {
+        input: '!bar',
+        encodings: {
+          src: parse([
+            literal('!'),
+            span('text', 'bar').ident(),
+          ]),
+          ast: { type: 'bar', text: $.text },
+        },
+      }),
     ],
   });
   // Inference + emit must succeed (previously: error referencing 'v1
@@ -594,16 +737,21 @@ test('inverse: multi-role recursive capture dispatches per array element', async
 
 // generateParser code shape: both render + stringify exported.
 test('generateParser emits public render and public stringify', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'Heading',
     examples: [
-      ex('# title').as('Heading')
-        .span('#')
-        .span('first', 'title').ident().css()
-        .render('ast', { type: 'heading', text: $.first })
-        .render('html', tpl`<h1>${$.first}</h1>`)
-        .build(),
+      relation('Heading', {
+        input: '# title',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('first', 'title').ident().css(),
+          ]),
+          ast: { type: 'heading', text: $.first },
+          html: tpl`<h1>${$.first}</h1>`,
+        },
+      }),
     ],
   });
   const code = generateParser(schema, undefined, { packageName: 'test' });

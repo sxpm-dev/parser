@@ -45,22 +45,26 @@ test('checkDispatch — html schema passes', async () => {
 // different literal AST fields (`kind`), so the inverse check passes and
 // the forward dispatch check is what trips.
 test('checkDispatch — two productions with identical fingerprint throws', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('foo')
-        .as('X')
-        .span('a', 'foo').ident()
-        .render('ast', { kind: 'a', a: $.a })
-        .render('source', tpl`${$.a}`)
-        .build(),
-      ex('bar')
-        .as('X')
-        .span('a', 'bar').ident()
-        .render('ast', { kind: 'b', a: $.a })
-        .render('source', tpl`${$.a}`)
-        .build(),
+      relation('X', {
+        input: 'foo',
+        encodings: {
+          src: parse([span('a', 'foo').ident()]),
+          ast: { kind: 'a', a: $.a },
+          source: tpl`${$.a}`,
+        },
+      }),
+      relation('X', {
+        input: 'bar',
+        encodings: {
+          src: parse([span('a', 'bar').ident()]),
+          ast: { kind: 'b', a: $.a },
+          source: tpl`${$.a}`,
+        },
+      }),
     ],
   });
   // Both productions: first span is `ident()` (CSS-default), no oneOf,
@@ -84,23 +88,27 @@ test('checkDispatch — two productions with identical fingerprint throws', asyn
 // the productions cover all bytes used in their literals, but we don't
 // want to test totality here — that's a separate concern.
 test('checkDispatch — two productions with distinct literal first spans pass', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     unknownChars: 'fail',
     examples: [
-      ex('foo')
-        .as('X')
-        .span('foo')
-        .render('ast', { kind: 'a' })
-        .render('source', tpl`foo`)
-        .build(),
-      ex('fer')
-        .as('X')
-        .span('fer')
-        .render('ast', { kind: 'b' })
-        .render('source', tpl`fer`)
-        .build(),
+      relation('X', {
+        input: 'foo',
+        encodings: {
+          src: parse([literal('foo')]),
+          ast: { kind: 'a' },
+          source: 'foo',
+        },
+      }),
+      relation('X', {
+        input: 'fer',
+        encodings: {
+          src: parse([literal('fer')]),
+          ast: { kind: 'b' },
+          source: 'fer',
+        },
+      }),
     ],
   });
   // Same first byte 'f', but the literal differs ('foo' vs 'fer'). The
@@ -116,25 +124,33 @@ test('checkDispatch — two productions with distinct literal first spans pass',
 // `##` first; on `##`-led input it succeeds; on `#`-led input it fails
 // and `#` picks up.
 test('checkDispatch — longest-match punctuator separation passes', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     punctuators: { hash2: '##', hash1: '#' },
     examples: [
-      ex('## heading')
-        .as('X')
-        .span('##')
-        .span('a', 'heading').until('\n')
-        .render('ast', { depth: 2, a: $.a })
-        .render('source', tpl`## ${$.a}`)
-        .build(),
-      ex('# heading')
-        .as('X')
-        .span('#')
-        .span('a', 'heading').until('\n')
-        .render('ast', { depth: 1, a: $.a })
-        .render('source', tpl`# ${$.a}`)
-        .build(),
+      relation('X', {
+        input: '## heading',
+        encodings: {
+          src: parse([
+            literal('##'),
+            span('a', 'heading').until('\n'),
+          ]),
+          ast: { depth: 2, a: $.a },
+          source: tpl`## ${$.a}`,
+        },
+      }),
+      relation('X', {
+        input: '# heading',
+        encodings: {
+          src: parse([
+            literal('#'),
+            span('a', 'heading').until('\n'),
+          ]),
+          ast: { depth: 1, a: $.a },
+          source: tpl`# ${$.a}`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -146,22 +162,26 @@ test('checkDispatch — longest-match punctuator separation passes', async () =>
 // dispatcher's speculation correctly picks the one whose position-1
 // literal matches the input.
 test('checkDispatch — same first literal with downstream divergence passes', async () => {
-  const { defineSchema, ex, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, literal, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('ab').as('X')
-        .span('a')
-        .span('b')
-        .render('ast', { kind: 'ab' })
-        .render('source', tpl`ab`)
-        .build(),
-      ex('ac').as('X')
-        .span('a')
-        .span('c')
-        .render('ast', { kind: 'ac' })
-        .render('source', tpl`ac`)
-        .build(),
+      relation('X', {
+        input: 'ab',
+        encodings: {
+          src: parse([literal('a'), literal('b')]),
+          ast: { kind: 'ab' },
+          source: 'ab',
+        },
+      }),
+      relation('X', {
+        input: 'ac',
+        encodings: {
+          src: parse([literal('a'), literal('c')]),
+          ast: { kind: 'ac' },
+          source: 'ac',
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -174,26 +194,34 @@ test('checkDispatch — same first literal with downstream divergence passes', a
 // first; if its oneOf rejects, the catch-all picks up. Mirrors the
 // HtmlElement script/style/textarea/title raw-text dispatch.
 test('checkDispatch — restricted (.oneOf) vs unrestricted productions pass', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('<script>')
-        .as('X')
-        .span('<')
-        .span('tag', 'script').ident().html().oneOf(['script', 'style'])
-        .span('>')
-        .render('ast', { kind: 'raw', tag: $.tag })
-        .render('source', tpl`<${$.tag}>`)
-        .build(),
-      ex('<div>')
-        .as('X')
-        .span('<')
-        .span('tag', 'div').ident().html()
-        .span('>')
-        .render('ast', { kind: 'el', tag: $.tag })
-        .render('source', tpl`<${$.tag}>`)
-        .build(),
+      relation('X', {
+        input: '<script>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'script').ident().html().oneOf(['script', 'style']),
+            literal('>'),
+          ]),
+          ast: { kind: 'raw', tag: $.tag },
+          source: tpl`<${$.tag}>`,
+        },
+      }),
+      relation('X', {
+        input: '<div>',
+        encodings: {
+          src: parse([
+            literal('<'),
+            span('tag', 'div').ident().html(),
+            literal('>'),
+          ]),
+          ast: { kind: 'el', tag: $.tag },
+          source: tpl`<${$.tag}>`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -203,24 +231,30 @@ test('checkDispatch — restricted (.oneOf) vs unrestricted productions pass', a
 // Fallthrough production never conflicts with a byte-led one. The
 // dispatcher reserves fallthroughs for the catch-all path.
 test('checkDispatch — fallthrough vs byte-led pass', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('@foo;')
-        .as('X')
-        .span('@')
-        .span('name', 'foo').ident()
-        .span(';')
-        .render('ast', { kind: 'at', name: $.name })
-        .render('source', tpl`@${$.name};`)
-        .build(),
-      ex('some text')
-        .as('X')
-        .span('text', 'some text').until('\n', { balanced: false })
-        .render('ast', { kind: 'text', text: $.text })
-        .render('source', tpl`${$.text}`)
-        .build(),
+      relation('X', {
+        input: '@foo;',
+        encodings: {
+          src: parse([
+            literal('@'),
+            span('name', 'foo').ident(),
+            literal(';'),
+          ]),
+          ast: { kind: 'at', name: $.name },
+          source: tpl`@${$.name};`,
+        },
+      }),
+      relation('X', {
+        input: 'some text',
+        encodings: {
+          src: parse([span('text', 'some text').until('\n', { balanced: false })]),
+          ast: { kind: 'text', text: $.text },
+          source: tpl`${$.text}`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);
@@ -231,23 +265,27 @@ test('checkDispatch — fallthrough vs byte-led pass', async () => {
 // but the root has no fallthrough production and its byte-led signatures
 // don't cover all bytes, the tolerance policy is structurally impossible.
 test('checkDispatch — tolerate policy without fallthrough at root throws', async () => {
-  const { defineSchema, ex, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, literal, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     unknownChars: 'tolerate',
     examples: [
-      ex('foo')
-        .as('X')
-        .span('foo')
-        .render('ast', { kind: 'a' })
-        .render('source', tpl`foo`)
-        .build(),
-      ex('bar')
-        .as('X')
-        .span('bar')
-        .render('ast', { kind: 'b' })
-        .render('source', tpl`bar`)
-        .build(),
+      relation('X', {
+        input: 'foo',
+        encodings: {
+          src: parse([literal('foo')]),
+          ast: { kind: 'a' },
+          source: 'foo',
+        },
+      }),
+      relation('X', {
+        input: 'bar',
+        encodings: {
+          src: parse([literal('bar')]),
+          ast: { kind: 'b' },
+          source: 'bar',
+        },
+      }),
     ],
   });
   let threw: unknown;
@@ -264,26 +302,34 @@ test('checkDispatch — tolerate policy without fallthrough at root throws', asy
 // Specificity asymmetry where one production has more literal commitments
 // than the other — mirrors the markdown table-delimiter vs table-row case.
 test('checkDispatch — more-specific production wins via span-count tiebreaker', async () => {
-  const { defineSchema, ex, $, tpl } = await import('@parser2/parser');
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
   const schema = defineSchema({
     rootType: 'X',
     examples: [
-      ex('| --- |')
-        .as('X')
-        .span('|')
-        .span('---')
-        .span('|')
-        .render('ast', { kind: 'delim' })
-        .render('source', tpl`| --- |`)
-        .build(),
-      ex('| cell |')
-        .as('X')
-        .span('|')
-        .span('text', 'cell').until('|', { balanced: false })
-        .span('|')
-        .render('ast', { kind: 'row', text: $.text })
-        .render('source', tpl`| ${$.text} |`)
-        .build(),
+      relation('X', {
+        input: '| --- |',
+        encodings: {
+          src: parse([
+            literal('|'),
+            literal('---'),
+            literal('|'),
+          ]),
+          ast: { kind: 'delim' },
+          source: '| --- |',
+        },
+      }),
+      relation('X', {
+        input: '| cell |',
+        encodings: {
+          src: parse([
+            literal('|'),
+            span('text', 'cell').until('|', { balanced: false }),
+            literal('|'),
+          ]),
+          ast: { kind: 'row', text: $.text },
+          source: tpl`| ${$.text} |`,
+        },
+      }),
     ],
   });
   const inferred = inferSchema(schema);

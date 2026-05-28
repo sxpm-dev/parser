@@ -57,14 +57,28 @@ test('parses negative percentage', () => {
 });
 
 test('parses zero', () => {
-  const ast = parse('0') as { items: Array<{ type: string }> };
-  assert.equal(ast.items[0].type, 'zero');
+  const ast = parse('0') as { items: Array<{ type: string; value: string }> };
+  assert.deepEqual(ast.items[0], { type: 'zero', value: '0' });
 });
 
 test('parses calc expression', () => {
-  const ast = parse('calc(100% - 1rem)') as { items: Array<{ type: string; name: string }> };
+  // The args field is part of the design contract — the schema explicitly
+  // captures the token list for round-trip fidelity (length-percentage.ts:151).
+  const ast = parse('calc(100% - 1rem)') as {
+    items: Array<{ type: string; name: string; args: unknown[] }>;
+  };
   assert.equal(ast.items[0].type, 'length-function');
   assert.equal(ast.items[0].name, 'calc');
+  assert.ok(Array.isArray(ast.items[0].args) && ast.items[0].args.length >= 3);
+});
+
+test('parses var function', () => {
+  const ast = parse('var(--space, 1rem)') as {
+    items: Array<{ type: string; name: string; args: unknown }>;
+  };
+  assert.equal(ast.items[0].type, 'var-function');
+  assert.equal(ast.items[0].name, 'var');
+  assert.ok(ast.items[0].args !== undefined);
 });
 
 test('parses multi-item shorthand', () => {

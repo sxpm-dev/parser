@@ -510,7 +510,7 @@ The bidirectional-engine overhaul is complete. Phase 9 landed the `relation()` D
 | 9.10b unicode fix | `095896f` | fix(tests): unicode escape literals + NFC-fallback in relation() validator |
 | 9.10c | `56b383d` | refactor(parser): delete ex() builder; relation() is now the only DSL |
 | 9.11 | `b65ebcf` | chore: delete 8 out-of-scope packages |
-| 9.12 | `TBD` | docs: Phase 9 relation() DSL closeout (this commit) |
+| 9.12 | `a4de02c` | docs: Phase 9 relation() DSL closeout (this commit) |
 
 ### Final state
 

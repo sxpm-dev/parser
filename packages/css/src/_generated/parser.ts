@@ -4,6 +4,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
 export type ParseMode = 'fast' | 'raws';
 export type ParseOptions = {
   readonly mode?: ParseMode;
@@ -156,12 +157,9 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// ── Inlined validator: CssColor (prefix __v0_) ──
 
-// ── Inlined validators (formerly @parser2/css-color and @parser2/css-length-percentage) ──
-// These were standalone packages deleted in Task 9.11. The validate() functions are
-// inlined here so the css package retains its property-value validation feature.
-
-function __cc_parseCssColorValue__alt0(state: State): unknown {
+function __v0_parseCssColorValue__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -184,7 +182,7 @@ function __cc_parseCssColorValue__alt0(state: State): unknown {
   return { __production: "CssColorValue#0", value: value };
 }
 
-function __cc_parseCssColorValue__alt1(state: State): unknown {
+function __v0_parseCssColorValue__alt1(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -209,7 +207,7 @@ function __cc_parseCssColorValue__alt1(state: State): unknown {
   return { __production: "CssColorValue#1", value: value };
 }
 
-function __cc_parseCssColorValue__alt2(state: State): unknown {
+function __v0_parseCssColorValue__alt2(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -232,7 +230,7 @@ function __cc_parseCssColorValue__alt2(state: State): unknown {
     const __loopStart = off;
     let __cand: unknown = null;
     state.pos = off;
-    __cand = __cc_parseNumericColorFunctionToken(state);
+    __cand = __v0_parseNumericColorFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
     args.push(__cand);
@@ -253,7 +251,7 @@ function __cc_parseCssColorValue__alt2(state: State): unknown {
   return { __production: "CssColorValue#2", name: name, args: args };
 }
 
-function __cc_parseCssColorValue__alt3(state: State): unknown {
+function __v0_parseCssColorValue__alt3(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -276,7 +274,7 @@ function __cc_parseCssColorValue__alt3(state: State): unknown {
     const __loopStart = off;
     let __cand: unknown = null;
     state.pos = off;
-    __cand = __cc_parseColorFunctionToken(state);
+    __cand = __v0_parseColorFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
     args.push(__cand);
@@ -297,7 +295,7 @@ function __cc_parseCssColorValue__alt3(state: State): unknown {
   return { __production: "CssColorValue#3", name: name, args: args };
 }
 
-function __cc_parseCssColorValue__alt4(state: State): unknown {
+function __v0_parseCssColorValue__alt4(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -419,7 +417,7 @@ function __cc_parseCssColorValue__alt4(state: State): unknown {
   return { __production: "CssColorValue#4", name: name, args: args };
 }
 
-function __cc_parseCssColorValue(state: State): unknown {
+function __v0_parseCssColorValue(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -427,18 +425,18 @@ function __cc_parseCssColorValue(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 35) {
-  return __cc_parseCssColorValue__alt1(state);
+  return __v0_parseCssColorValue__alt1(state);
 }
   if ((isCssIdentStart(input.charCodeAt(off)))) {
-  { const r = __cc_parseCssColorValue__alt2(state); if (r !== null) return r; }
-  { const r = __cc_parseCssColorValue__alt3(state); if (r !== null) return r; }
-  { const r = __cc_parseCssColorValue__alt4(state); if (r !== null) return r; }
-  return __cc_parseCssColorValue__alt0(state);
+  { const r = __v0_parseCssColorValue__alt2(state); if (r !== null) return r; }
+  { const r = __v0_parseCssColorValue__alt3(state); if (r !== null) return r; }
+  { const r = __v0_parseCssColorValue__alt4(state); if (r !== null) return r; }
+  return __v0_parseCssColorValue__alt0(state);
 }
   return null;
 }
 
-function __cc_parseNumericColorFunctionToken__alt0(state: State): unknown {
+function __v0_parseNumericColorFunctionToken__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -467,7 +465,7 @@ function __cc_parseNumericColorFunctionToken__alt0(state: State): unknown {
   return { __production: "NumericColorFunctionToken#0", value: value };
 }
 
-function __cc_parseNumericColorFunctionToken__alt1(state: State): unknown {
+function __v0_parseNumericColorFunctionToken__alt1(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -493,7 +491,7 @@ function __cc_parseNumericColorFunctionToken__alt1(state: State): unknown {
   return { __production: "NumericColorFunctionToken#1", value: value };
 }
 
-function __cc_parseNumericColorFunctionToken__alt2(state: State): unknown {
+function __v0_parseNumericColorFunctionToken__alt2(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -511,7 +509,7 @@ function __cc_parseNumericColorFunctionToken__alt2(state: State): unknown {
   return { __production: "NumericColorFunctionToken#2" };
 }
 
-function __cc_parseNumericColorFunctionToken__alt3(state: State): unknown {
+function __v0_parseNumericColorFunctionToken__alt3(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -529,7 +527,7 @@ function __cc_parseNumericColorFunctionToken__alt3(state: State): unknown {
   return { __production: "NumericColorFunctionToken#3" };
 }
 
-function __cc_parseNumericColorFunctionToken(state: State): unknown {
+function __v0_parseNumericColorFunctionToken(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -537,19 +535,19 @@ function __cc_parseNumericColorFunctionToken(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 47) {
-  return __cc_parseNumericColorFunctionToken__alt2(state);
+  return __v0_parseNumericColorFunctionToken__alt2(state);
 }
   if (input.charCodeAt(off) === 44) {
-  return __cc_parseNumericColorFunctionToken__alt3(state);
+  return __v0_parseNumericColorFunctionToken__alt3(state);
 }
   if (isDigit(input.charCodeAt(off))) {
-  { const r = __cc_parseNumericColorFunctionToken__alt0(state); if (r !== null) return r; }
-  return __cc_parseNumericColorFunctionToken__alt1(state);
+  { const r = __v0_parseNumericColorFunctionToken__alt0(state); if (r !== null) return r; }
+  return __v0_parseNumericColorFunctionToken__alt1(state);
 }
   return null;
 }
 
-function __cc_parseColorFunctionToken__alt0(state: State): unknown {
+function __v0_parseColorFunctionToken__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -578,7 +576,7 @@ function __cc_parseColorFunctionToken__alt0(state: State): unknown {
   return { __production: "ColorFunctionToken#0", value: value };
 }
 
-function __cc_parseColorFunctionToken__alt1(state: State): unknown {
+function __v0_parseColorFunctionToken__alt1(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -604,7 +602,7 @@ function __cc_parseColorFunctionToken__alt1(state: State): unknown {
   return { __production: "ColorFunctionToken#1", value: value };
 }
 
-function __cc_parseColorFunctionToken__alt2(state: State): unknown {
+function __v0_parseColorFunctionToken__alt2(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -626,7 +624,7 @@ function __cc_parseColorFunctionToken__alt2(state: State): unknown {
   return { __production: "ColorFunctionToken#2", value: value };
 }
 
-function __cc_parseColorFunctionToken__alt3(state: State): unknown {
+function __v0_parseColorFunctionToken__alt3(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -657,7 +655,7 @@ function __cc_parseColorFunctionToken__alt3(state: State): unknown {
   return { __production: "ColorFunctionToken#3", value: value };
 }
 
-function __cc_parseColorFunctionToken__alt4(state: State): unknown {
+function __v0_parseColorFunctionToken__alt4(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -675,7 +673,7 @@ function __cc_parseColorFunctionToken__alt4(state: State): unknown {
   return { __production: "ColorFunctionToken#4" };
 }
 
-function __cc_parseColorFunctionToken__alt5(state: State): unknown {
+function __v0_parseColorFunctionToken__alt5(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -693,7 +691,7 @@ function __cc_parseColorFunctionToken__alt5(state: State): unknown {
   return { __production: "ColorFunctionToken#5" };
 }
 
-function __cc_parseColorFunctionToken(state: State): unknown {
+function __v0_parseColorFunctionToken(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -701,25 +699,25 @@ function __cc_parseColorFunctionToken(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 47) {
-  return __cc_parseColorFunctionToken__alt4(state);
+  return __v0_parseColorFunctionToken__alt4(state);
 }
   if (input.charCodeAt(off) === 44) {
-  return __cc_parseColorFunctionToken__alt5(state);
+  return __v0_parseColorFunctionToken__alt5(state);
 }
   if (isDigit(input.charCodeAt(off))) {
-  { const r = __cc_parseColorFunctionToken__alt0(state); if (r !== null) return r; }
-  return __cc_parseColorFunctionToken__alt1(state);
+  { const r = __v0_parseColorFunctionToken__alt0(state); if (r !== null) return r; }
+  return __v0_parseColorFunctionToken__alt1(state);
 }
   if ((isCssIdentStart(input.charCodeAt(off)))) {
-  return __cc_parseColorFunctionToken__alt2(state);
+  return __v0_parseColorFunctionToken__alt2(state);
 }
   if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
-  return __cc_parseColorFunctionToken__alt3(state);
+  return __v0_parseColorFunctionToken__alt3(state);
 }
   return null;
 }
 
-function __cc_parseCssColor(state: State): unknown {
+function __v0_parseCssColor(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -727,7 +725,7 @@ function __cc_parseCssColor(state: State): unknown {
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   state.pos = off;
   const __value_start = off;
-  const value = __cc_parseCssColorValue(state);
+  const value = __v0_parseCssColorValue(state);
   if (value === null) { state.pos = entryOff; return null; }
   off = state.pos;
   const __value_end = off;
@@ -741,582 +739,9 @@ function __cc_parseCssColor(state: State): unknown {
   return { __production: "CssColor#0", value: value };
 }
 
-const __cc___defaultTarget: string | undefined = undefined;
+// ── Inlined validator: CssLengthPercentage (prefix __v1_) ──
 
-function __cc___build_CssColorValue_0_ast(captures: any): any {
-  return { type: "color-keyword", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_CssColorValue_1_ast(captures: any): any {
-  return { type: "hash-color", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_CssColorValue_2_ast(captures: any): any {
-  return { type: "rgb-color-function", name: __cc___renderSlot_ast(captures.name), args: __cc___renderSlot_ast(captures.args) };
-}
-
-function __cc___build_CssColorValue_3_ast(captures: any): any {
-  return { type: "color-function", name: __cc___renderSlot_ast(captures.name), args: __cc___renderSlot_ast(captures.args) };
-}
-
-function __cc___build_CssColorValue_4_ast(captures: any): any {
-  return { type: "var-function", name: __cc___renderSlot_ast(captures.name), args: __cc___renderSlot_ast(captures.args) };
-}
-
-function __cc___build_NumericColorFunctionToken_0_ast(captures: any): any {
-  return { type: "percentage", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_NumericColorFunctionToken_1_ast(captures: any): any {
-  return { type: "number", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_NumericColorFunctionToken_2_ast(captures: any): any {
-  return { type: "separator", value: "/" };
-}
-
-function __cc___build_NumericColorFunctionToken_3_ast(captures: any): any {
-  return { type: "separator", value: "," };
-}
-
-function __cc___build_ColorFunctionToken_0_ast(captures: any): any {
-  return { type: "percentage", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_ColorFunctionToken_1_ast(captures: any): any {
-  return { type: "number", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_ColorFunctionToken_2_ast(captures: any): any {
-  return { type: "ident", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_ColorFunctionToken_3_ast(captures: any): any {
-  return { type: "string", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___build_ColorFunctionToken_4_ast(captures: any): any {
-  return { type: "separator", value: "/" };
-}
-
-function __cc___build_ColorFunctionToken_5_ast(captures: any): any {
-  return { type: "separator", value: "," };
-}
-
-function __cc___build_CssColor_0_ast(captures: any): any {
-  return { type: "css-color", value: __cc___renderSlot_ast(captures.value) };
-}
-
-function __cc___dispatchRender_ast(captures: any): any {
-  if (captures === null || typeof captures !== "object") {
-    throw new Error("__cc_render: captures must be an object (target 'ast')");
-  }
-  switch (captures.__production) {
-    case "CssColorValue#0": return __cc___build_CssColorValue_0_ast(captures);
-    case "CssColorValue#1": return __cc___build_CssColorValue_1_ast(captures);
-    case "CssColorValue#2": return __cc___build_CssColorValue_2_ast(captures);
-    case "CssColorValue#3": return __cc___build_CssColorValue_3_ast(captures);
-    case "CssColorValue#4": return __cc___build_CssColorValue_4_ast(captures);
-    case "NumericColorFunctionToken#0": return __cc___build_NumericColorFunctionToken_0_ast(captures);
-    case "NumericColorFunctionToken#1": return __cc___build_NumericColorFunctionToken_1_ast(captures);
-    case "NumericColorFunctionToken#2": return __cc___build_NumericColorFunctionToken_2_ast(captures);
-    case "NumericColorFunctionToken#3": return __cc___build_NumericColorFunctionToken_3_ast(captures);
-    case "ColorFunctionToken#0": return __cc___build_ColorFunctionToken_0_ast(captures);
-    case "ColorFunctionToken#1": return __cc___build_ColorFunctionToken_1_ast(captures);
-    case "ColorFunctionToken#2": return __cc___build_ColorFunctionToken_2_ast(captures);
-    case "ColorFunctionToken#3": return __cc___build_ColorFunctionToken_3_ast(captures);
-    case "ColorFunctionToken#4": return __cc___build_ColorFunctionToken_4_ast(captures);
-    case "ColorFunctionToken#5": return __cc___build_ColorFunctionToken_5_ast(captures);
-    case "CssColor#0": return __cc___build_CssColor_0_ast(captures);
-  }
-  throw new Error("__cc_render: unknown production '" + captures.__production + "' for target 'ast'");
-}
-
-function __cc___renderSlot_ast(v: any): any {
-  if (v === null || v === undefined) return v;
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__cc___renderSlot_ast(v[i]));
-    return out;
-  }
-  if (typeof v === "object" && typeof v.__production === "string") {
-    return __cc___dispatchRender_ast(v);
-  }
-  return v;
-}
-
-const __cc___renderDispatch: Record<string, (captures: any) => any> = {
-  "ast": (captures: any) => __cc___dispatchRender_ast(captures),
-};
-
-function __cc_render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
-  const target = options?.type ?? __cc___defaultTarget;
-  if (!target) {
-    throw new Error("__cc_render: missing target; pass options.type or set defaultTarget on the schema");
-  }
-  const fn = __cc___renderDispatch[target];
-  if (!fn) {
-    throw new Error("__cc_render: unknown target '" + target + "'");
-  }
-  const captures = options && options.mode ? __cc___parse(input, { mode: options.mode }) : __cc___parse(input);
-  return fn(captures);
-}
-
-function __cc___rebuildSlot(v: any, joinSep: string = ""): string {
-  if (v === null || v === undefined) return "";
-  if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) {
-      if (i > 0 && joinSep.length > 0) out += joinSep;
-      out += __cc___rebuildSlot(v[i]);
-    }
-    return out;
-  }
-  return String(v);
-}
-
-function __cc___rebuild_CssColorValue_0(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___rebuild_CssColorValue_1(captures: any): string {
-  return "#" + __cc___rebuildSlot(captures.value);
-}
-
-function __cc___rebuild_CssColorValue_2(captures: any): string {
-  return __cc___rebuildSlot(captures.name) + "(" + __cc___rebuildSlot(captures.args, " ") + " " + ")";
-}
-
-function __cc___rebuild_CssColorValue_3(captures: any): string {
-  return __cc___rebuildSlot(captures.name) + "(" + __cc___rebuildSlot(captures.args, " ") + " " + ")";
-}
-
-function __cc___rebuild_CssColorValue_4(captures: any): string {
-  return __cc___rebuildSlot(captures.name) + "(" + __cc___rebuildSlot(captures.args) + ")";
-}
-
-function __cc___rebuild_NumericColorFunctionToken_0(captures: any): string {
-  return __cc___rebuildSlot(captures.value) + "%";
-}
-
-function __cc___rebuild_NumericColorFunctionToken_1(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___rebuild_NumericColorFunctionToken_2(captures: any): string {
-  return "/";
-}
-
-function __cc___rebuild_NumericColorFunctionToken_3(captures: any): string {
-  return ",";
-}
-
-function __cc___rebuild_ColorFunctionToken_0(captures: any): string {
-  return __cc___rebuildSlot(captures.value) + "%";
-}
-
-function __cc___rebuild_ColorFunctionToken_1(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___rebuild_ColorFunctionToken_2(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___rebuild_ColorFunctionToken_3(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___rebuild_ColorFunctionToken_4(captures: any): string {
-  return "/";
-}
-
-function __cc___rebuild_ColorFunctionToken_5(captures: any): string {
-  return ",";
-}
-
-function __cc___rebuild_CssColor_0(captures: any): string {
-  return String(__cc___rebuildSlot(captures.value));
-}
-
-function __cc___invert_CssColorValue_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "color-keyword")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"color-keyword\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_CssColorValue_0(captures);
-}
-
-function __cc___invert_CssColorValue_1_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "hash-color")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"hash-color\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_CssColorValue_1(captures);
-}
-
-function __cc___invert_CssColorValue_2_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "rgb-color-function")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"rgb-color-function\", got " + JSON.stringify(value.type));
-  }
-  captures.name = __cc___invertSlotLeaf_ast(value.name);
-  captures.args = __cc___invertSlotFor_NumericColorFunctionToken_ast(value.args);
-  return __cc___rebuild_CssColorValue_2(captures);
-}
-
-function __cc___invert_CssColorValue_3_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "color-function")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"color-function\", got " + JSON.stringify(value.type));
-  }
-  captures.name = __cc___invertSlotLeaf_ast(value.name);
-  captures.args = __cc___invertSlotFor_ColorFunctionToken_ast(value.args);
-  return __cc___rebuild_CssColorValue_3(captures);
-}
-
-function __cc___invert_CssColorValue_4_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "var-function")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"var-function\", got " + JSON.stringify(value.type));
-  }
-  captures.name = __cc___invertSlotLeaf_ast(value.name);
-  captures.args = __cc___invertSlotLeaf_ast(value.args);
-  return __cc___rebuild_CssColorValue_4(captures);
-}
-
-function __cc___invert_NumericColorFunctionToken_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "percentage")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_NumericColorFunctionToken_0(captures);
-}
-
-function __cc___invert_NumericColorFunctionToken_1_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "number")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"number\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_NumericColorFunctionToken_1(captures);
-}
-
-function __cc___invert_NumericColorFunctionToken_2_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "separator")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "/")) {
-    throw new Error("__cc_stringify: field \"value\" expected \"/\", got " + JSON.stringify(value.value));
-  }
-  return __cc___rebuild_NumericColorFunctionToken_2(captures);
-}
-
-function __cc___invert_NumericColorFunctionToken_3_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "separator")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, ",")) {
-    throw new Error("__cc_stringify: field \"value\" expected \",\", got " + JSON.stringify(value.value));
-  }
-  return __cc___rebuild_NumericColorFunctionToken_3(captures);
-}
-
-function __cc___invert_ColorFunctionToken_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "percentage")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_ColorFunctionToken_0(captures);
-}
-
-function __cc___invert_ColorFunctionToken_1_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "number")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"number\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_ColorFunctionToken_1(captures);
-}
-
-function __cc___invert_ColorFunctionToken_2_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "ident")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"ident\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_ColorFunctionToken_2(captures);
-}
-
-function __cc___invert_ColorFunctionToken_3_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "string")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"string\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotLeaf_ast(value.value);
-  return __cc___rebuild_ColorFunctionToken_3(captures);
-}
-
-function __cc___invert_ColorFunctionToken_4_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "separator")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "/")) {
-    throw new Error("__cc_stringify: field \"value\" expected \"/\", got " + JSON.stringify(value.value));
-  }
-  return __cc___rebuild_ColorFunctionToken_4(captures);
-}
-
-function __cc___invert_ColorFunctionToken_5_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "separator")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, ",")) {
-    throw new Error("__cc_stringify: field \"value\" expected \",\", got " + JSON.stringify(value.value));
-  }
-  return __cc___rebuild_ColorFunctionToken_5(captures);
-}
-
-function __cc___invert_CssColor_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cc_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "css-color")) {
-    throw new Error("__cc_stringify: field \"type\" expected \"css-color\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cc___invertSlotFor_CssColorValue_ast(value.value);
-  return __cc___rebuild_CssColor_0(captures);
-}
-
-function __cc___dispatchInverse_CssColorValue_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "color-keyword")) return __cc___invert_CssColorValue_0_ast(value);
-    if (Object.is(value.type, "hash-color")) return __cc___invert_CssColorValue_1_ast(value);
-    if (Object.is(value.type, "rgb-color-function")) return __cc___invert_CssColorValue_2_ast(value);
-    if (Object.is(value.type, "color-function")) return __cc___invert_CssColorValue_3_ast(value);
-    if (Object.is(value.type, "var-function")) return __cc___invert_CssColorValue_4_ast(value);
-  }
-  throw new Error("__cc_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cc___dispatchInverse_NumericColorFunctionToken_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "percentage")) return __cc___invert_NumericColorFunctionToken_0_ast(value);
-    if (Object.is(value.type, "number")) return __cc___invert_NumericColorFunctionToken_1_ast(value);
-    if (Object.is(value.type, "separator") && Object.is(value.value, "/")) return __cc___invert_NumericColorFunctionToken_2_ast(value);
-    if (Object.is(value.type, "separator") && Object.is(value.value, ",")) return __cc___invert_NumericColorFunctionToken_3_ast(value);
-  }
-  throw new Error("__cc_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cc___dispatchInverse_ColorFunctionToken_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "percentage")) return __cc___invert_ColorFunctionToken_0_ast(value);
-    if (Object.is(value.type, "number")) return __cc___invert_ColorFunctionToken_1_ast(value);
-    if (Object.is(value.type, "ident")) return __cc___invert_ColorFunctionToken_2_ast(value);
-    if (Object.is(value.type, "string")) return __cc___invert_ColorFunctionToken_3_ast(value);
-    if (Object.is(value.type, "separator") && Object.is(value.value, "/")) return __cc___invert_ColorFunctionToken_4_ast(value);
-    if (Object.is(value.type, "separator") && Object.is(value.value, ",")) return __cc___invert_ColorFunctionToken_5_ast(value);
-  }
-  throw new Error("__cc_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cc___dispatchInverse_CssColor_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "css-color")) return __cc___invert_CssColor_0_ast(value);
-  }
-  throw new Error("__cc_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cc___dispatchInverse_ast(value: any): string {
-  return __cc___dispatchInverse_CssColor_ast(value);
-}
-
-function __cc___invertSlotFor_CssColorValue_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cc___dispatchInverse_CssColorValue_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cc___invertSlotFor_CssColorValue_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cc___dispatchInverse_CssColorValue_ast(v);
-  return String(v);
-}
-
-function __cc___invertSlotFor_NumericColorFunctionToken_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cc___dispatchInverse_NumericColorFunctionToken_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cc___invertSlotFor_NumericColorFunctionToken_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cc___dispatchInverse_NumericColorFunctionToken_ast(v);
-  return String(v);
-}
-
-function __cc___invertSlotFor_ColorFunctionToken_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cc___dispatchInverse_ColorFunctionToken_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cc___invertSlotFor_ColorFunctionToken_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cc___dispatchInverse_ColorFunctionToken_ast(v);
-  return String(v);
-}
-
-function __cc___invertSlotFor_CssColor_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cc___dispatchInverse_CssColor_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cc___invertSlotFor_CssColor_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cc___dispatchInverse_CssColor_ast(v);
-  return String(v);
-}
-
-function __cc___invertSlotLeaf_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cc___invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  return String(v);
-}
-
-const __cc___inverseDispatch: Record<string, (value: any) => string> = {
-  "ast": __cc___dispatchInverse_ast,
-};
-
-function __cc_stringify(value: unknown, options?: { type?: string }): string {
-  const target = options?.type ?? __cc___defaultTarget;
-  if (!target) {
-    throw new Error("__cc_stringify: missing target; pass options.type or set defaultTarget on the schema");
-  }
-  const fn = __cc___inverseDispatch[target];
-  if (!fn) {
-    throw new Error("__cc_stringify: unknown target '" + target + "'");
-  }
-  return fn(value);
-}
-
-function __cc___parse(input: string, options?: ParseOptions): unknown {
-  const mode = options?.mode ?? 'fast';
-  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode,
-    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
-  };
-  const result = __cc_parseCssColor(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
-  }
-  return result;
-}
-
-function __cc_validate(input: string, options?: ParseOptions): void {
-  const __state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode: 'fast',
-    lineStarts: [],
-  };
-  const __result = __cc_parseCssColor(__state);
-  if (__result === null || __state.pos !== input.length) {
-    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
-  }
-}
-
-function __cl_parseLengthPercentageItem__alt0(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1346,7 +771,7 @@ function __cl_parseLengthPercentageItem__alt0(state: State): unknown {
   return { __production: "LengthPercentageItem#0", value: value, unit: unit };
 }
 
-function __cl_parseLengthPercentageItem__alt1(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1379,7 +804,7 @@ function __cl_parseLengthPercentageItem__alt1(state: State): unknown {
   return { __production: "LengthPercentageItem#1", value: value, unit: unit };
 }
 
-function __cl_parseLengthPercentageItem__alt2(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt2(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1404,7 +829,7 @@ function __cl_parseLengthPercentageItem__alt2(state: State): unknown {
   return { __production: "LengthPercentageItem#2", value: value };
 }
 
-function __cl_parseLengthPercentageItem__alt3(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt3(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1432,7 +857,7 @@ function __cl_parseLengthPercentageItem__alt3(state: State): unknown {
   return { __production: "LengthPercentageItem#3", value: value };
 }
 
-function __cl_parseLengthPercentageItem__alt4(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt4(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1455,7 +880,7 @@ function __cl_parseLengthPercentageItem__alt4(state: State): unknown {
   return { __production: "LengthPercentageItem#4", value: value };
 }
 
-function __cl_parseLengthPercentageItem__alt5(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1478,7 +903,7 @@ function __cl_parseLengthPercentageItem__alt5(state: State): unknown {
     const __loopStart = off;
     let __cand: unknown = null;
     state.pos = off;
-    __cand = __cl_parseLengthFunctionToken(state);
+    __cand = __v1_parseLengthFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
     args.push(__cand);
@@ -1499,7 +924,7 @@ function __cl_parseLengthPercentageItem__alt5(state: State): unknown {
   return { __production: "LengthPercentageItem#5", name: name, args: args };
 }
 
-function __cl_parseLengthPercentageItem__alt6(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt6(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1528,6 +953,7 @@ function __cl_parseLengthPercentageItem__alt6(state: State): unknown {
     __args_start = off;
     let __lastNonWs = off;
     let __depth = 0;
+    const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
     while (off < len) {
       const __c = input.charCodeAt(off);
       if (__depth === 0 && (__c === 41)) break;
@@ -1588,6 +1014,12 @@ function __cl_parseLengthPercentageItem__alt6(state: State): unknown {
         continue;
       }
       if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      if (__depth === 0 && __KB[__c] === 0) {
+        // unknown char (depth 0, no stop, no opener) — fail production
+        if (off > state.maxOff) state.maxOff = off;
+        state.pos = entryOff;
+        return null;
+      }
       off++;
     }
     const __emptyAnchor = __args_start;
@@ -1614,7 +1046,7 @@ function __cl_parseLengthPercentageItem__alt6(state: State): unknown {
   return { __production: "LengthPercentageItem#6", name: name, args: args };
 }
 
-function __cl_parseLengthPercentageItem__alt7(state: State): unknown {
+function __v1_parseLengthPercentageItem__alt7(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1637,7 +1069,7 @@ function __cl_parseLengthPercentageItem__alt7(state: State): unknown {
   return { __production: "LengthPercentageItem#7", value: value };
 }
 
-function __cl_parseLengthPercentageItem(state: State): unknown {
+function __v1_parseLengthPercentageItem(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1645,23 +1077,23 @@ function __cl_parseLengthPercentageItem(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 45) {
-  { const r = __cl_parseLengthPercentageItem__alt1(state); if (r !== null) return r; }
-  return __cl_parseLengthPercentageItem__alt3(state);
+  { const r = __v1_parseLengthPercentageItem__alt1(state); if (r !== null) return r; }
+  return __v1_parseLengthPercentageItem__alt3(state);
 }
   if (isDigit(input.charCodeAt(off))) {
-  { const r = __cl_parseLengthPercentageItem__alt0(state); if (r !== null) return r; }
-  { const r = __cl_parseLengthPercentageItem__alt4(state); if (r !== null) return r; }
-  return __cl_parseLengthPercentageItem__alt2(state);
+  { const r = __v1_parseLengthPercentageItem__alt0(state); if (r !== null) return r; }
+  { const r = __v1_parseLengthPercentageItem__alt4(state); if (r !== null) return r; }
+  return __v1_parseLengthPercentageItem__alt2(state);
 }
   if ((isCssIdentStart(input.charCodeAt(off)))) {
-  { const r = __cl_parseLengthPercentageItem__alt5(state); if (r !== null) return r; }
-  { const r = __cl_parseLengthPercentageItem__alt6(state); if (r !== null) return r; }
-  return __cl_parseLengthPercentageItem__alt7(state);
+  { const r = __v1_parseLengthPercentageItem__alt5(state); if (r !== null) return r; }
+  { const r = __v1_parseLengthPercentageItem__alt6(state); if (r !== null) return r; }
+  return __v1_parseLengthPercentageItem__alt7(state);
 }
   return null;
 }
 
-function __cl_parseLengthFunctionToken__alt0(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1691,7 +1123,7 @@ function __cl_parseLengthFunctionToken__alt0(state: State): unknown {
   return { __production: "LengthFunctionToken#0", value: value, unit: unit };
 }
 
-function __cl_parseLengthFunctionToken__alt1(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt1(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1716,7 +1148,7 @@ function __cl_parseLengthFunctionToken__alt1(state: State): unknown {
   return { __production: "LengthFunctionToken#1", value: value };
 }
 
-function __cl_parseLengthFunctionToken__alt2(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt2(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1739,7 +1171,7 @@ function __cl_parseLengthFunctionToken__alt2(state: State): unknown {
   return { __production: "LengthFunctionToken#2", value: value };
 }
 
-function __cl_parseLengthFunctionToken__alt3(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt3(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1757,7 +1189,7 @@ function __cl_parseLengthFunctionToken__alt3(state: State): unknown {
   return { __production: "LengthFunctionToken#3" };
 }
 
-function __cl_parseLengthFunctionToken__alt4(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt4(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1775,7 +1207,7 @@ function __cl_parseLengthFunctionToken__alt4(state: State): unknown {
   return { __production: "LengthFunctionToken#4" };
 }
 
-function __cl_parseLengthFunctionToken__alt5(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt5(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1793,7 +1225,7 @@ function __cl_parseLengthFunctionToken__alt5(state: State): unknown {
   return { __production: "LengthFunctionToken#5" };
 }
 
-function __cl_parseLengthFunctionToken__alt6(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt6(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1811,7 +1243,7 @@ function __cl_parseLengthFunctionToken__alt6(state: State): unknown {
   return { __production: "LengthFunctionToken#6" };
 }
 
-function __cl_parseLengthFunctionToken__alt7(state: State): unknown {
+function __v1_parseLengthFunctionToken__alt7(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1829,7 +1261,7 @@ function __cl_parseLengthFunctionToken__alt7(state: State): unknown {
   return { __production: "LengthFunctionToken#7" };
 }
 
-function __cl_parseLengthFunctionToken(state: State): unknown {
+function __v1_parseLengthFunctionToken(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1837,29 +1269,29 @@ function __cl_parseLengthFunctionToken(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 45) {
-  return __cl_parseLengthFunctionToken__alt3(state);
+  return __v1_parseLengthFunctionToken__alt3(state);
 }
   if (input.charCodeAt(off) === 43) {
-  return __cl_parseLengthFunctionToken__alt4(state);
+  return __v1_parseLengthFunctionToken__alt4(state);
 }
   if (input.charCodeAt(off) === 42) {
-  return __cl_parseLengthFunctionToken__alt5(state);
+  return __v1_parseLengthFunctionToken__alt5(state);
 }
   if (input.charCodeAt(off) === 47) {
-  return __cl_parseLengthFunctionToken__alt6(state);
+  return __v1_parseLengthFunctionToken__alt6(state);
 }
   if (input.charCodeAt(off) === 44) {
-  return __cl_parseLengthFunctionToken__alt7(state);
+  return __v1_parseLengthFunctionToken__alt7(state);
 }
   if (isDigit(input.charCodeAt(off))) {
-  { const r = __cl_parseLengthFunctionToken__alt0(state); if (r !== null) return r; }
-  { const r = __cl_parseLengthFunctionToken__alt2(state); if (r !== null) return r; }
-  return __cl_parseLengthFunctionToken__alt1(state);
+  { const r = __v1_parseLengthFunctionToken__alt0(state); if (r !== null) return r; }
+  { const r = __v1_parseLengthFunctionToken__alt2(state); if (r !== null) return r; }
+  return __v1_parseLengthFunctionToken__alt1(state);
 }
   return null;
 }
 
-function __cl_parseCssLengthPercentage(state: State): unknown {
+function __v1_parseCssLengthPercentage(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -1871,7 +1303,7 @@ function __cl_parseCssLengthPercentage(state: State): unknown {
     const __loopStart = off;
     let __cand: unknown = null;
     state.pos = off;
-    __cand = __cl_parseLengthPercentageItem(state);
+    __cand = __v1_parseLengthPercentageItem(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
     items.push(__cand);
@@ -1890,590 +1322,39 @@ function __cl_parseCssLengthPercentage(state: State): unknown {
   return { __production: "CssLengthPercentage#0", items: items };
 }
 
-const __cl___defaultTarget: string | undefined = undefined;
-
-function __cl___build_LengthPercentageItem_0_ast(captures: any): any {
-  return { type: "dimension", value: __cl___renderSlot_ast(captures.value), unit: __cl___renderSlot_ast(captures.unit) };
-}
-
-function __cl___build_LengthPercentageItem_1_ast(captures: any): any {
-  return { type: "dimension", value: "-10", unit: __cl___renderSlot_ast(captures.unit) };
-}
-
-function __cl___build_LengthPercentageItem_2_ast(captures: any): any {
-  return { type: "percentage", value: __cl___renderSlot_ast(captures.value) };
-}
-
-function __cl___build_LengthPercentageItem_3_ast(captures: any): any {
-  return { type: "percentage", value: "-50" };
-}
-
-function __cl___build_LengthPercentageItem_4_ast(captures: any): any {
-  return { type: "zero", value: __cl___renderSlot_ast(captures.value) };
-}
-
-function __cl___build_LengthPercentageItem_5_ast(captures: any): any {
-  return { type: "length-function", name: __cl___renderSlot_ast(captures.name), args: __cl___renderSlot_ast(captures.args) };
-}
-
-function __cl___build_LengthPercentageItem_6_ast(captures: any): any {
-  return { type: "var-function", name: __cl___renderSlot_ast(captures.name), args: __cl___renderSlot_ast(captures.args) };
-}
-
-function __cl___build_LengthPercentageItem_7_ast(captures: any): any {
-  return { type: "length-keyword", value: __cl___renderSlot_ast(captures.value) };
-}
-
-function __cl___build_LengthFunctionToken_0_ast(captures: any): any {
-  return { type: "dimension", value: __cl___renderSlot_ast(captures.value), unit: __cl___renderSlot_ast(captures.unit) };
-}
-
-function __cl___build_LengthFunctionToken_1_ast(captures: any): any {
-  return { type: "percentage", value: __cl___renderSlot_ast(captures.value) };
-}
-
-function __cl___build_LengthFunctionToken_2_ast(captures: any): any {
-  return { type: "zero", value: __cl___renderSlot_ast(captures.value) };
-}
-
-function __cl___build_LengthFunctionToken_3_ast(captures: any): any {
-  return { type: "operator", value: "-" };
-}
-
-function __cl___build_LengthFunctionToken_4_ast(captures: any): any {
-  return { type: "operator", value: "+" };
-}
-
-function __cl___build_LengthFunctionToken_5_ast(captures: any): any {
-  return { type: "operator", value: "*" };
-}
-
-function __cl___build_LengthFunctionToken_6_ast(captures: any): any {
-  return { type: "operator", value: "/" };
-}
-
-function __cl___build_LengthFunctionToken_7_ast(captures: any): any {
-  return { type: "separator", value: "," };
-}
-
-function __cl___build_CssLengthPercentage_0_ast(captures: any): any {
-  return { type: "css-length-percentage", items: __cl___renderSlot_ast(captures.items) };
-}
-
-function __cl___dispatchRender_ast(captures: any): any {
-  if (captures === null || typeof captures !== "object") {
-    throw new Error("__cl_render: captures must be an object (target 'ast')");
-  }
-  switch (captures.__production) {
-    case "LengthPercentageItem#0": return __cl___build_LengthPercentageItem_0_ast(captures);
-    case "LengthPercentageItem#1": return __cl___build_LengthPercentageItem_1_ast(captures);
-    case "LengthPercentageItem#2": return __cl___build_LengthPercentageItem_2_ast(captures);
-    case "LengthPercentageItem#3": return __cl___build_LengthPercentageItem_3_ast(captures);
-    case "LengthPercentageItem#4": return __cl___build_LengthPercentageItem_4_ast(captures);
-    case "LengthPercentageItem#5": return __cl___build_LengthPercentageItem_5_ast(captures);
-    case "LengthPercentageItem#6": return __cl___build_LengthPercentageItem_6_ast(captures);
-    case "LengthPercentageItem#7": return __cl___build_LengthPercentageItem_7_ast(captures);
-    case "LengthFunctionToken#0": return __cl___build_LengthFunctionToken_0_ast(captures);
-    case "LengthFunctionToken#1": return __cl___build_LengthFunctionToken_1_ast(captures);
-    case "LengthFunctionToken#2": return __cl___build_LengthFunctionToken_2_ast(captures);
-    case "LengthFunctionToken#3": return __cl___build_LengthFunctionToken_3_ast(captures);
-    case "LengthFunctionToken#4": return __cl___build_LengthFunctionToken_4_ast(captures);
-    case "LengthFunctionToken#5": return __cl___build_LengthFunctionToken_5_ast(captures);
-    case "LengthFunctionToken#6": return __cl___build_LengthFunctionToken_6_ast(captures);
-    case "LengthFunctionToken#7": return __cl___build_LengthFunctionToken_7_ast(captures);
-    case "CssLengthPercentage#0": return __cl___build_CssLengthPercentage_0_ast(captures);
-  }
-  throw new Error("__cl_render: unknown production '" + captures.__production + "' for target 'ast'");
-}
-
-function __cl___renderSlot_ast(v: any): any {
-  if (v === null || v === undefined) return v;
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__cl___renderSlot_ast(v[i]));
-    return out;
-  }
-  if (typeof v === "object" && typeof v.__production === "string") {
-    return __cl___dispatchRender_ast(v);
-  }
-  return v;
-}
-
-const __cl___renderDispatch: Record<string, (captures: any) => any> = {
-  "ast": (captures: any) => __cl___dispatchRender_ast(captures),
-};
-
-function __cl_render(input: string, options?: { type?: string; mode?: ParseMode }): unknown {
-  const target = options?.type ?? __cl___defaultTarget;
-  if (!target) {
-    throw new Error("__cl_render: missing target; pass options.type or set defaultTarget on the schema");
-  }
-  const fn = __cl___renderDispatch[target];
-  if (!fn) {
-    throw new Error("__cl_render: unknown target '" + target + "'");
-  }
-  const captures = options && options.mode ? __cl___parse(input, { mode: options.mode }) : __cl___parse(input);
-  return fn(captures);
-}
-
-function __cl___rebuildSlot(v: any, joinSep: string = ""): string {
-  if (v === null || v === undefined) return "";
-  if (Array.isArray(v)) {
-    let out = "";
-    for (let i = 0; i < v.length; i++) {
-      if (i > 0 && joinSep.length > 0) out += joinSep;
-      out += __cl___rebuildSlot(v[i]);
-    }
-    return out;
-  }
-  return String(v);
-}
-
-function __cl___rebuild_LengthPercentageItem_0(captures: any): string {
-  return __cl___rebuildSlot(captures.value) + __cl___rebuildSlot(captures.unit);
-}
-
-function __cl___rebuild_LengthPercentageItem_1(captures: any): string {
-  return "-" + __cl___rebuildSlot(captures.value) + __cl___rebuildSlot(captures.unit);
-}
-
-function __cl___rebuild_LengthPercentageItem_2(captures: any): string {
-  return __cl___rebuildSlot(captures.value) + "%";
-}
-
-function __cl___rebuild_LengthPercentageItem_3(captures: any): string {
-  return "-" + __cl___rebuildSlot(captures.value) + "%";
-}
-
-function __cl___rebuild_LengthPercentageItem_4(captures: any): string {
-  return String(__cl___rebuildSlot(captures.value));
-}
-
-function __cl___rebuild_LengthPercentageItem_5(captures: any): string {
-  return __cl___rebuildSlot(captures.name) + "(" + __cl___rebuildSlot(captures.args, " ") + " " + ")";
-}
-
-function __cl___rebuild_LengthPercentageItem_6(captures: any): string {
-  return __cl___rebuildSlot(captures.name) + "(" + __cl___rebuildSlot(captures.args) + ")";
-}
-
-function __cl___rebuild_LengthPercentageItem_7(captures: any): string {
-  return String(__cl___rebuildSlot(captures.value));
-}
-
-function __cl___rebuild_LengthFunctionToken_0(captures: any): string {
-  return __cl___rebuildSlot(captures.value) + __cl___rebuildSlot(captures.unit);
-}
-
-function __cl___rebuild_LengthFunctionToken_1(captures: any): string {
-  return __cl___rebuildSlot(captures.value) + "%";
-}
-
-function __cl___rebuild_LengthFunctionToken_2(captures: any): string {
-  return String(__cl___rebuildSlot(captures.value));
-}
-
-function __cl___rebuild_LengthFunctionToken_3(captures: any): string {
-  return "-";
-}
-
-function __cl___rebuild_LengthFunctionToken_4(captures: any): string {
-  return "+";
-}
-
-function __cl___rebuild_LengthFunctionToken_5(captures: any): string {
-  return "*";
-}
-
-function __cl___rebuild_LengthFunctionToken_6(captures: any): string {
-  return "/";
-}
-
-function __cl___rebuild_LengthFunctionToken_7(captures: any): string {
-  return ",";
-}
-
-function __cl___rebuild_CssLengthPercentage_0(captures: any): string {
-  return String(__cl___rebuildSlot(captures.items, " "));
-}
-
-function __cl___invert_LengthPercentageItem_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "dimension")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  captures.unit = __cl___invertSlotLeaf_ast(value.unit);
-  return __cl___rebuild_LengthPercentageItem_0(captures);
-}
-
-function __cl___invert_LengthPercentageItem_1_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "dimension")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "-10")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"-10\", got " + JSON.stringify(value.value));
-  }
-  captures.unit = __cl___invertSlotLeaf_ast(value.unit);
-  return __cl___rebuild_LengthPercentageItem_1(captures);
-}
-
-function __cl___invert_LengthPercentageItem_2_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "percentage")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  return __cl___rebuild_LengthPercentageItem_2(captures);
-}
-
-function __cl___invert_LengthPercentageItem_3_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "percentage")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "-50")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"-50\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthPercentageItem_3(captures);
-}
-
-function __cl___invert_LengthPercentageItem_4_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "zero")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"zero\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  return __cl___rebuild_LengthPercentageItem_4(captures);
-}
-
-function __cl___invert_LengthPercentageItem_5_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "length-function")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"length-function\", got " + JSON.stringify(value.type));
-  }
-  captures.name = __cl___invertSlotLeaf_ast(value.name);
-  captures.args = __cl___invertSlotFor_LengthFunctionToken_ast(value.args);
-  return __cl___rebuild_LengthPercentageItem_5(captures);
-}
-
-function __cl___invert_LengthPercentageItem_6_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "var-function")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"var-function\", got " + JSON.stringify(value.type));
-  }
-  captures.name = __cl___invertSlotLeaf_ast(value.name);
-  captures.args = __cl___invertSlotLeaf_ast(value.args);
-  return __cl___rebuild_LengthPercentageItem_6(captures);
-}
-
-function __cl___invert_LengthPercentageItem_7_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "length-keyword")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"length-keyword\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  return __cl___rebuild_LengthPercentageItem_7(captures);
-}
-
-function __cl___invert_LengthFunctionToken_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "dimension")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"dimension\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  captures.unit = __cl___invertSlotLeaf_ast(value.unit);
-  return __cl___rebuild_LengthFunctionToken_0(captures);
-}
-
-function __cl___invert_LengthFunctionToken_1_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "percentage")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"percentage\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  return __cl___rebuild_LengthFunctionToken_1(captures);
-}
-
-function __cl___invert_LengthFunctionToken_2_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "zero")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"zero\", got " + JSON.stringify(value.type));
-  }
-  captures.value = __cl___invertSlotLeaf_ast(value.value);
-  return __cl___rebuild_LengthFunctionToken_2(captures);
-}
-
-function __cl___invert_LengthFunctionToken_3_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "operator")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "-")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"-\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthFunctionToken_3(captures);
-}
-
-function __cl___invert_LengthFunctionToken_4_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "operator")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "+")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"+\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthFunctionToken_4(captures);
-}
-
-function __cl___invert_LengthFunctionToken_5_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "operator")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "*")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"*\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthFunctionToken_5(captures);
-}
-
-function __cl___invert_LengthFunctionToken_6_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "operator")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"operator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, "/")) {
-    throw new Error("__cl_stringify: field \"value\" expected \"/\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthFunctionToken_6(captures);
-}
-
-function __cl___invert_LengthFunctionToken_7_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "separator")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"separator\", got " + JSON.stringify(value.type));
-  }
-  if (!Object.is(value.value, ",")) {
-    throw new Error("__cl_stringify: field \"value\" expected \",\", got " + JSON.stringify(value.value));
-  }
-  return __cl___rebuild_LengthFunctionToken_7(captures);
-}
-
-function __cl___invert_CssLengthPercentage_0_ast(value: any): string {
-  const captures: any = {};
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("__cl_stringify: expected object value, got " + typeof value);
-  }
-  if (!Object.is(value.type, "css-length-percentage")) {
-    throw new Error("__cl_stringify: field \"type\" expected \"css-length-percentage\", got " + JSON.stringify(value.type));
-  }
-  captures.items = __cl___invertSlotFor_LengthPercentageItem_ast(value.items);
-  return __cl___rebuild_CssLengthPercentage_0(captures);
-}
-
-function __cl___dispatchInverse_LengthPercentageItem_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "dimension")) return __cl___invert_LengthPercentageItem_0_ast(value);
-    if (Object.is(value.type, "dimension") && Object.is(value.value, "-10")) return __cl___invert_LengthPercentageItem_1_ast(value);
-    if (Object.is(value.type, "percentage")) return __cl___invert_LengthPercentageItem_2_ast(value);
-    if (Object.is(value.type, "percentage") && Object.is(value.value, "-50")) return __cl___invert_LengthPercentageItem_3_ast(value);
-    if (Object.is(value.type, "zero")) return __cl___invert_LengthPercentageItem_4_ast(value);
-    if (Object.is(value.type, "length-function")) return __cl___invert_LengthPercentageItem_5_ast(value);
-    if (Object.is(value.type, "var-function")) return __cl___invert_LengthPercentageItem_6_ast(value);
-    if (Object.is(value.type, "length-keyword")) return __cl___invert_LengthPercentageItem_7_ast(value);
-  }
-  throw new Error("__cl_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cl___dispatchInverse_LengthFunctionToken_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "dimension")) return __cl___invert_LengthFunctionToken_0_ast(value);
-    if (Object.is(value.type, "percentage")) return __cl___invert_LengthFunctionToken_1_ast(value);
-    if (Object.is(value.type, "zero")) return __cl___invert_LengthFunctionToken_2_ast(value);
-    if (Object.is(value.type, "operator") && Object.is(value.value, "-")) return __cl___invert_LengthFunctionToken_3_ast(value);
-    if (Object.is(value.type, "operator") && Object.is(value.value, "+")) return __cl___invert_LengthFunctionToken_4_ast(value);
-    if (Object.is(value.type, "operator") && Object.is(value.value, "*")) return __cl___invert_LengthFunctionToken_5_ast(value);
-    if (Object.is(value.type, "operator") && Object.is(value.value, "/")) return __cl___invert_LengthFunctionToken_6_ast(value);
-    if (Object.is(value.type, "separator") && Object.is(value.value, ",")) return __cl___invert_LengthFunctionToken_7_ast(value);
-  }
-  throw new Error("__cl_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cl___dispatchInverse_CssLengthPercentage_ast(value: any): string {
-  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-    if (Object.is(value.type, "css-length-percentage")) return __cl___invert_CssLengthPercentage_0_ast(value);
-  }
-  throw new Error("__cl_stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
-function __cl___dispatchInverse_ast(value: any): string {
-  return __cl___dispatchInverse_CssLengthPercentage_ast(value);
-}
-
-function __cl___invertSlotFor_LengthPercentageItem_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cl___dispatchInverse_LengthPercentageItem_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cl___invertSlotFor_LengthPercentageItem_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cl___dispatchInverse_LengthPercentageItem_ast(v);
-  return String(v);
-}
-
-function __cl___invertSlotFor_LengthFunctionToken_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cl___dispatchInverse_LengthFunctionToken_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cl___invertSlotFor_LengthFunctionToken_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cl___dispatchInverse_LengthFunctionToken_ast(v);
-  return String(v);
-}
-
-function __cl___invertSlotFor_CssLengthPercentage_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-    try { return __cl___dispatchInverse_CssLengthPercentage_ast(v); } catch (_e) { return v; }
-  }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cl___invertSlotFor_CssLengthPercentage_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  if (typeof v === "object") return __cl___dispatchInverse_CssLengthPercentage_ast(v);
-  return String(v);
-}
-
-function __cl___invertSlotLeaf_ast(v: any): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") return v;
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __cl___invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
-  return String(v);
-}
-
-const __cl___inverseDispatch: Record<string, (value: any) => string> = {
-  "ast": __cl___dispatchInverse_ast,
-};
-
-function __cl_stringify(value: unknown, options?: { type?: string }): string {
-  const target = options?.type ?? __cl___defaultTarget;
-  if (!target) {
-    throw new Error("__cl_stringify: missing target; pass options.type or set defaultTarget on the schema");
-  }
-  const fn = __cl___inverseDispatch[target];
-  if (!fn) {
-    throw new Error("__cl_stringify: unknown target '" + target + "'");
-  }
-  return fn(value);
-}
-
-function __cl___parse(input: string, options?: ParseOptions): unknown {
-  const mode = options?.mode ?? 'fast';
-  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode,
-    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
-  };
-  const result = __cl_parseCssLengthPercentage(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
-  }
-  return result;
-}
-
-function __cl_validate(input: string, options?: ParseOptions): void {
-  const state: State = {
+function __validator_0(input: string): void {
+  const __state: State = {
     input,
     len: input.length,
     pos: 0,
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
-  const result = __cl_parseCssLengthPercentage(state);
-  if (result === null || state.pos !== input.length) {
-    throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  const __r = __v0_parseCssColor(__state);
+  if (__r === null || __state.pos !== input.length) {
+    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+}
+function __validator_1(input: string): void {
+  const __state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+  const __r = __v1_parseCssLengthPercentage(__state);
+  if (__r === null || __state.pos !== input.length) {
+    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
   }
 }
 
-function __validator_0(input: string): void { __cc_validate(input); }
-function __validator_1(input: string): void { __cl_validate(input); }
 // ── End inlined validators ──
 
 function parseComment(state: State): unknown {

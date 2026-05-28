@@ -188,9 +188,10 @@ export class SpanNode {
       // Skip optional spans entirely — their text need not appear in the input.
       if (item.data.modifiers.some((m) => m.kind === 'optional')) continue;
       // Skip any leading whitespace at cursor (standard policy: inter-span
-      // whitespace is optional), UNLESS the span's own example text is itself
-      // whitespace (e.g. a whitespace-class span whose text is ' ').
-      if (!/^\s+$/.test(text)) {
+      // whitespace is optional), UNLESS the span's own example text starts
+      // with whitespace (e.g. a whitespace-class span, or a span like
+      // ' hello ' whose leading space is meaningful to its .until() capture).
+      if (!/^\s/.test(text)) {
         while (cursor < input.length && /\s/.test(input[cursor]!)) cursor++;
       }
       const idx = input.indexOf(text, cursor);

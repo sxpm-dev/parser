@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { $, literal, parse, relation, span, tpl } from '../src/index.ts';
+import { $, literal, parse, relation, span, tpl, withInverse } from '../src/index.ts';
 
 test('relation: minimal heading produces ExampleDef with one literal + one named span', () => {
   const def = relation('MarkdownLeaf', {
@@ -581,4 +581,46 @@ test('relation: optional span absent from input does not trigger validation erro
       },
     }),
   );
+});
+
+// --- withInverse ---
+
+test('relation: withInverse() emits RenderTargetDef with inverse field', () => {
+  const def = relation('X', {
+    input: 'x',
+    encodings: {
+      src: parse([span('v', 'x').ident()]),
+      html: withInverse(tpl`<a>${$.v}</a>`, tpl`<A>${$.v}</A>`),
+    },
+  });
+  assert.equal(def.renders.length, 1);
+  const r = def.renders[0]!;
+  assert.equal(r.target, 'html');
+  assert.ok(r.inverse, 'inverse should be set');
+});
+
+test('relation: encodings without withInverse have undefined inverse', () => {
+  const def = relation('Y', {
+    input: 'y',
+    encodings: {
+      src: parse([span('v', 'y').ident()]),
+      html: tpl`<a>${$.v}</a>`,
+    },
+  });
+  assert.equal(def.renders[0]!.inverse, undefined);
+});
+
+test('relation: withInverse() body is preserved on RenderTargetDef', () => {
+  const body = tpl`<a>${$.v}</a>`;
+  const inverse = tpl`<A>${$.v}</A>`;
+  const def = relation('Z', {
+    input: 'z',
+    encodings: {
+      src: parse([span('v', 'z').ident()]),
+      html: withInverse(body, inverse),
+    },
+  });
+  const r = def.renders[0]!;
+  assert.equal(r.body, body);
+  assert.equal(r.inverse, inverse);
 });

@@ -224,6 +224,26 @@ export type Span = SpanNode;
 
 export type ParseProgram = { readonly __parse: true; readonly items: ReadonlyArray<SpanNode> };
 
+// ---------- Invertible encoding ---------------------------------------------
+
+export type InvertibleEncoding = {
+  readonly __invertible: true;
+  readonly body: Template | object;
+  readonly inverse: Template;
+};
+
+export function withInverse(body: Template | object, inverse: Template): InvertibleEncoding {
+  return { __invertible: true, body, inverse };
+}
+
+function isInvertibleEncoding(v: unknown): v is InvertibleEncoding {
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    (v as { __invertible?: unknown }).__invertible === true
+  );
+}
+
 function isParseProgram(v: unknown): v is ParseProgram {
   return (
     typeof v === 'object' &&
@@ -279,6 +299,10 @@ export function relation(nodeType: string, body: RelationBody): ExampleDef {
         throw new Error(`relation '${nodeType}': multiple parse-program encodings`);
       }
       parseProgram = value;
+      continue;
+    }
+    if (isInvertibleEncoding(value)) {
+      renders.push({ target, body: value.body as RenderBody, inverse: value.inverse });
       continue;
     }
     renders.push({ target, body: value as RenderBody });

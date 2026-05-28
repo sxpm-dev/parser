@@ -97,6 +97,10 @@ export type SpanContext = {
   // token in this schema. Computed by computeKnownLeadingBytes. Only
   // consulted when emitUnknownCharsGuard is true.
   readonly knownBytes: Uint8Array;
+  // Symbol prefix prepended to every emitted top-level function name (parse<Role>,
+  // __fusedRender_<Role>_<idx>_<target>, etc.). Default '' produces byte-identical
+  // output to the prior code path. See InferredSchema.symbolPrefix.
+  readonly symbolPrefix: string;
 };
 
 export type SpanBindings = {

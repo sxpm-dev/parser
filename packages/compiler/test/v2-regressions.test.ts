@@ -1807,6 +1807,36 @@ test('v2 .until() with requireStop fails on EOF without stop match', async () =>
   assert.match(src, /off >= len/);
 });
 
+test('symbolPrefix defaults are byte-identical to omitted prefix (Task C.1 inertness)', async () => {
+  // Phase C plumbing check: passing `symbolPrefix: ''` MUST round-trip to the
+  // same generated source as omitting `symbolPrefix` entirely. If this fails,
+  // the symbolPrefix path is leaking into the empty-prefix code path — e.g. a
+  // separator that wasn't there before or a missing default to ''. Catching
+  // this at the regression level keeps the IR safety gate (parser/test/
+  // generated-parser-ir.test.ts) green when codegen is re-run.
+  const cronSchema = (await import('../../cron/src/schema.ts')).default;
+  const withoutOpt = generateParser(cronSchema, undefined, { packageName: 'cron' });
+  const withEmpty = generateParser(cronSchema, undefined, { packageName: 'cron', symbolPrefix: '' });
+  assert.equal(withEmpty, withoutOpt);
+});
+
+test('symbolPrefix non-empty value prepends every emitted parse function name', async () => {
+  // Plumbing check: a non-empty prefix must actually flow into the emitted
+  // function names. We don't yet care about every internal helper getting
+  // prefixed (composition lands in Task C.3); we just assert the prefix
+  // appears on the top-level parse<NodeType> declarations.
+  const cronSchema = (await import('../../cron/src/schema.ts')).default;
+  const prefixed = generateParser(cronSchema, undefined, {
+    packageName: 'cron',
+    symbolPrefix: '__v0_',
+  });
+  // Root parse function for cron's root type 'Cron' should be __v0_parseCron.
+  assert.match(prefixed, /function __v0_parseCron\b/);
+  // Public exports MUST NOT be prefixed — keep the caller-facing API stable.
+  assert.match(prefixed, /export function (validate|render|stringify)\b/);
+  assert.doesNotMatch(prefixed, /export function __v0_(parse|validate|render|stringify)\b/);
+});
+
 test('v2 validate() invokes per-field validators from ValidationDef', () => {
   // Use the real CSS generated parser since the validation infrastructure lives there.
   // This is a code-shape check, not a runtime check — we assert the emitted

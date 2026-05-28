@@ -77,7 +77,7 @@ export function emitFusedRender(
     }
   }
 
-  const fnName = fusedRenderFnName(opts.nodeName, opts.prodIdx, opts.target);
+  const fnName = fusedRenderFnName(schema, opts.nodeName, opts.prodIdx, opts.target);
   const body = emitFusedBody(template, production, schema, opts.target);
   return `function ${fnName}(state: State, out: string[]): boolean {
 ${indent(body, 1)}
@@ -85,9 +85,11 @@ ${indent(body, 1)}
 }
 
 // Stable function-name convention. Mirrors `__build_<NodeType>_<idx>_<target>`
-// in emit/render.ts but with a distinct prefix so the two never collide.
-export function fusedRenderFnName(nodeName: string, prodIdx: number, target: string): string {
-  return `__fusedRender_${jsIdent(nodeName)}_${prodIdx}_${jsIdent(target)}`;
+// in emit/render.ts but with a distinct prefix so the two never collide. The
+// schema's `symbolPrefix` is prepended (default '' is byte-identical to the
+// prior code path) so multiple fused parsers can be composed without collisions.
+export function fusedRenderFnName(schema: InferredSchema, nodeName: string, prodIdx: number, target: string): string {
+  return `${schema.symbolPrefix}__fusedRender_${jsIdent(nodeName)}_${prodIdx}_${jsIdent(target)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -368,7 +370,7 @@ function emitFusedRecursiveSpan(
   // outer guard in `emitRoleLadder`).
   lines.push(`  if (off < len) {`);
   lines.push(`    const __c0 = input.charCodeAt(off);`);
-  lines.push(indent(emitByteDispatch(candidates, target, {
+  lines.push(indent(emitByteDispatch(candidates, target, ctx, {
     matchedVar,
     bufVar,
     offResetVar: '__offBefore',
@@ -419,6 +421,7 @@ type ByteDispatchOpts = {
 function emitByteDispatch(
   candidates: ReadonlyArray<FusedCandidate>,
   target: string,
+  ctx: SpanContext,
   opts: ByteDispatchOpts,
 ): string {
   const byByte = new Map<number, FusedCandidate[]>();
@@ -432,7 +435,7 @@ function emitByteDispatch(
     }
   }
   const branchSrc = (cand: FusedCandidate): string => {
-    const fn = fusedRenderFnName(cand.nodeName, cand.prodIdx, target);
+    const fn = `${ctx.symbolPrefix}__fusedRender_${jsIdent(cand.nodeName)}_${cand.prodIdx}_${jsIdent(target)}`;
     return [
       `if (!${opts.matchedVar}) {`,
       `  state.pos = ${opts.offResetVar};`,
@@ -536,7 +539,7 @@ function emitFusedRepeatsSpan(
   // NOT then fall through to TextNode (which would capture "" and add a
   // spurious empty child).
   lines.push(`      const __c0 = input.charCodeAt(off);`);
-  lines.push(indent(emitByteDispatch(candidates, target, {
+  lines.push(indent(emitByteDispatch(candidates, target, ctx, {
     matchedVar: '__itemMatched',
     bufVar,
     offResetVar: '__offBeforeItem',
@@ -888,6 +891,7 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     nodeTypes: schema.nodeTypes,
     emitUnknownCharsGuard,
     knownBytes: computeKnownLeadingBytes(schema),
+    symbolPrefix: schema.symbolPrefix,
   };
 }
 

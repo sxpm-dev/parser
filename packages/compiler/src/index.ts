@@ -27,6 +27,12 @@ export type GenerateOptions = {
   // backend (forthcoming) is selected by passing BYTECODE_BACKEND here or
   // via the CLI's --backend bytecode flag.
   readonly backend?: Backend;
+  // Symbol prefix prepended to every emitted top-level function name in the
+  // v2 backend. Used by the inline-validator pass when composing a
+  // sub-schema's parser into a parent's generated source — each sub-schema
+  // gets a unique prefix to avoid collisions. Default '' (no prefix), which
+  // produces byte-identical output to the prior code path.
+  readonly symbolPrefix?: string;
 };
 
 export function inferSchema(
@@ -43,6 +49,7 @@ export function inferSchema(
   const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
   const inferred: InferredSchema = {
     packageName: options.packageName ?? 'parser',
+    symbolPrefix: options.symbolPrefix ?? '',
     rootType: root.rootType,
     nodeTypes,
     literals,

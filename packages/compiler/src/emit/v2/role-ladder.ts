@@ -174,11 +174,12 @@ export function emitRoleLadder(
   // 2+ fallthroughs: sentinel speculation across them in declaration order.
   let fallthroughBody: string | null = null;
   if (fallthroughRoles.length === 1) {
-    fallthroughBody = `${resultVar} = parse${fallthroughRoles[0]!.role}(state);`;
+    fallthroughBody = `${resultVar} = ${ctx.symbolPrefix}parse${fallthroughRoles[0]!.role}(state);`;
   } else if (fallthroughRoles.length >= 2) {
     fallthroughBody = emitSpeculationGroup(
       fallthroughRoles.map((r) => r.role),
       resultVar,
+      ctx.symbolPrefix,
     );
   }
 
@@ -214,8 +215,8 @@ export function emitRoleLadder(
       const sortedBytes = [...group.bytes].sort((a, b) => a - b);
       const caseLabels = sortedBytes.map((b) => `case ${b}:`).join(' ');
       const body = group.roles.length === 1
-        ? `${resultVar} = parse${group.roles[0]!.role}(state);`
-        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar);
+        ? `${resultVar} = ${ctx.symbolPrefix}parse${group.roles[0]!.role}(state);`
+        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar, ctx.symbolPrefix);
       lines.push(`    ${caseLabels}`);
       lines.push(`${indent(body, 3)}`);
       lines.push(`      break;`);
@@ -234,8 +235,8 @@ export function emitRoleLadder(
     for (const group of groups) {
       const cond = [...group.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
       const body = group.roles.length === 1
-        ? `${resultVar} = parse${group.roles[0]!.role}(state);`
-        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar);
+        ? `${resultVar} = ${ctx.symbolPrefix}parse${group.roles[0]!.role}(state);`
+        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar, ctx.symbolPrefix);
       branchTexts.push(`if (${cond}) {\n${indent(body, 2)}\n  }`);
     }
 
@@ -282,17 +283,17 @@ export const DISPATCH_SWITCH_MIN_BYTES = 4;
 //   if (__r === null) { __r = parseB(state); }
 //   if (__r === null) { __r = parseC(state); }
 //   ${resultVar} = __r;
-function emitSpeculationGroup(roles: ReadonlyArray<string>, resultVar: string): string {
+function emitSpeculationGroup(roles: ReadonlyArray<string>, resultVar: string, symbolPrefix: string): string {
   if (roles.length === 0) {
     throw new Error('emitSpeculationGroup: called with no roles');
   }
   if (roles.length === 1) {
-    return `${resultVar} = parse${roles[0]!}(state);`;
+    return `${resultVar} = ${symbolPrefix}parse${roles[0]!}(state);`;
   }
   const lines: string[] = [];
-  lines.push(`${resultVar} = parse${roles[0]!}(state);`);
+  lines.push(`${resultVar} = ${symbolPrefix}parse${roles[0]!}(state);`);
   for (let i = 1; i < roles.length; i++) {
-    lines.push(`if (${resultVar} === null) { ${resultVar} = parse${roles[i]!}(state); }`);
+    lines.push(`if (${resultVar} === null) { ${resultVar} = ${symbolPrefix}parse${roles[i]!}(state); }`);
   }
   return lines.join('\n');
 }

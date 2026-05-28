@@ -72,6 +72,7 @@ export function emitProduction(
     nodeTypes: schema.nodeTypes,
     emitUnknownCharsGuard,
     knownBytes: computeKnownLeadingBytes(schema),
+    symbolPrefix: schema.symbolPrefix,
   };
 
   const lines: string[] = [];

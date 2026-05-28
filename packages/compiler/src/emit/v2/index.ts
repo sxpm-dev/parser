@@ -21,7 +21,7 @@ import { V2_RUNTIME } from './runtime.ts';
 import { emitValidate } from './validate-emit.ts';
 
 export function emitV2Parser(schema: InferredSchema): string {
-  const { imports: validatorImports, body: validateBody } = emitValidate(schema, parseFnName(schema.rootType));
+  const { imports: validatorImports, body: validateBody } = emitValidate(schema, parseFnName(schema, schema.rootType));
   const header = emitHeader(schema, validatorImports);
   const runtime = V2_RUNTIME;
   const nodeFns: string[] = [];
@@ -98,7 +98,7 @@ function emitFusion(schema: InferredSchema): { source: string; targets: Readonly
         if (src === null) continue;
         fns.push(src);
         const key = productionKey(info.name, i);
-        const fn = fusedRenderFnName(info.name, i, target);
+        const fn = fusedRenderFnName(schema, info.name, i, target);
         const list = targetDispatchEntries.get(target) ?? [];
         list.push(`  ${jsString(key)}: ${fn},`);
         targetDispatchEntries.set(target, list);
@@ -195,22 +195,25 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
     throw new CompilerError(`Node type '${info.name}' has zero productions`);
   }
   if (info.productions.length === 1) {
-    return emitProduction(info.name, info.productions[0]!, schema, { fnName: parseFnName(info.name), prodIdx: 0 });
+    return emitProduction(info.name, info.productions[0]!, schema, { fnName: parseFnName(schema, info.name), prodIdx: 0 });
   }
   // Multi-prod: emit each alt as its own function plus a dispatcher.
   const altFns: string[] = [];
   for (let i = 0; i < info.productions.length; i++) {
     altFns.push(emitProduction(info.name, info.productions[i]!, schema, {
-      fnName: `${parseFnName(info.name)}__alt${i}`,
+      fnName: `${parseFnName(schema, info.name)}__alt${i}`,
       prodIdx: i,
     }));
   }
-  const dispatcher = emitDispatcher(info, schema, parseFnName);
+  const dispatcher = emitDispatcher(info, schema, (n) => parseFnName(schema, n));
   return [altFns.join('\n\n'), dispatcher].join('\n\n');
 }
 
-export function parseFnName(nodeType: string): string {
-  return `parse${nodeType}`;
+// Returns the top-level parse function name for a node type. The schema's
+// `symbolPrefix` is prepended so generated parsers can be composed without
+// name collisions (default '' is byte-identical to the unprefixed form).
+export function parseFnName(schema: InferredSchema, nodeType: string): string {
+  return `${schema.symbolPrefix}parse${nodeType}`;
 }
 
 // Phase 8 Task 8.5 — emit the input-normalization preamble inside __parse.
@@ -269,7 +272,7 @@ function emitPreamble(schema: InferredSchema): string {
 }
 
 function emitPublicApi(schema: InferredSchema, validateBody: string): string {
-  const rootFn = parseFnName(schema.rootType);
+  const rootFn = parseFnName(schema, schema.rootType);
   const preamble = emitPreamble(schema);
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';

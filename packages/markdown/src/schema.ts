@@ -1,4 +1,4 @@
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 
 // CommonMark-ish markdown schema. All block productions live under the
 // MarkdownLeaf umbrella role so MarkdownDocument's children loop dispatches
@@ -146,100 +146,136 @@ export default defineSchema({
     // ---- Document --------------------------------------------------------
     // Root container; children is a recursive list of MarkdownLeaf. The
     // child-loop's inter-iteration ws-skip eats blank lines between blocks.
-    ex('# Release notes\nPlain paragraph')
-      .as('MarkdownDocument')
-      // Children are dispatched across two roles: MarkdownLeaf (every
-      // syntactically-distinct block — heading, list, fence, etc.) and
-      // MarkdownParagraph (the catch-all). Splitting Paragraph out of
-      // MarkdownLeaf lets the role dispatcher treat it as the fallthrough
-      // — MarkdownLeaf's first-byte table handles every other production,
-      // and any byte not in that table routes here.
-      .span('children', '# Release notes\nPlain paragraph', ['MarkdownLeaf', 'MarkdownParagraph'])
-        .repeats({ min: 0 })
-      .render('ast', { type: 'document', children: $.children })
-      .render('html', tpl`${$.children}`)
-      .render('source', tpl`${$.children}`)
-      .build(),
+    relation('MarkdownDocument', {
+      input: '# Release notes\nPlain paragraph',
+      encodings: {
+        parse: parse([
+          // Children are dispatched across two roles: MarkdownLeaf (every
+          // syntactically-distinct block — heading, list, fence, etc.) and
+          // MarkdownParagraph (the catch-all). Splitting Paragraph out of
+          // MarkdownLeaf lets the role dispatcher treat it as the fallthrough
+          // — MarkdownLeaf's first-byte table handles every other production,
+          // and any byte not in that table routes here.
+          span('children', '# Release notes\nPlain paragraph').of('MarkdownLeaf', 'MarkdownParagraph')
+            .repeats({ min: 0 }),
+        ]),
+        ast: { type: 'document', children: $.children },
+        html: tpl`${$.children}`,
+        source: tpl`${$.children}`,
+      },
+    }),
 
     // ---- ATX headings ----------------------------------------------------
     // Each depth has its own production so the dispatcher routes by the
     // longest-match heading punctuator. Text captures until newline.
-    ex('###### Tiny heading')
-      .as('MarkdownLeaf')
-      .span('######')
-      .span('text', 'Tiny heading').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 6, text: $.text })
-      .render('html', tpl`<h6>${$.text}</h6>`)
-      .render('source', tpl`###### ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '###### Tiny heading',
+      encodings: {
+        parse: parse([
+          literal('######'),
+          span('text', 'Tiny heading').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 6, text: $.text },
+        html: tpl`<h6>${$.text}</h6>`,
+        source: tpl`###### ${$.text}`,
+      },
+    }),
 
-    ex('##### Small section')
-      .as('MarkdownLeaf')
-      .span('#####')
-      .span('text', 'Small section').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 5, text: $.text })
-      .render('html', tpl`<h5>${$.text}</h5>`)
-      .render('source', tpl`##### ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '##### Small section',
+      encodings: {
+        parse: parse([
+          literal('#####'),
+          span('text', 'Small section').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 5, text: $.text },
+        html: tpl`<h5>${$.text}</h5>`,
+        source: tpl`##### ${$.text}`,
+      },
+    }),
 
-    ex('#### Deep section')
-      .as('MarkdownLeaf')
-      .span('####')
-      .span('text', 'Deep section').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 4, text: $.text })
-      .render('html', tpl`<h4>${$.text}</h4>`)
-      .render('source', tpl`#### ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '#### Deep section',
+      encodings: {
+        parse: parse([
+          literal('####'),
+          span('text', 'Deep section').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 4, text: $.text },
+        html: tpl`<h4>${$.text}</h4>`,
+        source: tpl`#### ${$.text}`,
+      },
+    }),
 
-    ex('### API reference')
-      .as('MarkdownLeaf')
-      .span('###')
-      .span('text', 'API reference').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 3, text: $.text })
-      .render('html', tpl`<h3>${$.text}</h3>`)
-      .render('source', tpl`### ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '### API reference',
+      encodings: {
+        parse: parse([
+          literal('###'),
+          span('text', 'API reference').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 3, text: $.text },
+        html: tpl`<h3>${$.text}</h3>`,
+        source: tpl`### ${$.text}`,
+      },
+    }),
 
-    ex('## Installation guide')
-      .as('MarkdownLeaf')
-      .span('##')
-      .span('text', 'Installation guide').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 2, text: $.text })
-      .render('html', tpl`<h2>${$.text}</h2>`)
-      .render('source', tpl`## ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '## Installation guide',
+      encodings: {
+        parse: parse([
+          literal('##'),
+          span('text', 'Installation guide').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 2, text: $.text },
+        html: tpl`<h2>${$.text}</h2>`,
+        source: tpl`## ${$.text}`,
+      },
+    }),
 
-    ex('# Release notes')
-      .as('MarkdownLeaf')
-      .span('#')
-      .span('text', 'Release notes').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'heading', depth: 1, text: $.text })
-      .render('html', tpl`<h1>${$.text}</h1>`)
-      .render('source', tpl`# ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '# Release notes',
+      encodings: {
+        parse: parse([
+          literal('#'),
+          span('text', 'Release notes').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'heading', depth: 1, text: $.text },
+        html: tpl`<h1>${$.text}</h1>`,
+        source: tpl`# ${$.text}`,
+      },
+    }),
 
     // ---- Setext heading --------------------------------------------------
     // First line captures the text; the underline literal that follows
     // tells us depth (=== → h1, --- → h2). Listed BEFORE Paragraph so the
     // dispatcher's fallthrough chain tries Setext first; if no underline
     // follows the text Paragraph picks up.
-    ex('Setext heading\n===')
-      .as('MarkdownLeaf')
-      .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
-      .span('===')
-      .render('ast', { type: 'heading', depth: 1, text: $.text, style: 'setext' })
-      .render('html', tpl`<h1>${$.text}</h1>`)
-      .render('source', tpl`${$.text} ===`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: 'Setext heading\n===',
+      encodings: {
+        parse: parse([
+          span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false }),
+          literal('==='),
+        ]),
+        ast: { type: 'heading', depth: 1, text: $.text, style: 'setext' },
+        html: tpl`<h1>${$.text}</h1>`,
+        source: tpl`${$.text} ===`,
+      },
+    }),
 
-    ex('Setext heading\n---')
-      .as('MarkdownLeaf')
-      .span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false })
-      .span('---')
-      .render('ast', { type: 'heading', depth: 2, text: $.text, style: 'setext' })
-      .render('html', tpl`<h2>${$.text}</h2>`)
-      .render('source', tpl`${$.text} ---`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: 'Setext heading\n---',
+      encodings: {
+        parse: parse([
+          span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false }),
+          literal('---'),
+        ]),
+        ast: { type: 'heading', depth: 2, text: $.text, style: 'setext' },
+        html: tpl`<h2>${$.text}</h2>`,
+        source: tpl`${$.text} ---`,
+      },
+    }),
 
     // ---- Thematic breaks -------------------------------------------------
     // Listed BEFORE setext-with-`---` so the dispatcher's byte-prefix path
@@ -247,105 +283,145 @@ export default defineSchema({
     // require a preceding text line we don't have).
     // (Dispatch order enforced mechanically by `checkDispatch` in
     // packages/compiler/src/check/dispatch.ts.)
-    ex('***')
-      .as('MarkdownLeaf')
-      .span('***')
-      .render('ast', { type: 'thematic-break', marker: '*' })
-      .render('html', tpl`<hr>`)
-      .render('source', tpl`***`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '***',
+      encodings: {
+        parse: parse([
+          literal('***'),
+        ]),
+        ast: { type: 'thematic-break', marker: '*' },
+        html: tpl`<hr>`,
+        source: tpl`***`,
+      },
+    }),
 
-    ex('___')
-      .as('MarkdownLeaf')
-      .span('___')
-      .render('ast', { type: 'thematic-break', marker: '_' })
-      .render('html', tpl`<hr>`)
-      .render('source', tpl`___`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '___',
+      encodings: {
+        parse: parse([
+          literal('___'),
+        ]),
+        ast: { type: 'thematic-break', marker: '_' },
+        html: tpl`<hr>`,
+        source: tpl`___`,
+      },
+    }),
 
-    ex('---')
-      .as('MarkdownLeaf')
-      .span('---')
-      .render('ast', { type: 'thematic-break' })
-      .render('html', tpl`<hr>`)
-      .render('source', tpl`---`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '---',
+      encodings: {
+        parse: parse([
+          literal('---'),
+        ]),
+        ast: { type: 'thematic-break' },
+        html: tpl`<hr>`,
+        source: tpl`---`,
+      },
+    }),
 
     // ---- Task list items -------------------------------------------------
     // Listed before plain list-item-dash so `- [x]` / `- [ ]` are tried
     // first when the dispatcher routes by `-`. The full marker (`- [x]`)
     // is a single punctuator so the dispatcher's longest-match peek wins.
-    ex('- [x] completed task')
-      .as('MarkdownLeaf')
-      .span('- [x]')
-      .span('text', 'completed task').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'task-list-item', checked: true, marker: 'x', text: $.text })
-      .render('html', tpl`<li><input type="checkbox" checked>${$.text}</li>`)
-      .render('source', tpl`- [x] ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '- [x] completed task',
+      encodings: {
+        parse: parse([
+          literal('- [x]'),
+          span('text', 'completed task').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'task-list-item', checked: true, marker: 'x', text: $.text },
+        html: tpl`<li><input type="checkbox" checked>${$.text}</li>`,
+        source: tpl`- [x] ${$.text}`,
+      },
+    }),
 
-    ex('- [ ] pending task')
-      .as('MarkdownLeaf')
-      .span('- [ ]')
-      .span('text', 'pending task').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'task-list-item', checked: false, text: $.text })
-      .render('html', tpl`<li><input type="checkbox">${$.text}</li>`)
-      .render('source', tpl`- [ ] ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '- [ ] pending task',
+      encodings: {
+        parse: parse([
+          literal('- [ ]'),
+          span('text', 'pending task').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'task-list-item', checked: false, text: $.text },
+        html: tpl`<li><input type="checkbox">${$.text}</li>`,
+        source: tpl`- [ ] ${$.text}`,
+      },
+    }),
 
     // ---- Unordered list items --------------------------------------------
     // The `- ` / `+ ` / `* ` punctuators include the required space so
     // they don't collide with the thematic-break or bold/italic prefixes.
     // (Dispatch order enforced mechanically by `checkDispatch` in
     // packages/compiler/src/check/dispatch.ts.)
-    ex('+ alternate marker')
-      .as('MarkdownLeaf')
-      .span('+ ')
-      .span('text', 'alternate marker').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'list-item', ordered: false, marker: '+', text: $.text })
-      .render('html', tpl`<li>${$.text}</li>`)
-      .render('source', tpl`+ ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '+ alternate marker',
+      encodings: {
+        parse: parse([
+          literal('+ '),
+          span('text', 'alternate marker').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'list-item', ordered: false, marker: '+', text: $.text },
+        html: tpl`<li>${$.text}</li>`,
+        source: tpl`+ ${$.text}`,
+      },
+    }),
 
-    ex('* star marker')
-      .as('MarkdownLeaf')
-      .span('* ')
-      .span('text', 'star marker').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'list-item', ordered: false, marker: '*', text: $.text })
-      .render('html', tpl`<li>${$.text}</li>`)
-      .render('source', tpl`* ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '* star marker',
+      encodings: {
+        parse: parse([
+          literal('* '),
+          span('text', 'star marker').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'list-item', ordered: false, marker: '*', text: $.text },
+        html: tpl`<li>${$.text}</li>`,
+        source: tpl`* ${$.text}`,
+      },
+    }),
 
-    ex('- first item')
-      .as('MarkdownLeaf')
-      .span('- ')
-      .span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'list-item', ordered: false, text: $.text })
-      .render('html', tpl`<li>${$.text}</li>`)
-      .render('source', tpl`- ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '- first item',
+      encodings: {
+        parse: parse([
+          literal('- '),
+          span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'list-item', ordered: false, text: $.text },
+        html: tpl`<li>${$.text}</li>`,
+        source: tpl`- ${$.text}`,
+      },
+    }),
 
     // ---- Ordered list item -----------------------------------------------
     // Number-prefixed so the role dispatcher routes via the digit branch.
-    ex('1. ordered item')
-      .as('MarkdownLeaf')
-      .span('index', '1').number().int()
-      .span('.')
-      .span('text', 'ordered item').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'list-item', ordered: true, index: $.index, text: $.text })
-      .render('html', tpl`<li>${$.text}</li>`)
-      .render('source', tpl`${$.index}. ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '1. ordered item',
+      encodings: {
+        parse: parse([
+          span('index', '1').number().int(),
+          literal('.'),
+          span('text', 'ordered item').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'list-item', ordered: true, index: $.index, text: $.text },
+        html: tpl`<li>${$.text}</li>`,
+        source: tpl`${$.index}. ${$.text}`,
+      },
+    }),
 
     // ---- Block quote -----------------------------------------------------
-    ex('> quoted text')
-      .as('MarkdownLeaf')
-      .span('>')
-      .span('text', 'quoted text').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'blockquote', text: $.text })
-      .render('html', tpl`<blockquote>${$.text}</blockquote>`)
-      .render('source', tpl`> ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '> quoted text',
+      encodings: {
+        parse: parse([
+          literal('>'),
+          span('text', 'quoted text').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'blockquote', text: $.text },
+        html: tpl`<blockquote>${$.text}</blockquote>`,
+        source: tpl`> ${$.text}`,
+      },
+    }),
 
     // ---- Fenced code block -----------------------------------------------
     // Two productions sharing the ``` opener:
@@ -359,139 +435,183 @@ export default defineSchema({
     // Body uses `.until('```', { balanced: false })` so the until-loop's
     // built-in leading/trailing ws-trim collapses the wrapping newlines
     // — matching the test expectation of `'sample'` (not `'\nsample\n'`).
-    ex('```js\nsample\n```')
-      .as('MarkdownLeaf')
-      .span('```')
-      .span('lang', 'js').ident().css()
-      .span('body', 'sample').until('```', { balanced: false })
-      .span('```')
-      .render('ast', { type: 'code-block', lang: $.lang, text: $.body })
-      .render('html', tpl`<pre><code class="lang-${$.lang}">${$.body}</code></pre>`)
-      .render('source', tpl`\`\`\`${$.lang} ${$.body} \`\`\``)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '```js\nsample\n```',
+      encodings: {
+        parse: parse([
+          literal('```'),
+          span('lang', 'js').ident().css(),
+          span('body', 'sample').until('```', { balanced: false }),
+          literal('```'),
+        ]),
+        ast: { type: 'code-block', lang: $.lang, text: $.body },
+        html: tpl`<pre><code class="lang-${$.lang}">${$.body}</code></pre>`,
+        source: tpl`\`\`\`${$.lang} ${$.body} \`\`\``,
+      },
+    }),
 
-    ex('```\nplain\n```')
-      .as('MarkdownLeaf')
-      .span('```\n')
-      .span('body', 'plain').until('```', { balanced: false })
-      .span('```')
-      .render('ast', { type: 'code-block', text: $.body })
-      .render('html', tpl`<pre><code>${$.body}</code></pre>`)
-      .render('source', tpl`\`\`\`
-${$.body} \`\`\``)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '```\nplain\n```',
+      encodings: {
+        parse: parse([
+          literal('```\n'),
+          span('body', 'plain').until('```', { balanced: false }),
+          literal('```'),
+        ]),
+        ast: { type: 'code-block', text: $.body },
+        html: tpl`<pre><code>${$.body}</code></pre>`,
+        source: tpl`\`\`\`
+${$.body} \`\`\``,
+      },
+    }),
 
     // ---- Inline-styled blocks --------------------------------------------
     // These appear at top-level when an author writes a one-line emphasis
     // (`**bold**` alone on its line). Mid-paragraph occurrences fall into
     // Paragraph's `.until(...)` slice as raw text — round-tripping the
     // source but not producing a structured inline node.
-    ex('**bold**')
-      .as('MarkdownLeaf')
-      .span('**')
-      .span('text', 'bold').until('**', { balanced: false })
-      .span('**')
-      .render('ast', { type: 'bold', text: $.text })
-      .render('html', tpl`<strong>${$.text}</strong>`)
-      .render('source', tpl`**${$.text}**`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '**bold**',
+      encodings: {
+        parse: parse([
+          literal('**'),
+          span('text', 'bold').until('**', { balanced: false }),
+          literal('**'),
+        ]),
+        ast: { type: 'bold', text: $.text },
+        html: tpl`<strong>${$.text}</strong>`,
+        source: tpl`**${$.text}**`,
+      },
+    }),
 
-    ex('*italic*')
-      .as('MarkdownLeaf')
-      .span('*')
-      .span('text', 'italic').until('*', { balanced: false })
-      .span('*')
-      .render('ast', { type: 'italic', text: $.text })
-      .render('html', tpl`<em>${$.text}</em>`)
-      .render('source', tpl`*${$.text}*`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '*italic*',
+      encodings: {
+        parse: parse([
+          literal('*'),
+          span('text', 'italic').until('*', { balanced: false }),
+          literal('*'),
+        ]),
+        ast: { type: 'italic', text: $.text },
+        html: tpl`<em>${$.text}</em>`,
+        source: tpl`*${$.text}*`,
+      },
+    }),
 
-    ex('~~removed~~')
-      .as('MarkdownLeaf')
-      .span('~~')
-      .span('text', 'removed').until('~~', { balanced: false })
-      .span('~~')
-      .render('ast', { type: 'strikethrough', text: $.text })
-      .render('html', tpl`<s>${$.text}</s>`)
-      .render('source', tpl`~~${$.text}~~`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '~~removed~~',
+      encodings: {
+        parse: parse([
+          literal('~~'),
+          span('text', 'removed').until('~~', { balanced: false }),
+          literal('~~'),
+        ]),
+        ast: { type: 'strikethrough', text: $.text },
+        html: tpl`<s>${$.text}</s>`,
+        source: tpl`~~${$.text}~~`,
+      },
+    }),
 
-    ex('`code`')
-      .as('MarkdownLeaf')
-      .span('`')
-      .span('text', 'code').until('`', { balanced: false })
-      .span('`')
-      .render('ast', { type: 'inline-code', text: $.text })
-      .render('html', tpl`<code>${$.text}</code>`)
-      .render('source', tpl`\`${$.text}\``)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '`code`',
+      encodings: {
+        parse: parse([
+          literal('`'),
+          span('text', 'code').until('`', { balanced: false }),
+          literal('`'),
+        ]),
+        ast: { type: 'inline-code', text: $.text },
+        html: tpl`<code>${$.text}</code>`,
+        source: tpl`\`${$.text}\``,
+      },
+    }),
 
     // ---- Links and images ------------------------------------------------
     // The link-label captures via `.until(']', { balanced: false })`; the URL slice captures
     // via `.until(')', { balanced: false })`. We render the URL verbatim — the test fixtures
     // exercise `https://example.com`-style URLs which don't need encoding.
-    ex('[docs](https://example.com)')
-      .as('MarkdownLeaf')
-      .span('[')
-      .span('label', 'docs').until(']', { balanced: false })
-      .span(']')
-      .span('(')
-      .span('url', 'https://example.com').until(')', { balanced: false })
-      .span(')')
-      .render('ast', { type: 'link', label: $.label, url: $.url })
-      .render('html', tpl`<a href="${$.url}">${$.label}</a>`)
-      .render('source', tpl`[${$.label}](${$.url})`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '[docs](https://example.com)',
+      encodings: {
+        parse: parse([
+          literal('['),
+          span('label', 'docs').until(']', { balanced: false }),
+          literal(']'),
+          literal('('),
+          span('url', 'https://example.com').until(')', { balanced: false }),
+          literal(')'),
+        ]),
+        ast: { type: 'link', label: $.label, url: $.url },
+        html: tpl`<a href="${$.url}">${$.label}</a>`,
+        source: tpl`[${$.label}](${$.url})`,
+      },
+    }),
 
-    ex('[docs][id]')
-      .as('MarkdownLeaf')
-      .span('[')
-      .span('label', 'docs').until(']', { balanced: false })
-      .span('][')
-      .span('id', 'id').until(']', { balanced: false })
-      .span(']')
-      .render('ast', { type: 'reference-link', label: $.label, id: $.id })
-      .render('html', tpl`<a href="#${$.id}">${$.label}</a>`)
-      .render('source', tpl`[${$.label}][${$.id}]`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '[docs][id]',
+      encodings: {
+        parse: parse([
+          literal('['),
+          span('label', 'docs').until(']', { balanced: false }),
+          literal(']['),
+          span('id', 'id').until(']', { balanced: false }),
+          literal(']'),
+        ]),
+        ast: { type: 'reference-link', label: $.label, id: $.id },
+        html: tpl`<a href="#${$.id}">${$.label}</a>`,
+        source: tpl`[${$.label}][${$.id}]`,
+      },
+    }),
 
-    ex('![diagram](https://example.com/diagram.png)')
-      .as('MarkdownLeaf')
-      .span('!')
-      .span('[')
-      .span('alt', 'diagram').until(']', { balanced: false })
-      .span(']')
-      .span('(')
-      .span('url', 'https://example.com/diagram.png').until(')', { balanced: false })
-      .span(')')
-      .render('ast', { type: 'image', alt: $.alt, url: $.url })
-      .render('html', tpl`<img src="${$.url}" alt="${$.alt}">`)
-      .render('source', tpl`![${$.alt}](${$.url})`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '![diagram](https://example.com/diagram.png)',
+      encodings: {
+        parse: parse([
+          literal('!'),
+          literal('['),
+          span('alt', 'diagram').until(']', { balanced: false }),
+          literal(']'),
+          literal('('),
+          span('url', 'https://example.com/diagram.png').until(')', { balanced: false }),
+          literal(')'),
+        ]),
+        ast: { type: 'image', alt: $.alt, url: $.url },
+        html: tpl`<img src="${$.url}" alt="${$.alt}">`,
+        source: tpl`![${$.alt}](${$.url})`,
+      },
+    }),
 
-    ex('![diagram][image-id]')
-      .as('MarkdownLeaf')
-      .span('!')
-      .span('[')
-      .span('alt', 'diagram').until(']', { balanced: false })
-      .span('][')
-      .span('id', 'image-id').until(']', { balanced: false })
-      .span(']')
-      .render('ast', { type: 'reference-image', alt: $.alt, id: $.id })
-      .render('html', tpl`<img src="#${$.id}" alt="${$.alt}">`)
-      .render('source', tpl`![${$.alt}][${$.id}]`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '![diagram][image-id]',
+      encodings: {
+        parse: parse([
+          literal('!'),
+          literal('['),
+          span('alt', 'diagram').until(']', { balanced: false }),
+          literal(']['),
+          span('id', 'image-id').until(']', { balanced: false }),
+          literal(']'),
+        ]),
+        ast: { type: 'reference-image', alt: $.alt, id: $.id },
+        html: tpl`<img src="#${$.id}" alt="${$.alt}">`,
+        source: tpl`![${$.alt}][${$.id}]`,
+      },
+    }),
 
     // ---- Entity ----------------------------------------------------------
-    ex('&amp;')
-      .as('MarkdownLeaf')
-      .span('&')
-      .span('name', 'amp').ident().css()
-      .span(';')
-      .render('ast', { type: 'entity', name: $.name })
-      .render('html', tpl`&${$.name};`)
-      .render('source', tpl`&${$.name};`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '&amp;',
+      encodings: {
+        parse: parse([
+          literal('&'),
+          span('name', 'amp').ident().css(),
+          literal(';'),
+        ]),
+        ast: { type: 'entity', name: $.name },
+        html: tpl`&${$.name};`,
+        source: tpl`&${$.name};`,
+      },
+    }),
 
     // ---- Table rows ------------------------------------------------------
     // A delimiter row matches `| --- | --- |` etc. — the `|---` punctuator
@@ -499,84 +619,108 @@ ${$.body} \`\`\``)
     // `.until('|', { balanced: false })` cell capture. The delimiter row is recognized
     // structurally; we don't bother computing the alignment vector from
     // the source — every cell defaults to 'default'.
-    ex('| --- | --- |')
-      .as('MarkdownLeaf')
-      .span('|')
-      .span('---')
-      .span('|')
-      .span('---')
-      .span('|')
-      .render('ast', { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] })
-      .render('html', tpl``)
-      .render('source', tpl`| --- | --- |`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '| --- | --- |',
+      encodings: {
+        parse: parse([
+          literal('|'),
+          literal('---'),
+          literal('|'),
+          literal('---'),
+          literal('|'),
+        ]),
+        ast: { type: 'table-delimiter', variant: 'plain', align: ['default', 'default'] },
+        html: tpl``,
+        source: tpl`| --- | --- |`,
+      },
+    }),
 
-    ex('|:---|---:|')
-      .as('MarkdownLeaf')
-      .span('|')
-      .span(':')
-      .span('---')
-      .span('|')
-      .span('---')
-      .span(':')
-      .span('|')
-      .render('ast', { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] })
-      .render('html', tpl``)
-      .render('source', tpl`|:---|---:|`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '|:---|---:|',
+      encodings: {
+        parse: parse([
+          literal('|'),
+          literal(':'),
+          literal('---'),
+          literal('|'),
+          literal('---'),
+          literal(':'),
+          literal('|'),
+        ]),
+        ast: { type: 'table-delimiter', variant: 'aligned', align: ['left', 'right'] },
+        html: tpl``,
+        source: tpl`|:---|---:|`,
+      },
+    }),
 
-    ex('| name | value |')
-      .as('MarkdownLeaf')
-      .span('|')
-      .span('first', 'name').until('|', { balanced: false })
-      .span('|')
-      .span('second', 'value').until('|', { balanced: false })
-      .span('|')
-      .render('ast', { type: 'table-row', cells: [$.first, $.second] })
-      .render('html', tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`)
-      .render('source', tpl`| ${$.first} | ${$.second} |`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '| name | value |',
+      encodings: {
+        parse: parse([
+          literal('|'),
+          span('first', 'name').until('|', { balanced: false }),
+          literal('|'),
+          span('second', 'value').until('|', { balanced: false }),
+          literal('|'),
+        ]),
+        ast: { type: 'table-row', cells: [$.first, $.second] },
+        html: tpl`<tr><td>${$.first}</td><td>${$.second}</td></tr>`,
+        source: tpl`| ${$.first} | ${$.second} |`,
+      },
+    }),
 
     // ---- Link reference definition --------------------------------------
     // `[id]: url` lines define a reference target. The URL captures via
     // `.until('\n')` so it stops at end-of-line.
-    ex('[id]: https://example.com')
-      .as('MarkdownLeaf')
-      .span('[')
-      .span('id', 'id').until(']', { balanced: false })
-      .span(']')
-      .span(':')
-      .span('url', 'https://example.com').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'definition', id: $.id, url: $.url })
-      .render('html', tpl``)
-      .render('source', tpl`[${$.id}]: ${$.url}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '[id]: https://example.com',
+      encodings: {
+        parse: parse([
+          literal('['),
+          span('id', 'id').until(']', { balanced: false }),
+          literal(']'),
+          literal(':'),
+          span('url', 'https://example.com').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'definition', id: $.id, url: $.url },
+        html: tpl``,
+        source: tpl`[${$.id}]: ${$.url}`,
+      },
+    }),
 
     // ---- Footnote definition --------------------------------------------
     // `[^id]: text`. Listed before the bare footnote-reference (`[^id]`)
     // production so the dispatcher tries the longer match first.
-    ex('[^1]: footnote text')
-      .as('MarkdownLeaf')
-      .span('[^')
-      .span('id', '1').until(']', { balanced: false })
-      .span(']')
-      .span(':')
-      .span('text', 'footnote text').until(HEADING_LINE_STOPS, { balanced: false })
-      .render('ast', { type: 'footnote-definition', id: $.id, text: $.text })
-      .render('html', tpl`<div class="footnote" id="fn${$.id}">${$.text}</div>`)
-      .render('source', tpl`[^${$.id}]: ${$.text}`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '[^1]: footnote text',
+      encodings: {
+        parse: parse([
+          literal('[^'),
+          span('id', '1').until(']', { balanced: false }),
+          literal(']'),
+          literal(':'),
+          span('text', 'footnote text').until(HEADING_LINE_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'footnote-definition', id: $.id, text: $.text },
+        html: tpl`<div class="footnote" id="fn${$.id}">${$.text}</div>`,
+        source: tpl`[^${$.id}]: ${$.text}`,
+      },
+    }),
 
     // ---- Footnote reference ---------------------------------------------
-    ex('[^1]')
-      .as('MarkdownLeaf')
-      .span('[^')
-      .span('id', '1').until(']', { balanced: false })
-      .span(']')
-      .render('ast', { type: 'footnote-reference', id: $.id })
-      .render('html', tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`)
-      .render('source', tpl`[^${$.id}]`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '[^1]',
+      encodings: {
+        parse: parse([
+          literal('[^'),
+          span('id', '1').until(']', { balanced: false }),
+          literal(']'),
+        ]),
+        ast: { type: 'footnote-reference', id: $.id },
+        html: tpl`<sup><a href="#fn${$.id}">${$.id}</a></sup>`,
+        source: tpl`[^${$.id}]`,
+      },
+    }),
 
     // ---- HTML block ------------------------------------------------------
     // Generic `<tag>...</tag>` block. The body captures verbatim until
@@ -589,19 +733,23 @@ ${$.body} \`\`\``)
     // longer HTML match first for `<div>...</div>` — autolink would
     // otherwise greedily capture `div` as the URL and leave the body
     // unparsed.
-    ex('<div>html</div>')
-      .as('MarkdownLeaf')
-      .span('<')
-      .span('tag', 'div').ident().html().oneOf(HTML_BLOCK_TAGS)
-      .span('>')
-      .span('body', 'html').rawUntil('</')
-      .span('</')
-      .span('closingTag', 'div').ident().html()
-      .span('>')
-      .render('ast', { type: 'html', tag: $.tag, text: $.body, closingTag: $.closingTag })
-      .render('html', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
-      .render('source', tpl`<${$.tag}>${$.body}</${$.closingTag}>`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '<div>html</div>',
+      encodings: {
+        parse: parse([
+          literal('<'),
+          span('tag', 'div').ident().html().oneOf(HTML_BLOCK_TAGS),
+          literal('>'),
+          span('body', 'html').rawUntil('</'),
+          literal('</'),
+          span('closingTag', 'div').ident().html(),
+          literal('>'),
+        ]),
+        ast: { type: 'html', tag: $.tag, text: $.body, closingTag: $.closingTag },
+        html: tpl`<${$.tag}>${$.body}</${$.closingTag}>`,
+        source: tpl`<${$.tag}>${$.body}</${$.closingTag}>`,
+      },
+    }),
 
     // ---- Autolink --------------------------------------------------------
     // Listed AFTER the HTML block so the dispatcher tries the longer
@@ -609,20 +757,24 @@ ${$.body} \`\`\``)
     // `.until('>', { balanced: false })` — when the content has a tag name that's NOT in
     // HTML_BLOCK_TAGS (like `https`), the HTML block production fails and
     // autolink picks up via the dispatcher's fallback path.
-    ex('<https://example.com>')
-      .as('MarkdownLeaf')
-      .span('<')
-      .span('url', 'https://example.com').until('>', { balanced: false })
-      .span('>')
-      .render('ast', { type: 'autolink', url: $.url })
-      // The `class="autolink"` literal is also a discriminator: the
-      // explicit link production's template (`<a href="${$.url}">${$.label}</a>`)
-      // shares the same segment shape; the unique `class="autolink"` literal
-      // makes the inverse dispatcher able to tell them apart from the html
-      // alone (precondition 2 in invert.ts).
-      .render('html', tpl`<a class="autolink" href="${$.url}">${$.url}</a>`)
-      .render('source', tpl`<${$.url}>`)
-      .build(),
+    relation('MarkdownLeaf', {
+      input: '<https://example.com>',
+      encodings: {
+        parse: parse([
+          literal('<'),
+          span('url', 'https://example.com').until('>', { balanced: false }),
+          literal('>'),
+        ]),
+        ast: { type: 'autolink', url: $.url },
+        // The `class="autolink"` literal is also a discriminator: the
+        // explicit link production's template (`<a href="${$.url}">${$.label}</a>`)
+        // shares the same segment shape; the unique `class="autolink"` literal
+        // makes the inverse dispatcher able to tell them apart from the html
+        // alone (precondition 2 in invert.ts).
+        html: tpl`<a class="autolink" href="${$.url}">${$.url}</a>`,
+        source: tpl`<${$.url}>`,
+      },
+    }),
 
     // ---- Paragraph (fallback role) --------------------------------------
     // Its OWN node type (separate from MarkdownLeaf) so the document's
@@ -638,12 +790,16 @@ ${$.body} \`\`\``)
     // schema validator) but the until modifier means the dispatcher's
     // first-byte predicate is bypassed via the role-dispatcher's
     // fallthrough path (firstTokenForRole returns null for until spans).
-    ex('Plain paragraph')
-      .as('MarkdownParagraph')
-      .span('text', 'Plain paragraph').until(PARAGRAPH_STOPS, { balanced: false })
-      .render('ast', { type: 'paragraph', text: $.text })
-      .render('html', tpl`<p>${$.text}</p>`)
-      .render('source', tpl`${$.text}`)
-      .build(),
+    relation('MarkdownParagraph', {
+      input: 'Plain paragraph',
+      encodings: {
+        parse: parse([
+          span('text', 'Plain paragraph').until(PARAGRAPH_STOPS, { balanced: false }),
+        ]),
+        ast: { type: 'paragraph', text: $.text },
+        html: tpl`<p>${$.text}</p>`,
+        source: tpl`${$.text}`,
+      },
+    }),
   ],
 });

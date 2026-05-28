@@ -1,4 +1,4 @@
-import { $, defineSchema, ex, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Cron',
@@ -9,70 +9,98 @@ export default defineSchema({
   },
   tokens: ['number'],
   examples: [
-    ex('*')
-      .as('CronField')
-      .span('*')
-      .render('ast', { type: 'wildcard' })
-      .render('source', tpl`*`)
-      .build(),
+    relation('CronField', {
+      input: '*',
+      encodings: {
+        parse: parse([
+          literal('*'),
+        ]),
+        ast: { type: 'wildcard' },
+        source: tpl`*`,
+      },
+    }),
 
-    ex('*/5')
-      .as('CronField')
-      .span('*')
-      .span('/')
-      .span('step', '5').number().int()
-      .render('ast', { type: 'step', step: $.step })
-      .render('source', tpl`*/${$.step}`)
-      .build(),
+    relation('CronField', {
+      input: '*/5',
+      encodings: {
+        parse: parse([
+          literal('*'),
+          literal('/'),
+          span('step', '5').number().int(),
+        ]),
+        ast: { type: 'step', step: $.step },
+        source: tpl`*/${$.step}`,
+      },
+    }),
 
-    ex('9')
-      .as('CronField')
-      .span('value', '9').number().int()
-      .render('ast', { type: 'value', value: $.value })
-      .render('source', tpl`${$.value}`)
-      .build(),
+    relation('CronField', {
+      input: '9',
+      encodings: {
+        parse: parse([
+          span('value', '9').number().int(),
+        ]),
+        ast: { type: 'value', value: $.value },
+        source: tpl`${$.value}`,
+      },
+    }),
 
-    ex('1-5')
-      .as('CronField')
-      .span('start', '1').number().int()
-      .span('-')
-      .span('end', '5').number().int()
-      .render('ast', { type: 'range', start: $.start, end: $.end })
-      .render('source', tpl`${$.start}-${$.end}`)
-      .build(),
+    relation('CronField', {
+      input: '1-5',
+      encodings: {
+        parse: parse([
+          span('start', '1').number().int(),
+          literal('-'),
+          span('end', '5').number().int(),
+        ]),
+        ast: { type: 'range', start: $.start, end: $.end },
+        source: tpl`${$.start}-${$.end}`,
+      },
+    }),
 
-    ex('npm')
-      .as('CommandWord')
-      .span('value', 'npm').ident().css()
-      .render('ast', $.value)
-      .render('source', tpl`${$.value}`)
-      .build(),
+    relation('CommandWord', {
+      input: 'npm',
+      encodings: {
+        parse: parse([
+          span('value', 'npm').ident().css(),
+        ]),
+        ast: $.value,
+        source: tpl`${$.value}`,
+      },
+    }),
 
-    ex('npm test')
-      .as('Command')
-      .span('words', 'npm', 'CommandWord').repeats({ min: 1 })
-      .render('ast', { type: 'command', words: $.words })
-      .render('source', tpl`${$.words}`)
-      .build(),
+    relation('Command', {
+      input: 'npm test',
+      encodings: {
+        parse: parse([
+          span('words', 'npm').of('CommandWord').repeats({ min: 1 }),
+        ]),
+        ast: { type: 'command', words: $.words },
+        source: tpl`${$.words}`,
+      },
+    }),
 
-    ex('0 9 7 8 1-5 npm test')
-      .as('Cron')
-      .span('minute', '0', 'CronField')
-      .span('hour', '9', 'CronField')
-      .span('dayOfMonth', '7', 'CronField')
-      .span('month', '8', 'CronField')
-      .span('dayOfWeek', '1-5', 'CronField')
-      .span('command', 'npm test', 'Command').optional()
-      .render('ast', {
-        type: 'cron',
-        minute: $.minute,
-        hour: $.hour,
-        dayOfMonth: $.dayOfMonth,
-        month: $.month,
-        dayOfWeek: $.dayOfWeek,
-        command: $.command,
-      })
-      .render('source', tpl`${$.minute} ${$.hour} ${$.dayOfMonth} ${$.month} ${$.dayOfWeek} ${$.command}`)
-      .build(),
+    relation('Cron', {
+      input: '0 9 7 8 1-5 npm test',
+      encodings: {
+        parse: parse([
+          span('minute', '0').of('CronField'),
+          span('hour', '9').of('CronField'),
+          span('dayOfMonth', '7').of('CronField'),
+          span('month', '8').of('CronField'),
+          span('dayOfWeek', '1-5').of('CronField'),
+          span('command', 'npm test').of('Command').optional(),
+        ]),
+        ast: {
+          type: 'cron',
+          minute: $.minute,
+          hour: $.hour,
+          dayOfMonth: $.dayOfMonth,
+          month: $.month,
+          dayOfWeek: $.dayOfWeek,
+          command: $.command,
+        },
+        source: tpl`${$.minute} ${$.hour} ${$.dayOfMonth} ${$.month} ${$.dayOfWeek} ${$.command}`,
+      },
+    }),
   ],
 });

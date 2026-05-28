@@ -3,7 +3,14 @@ import type {
   SchemaDef,
   ValidationDef,
   ValidationRuleDef,
+  ValidatorRef,
 } from './types.ts';
+
+function isSchemaDef(value: unknown): value is SchemaDef {
+  return typeof value === 'object' && value !== null
+    && typeof (value as { rootType?: unknown }).rootType === 'string'
+    && Array.isArray((value as { examples?: unknown }).examples);
+}
 
 type MatchValue = string | ReadonlyArray<string>;
 
@@ -45,22 +52,28 @@ export class ValidationBuilder {
     return this;
   }
 
-  validate(validator: GeneratedValidator): this {
+  validate(validator: GeneratedValidator | SchemaDef): this {
     const draft = this.requireDraft();
     if (!draft.field) throw new TypeError('defineValidation.validate: missing field(...)');
     if (!draft.matchField || !draft.matchValues) {
       throw new TypeError('defineValidation.validate: missing match(...)');
     }
-    const validatorImport = validator.__parser2Validator;
-    if (!validatorImport) {
-      throw new TypeError('defineValidation.validate: validator must be a generated parser validate export');
+    let ref: ValidatorRef;
+    if (isSchemaDef(validator)) {
+      ref = { kind: 'inline', schema: validator };
+    } else {
+      const importMeta = (validator as GeneratedValidator).__parser2Validator;
+      if (!importMeta) {
+        throw new TypeError('defineValidation.validate: validator must be a SchemaDef or a generated validate export');
+      }
+      ref = { kind: 'import', module: importMeta.module, exportName: importMeta.exportName };
     }
     this.rules.push({
       nodeType: draft.nodeType,
       field: draft.field,
       matchField: draft.matchField,
       matchValues: draft.matchValues,
-      validator: validatorImport,
+      validator: ref,
     });
     this.draft = null;
     return this;

@@ -27,9 +27,13 @@ export function emitValidate(
 
   // Collect unique (module, exportName) pairs, assign stable local aliases.
   // Key is "module::exportName" → local alias "__validator_N".
+  // 'inline' validators are handled in a follow-up task (inline composition);
+  // this shim skips them so the existing import path stays functional.
   const importMap = new Map<string, string>(); // key -> alias
   for (const r of rules) {
-    const key = `${r.validator.module}::${r.validator.exportName}`;
+    const importRef = r.validator.kind === 'import' ? r.validator : null;
+    if (!importRef) continue;
+    const key = `${importRef.module}::${importRef.exportName}`;
     if (!importMap.has(key)) {
       const alias = `__validator_${importMap.size}`;
       importMap.set(key, alias);
@@ -60,8 +64,11 @@ export function emitValidate(
   for (const [nodeType, nodeRules] of byNode) {
     const inner: string[] = [];
     for (const r of nodeRules) {
+      const importRef = r.validator.kind === 'import' ? r.validator : null;
+      // 'inline' validators are handled in a follow-up task; skip here.
+      if (!importRef) continue;
       const valuesArr = '[' + r.matchValues.map((v) => jsString(v)).join(', ') + ']';
-      const alias = importMap.get(`${r.validator.module}::${r.validator.exportName}`)!;
+      const alias = importMap.get(`${importRef.module}::${importRef.exportName}`)!;
       inner.push(
         `    if (${valuesArr}.includes(__n[${jsString(r.matchField)}])) {`,
         `      try { ${alias}(String(__n[${jsString(r.field)}] ?? '')); }`,

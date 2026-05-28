@@ -33,5 +33,6 @@ export type {
   ValidationDef,
   ValidationRuleDef,
   ValidatorImport,
+  ValidatorRef,
   WhitespacePolicy,
 } from './types.ts';

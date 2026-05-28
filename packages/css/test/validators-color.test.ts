@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import test, { after } from 'node:test';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -26,13 +26,14 @@ import colorSchema from '../src/validators/color.ts';
 // intent.
 
 type GeneratedColorModule = {
-  render: (input: string, options?: { target?: string }) => unknown;
+  render: (input: string, options?: { target?: 'ast' | 'source' }) => unknown;
   validate: (input: string) => void;
 };
 
 async function loadColorParser(): Promise<GeneratedColorModule> {
   const source = generateParser(colorSchema, undefined, { packageName: 'css-color' });
   const dir = mkdtempSync(join(tmpdir(), 'parser2-css-color-'));
+  after(() => rmSync(dir, { recursive: true, force: true }));
   const file = join(dir, 'parser.ts');
   writeFileSync(file, source);
   return (await import(pathToFileURL(file).href)) as GeneratedColorModule;
@@ -55,30 +56,46 @@ test('parses hash color', () => {
 });
 
 test('parses rgb function', () => {
-  const ast = parse('rgb(255 0 0 / 1)') as { value: { type: string; name: string } };
+  // The args field is part of the design contract — see color.ts header
+  // (lines 51-54): the args list was previously dropped from the AST,
+  // forcing this schema to capture it for round-trip fidelity.
+  const ast = parse('rgb(255 0 0 / 1)') as { value: { type: string; name: string; args: unknown[] } };
   assert.equal(ast.value.type, 'rgb-color-function');
   assert.equal(ast.value.name, 'rgb');
+  assert.ok(Array.isArray(ast.value.args) && ast.value.args.length >= 3);
 });
 
 test('parses oklch function', () => {
-  const ast = parse('oklch(60% 0.2 30)') as { value: { type: string; name: string } };
+  const ast = parse('oklch(60% 0.2 30)') as { value: { type: string; name: string; args: unknown[] } };
   assert.equal(ast.value.type, 'color-function');
   assert.equal(ast.value.name, 'oklch');
+  assert.ok(Array.isArray(ast.value.args) && ast.value.args.length >= 3);
 });
 
 test('parses var function', () => {
-  const ast = parse('var(--brand-color, red)') as { value: { type: string } };
+  const ast = parse('var(--brand-color, red)') as { value: { type: string; args: unknown } };
   assert.equal(ast.value.type, 'var-function');
+  assert.ok(ast.value.args !== undefined);
 });
 
 test('validate accepts valid colors', () => {
   assert.doesNotThrow(() => mod.validate('red'));
   assert.doesNotThrow(() => mod.validate('#abc123'));
   assert.doesNotThrow(() => mod.validate('rgb(255 0 0)'));
+  assert.doesNotThrow(() => mod.validate('oklch(60% 0.2 30)'));
+  assert.doesNotThrow(() => mod.validate('var(--brand-color, red)'));
 });
 
 test('validate rejects non-color strings', () => {
   assert.throws(() => mod.validate('not-a-color-keyword'));
   assert.throws(() => mod.validate('123px'));
   assert.throws(() => mod.validate(''));
+});
+
+// The css-color schema (color.ts:113-115) flags an outstanding TODO: short-
+// or long-hex strings like `#12` are currently accepted because the .lengths()
+// refinement is not yet emitted. When that lands, drop `skip: true` and the
+// test should pass.
+test('validate rejects malformed short hex #12 (Phase 1.5 follow-up)', { skip: true }, () => {
+  assert.throws(() => mod.validate('#12'));
 });

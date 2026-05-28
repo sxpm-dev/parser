@@ -386,9 +386,10 @@ export type ValidatorImport = {
 };
 
 // Either an external module import (legacy) or an inline sub-schema (new in
-// the Phase 10 css validator composition work).
+// the Phase 10 css validator composition work). The 'import' variant reuses
+// ValidatorImport so the two definitions stay in lockstep.
 export type ValidatorRef =
-  | { readonly kind: 'import'; readonly module: string; readonly exportName: string }
+  | (ValidatorImport & { readonly kind: 'import' })
   | { readonly kind: 'inline'; readonly schema: SchemaDef };
 
 export type ValidationRuleDef = {

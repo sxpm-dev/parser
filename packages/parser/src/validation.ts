@@ -7,9 +7,14 @@ import type {
 } from './types.ts';
 
 function isSchemaDef(value: unknown): value is SchemaDef {
+  // `uses` is required on SchemaDef but optional on SchemaInput — the array
+  // check distinguishes a built SchemaDef from a raw input literal, so a
+  // caller who passes a not-yet-`defineSchema()`d object falls through to
+  // the GeneratedValidator branch and gets the clearer TypeError.
   return typeof value === 'object' && value !== null
     && typeof (value as { rootType?: unknown }).rootType === 'string'
-    && Array.isArray((value as { examples?: unknown }).examples);
+    && Array.isArray((value as { examples?: unknown }).examples)
+    && Array.isArray((value as { uses?: unknown }).uses);
 }
 
 type MatchValue = string | ReadonlyArray<string>;

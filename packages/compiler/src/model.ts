@@ -116,6 +116,13 @@ export type InferredSchema = {
   // unique prefix (e.g. `__v0_`, `__v1_`) so multiple parsers can be
   // concatenated into one source file without name collisions.
   readonly symbolPrefix: string;
+  // Emission mode for the v2 backend. 'standalone' produces a self-
+  // contained module file (default — byte-identical to the prior code
+  // path). 'inline' suppresses the file header, runtime helpers, shared
+  // type declarations, and the public exports so the result can be
+  // concatenated into a parent's source by the inline-validator
+  // composition pass without symbol or type collisions.
+  readonly emitMode: 'standalone' | 'inline';
   readonly rootType: string;
   readonly nodeTypes: ReadonlyMap<string, NodeTypeInfo>;
   // All literal terminal texts that appear in spans, declared punctuators,

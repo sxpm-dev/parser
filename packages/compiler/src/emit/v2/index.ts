@@ -21,7 +21,23 @@ import { V2_RUNTIME } from './runtime.ts';
 import { emitValidate } from './validate-emit.ts';
 
 export function emitV2Parser(schema: InferredSchema): string {
-  const { imports: validatorImports, body: validateBody } = emitValidate(schema, parseFnName(schema, schema.rootType));
+  // Inline mode (Phase C / Task C.3): the schema's parser is being
+  // concatenated into a parent's generated file as a validator. Suppress
+  // the file header, runtime preamble (State / posAt / syntaxErrorAt /
+  // class predicates — the parent already declared them), and every
+  // public-facing block (render, rebuild, inverse, fusion, public API).
+  // Only the internal parse helpers and dispatchers are emitted; the
+  // parent's inline-validator pass then drops in the source verbatim and
+  // emits `__validator_N` aliases that invoke the prefixed root parse fn.
+  if (schema.emitMode === 'inline') {
+    const nodeFns: string[] = [];
+    for (const info of schema.nodeTypes.values()) {
+      nodeFns.push(emitNodeType(info, schema));
+    }
+    return nodeFns.join('\n\n') + '\n';
+  }
+
+  const { imports: validatorImports, body: validateBody, inlineBlock } = emitValidate(schema, parseFnName(schema, schema.rootType));
   const header = emitHeader(schema, validatorImports);
   const runtime = V2_RUNTIME;
   const nodeFns: string[] = [];
@@ -53,6 +69,11 @@ export function emitV2Parser(schema: InferredSchema): string {
   return [
     header,
     runtime,
+    // Inline-validator composition pass — sub-schemas' internal parse
+    // functions and the __validator_N aliases live AFTER the runtime
+    // helpers (so they can reference State / syntaxErrorAt) but BEFORE
+    // the parent's parse functions. Empty string when no inline rules.
+    inlineBlock,
     nodeFns.join('\n\n'),
     render,
     REBUILD_SLOT_RUNTIME,

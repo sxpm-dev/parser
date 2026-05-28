@@ -33,6 +33,17 @@ export type GenerateOptions = {
   // gets a unique prefix to avoid collisions. Default '' (no prefix), which
   // produces byte-identical output to the prior code path.
   readonly symbolPrefix?: string;
+  // Emission mode for the v2 backend. 'standalone' (default) emits a fully
+  // self-contained file with header (`@ts-nocheck`, runtime helpers, the
+  // `State` type, etc.) and the public `export function parse / render /
+  // stringify / validate` block. 'inline' suppresses the header, runtime
+  // helpers, public exports, and shared type declarations so the result
+  // can be concatenated into a parent's generated source by the inline-
+  // validator composition pass without symbol or type collisions. Only the
+  // internal parse / fused-render / dispatch helpers and the inline-mode
+  // wrapper functions are emitted in inline mode. The result is NOT a
+  // standalone module on its own.
+  readonly emitMode?: 'standalone' | 'inline';
 };
 
 export function inferSchema(
@@ -50,6 +61,7 @@ export function inferSchema(
   const inferred: InferredSchema = {
     packageName: options.packageName ?? 'parser',
     symbolPrefix: options.symbolPrefix ?? '',
+    emitMode: options.emitMode ?? 'standalone',
     rootType: root.rootType,
     nodeTypes,
     literals,

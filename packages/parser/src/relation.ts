@@ -182,8 +182,7 @@ export class SpanNode {
     items: ReadonlyArray<SpanNode>,
   ): void {
     let cursor = 0;
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]!;
+    for (const item of items) {
       const text = item.data.text;
       if (text === undefined || text === '') continue;
       // Skip optional spans entirely — their text need not appear in the input.
@@ -204,11 +203,8 @@ export class SpanNode {
           `relation('${nodeType}'): ${label} not found in input starting at offset ${cursor}`,
         );
       }
-      if (idx !== cursor) {
-        // Allow it — the gap is intervening whitespace (already skipped) or
-        // content that belongs to a previous `.until(...)` span. We trust
-        // the compiler's stricter IR-layer validation as the final word.
-      }
+      // idx may be > cursor when the gap is covered by a previous .until(...) span;
+      // the compiler's IR-layer validation is the final word on ordering.
       cursor = idx + text.length;
     }
   }

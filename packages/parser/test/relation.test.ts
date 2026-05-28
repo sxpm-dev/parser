@@ -564,3 +564,21 @@ test('relation: accepts whitespace gaps between adjacent spans (standard policy)
   });
   assert.equal(def.input, '#  foo');
 });
+
+test('relation: optional span absent from input does not trigger validation error', () => {
+  // ';' is optional and absent from 'color: red'; validation must pass.
+  assert.doesNotThrow(() =>
+    relation('Decl', {
+      input: 'color: red',
+      encodings: {
+        src: parse([
+          span('prop', 'color').ident().css(),
+          literal(':'),
+          span('value', 'red').ident().css(),
+          literal(';').optional(),
+        ]),
+        ast: { prop: $.prop, value: $.value },
+      },
+    }),
+  );
+});

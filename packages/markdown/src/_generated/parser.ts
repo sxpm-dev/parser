@@ -11475,6 +11475,8 @@ export function validate(input: string, options?: ParseOptions): void {
     maxOff: 0,
     mode: 'fast',
     lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
   };
   const __result = parseMarkdownDocument(__state);
   if (__result === null || __state.pos !== input.length) {

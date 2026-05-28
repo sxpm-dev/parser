@@ -1810,17 +1810,21 @@ test('v2 .until() with requireStop fails on EOF without stop match', async () =>
 test('v2 validate() invokes per-field validators from ValidationDef', () => {
   // Use the real CSS generated parser since the validation infrastructure lives there.
   // This is a code-shape check, not a runtime check — we assert the emitted
-  // validate() function imports the validator modules and dispatches by
+  // validate() function contains the validator dispatch logic and dispatches by
   // __production nodeType + matchField.
+  //
+  // Note (Task 9.11): @parser2/css-color and @parser2/css-length-percentage were
+  // deleted as out-of-scope packages. Their validate() functions are now inlined
+  // directly into the css _generated/parser.ts rather than imported. The assertions
+  // below verify the validation infrastructure is still present in the generated file.
   //
   // The test file lives at packages/compiler/test/v2-regressions.test.ts;
   // navigate up two levels to reach the monorepo root, then into css/_generated.
   const cssParserPath = new URL('../../../packages/css/src/_generated/parser.ts', import.meta.url).pathname;
   const parserSrc = readFileSync(cssParserPath, 'utf8');
-  // Generated parser should import the validator modules.
-  assert.match(parserSrc, /from ['"]@parser2\/css-color['"]/);
-  assert.match(parserSrc, /from ['"]@parser2\/css-length-percentage['"]/);
-  // Generated validate() should reference the imported validators by name.
+  // Validators are now inlined (not imported) — check for the inlined __validator_N wrappers.
+  assert.match(parserSrc, /function __validator_\d+/);
+  // Generated validate() should reference the validator wrappers by name.
   assert.match(parserSrc, /__validator_\d+/);
   // The validate function should dispatch based on __production field.
   assert.match(parserSrc, /__production/);

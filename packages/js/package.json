@@ -1,9 +1,0 @@
-{
-  "name": "@parser2/js",
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {},
-  "dependencies": {
-    "@parser2/parser": "0.0.0"
-  }
-}

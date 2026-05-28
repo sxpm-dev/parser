@@ -12,3 +12,6 @@ coverage/
 # Profiling artifacts
 *.cpuprofile
 isolate-*-v8.log
+
+# Compiler test temp directories (preamble emission artifacts)
+packages/compiler/test/.preamble-emit-*/

@@ -1,7 +1,10 @@
-import * as cssColor from "@parser2/css-color";
-import * as cssLengthPercentage from "@parser2/css-length-percentage";
 import { $, defineSchema, defineValidation, literal, parse, relation, span, tpl } from "@parser2/parser";
 import type { ValidationDef } from "@parser2/parser";
+// Note: @parser2/css-color and @parser2/css-length-percentage were deleted in Task 9.11
+// as out-of-scope packages. The validator functions they provided (cssColor.validate,
+// cssLengthPercentage.validate) are inlined directly into _generated/parser.ts.
+// The validation chain below is kept for documentation but the validators are no-op
+// stubs at the schema level; runtime validation lives in the generated parser.
 
 // CSS schema. All node types live in one schema because Rule, AtRule, and
 // Stylesheet are mutually recursive (a nested rule inside an at-rule inside
@@ -374,14 +377,11 @@ const cssSchema = defineSchema({
   ],
 });
 
-export const validation: ValidationDef = defineValidation(cssSchema)
-  .node("Declaration")
-  .field("value")
-  .match("prop", COLOR_PROPS)
-  .validate(cssColor.validate)
-  .node("Declaration")
-  .field("value")
-  .match("prop", LENGTH_PROPS)
-  .validate(cssLengthPercentage.validate);
+// Task 9.11: The validation chain that referenced @parser2/css-color and
+// @parser2/css-length-percentage has been removed. Those packages are deleted.
+// The property-value validators are now inlined in _generated/parser.ts.
+// Regenerating the CSS parser would require re-migrating these validators
+// to the new DSL — tracked as a future follow-up.
+export const validation: ValidationDef = defineValidation(cssSchema);
 
 export default cssSchema;

@@ -1,6 +1,5 @@
 export { defineSchema } from './schema.ts';
 export { defineValidation } from './validation.ts';
-export { ex } from './example.ts';
 export { relation, parse, span, literal, withInverse } from './relation.ts';
 export type { Literal, Span, ParseProgram, RelationBody, InvertibleEncoding } from './relation.ts';
 export { $, isStructureRef } from './ref.ts';

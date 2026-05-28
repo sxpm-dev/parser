@@ -33,7 +33,9 @@ const COLOR_FUNCTIONS = [
 ] as const;
 
 const RGB_FUNCTIONS = ['rgb', 'rgba'] as const;
-const NON_RGB_COLOR_FUNCTIONS = COLOR_FUNCTIONS.filter((name) => name !== 'rgb' && name !== 'rgba');
+const NON_RGB_COLOR_FUNCTIONS = COLOR_FUNCTIONS.filter(
+  (name) => !(RGB_FUNCTIONS as readonly string[]).includes(name),
+);
 
 // Phase A resurrection as a sub-module of @parser2/css.
 //

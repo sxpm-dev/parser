@@ -15,8 +15,6 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../parser" },
-    { "path": "../css-color" },
-    { "path": "../css-length-percentage" }
+    { "path": "../parser" }
   ]
 }

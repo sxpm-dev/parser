@@ -616,7 +616,7 @@ function emitRecursiveSpan(
 
 // Dispatch block for a multi-prod node type. Layout:
 //
-//   for each alt:
+//   for each alt (in dispatch order — see computeDispatchOrder):
 //     SAVE_OFF 0
 //     CALL_PRODUCTION <alt-offset>
 //     JUMP_IF_NULL +<bytes-to-next-alt>
@@ -624,6 +624,18 @@ function emitRecursiveSpan(
 //   RETURN_NULL          (all alts failed)
 //
 // The runtime (Task 6.3) restores `off` from slot 0 before each retry.
+//
+// Dispatch order matches the TS backend's `emitGroupSpeculation` /
+// `computeSpeculationOrder` in `emit/v2/dispatch.ts` so the two backends
+// commit to the same alt for any ambiguous input:
+//   1. Tag-restricted alts (have `.oneOf(...)` somewhere) first.
+//   2. Then longest first-span literal prefix.
+//   3. Then span count descending (more spans = more structural commitment —
+//      this is the discriminator that makes `N-N` win over `N` for `1-5`).
+//   4. Then declared order.
+// Without this sort the bytecode chain-tries in declaration order and
+// returns the first non-null result, which yields the SHORTEST match for
+// shape-ambiguous schemas. Phase 6 follow-up #1.
 function emitDispatchBlock(state: EncoderState, info: NodeTypeInfo): void {
   // We need to know, for each alt, where the NEXT alt starts so the
   // JUMP_IF_NULL operand resolves. Two-phase: write a placeholder, remember
@@ -633,7 +645,8 @@ function emitDispatchBlock(state: EncoderState, info: NodeTypeInfo): void {
   type Patch = { readonly operandSite: number; readonly afterOperand: number };
   const patches: Patch[] = [];
 
-  for (let i = 0; i < info.productions.length; i++) {
+  const order = computeDispatchOrder(info.productions);
+  for (const i of order) {
     const altKey = productionKey(info.name, i);
 
     // SAVE_OFF 0  — record entry off for restore on alt failure
@@ -666,6 +679,36 @@ function emitDispatchBlock(state: EncoderState, info: NodeTypeInfo): void {
 
   // RETURN_NULL — all alts failed.
   writeOp(state, Op.RETURN_NULL);
+}
+
+// Returns the indices of `productions` in the order the dispatch block
+// should chain-try them. Mirrors the TS backend's
+// `emitGroupSpeculation` / `computeSpeculationOrder` tiebreakers. Pure
+// function over the production list — no global state.
+function computeDispatchOrder(productions: ReadonlyArray<Production>): number[] {
+  const litLen = (idx: number): number => {
+    const s0 = productions[idx]!.spans[0];
+    if (s0 && s0.class === 'literal' && typeof s0.text === 'string') return s0.text.length;
+    return 0;
+  };
+  const isRestricted = (idx: number): boolean => {
+    for (const span of productions[idx]!.spans) {
+      if (span.refinements.some((r) => r.name === 'oneOf')) return true;
+    }
+    return false;
+  };
+  const indices = productions.map((_, i) => i);
+  indices.sort((a, b) => {
+    const restA = isRestricted(a);
+    const restB = isRestricted(b);
+    if (restA !== restB) return restA ? -1 : 1;
+    const lenDelta = litLen(b) - litLen(a);
+    if (lenDelta !== 0) return lenDelta;
+    const spanDelta = productions[b]!.spans.length - productions[a]!.spans.length;
+    if (spanDelta !== 0) return spanDelta;
+    return a - b;
+  });
+  return indices;
 }
 
 // --- render-block emit (Task 6.4 Commit 2) ---------------------------------

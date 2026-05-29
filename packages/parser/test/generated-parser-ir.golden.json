@@ -12,11 +12,11 @@
     },
     "markdown": {
       "path": "packages/markdown/src/_generated/parser.ts",
-      "sha256": "9fb43c2a9a417da701f7d5ce6a8624aac9ba9aa21e5517541fda0fb047d55eb9"
+      "sha256": "481aa45ca8581258ac280053f738fdb662171298bdf9ae334c6e7c388e8249f2"
     },
     "cron": {
       "path": "packages/cron/src/_generated/parser.ts",
-      "sha256": "c8faacf0c10d935d63fd5d420df9ee6df8b624be5e09368b161c0c46fb20e0b7"
+      "sha256": "5687dac2bd8f2325b82d757113adb7e980b3917dafc3b9184b151f15baf5fdcd"
     },
     "yaml-block": {
       "path": "packages/yaml-block/src/_generated/parser.ts",

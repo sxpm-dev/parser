@@ -6286,12 +6286,12 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_14_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_20_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_20_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_14_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
@@ -6472,12 +6472,12 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_29_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_30_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_30_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_29_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
@@ -6611,12 +6611,12 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_14_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_20_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_20_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_14_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
@@ -6797,12 +6797,12 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_29_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_30_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_MarkdownLeaf_30_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+              if (__fusedRender_MarkdownLeaf_29_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
             if (!__itemMatched) {
               state.pos = __offBeforeItem;

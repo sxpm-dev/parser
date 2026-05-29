@@ -181,15 +181,24 @@ cron has 4 alts that exercise overlapping cases, but the goal of Phase 6 was
 to prove the pluggable backend interface works, not to make bytecode a
 production-quality cron parser.
 
-1. **Bytecode multi-prod dispatch picks shortest-match.** Cron's `CronField`
-   has 4 alts with overlapping prefixes (`*` vs `*/N`, `N` vs `N-N`). The
-   current dispatch block chain-tries alts in order and returns the first
-   non-null result, which yields the SHORTEST match — `*` matches `*/5` and
-   consumes only 1 char. Fix requires either longest-match dispatch
-   (save-and-pick-best) or peek-discriminator dispatch (mirror the TS
-   backend's `infer/dispatch.ts` lookahead computation). Affects: `*/N` and
-   `N-N` cron inputs cannot be parsed by the bytecode backend today; the
-   Task 6.6 equivalence test specifically excludes these inputs.
+1. ~~Bytecode multi-prod dispatch picks shortest-match.~~
+   **Status: Resolved (2026-05-29).** Added `computeDispatchOrder` in
+   `packages/compiler/src/emit/bytecode/encoder.ts` that mirrors the TS
+   backend's `emitGroupSpeculation` tiebreakers: tag-restricted alts first,
+   then longest first-span literal prefix, then span count descending,
+   then declared order. The bytecode `#dispatch` block now chain-tries
+   alts in that order rather than schema-declaration order, so `*/N` wins
+   over `*` (longer literal prefix) and `N-N` wins over `N` (more spans).
+   While verifying, a matching pre-existing bug in the TS fused-render
+   dispatch surfaced (`emit/v2/fusion.ts:expandRoleCandidates` only sorted
+   by literalLen, missing the span-count tiebreak) and was fixed in the
+   same commit — the captures-based path was already correct via
+   `emit/v2/dispatch.ts`. Cron's `bytecode-equivalence.test.ts` extended
+   from 6 to 9 inputs, now exercising `*/5`, `1-5`, and combined
+   `*/15 0-12 * * 1-5` shapes through both backends. Cascade-regen
+   touched cron and markdown parsers (both have multi-role spans that
+   benefit from the span-count tiebreak); html, css, yaml-block byte-
+   identical. SHA256 goldens bumped for cron + markdown.
 
 2. **Bytecode optional-absent rendering emits trailing whitespace.** For
    `'* * * * *'` (no command), bytecode renders `'* * * * * '` (trailing

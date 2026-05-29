@@ -632,6 +632,7 @@ type FusedCandidate = {
 
 function expandRoleCandidates(roles: ReadonlyArray<string>, ctx: SpanContext): ReadonlyArray<FusedCandidate> {
   const cands: FusedCandidate[] = [];
+  const candProductions: Production[] = [];
   for (const role of roles) {
     const info = ctx.nodeTypes.get(role);
     if (!info) {
@@ -647,14 +648,29 @@ function expandRoleCandidates(roles: ReadonlyArray<string>, ctx: SpanContext): R
         fallthrough: meta.fallthrough,
         literalLen: meta.literalLen,
       });
+      candProductions.push(prod);
     }
   }
-  // Order: non-fallthrough by longest-literal-prefix DESC (declaration
-  // order on tie); fallthroughs trail in declaration order.
+  // Order: non-fallthrough by longest-literal-prefix DESC, then by span
+  // count DESC (more spans = more structural commitment; mirrors the
+  // captures-time dispatcher in emit/v2/dispatch.ts's
+  // `emitGroupSpeculation`). The span-count tiebreak is the discriminator
+  // that lets `*/N` win over `*` and `N-N` win over `N` when both have the
+  // same first-literal length but different structural depth. Without it
+  // the fused dispatch and captures dispatch diverge on shape-ambiguous
+  // inputs — same divergence the Phase 6 bytecode dispatch had before its
+  // sort was tightened. Fallthroughs trail in declaration order.
   const nonFt = cands.filter((c) => !c.fallthrough);
   const ft = cands.filter((c) => c.fallthrough);
+  const spanCount = (c: FusedCandidate): number => {
+    const idx = cands.indexOf(c);
+    return candProductions[idx]!.spans.length;
+  };
   nonFt.sort((a, b) => {
     if (a.literalLen !== b.literalLen) return b.literalLen - a.literalLen;
+    const sb = spanCount(b);
+    const sa = spanCount(a);
+    if (sa !== sb) return sb - sa;
     return 0; // stable sort preserves declaration order
   });
   return [...nonFt, ...ft];

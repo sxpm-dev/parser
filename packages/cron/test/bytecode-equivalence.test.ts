@@ -35,15 +35,14 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 //      backends here; both produce source text via their respective
 //      inverse dispatchers.
 //
-//   3) Inputs containing step expressions (`*/N`) or range expressions
-//      (`A-B`) are excluded from this fixture set. The bytecode runtime
-//      (Task 6.3) does not yet pick those alternatives during parse —
-//      both `*/5 * * * *` and `0 1-3 * * *` currently throw `Unexpected
-//      '/'` / `Unexpected '-'` from the bytecode runtime. Inverse
-//      stringify of those AST shapes works (verified by
-//      packages/compiler/test/bytecode-runtime.test.ts), but forward
-//      parsing of step/range fields is a Task 6.3 follow-up. This is
-//      called out in the Task 6.6 closeout report.
+//   3) ~~Inputs containing step expressions (`*/N`) or range expressions
+//      (`A-B`) are excluded from this fixture set.~~
+//      **Status: Resolved (Phase 6 follow-up #1, 2026-05-29.)** The
+//      bytecode encoder now sorts dispatch alts by tag-restricted →
+//      longest-literal-prefix → span-count descending (matching the TS
+//      backend's `emitGroupSpeculation` order), so `*/N` correctly wins
+//      over `*` and `N-N` correctly wins over `N` for ambiguous inputs.
+//      Step and range inputs are exercised below.
 //
 //   4) Inputs without a trailing command (e.g. '* * * * *') are also
 //      excluded. The bytecode runtime produces `command: { type:
@@ -53,12 +52,10 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 //      handles the absent-command shape correctly).
 //
 // All inputs below are present in cron's existing test suite (cron.test.ts /
-// round-trip.test.ts) or in the schema's `examples` array. They share two
-// properties:
-//   - The command is present (so the optional-absent gap above does not
+// round-trip.test.ts) or in the schema's `examples` array. They share one
+// property:
+//   - The command is present (so the optional-absent gap (4) does not
 //     surface).
-//   - No step (`*/N`) or range (`A-B`) field is used (so the
-//     step/range-parsing gap does not surface).
 
 const EXAMPLES: ReadonlyArray<string> = [
   '* * * * * date',
@@ -67,6 +64,11 @@ const EXAMPLES: ReadonlyArray<string> = [
   '0 9 * * 1 npm test',
   '0 9 * * 5 npm run check',
   '1 2 3 4 5 npm test deploy',
+  // Phase 6 follow-up #1 — previously excluded; now parses correctly under
+  // both backends thanks to dispatch sort.
+  '*/5 * * * * cmd',
+  '0 9 * * 1-5 npm test',
+  '*/15 0-12 * * 1-5 deploy',
 ];
 
 // Strip bytecode-runtime-only metadata so we can compare against shapes

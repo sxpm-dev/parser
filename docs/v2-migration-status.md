@@ -440,9 +440,20 @@ bytecode-tested schema (Phase 6 follow-up #4 / Phase 7 follow-up #3).
 None block Phase 9. Each is a real gap that the in-scope schemas and exit-gate
 tests work around or don't exercise.
 
-1. **Bytecode backend has no preamble support.** The bytecode encoder ignores
-   the four new dials. Cron stays bound to defaults. Adding preamble to
-   `packages/compiler/src/emit/bytecode/runtime.ts` is a follow-up.
+1. **Bytecode backend has no preamble support.**
+   **Status: Resolved (2026-05-29, commits `fe241b3`, `c644119`, `d4e2b13`).**
+   The bytecode `__parse` wrapper now applies BOM/unicode/newlines/caseSensitive
+   identically to the v2 (TS) backend by reusing the v2 emit's `emitPreamble`.
+   Bytecode encoder, opcode stream, and runtime are unchanged — dials are
+   consumed at emit time, not encoded into the bytecode payload. Tests in
+   `packages/compiler/test/bytecode-preamble.test.ts` cover string emission per
+   dial plus end-to-end runs for `caseSensitive:false` and `bom:require`. Cron's
+   `parser.bcode.ts` regenerated with the (default-dial) BOM-strip line — one
+   line of delta. Open hygiene follow-up: `bytecode/index.ts` now imports
+   `emitPreamble` from `../v2/index.ts`, the only cross-backend import in the
+   `emit/` tree. Extracting `emitPreamble` to a neutral
+   `packages/compiler/src/emit/preamble.ts` is a four-line follow-up worth
+   doing if a third backend is added; deferred today (YAGNI with two callers).
 
 2. **`caseSensitive: false` is ASCII-only-correct.** `input.toLowerCase()` uses
    Unicode default case mapping (locale-independent — not the

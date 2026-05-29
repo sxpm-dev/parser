@@ -751,6 +751,10 @@ function __v1_parseLengthPercentageItem__alt0(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
@@ -784,6 +788,10 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
@@ -814,6 +822,10 @@ function __v1_parseLengthPercentageItem__alt2(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
@@ -842,6 +854,10 @@ function __v1_parseLengthPercentageItem__alt3(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
@@ -1103,6 +1119,10 @@ function __v1_parseLengthFunctionToken__alt0(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
@@ -1133,6 +1153,10 @@ function __v1_parseLengthFunctionToken__alt1(state: State): unknown {
   const __value_start = off;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }

@@ -87,16 +87,34 @@ test('parses multi-item shorthand', () => {
 });
 
 test('validate accepts valid lengths', () => {
-  // The schema's `.number()` refinement matches integer digit-runs only —
-  // the verbatim port from commit b65ebcf~1 does not opt into `.float()`, so
-  // decimal magnitudes like `1.5rem` are out of scope for this sub-schema's
-  // current contract. The plan template's `1.5rem` sample was overly
-  // optimistic; substituting an integer dimension keeps the test aligned
-  // with the schema's actual surface.
   assert.doesNotThrow(() => mod.validate('10px'));
   assert.doesNotThrow(() => mod.validate('2rem'));
   assert.doesNotThrow(() => mod.validate('100%'));
   assert.doesNotThrow(() => mod.validate('auto'));
+});
+
+test('validate accepts decimal lengths', () => {
+  // Real-world CSS uses decimals routinely. The schema's value spans declare
+  // `.number().float()` so the integer prefix can be followed by an optional
+  // `.fraction` (no exponent required).
+  assert.doesNotThrow(() => mod.validate('1.5rem'));
+  assert.doesNotThrow(() => mod.validate('0.5em'));
+  assert.doesNotThrow(() => mod.validate('2.5%'));
+  assert.doesNotThrow(() => mod.validate('-1.25px'));
+  assert.doesNotThrow(() => mod.validate('-0.75%'));
+});
+
+test('parses decimal dimension AST shape', () => {
+  const ast = parse('1.5rem') as { items: Array<{ type: string; value: string; unit: string }> };
+  assert.equal(ast.items[0].type, 'dimension');
+  assert.equal(ast.items[0].value, '1.5');
+  assert.equal(ast.items[0].unit, 'rem');
+});
+
+test('parses decimal percentage AST shape', () => {
+  const ast = parse('2.5%') as { items: Array<{ type: string; value: string }> };
+  assert.equal(ast.items[0].type, 'percentage');
+  assert.equal(ast.items[0].value, '2.5');
 });
 
 test('validate rejects non-lengths', () => {

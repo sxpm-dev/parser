@@ -87,7 +87,7 @@ export default defineSchema({
       input: '10px',
       encodings: {
         parse: parse([
-          span('value', '10').number().noWhitespaceAfter(),
+          span('value', '10').number().float().noWhitespaceAfter(),
           span('unit', 'px').ident().css().oneOf(LENGTH_UNITS),
         ]),
         ast: { type: 'dimension', value: $.value, unit: $.unit },
@@ -99,7 +99,7 @@ export default defineSchema({
       encodings: {
         parse: parse([
           literal('-'),
-          span('value', '10').number().noWhitespaceAfter(),
+          span('value', '10').number().float().noWhitespaceAfter(),
           span('unit', 'px').ident().css().oneOf(LENGTH_UNITS),
         ]),
         ast: { type: 'dimension', value: '-10', unit: $.unit },
@@ -110,7 +110,7 @@ export default defineSchema({
       input: '50%',
       encodings: {
         parse: parse([
-          span('value', '50').number().noWhitespaceAfter(),
+          span('value', '50').number().float().noWhitespaceAfter(),
           literal('%'),
         ]),
         ast: { type: 'percentage', value: $.value },
@@ -122,7 +122,7 @@ export default defineSchema({
       encodings: {
         parse: parse([
           literal('-'),
-          span('value', '50').number().noWhitespaceAfter(),
+          span('value', '50').number().float().noWhitespaceAfter(),
           literal('%'),
         ]),
         ast: { type: 'percentage', value: '-50' },
@@ -156,7 +156,7 @@ export default defineSchema({
       input: '1rem',
       encodings: {
         parse: parse([
-          span('value', '1').number().noWhitespaceAfter(),
+          span('value', '1').number().float().noWhitespaceAfter(),
           span('unit', 'rem').ident().css().oneOf(LENGTH_UNITS),
         ]),
         ast: { type: 'dimension', value: $.value, unit: $.unit },
@@ -167,7 +167,7 @@ export default defineSchema({
       input: '100%',
       encodings: {
         parse: parse([
-          span('value', '100').number().noWhitespaceAfter(),
+          span('value', '100').number().float().noWhitespaceAfter(),
           literal('%'),
         ]),
         ast: { type: 'percentage', value: $.value },

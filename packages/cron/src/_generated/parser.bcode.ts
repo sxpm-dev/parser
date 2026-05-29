@@ -16,6 +16,7 @@ export function __parse(input: string, options?: { mode?: string }): unknown {
   if (mode !== 'fast') {
     throw new Error("bytecode-backend parser only supports 'fast' mode; use the TS backend for 'raws'");
   }
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
   const state = {
     input,
     ops: __DECODED.ops,

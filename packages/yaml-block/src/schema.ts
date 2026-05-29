@@ -10,14 +10,16 @@ import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/p
 //     (mapping is tried first so nested blocks are preferred over scalars)
 //   - YamlBlock: root — a single YamlNode (top-level mapping or sequence)
 //
-// MVP limitations (Phase 7 indent primitive):
+// Indent semantics (Phase 7 primitive + follow-ups):
 //   - Only ASCII space counts for indent column; tabs not supported.
-//   - Stringify joins indent-block children with '\n' only (no leading spaces).
-//     This means nested mappings/sequences lose indentation when stringified,
-//     so round-trip is value-stable only for flat structures (no nested blocks
-//     as mapping values).
-//   - The round-trip tests use only flat scalar-valued entries and flat
-//     sequences to avoid the nested-indentation loss in the stringifier.
+//   - Nested-indent round-trip is correct on both directions: the inverse
+//     stringify path (Task 7.7b) and the forward render path (Phase 7
+//     follow-up #1) both thread per-level indent columns through their
+//     generated builders, so `render(input, {target:'source'})` and
+//     `stringify(ast, {target:'ast'})` produce correctly indented multi-
+//     line output for nested mappings/sequences.
+//   - Nested-block round-trip tests live in test/round-trip.test.ts;
+//     forward-source indent tests live in test/forward-source-indent.test.ts.
 //
 // `unknownChars: 'tolerate'` is required so that scalar values containing
 // dots (3.14, api.example.com), slashes (path/to/file), colons in URLs, etc.

@@ -363,6 +363,73 @@ test('v2 multi-role repeats with stopBefore exits the loop early', async () => {
   assert.equal(result.items[1]?.type, 'hash');
 });
 
+// Phase 5 follow-up — stopBefore inside fused repeats. Pre-followup the
+// fusion-eligibility check gated any production whose recursive repeats
+// slot declared a stopBefore OUT of fusion entirely (the captures path
+// handled it, but the fused path was skipped). That gate is now lifted:
+// `emitFusedRepeatsSpan` emits the byte-bucketed stopBefore check at the
+// top of each loop iteration, mirroring the captures-path emit shape in
+// `emitRepeatsSpan`. The test pins both the codegen (a fused render
+// function MUST be emitted for the stopBefore-bearing production AND
+// must contain the byte check) and the runtime (the fused path produces
+// the expected source render).
+test('v2 fusion: multi-role repeats with stopBefore fuses and exits early', async () => {
+  const { defineSchema, relation, parse, span, literal, tpl, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Container',
+    examples: [
+      relation('SlashItem', {
+        input: '/foo',
+        encodings: {
+          src: parse([literal('/'), span('text', 'foo').until([' ', '\n', '<'])]),
+          source: tpl`/${$.text}`,
+          ast: { kind: 'slash', text: $.text },
+        },
+      }),
+      relation('HashItem', {
+        input: '#bar',
+        encodings: {
+          src: parse([literal('#'), span('text', 'bar').until([' ', '\n', '<'])]),
+          source: tpl`#${$.text}`,
+          ast: { kind: 'hash', text: $.text },
+        },
+      }),
+      relation('Container', {
+        input: '[/foo #bar</>]',
+        encodings: {
+          src: parse([
+            literal('['),
+            span('items', '/foo #bar').of('SlashItem', 'HashItem')
+              .repeats({ min: 0, stopBefore: ['</'] }),
+            literal('</>'),
+            literal(']'),
+          ]),
+          source: tpl`[${$.items}</>]`,
+          ast: { items: $.items },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  // Container#0 with 'source' target must now have a fused render function.
+  // Pre-followup the stopBefore gate excluded it; this match is the
+  // single most direct codegen signal that the gate was lifted.
+  assert.match(code, /function __fusedRender_Container_0_source/);
+  // The fused body must contain the stopBefore byte check. `<` is 0x3c = 60.
+  // Without this assertion the gate could be lifted without the loop being
+  // taught to honor stopBefore — fusion would over-accept input vs captures.
+  const fnMatch = code.match(/function __fusedRender_Container_0_source[\s\S]*?\n\}/);
+  assert.ok(fnMatch, 'fused render function source must be locatable');
+  const body = fnMatch![0];
+  assert.match(body, /__sb === 60/, 'fused loop must contain stopBefore byte check');
+  // Runtime: render('source') must produce the value-stable round-trip
+  // output. The fused path is preferred by render() (sanity-checked by the
+  // codegen presence assertion above), so this exercises the new loop code.
+  const { render } = await loadV2Parser(code);
+  const result = render('[/foo #bar</>]', { target: 'source' }) as string;
+  assert.equal(result, '[/foo #bar</>]');
+});
+
 test('v2 multi-role repeats with separator threads items together', async () => {
   const { defineSchema, relation, parse, span, $ } = await import('@parser2/parser');
   // Comma-separated list of (Word | Number) items. Sep=',' splits children;

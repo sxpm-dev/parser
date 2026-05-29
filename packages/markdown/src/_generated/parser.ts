@@ -11430,6 +11430,7 @@ function __renderFused(input: string, target: string): string | null {
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];
   if (rootFusedFn === undefined) return null;
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
   const state: State = {
     input,
     len: input.length,

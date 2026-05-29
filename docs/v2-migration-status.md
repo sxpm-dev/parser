@@ -114,10 +114,9 @@ Eligibility today:
 - Body shape: Template only. Object/array bodies stay on the captures path.
 - Slot refs: non-recursive spans, OR recursive single-role / multi-role /
   `.repeats()` spans whose roles' productions are themselves fully fusable.
-- Repeats option gate: `stopBefore` excludes a production from fusion (the
-  fused loop emit doesn't yet honour the stop-sentinel check). Schemas that
-  use `stopBefore` on a fusable role chain fall back to captures cleanly.
 - `ast` target stays on the captures path by design.
+- `.indent()`-modified repeats spans are ineligible (the fused join uses a
+  static separator; the indent-aware join lives only on the captures path).
 
 | Task | Commit(s) | What landed |
 | --- | --- | --- |
@@ -133,10 +132,22 @@ Eligibility today:
   allocation on the fused html path. Phase 5's actual exit gate is the
   round-trip correctness theorem (5.4), which is green; the perf-profile
   check is a follow-up task once a profile-friendly bench harness exists.
-- **`stopBefore` in fused repeats** — currently gates the production out of
-  fusion. Implementing the stop-sentinel check in `emitFusedRepeatsSpan`
-  would let `stopBefore`-bearing productions fuse and recover the
-  optimization for HTML schemas that use it.
+- **`stopBefore` in fused repeats — Resolved** (post-session-5). The fused
+  loop now emits the captures-path `emitStopBeforeCheck` (exported from
+  `emit/v2/span.ts`) at the top of each iteration, byte-bucketed by first
+  byte. The eligibility check no longer needs a `stopBefore` gate (it was
+  also a latent bug: the gate only ran on productions reached via recursion,
+  so it never excluded the entry production itself — the fused loop was
+  already over-accepting silently when the stop byte didn't alias a candidate
+  first byte). Closing this exposed a second latent gap: `__renderFused`'s
+  entry function skipped the input-normalization preamble (BOM strip / case
+  fold / newline normalize), so html (caseSensitive:false) suddenly diverged
+  from interp when `HtmlDocument#0` became newly fusable. Fixed by emitting
+  the preamble inside `__renderFused` too, matching `__parse`. Regression
+  test: `packages/compiler/test/v2-regressions.test.ts:'v2 fusion: multi-role
+  repeats with stopBefore fuses and exits early'`. 14 newly-fused html
+  productions in `_generated/parser.ts` after the change. Golden SHA256s
+  bumped for all five in-scope packages (cron also recompiled to align).
 - **`isAbsentAllowedSpan` / `repeatsJoinSeparator` helpers** are duplicated
   verbatim between `emit/render.ts` and `emit/v2/fusion.ts`. Extract to a
   shared `emit/span-helpers.ts` to remove the drift risk. Optional.

@@ -172,6 +172,14 @@ function emitFusedRenderEntry(schema: InferredSchema, fusedTargets: ReadonlyArra
   const switchBody = cases.length === 0
     ? '    default: return null;'
     : `${cases.join('\n')}\n    default: return null;`;
+  // The fused entry MUST apply the input-normalization preamble (BOM strip,
+  // unicode/newline normalize, ASCII case fold) BEFORE state init, mirroring
+  // `__parse`. Without it a case-insensitive schema (html) parses the raw
+  // bytes through fusion and the rendered output preserves the original
+  // case — diverging from the captures-path fallback which normalizes via
+  // `__parse`'s preamble. The fold is applied AFTER the table-lookup guard
+  // so the null-table fast path skips the string work entirely.
+  const preamble = emitPreamble(schema);
   return `const __rootProductionKey: string = ${jsString(rootKey)};
 
 function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
@@ -185,7 +193,7 @@ function __renderFused(input: string, target: string): string | null {
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];
   if (rootFusedFn === undefined) return null;
-${emitStateInit('state', 'fast')}
+${preamble}${emitStateInit('state', 'fast')}
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
   if (!ok) return null;

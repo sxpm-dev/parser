@@ -27,7 +27,7 @@ import { isTemplate, type Template } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { classFirstBytes } from './role-ladder.ts';
-import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
+import { computeKnownLeadingBytes, emitSpan, emitStopBeforeCheck, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
 import { findSpanModifier } from './modifiers.ts';
 
 // Class kinds whose presence (alongside `unknownChars: 'reject'`) justifies
@@ -193,26 +193,20 @@ function isProductionFusable(
     cache.set(key, false);
     return false;
   }
-  // Unsupported repeats features. `stopBefore` is not yet implemented by
-  // `emitFusedRepeatsSpan` — fusing a production whose repeats slot carries
-  // a stopBefore would over-accept input vs. the captures path. Gate the
-  // whole production out of fusion until the loop emit grows a stopBefore
-  // check. Same gate for any other repeats option the fused emit doesn't
-  // honour yet (none today, but keep the predicate co-located).
+  // Unsupported repeats features.
   //
-  // `.indent()`-modified spans are also ineligible: `emitFusedRepeatsSpan`
-  // joins children with a static separator (`' '` when no `sep` is
-  // declared), which produces flat output for indent-block schemas like
-  // yaml-block. The captures-based forward path (emit/render.ts) threads
-  // `__indentCol` and emits the correct per-level join + leading prefix
-  // (Phase 7 follow-up #1) — gating fusion here lets that path run.
+  // `.indent()`-modified spans are ineligible: `emitFusedRepeatsSpan` joins
+  // children with a static separator (`' '` when no `sep` is declared),
+  // which produces flat output for indent-block schemas like yaml-block.
+  // The captures-based forward path (emit/render.ts) threads `__indentCol`
+  // and emits the correct per-level join + leading prefix (Phase 7 follow-
+  // up #1) — gating fusion here lets that path run.
+  //
+  // `stopBefore` is honoured by `emitFusedRepeatsSpan` directly (Phase 5
+  // follow-up): the loop emits the same byte-bucketed check the captures
+  // path uses, so a stopBefore-bearing production now fuses end-to-end and
+  // produces byte-equivalent output. No gate needed.
   for (const span of production.spans) {
-    const repeats = findSpanModifier(span, 'repeats');
-    if (repeats && repeats.stopBefore && repeats.stopBefore.length > 0) {
-      inProgress.delete(key);
-      cache.set(key, false);
-      return false;
-    }
     if (findSpanModifier(span, 'indent')) {
       inProgress.delete(key);
       cache.set(key, false);
@@ -504,6 +498,13 @@ function emitFusedRepeatsSpan(
   // `repeatsJoinSeparator`. We mirror that for fusion so the rendered
   // output matches the captures-fallback exactly.
   const joinSep = sep === undefined ? ' ' : sep;
+  // stopBefore literals — when the next bytes start with any of these
+  // prefixes the loop must break without attempting an item. Reuses the
+  // captures-path helper (exported from span.ts) so the byte-bucketed
+  // dispatch shape is identical across backends. Empty string when the
+  // span has no stopBefore (the helper accepts undefined/empty and yields
+  // '', which we inline-test before emitting).
+  const stopBeforeCheck = emitStopBeforeCheck(repeats.stopBefore);
   const candidates = expandRoleCandidates(roles, ctx);
 
   const lines: string[] = [];
@@ -530,6 +531,19 @@ function emitFusedRepeatsSpan(
     // markdown document with blank lines between blocks would treat the
     // blanks as inseparable input and the loop would never advance.
     lines.push(`    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
+  }
+  if (stopBeforeCheck) {
+    // After the sep-sweep / ws-skip lands on the next item's start byte,
+    // peek the byte against the stopBefore literals and break the loop
+    // when one matches. We have NOT yet snapshotted the buffer or pushed
+    // the join separator, so a clean `break` here leaves no dangling
+    // writes — symmetrical to the captures-path break in `emitRepeatsSpan`.
+    // Without this, a stopBefore-bearing fused loop would over-consume
+    // input whenever a role candidate's first byte aliases the stop
+    // prefix (e.g. HTML's `<li>` whose siblings/closers both start with
+    // `<` — without the check the loop would greedily descend into a
+    // sibling element instead of returning to the parent's close handler).
+    lines.push(indent(stopBeforeCheck, 2));
   }
   lines.push(`    const __bufLenBefore = ${bufVar}.length;`);
   lines.push(`    const __offBeforeItem = off;`);

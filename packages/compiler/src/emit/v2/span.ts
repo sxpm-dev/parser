@@ -585,7 +585,12 @@ while (${literalMatchExpr(sep, 'off')}) {
 // upcoming bytes start with any of the listed literal prefixes. Bucketed by
 // first byte for cheap dispatch. Used by HTML's `<li>`/`<dt>`/etc. implicit-
 // close idioms (see packages/html/src/schema.ts).
-function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
+//
+// Exported so the fused-render emitter (`emit/v2/fusion.ts`) can share the
+// exact same byte-bucketed shape — captures-path and fused-path stopBefore
+// MUST be byte-equivalent so a stopBefore-bearing schema can't diverge in
+// input acceptance between the two backends.
+export function emitStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
   if (!stopBefore || stopBefore.length === 0) return '';
   const stops = stopBefore.filter((s) => s.length > 0);
   if (stops.length === 0) return '';

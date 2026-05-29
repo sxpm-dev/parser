@@ -12,7 +12,10 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./bytecode/runtime": "./dist/emit/bytecode/runtime.js"
+    "./bytecode/runtime": {
+      "types": "./src/emit/bytecode/runtime.ts",
+      "default": "./src/emit/bytecode/runtime.ts"
+    }
   },
   "dependencies": {
     "@parser2/parser": "0.0.0"

@@ -20,6 +20,7 @@
 import type { Backend } from '../backend.ts';
 import type { InferredSchema } from '../../model.ts';
 import { encodeSchema, type EncodedSchema } from './encoder.ts';
+import { emitPreamble } from '../v2/index.ts';
 
 export { encodeSchema } from './encoder.ts';
 export type { EncodedSchema } from './encoder.ts';
@@ -55,6 +56,7 @@ function emitGeneratedFile(schema: InferredSchema, encoded: EncodedSchema): stri
   const headerComment = `// Auto-generated from packages/${schema.packageName}/src/schema.ts
 // Do not edit by hand. Re-run \`npm run generate\` to refresh.
 // (bytecode backend — see packages/compiler/src/emit/bytecode/)`;
+  const preamble = emitPreamble(schema);
 
   return `${headerComment}
 /* eslint-disable */
@@ -72,7 +74,7 @@ export function __parse(input: string, options?: { mode?: string }): unknown {
   if (mode !== 'fast') {
     throw new Error("bytecode-backend parser only supports 'fast' mode; use the TS backend for 'raws'");
   }
-  const state = {
+${preamble}  const state = {
     input,
     ops: __DECODED.ops,
     stringPool: __DECODED.stringPool,

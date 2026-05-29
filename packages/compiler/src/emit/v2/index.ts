@@ -250,7 +250,7 @@ export function parseFnName(schema: InferredSchema, nodeType: string): string {
 // invariant Phase 2 established. Each per-dial block below emits NO code
 // for `'LF'` / `'none'` / `caseSensitive: true`, so non-BOM dials at
 // default carry zero overhead.
-function emitPreamble(schema: InferredSchema): string {
+export function emitPreamble(schema: InferredSchema): string {
   const blocks: string[] = [];
   // 1. BOM handling.
   switch (schema.bom) {

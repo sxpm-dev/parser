@@ -525,6 +525,55 @@ function emitRecursiveSpan(
       const loopExit = state.len;
       writeI32At(state, jinOperandSite, loopExit - jinAfter);
     }
+    // Enforce `repeats.min` (Phase 6 follow-up #2). The captures-path emit
+    // fails the production when fewer than `min` children matched. The
+    // bytecode emit previously skipped this check, which let Command#0 in
+    // cron succeed with zero `words` items — surfacing as `command: { type:
+    // 'command' }` (instead of `null`) when the trailing optional command
+    // was absent. Without the check `captures.command` is non-null on the
+    // value stack, so the optional-fusion render path (the actual symptom
+    // listed in this follow-up) couldn't fire either.
+    //
+    // For min === 0: no check needed; zero items is valid.
+    // For min === 1: check that `frame.captures[span.name]` was populated.
+    //   CAPTURE_VALUE_APPEND only runs after a successful loop iteration,
+    //   so the field is `undefined` iff zero items matched. Use JUMP_IF_NULL
+    //   (loosened to nullish) to detect that and fail.
+    // For min > 1: array-length check requires an opcode we don't have
+    //   (no array-length / number-compare ops in the bytecode runtime).
+    //   No in-scope schema uses min > 1 on a bytecode-emitted production;
+    //   throw loudly so the next schema author hears about the gap.
+    const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+    const min = repeatsMod && 'min' in repeatsMod && typeof repeatsMod.min === 'number' ? repeatsMod.min : 0;
+    if (min === 1 && span.name) {
+      // LOAD_CAPTURE <name>
+      writeOp(state, Op.LOAD_CAPTURE);
+      writeU32(state, internString(state, span.name));
+      // JUMP_IF_NULL <to-fail>
+      writeOp(state, Op.JUMP_IF_NULL);
+      const jinMinSite = state.len;
+      writeI32(state, 0);
+      const jinMinAfter = state.len;
+      // Non-null path: pop the loaded value (we just wanted the presence
+      // check; the array stays in frame.captures for downstream render).
+      writeOp(state, Op.POP);
+      // JUMP <past failure block>
+      writeOp(state, Op.JUMP);
+      const jOverFailSite = state.len;
+      writeI32(state, 0);
+      const jOverFailAfter = state.len;
+      // Failure block — fail the production with RETURN_NULL.
+      const failTarget = state.len;
+      writeI32At(state, jinMinSite, failTarget - jinMinAfter);
+      writeOp(state, Op.RETURN_NULL);
+      // After-failure target — the loop continues from here.
+      const afterFail = state.len;
+      writeI32At(state, jOverFailSite, afterFail - jOverFailAfter);
+    } else if (min > 1) {
+      throw new Error(
+        `bytecode encoder: repeats.min > 1 not yet supported (span '${span.name ?? '?'}' has min=${min}); add an array-length opcode or extend the min-check emit`,
+      );
+    }
     writeOp(state, Op.SAVE_OFF);
     writeU8(state, endSlot);
     return nextSlot + 2;
@@ -823,34 +872,102 @@ function emitRefExpr(state: EncoderState, ref: StructureRef, target: string): vo
 // arrays and join them with a default ' '. Per-slot separator is deferred
 // (cron's only repeats slot uses default ' ' anyway).
 //
-// Optional-fusion (preceding whitespace literal suppressed when optional
-// slot is absent) is NOT implemented yet — Task 6.4 plan defers it.
+// Optional-absent fusion (Phase 6 follow-up #2). Mirrors the TS path in
+// `emit/render.ts:240-263`: when an optional slot's preceding literal is
+// whitespace-only (acts as an inter-span separator), both the literal AND
+// the slot collapse to "" when the capture is null. Non-whitespace literals
+// around an optional slot are left in place (matching the TS path).
+//
+// Bytecode shape (no SWAP/PEEK_BELOW ops exist, so we always concat
+// internally to leave EXACTLY one value on the stack per fused unit):
+//
+//   fused pair (ws literal + optional slot):
+//     PUSH_STRING <ws>             // [..., ws]
+//     LOAD_CAPTURE <name>          // [..., ws, v]
+//     JUMP_IF_NULL +nullCleanup    // pops v + branches on null
+//     RENDER_DISPATCH <target>     // [..., ws, rendered_v]
+//     CONCAT_N 2                   // [..., ws+rendered_v]
+//     JUMP +endSkip                // skip the null path
+//   nullCleanup:
+//     POP                          // drop the pre-pushed ws
+//     PUSH_STRING ""               // [..., ""]
+//   endSkip:
+//
+//   solo optional slot (no preceding ws literal — e.g. it's the first slot
+//   or the preceding literal carries structural punctuation):
+//     LOAD_CAPTURE <name>          // [..., v]
+//     JUMP_IF_NULL +nullCleanup
+//     RENDER_DISPATCH <target>     // [..., rendered_v]
+//     JUMP +endSkip
+//   nullCleanup:
+//     PUSH_STRING ""
+//   endSkip:
+//
+// Each fused/solo unit contributes EXACTLY ONE value to the outer
+// CONCAT_N count, which keeps that count static (CONCAT_N takes a u32
+// operand; no opcode supports runtime-counted concat).
+//
+// Note: `.repeats({ min: 0 })` slots are not covered here. The captured
+// value for an empty repeats slot is `[]` (not null), so JUMP_IF_NULL
+// would not fire. Closing that requires a JUMP_IF_EMPTY-style opcode or
+// runtime support; deferred until a real schema needs it (cron only uses
+// `.optional()` for absence semantics).
 function emitRenderTemplate(
   state: EncoderState,
   template: Template,
   target: string,
   production: Production,
 ): void {
+  type LiteralPiece = { readonly kind: 'literal'; readonly text: string };
+  type SlotPiece = { readonly kind: 'slot'; readonly ref: string; readonly optional: boolean };
+  type Piece = LiteralPiece | SlotPiece;
+  const pieces: Piece[] = [];
   const parts = template.parts;
   const slots = template.slots;
-  let pushed = 0;
-
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]!;
-    if (part.length > 0) {
-      writeOp(state, Op.PUSH_STRING);
-      writeU32(state, internString(state, part));
-      pushed++;
-    }
+    if (part.length > 0) pieces.push({ kind: 'literal', text: part });
     if (i < slots.length) {
       const slot = slots[i]!;
+      const span = findSpanByNameLocal(production, slot.ref);
+      const optional = span !== undefined && isOptionalLocal(span);
+      pieces.push({ kind: 'slot', ref: slot.ref, optional });
+    }
+  }
+
+  let pushed = 0;
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = pieces[i]!;
+    if (piece.kind === 'literal') {
+      // Fuse with the next piece when it's an optional slot AND this
+      // literal is purely whitespace.
+      const next = i + 1 < pieces.length ? pieces[i + 1] : undefined;
+      const fuse = next !== undefined
+        && next.kind === 'slot'
+        && next.optional
+        && /^\s+$/.test(piece.text);
+      if (fuse) {
+        emitFusedOptionalPair(state, piece.text, (next as SlotPiece).ref, target);
+        pushed++;
+        i++; // skip the slot piece — consumed by the fused emit
+        continue;
+      }
+      writeOp(state, Op.PUSH_STRING);
+      writeU32(state, internString(state, piece.text));
+      pushed++;
+      continue;
+    }
+    if (!piece.optional) {
       writeOp(state, Op.LOAD_CAPTURE);
-      writeU32(state, internString(state, slot.ref));
+      writeU32(state, internString(state, piece.ref));
       writeOp(state, Op.RENDER_DISPATCH);
       writeU32(state, internString(state, target));
       pushed++;
+      continue;
     }
-    void production; // reserved for fusion (currently unused)
+    // Optional slot with no preceding fusable whitespace literal.
+    emitSoloOptionalSlot(state, piece.ref, target);
+    pushed++;
   }
 
   // If nothing was pushed, push an empty string so CONCAT_N has something.
@@ -862,6 +979,98 @@ function emitRenderTemplate(
 
   writeOp(state, Op.CONCAT_N);
   writeU32(state, pushed);
+}
+
+// --- optional-fusion helpers ----------------------------------------------
+
+function emitFusedOptionalPair(
+  state: EncoderState,
+  wsLiteral: string,
+  slotRef: string,
+  target: string,
+): void {
+  // PUSH_STRING <ws>
+  writeOp(state, Op.PUSH_STRING);
+  writeU32(state, internString(state, wsLiteral));
+  // LOAD_CAPTURE <name>
+  writeOp(state, Op.LOAD_CAPTURE);
+  writeU32(state, internString(state, slotRef));
+  // JUMP_IF_NULL +<patched-later>
+  writeOp(state, Op.JUMP_IF_NULL);
+  const jinNullSite = state.len;
+  writeI32(state, 0); // placeholder
+  const jinAfter = state.len;
+  // Non-null branch: render and concat the (ws, rendered) pair.
+  writeOp(state, Op.RENDER_DISPATCH);
+  writeU32(state, internString(state, target));
+  writeOp(state, Op.CONCAT_N);
+  writeU32(state, 2);
+  // JUMP +<patched-later> over the null-cleanup block.
+  writeOp(state, Op.JUMP);
+  const jumpEndSite = state.len;
+  writeI32(state, 0); // placeholder
+  const jumpAfter = state.len;
+  // Null path: drop the pre-pushed ws, push an empty string so the outer
+  // CONCAT_N sees exactly one value.
+  const nullLand = state.len;
+  writeI32At(state, jinNullSite, nullLand - jinAfter);
+  writeOp(state, Op.POP);
+  writeOp(state, Op.PUSH_STRING);
+  writeU32(state, internString(state, ''));
+  // End of fused unit.
+  const endLand = state.len;
+  writeI32At(state, jumpEndSite, endLand - jumpAfter);
+}
+
+function emitSoloOptionalSlot(
+  state: EncoderState,
+  slotRef: string,
+  target: string,
+): void {
+  // LOAD_CAPTURE <name>
+  writeOp(state, Op.LOAD_CAPTURE);
+  writeU32(state, internString(state, slotRef));
+  // JUMP_IF_NULL +<patched-later>
+  writeOp(state, Op.JUMP_IF_NULL);
+  const jinNullSite = state.len;
+  writeI32(state, 0);
+  const jinAfter = state.len;
+  // Non-null branch: render.
+  writeOp(state, Op.RENDER_DISPATCH);
+  writeU32(state, internString(state, target));
+  // JUMP over null-cleanup.
+  writeOp(state, Op.JUMP);
+  const jumpEndSite = state.len;
+  writeI32(state, 0);
+  const jumpAfter = state.len;
+  // Null path: push empty string.
+  const nullLand = state.len;
+  writeI32At(state, jinNullSite, nullLand - jinAfter);
+  writeOp(state, Op.PUSH_STRING);
+  writeU32(state, internString(state, ''));
+  // End.
+  const endLand = state.len;
+  writeI32At(state, jumpEndSite, endLand - jumpAfter);
+}
+
+// Mirrors `findSpanByName` in `emit/render.ts` and the fused-emitter local.
+// Optionality detection only — we don't need the full ResolvedSpan API here.
+function findSpanByNameLocal(production: Production, name: string): ResolvedSpan | undefined {
+  for (const span of production.spans) {
+    if (span.name === name) return span;
+  }
+  return undefined;
+}
+
+// Returns true when the span carries an `.optional()` modifier. Narrower
+// than `isAbsentAllowedSpan` (no `.repeats({min:0})` branch) because the
+// fusion shape relies on the runtime capture being `null` for absent —
+// repeats slots produce `[]` instead and won't trip JUMP_IF_NULL.
+function isOptionalLocal(span: ResolvedSpan): boolean {
+  for (const m of span.modifiers) {
+    if (m.kind === 'optional') return true;
+  }
+  return false;
 }
 
 // --- stringify-block emit (Task 6.4 Commit 3) ------------------------------

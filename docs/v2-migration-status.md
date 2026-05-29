@@ -220,13 +220,38 @@ production-quality cron parser.
    benefit from the span-count tiebreak); html, css, yaml-block byte-
    identical. SHA256 goldens bumped for cron + markdown.
 
-2. **Bytecode optional-absent rendering emits trailing whitespace.** For
-   `'* * * * *'` (no command), bytecode renders `'* * * * * '` (trailing
-   space) where TS renders `'* * * * *'` (no trailing space). The encoder's
-   template-render emission doesn't fuse the optional slot's preceding
-   whitespace literal — Task 6.4 deferred optional-slot fusion for
-   `runRender`. The TS backend's `emit/render.ts` handles this via the
-   "preceding whitespace literal collapse" logic (lines ~207–230).
+2. **Bytecode optional-absent rendering emits trailing whitespace —
+   Resolved (post-session-5).** The diagnosed symptom (trailing space on
+   `'* * * * *'`) was one face of a deeper, three-part gap that closed
+   together as Phase 6 #2:
+   - `emit/bytecode/encoder.ts:emitRenderTemplate` now mirrors
+     `emit/render.ts:240-263`: optional slots whose preceding literal is
+     whitespace-only collapse both pieces to `""` when the capture is
+     null. The bytecode shape is `PUSH_STRING ws; LOAD_CAPTURE name;
+     JUMP_IF_NULL +to-null; RENDER_DISPATCH; CONCAT_N 2; JUMP +end;
+     to-null: POP; PUSH_STRING ""; end:` — each fused unit contributes
+     exactly one value to the outer CONCAT_N so the static count stays
+     correct (no SWAP / variable-count concat ops in the runtime).
+   - The bytecode `repeats` emit (`emit/bytecode/encoder.ts:495`) was
+     silently skipping `min` enforcement, so `Command#0` succeeded with
+     zero `words` at EOF and Cron#0's optional captured the empty
+     `{__production: 'Command#0'}` shell. Now emits `LOAD_CAPTURE name;
+     JUMP_IF_NULL +to-fail; POP; JUMP +after; to-fail: RETURN_NULL;
+     after:` after the repeats loop for `min === 1` named spans.
+     `min > 1` throws loudly (no array-length opcode yet; no in-scope
+     schema needs it).
+   - Runtime `LOAD_CAPTURE` normalizes `undefined` → `null` and
+     `JUMP_IF_NULL` loosens to nullish equality, so the bytecode AST
+     matches TS's explicit `command: null` instead of an omitted key,
+     and the optional-fusion null path fires uniformly. Runtime
+     `stringifySlot` now returns `null` (not `''`) for null/undefined
+     inputs, so the inverse stringify path's captures store `null` for
+     absent optionals — the inlined source render then drops the
+     trailing ws too.
+   The bytecode-equivalence test's `EXAMPLES` loop now includes
+   `'* * * * *'` and `'5 * * * *'`; the source-only standalone exclusion
+   block is gone. 14 cron tests, 11 pass (3 pre-existing user-WIP
+   failures remain — same as before this work).
 
 3. **Bytecode stringify `target='source'` not implemented (template-form
    inverse).** Cron's `'source'` target uses a template IR (segments +

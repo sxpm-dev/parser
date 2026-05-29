@@ -169,7 +169,13 @@ function runRenderNested(
 }
 
 // stringifySlot — handles polymorphic stringify dispatch:
-//   - null/undefined → "" (rebuild's slot helper pattern)
+//   - null/undefined → null (preserves the absent semantic so the
+//                       downstream CAPTURE_VALUE_FROM_STACK stores `null`
+//                       in captures; the inlined source-render block can
+//                       then drop the slot — and its preceding ws — via
+//                       JUMP_IF_NULL. Pre-followup this returned `""`,
+//                       which left captures storing `""` and rendered as
+//                       a trailing space for the cron optional command.)
 //   - array          → recursively stringify each element, join with " "
 //                       (cron's default whitespace policy)
 //   - primitive (string/number/bool) → String(v)
@@ -182,7 +188,7 @@ function stringifySlot(
   nodeType: string,
   target: string,
 ): unknown {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return null;
   if (Array.isArray(value)) {
     const parts: string[] = [];
     for (let i = 0; i < value.length; i++) {
@@ -427,7 +433,13 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
     case Op.JUMP_IF_NULL: {
       const rel = readI32(state);
       const top = state.valueStack[state.valueStack.length - 1];
-      if (top === null) {
+      // Loose nullish check (matches `==` against null). CALL_PRODUCTION
+      // pushes explicit null on failure and the optional-fusion render
+      // emit relies on this branch firing for `undefined` too (absent
+      // optional captures are stored as `undefined` on the captures
+      // object because CAPTURE_VALUE_FROM_STACK is jumped over on the
+      // failing role's branch).
+      if (top === null || top === undefined) {
         state.valueStack.pop();
         state.pc += rel;
       }
@@ -487,7 +499,18 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       const name = state.stringPool[nameIdx]!;
       const frame = frames[frames.length - 1]!;
       if (frame.captures === null) throw new Error(`bytecode runtime: LOAD_CAPTURE in frame without captures`);
-      state.valueStack.push(frame.captures[name]);
+      // Normalize `undefined` to `null`. The bytecode optional-span emit
+      // skips CAPTURE_VALUE_FROM_STACK when the inner CALL_PRODUCTION
+      // returns null (the role's JUMP_IF_NULL branches over the capture
+      // op), so `captures[name]` stays `undefined` for absent optionals.
+      // The TS-generated captures path stores an explicit `null` instead
+      // (`captures.command = parseCommand(state)` where parseCommand
+      // returns null on failure). Coercing here keeps downstream
+      // RENDER_DISPATCH / BUILD_OBJECT byte-equivalent across backends
+      // — AST objects come out with `command: null` (kept by JSON) under
+      // both, instead of an omitted key under bytecode.
+      const value = frame.captures[name];
+      state.valueStack.push(value === undefined ? null : value);
       return { kind: 'continue' };
     }
 

@@ -44,18 +44,27 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 //      over `*` and `N-N` correctly wins over `N` for ambiguous inputs.
 //      Step and range inputs are exercised below.
 //
-//   4) Inputs without a trailing command (e.g. '* * * * *') are also
+//   4) ~~Inputs without a trailing command (e.g. '* * * * *') are also
 //      excluded. The bytecode runtime produces `command: { type:
 //      'command' }` for an absent optional command, while the TS
 //      backend produces `command: null`. Optional-absent fusion is
 //      another Task 6.3 follow-up (forward-only — inverse already
-//      handles the absent-command shape correctly).
+//      handles the absent-command shape correctly).~~
+//      **Status: Resolved (Phase 6 follow-up #2, 2026-05-29.)** Two
+//      gaps closed together: (a) the bytecode `repeats` emit now
+//      enforces `min` (Command#0's `words` slot has `min: 1`), so an
+//      EOF-position attempt fails the production rather than succeeding
+//      with empty captures; (b) runtime `LOAD_CAPTURE` normalizes
+//      `undefined` → `null`, matching the TS captures-path's explicit
+//      `captures.command = parseCommand(state) /* returns null */`.
+//      The `emit/bytecode/encoder.ts:emitRenderTemplate` also gained
+//      the optional-absent whitespace fusion that mirrors
+//      `emit/render.ts:240-263`, so the source-target trailing-space
+//      symptom is gone too. Absent-trailing inputs now run through the
+//      main equivalence loop below.
 //
-// All inputs below are present in cron's existing test suite (cron.test.ts /
-// round-trip.test.ts) or in the schema's `examples` array. They share one
-// property:
-//   - The command is present (so the optional-absent gap (4) does not
-//     surface).
+// Inputs below come from cron's existing test suite (cron.test.ts /
+// round-trip.test.ts) or the schema's `examples` array.
 
 const EXAMPLES: ReadonlyArray<string> = [
   '* * * * * date',
@@ -69,6 +78,13 @@ const EXAMPLES: ReadonlyArray<string> = [
   '*/5 * * * * cmd',
   '0 9 * * 1-5 npm test',
   '*/15 0-12 * * 1-5 deploy',
+  // Phase 6 follow-up #2 — previously excluded; bytecode now enforces
+  // `repeats.min` (so Command#0 fails on absent command), runtime
+  // LOAD_CAPTURE normalizes `undefined` → `null` (so the AST has
+  // `command: null` matching TS), and the source-target render fuses
+  // the trailing optional with its preceding whitespace literal.
+  '* * * * *',
+  '5 * * * *',
 ];
 
 // Strip bytecode-runtime-only metadata so we can compare against shapes
@@ -111,3 +127,4 @@ for (const input of EXAMPLES) {
     assert.equal(bcBack, input);
   });
 }
+

@@ -19,6 +19,7 @@ import { emitDispatcher } from './dispatch.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { emitProduction } from './production.ts';
 import { V2_RUNTIME } from './runtime.ts';
+import { emitStateInit } from './state-init.ts';
 import { emitValidate } from './validate-emit.ts';
 
 export function emitV2Parser(schema: InferredSchema): string {
@@ -184,16 +185,7 @@ function __renderFused(input: string, target: string): string | null {
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];
   if (rootFusedFn === undefined) return null;
-  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode: 'fast',
-    lineStarts: [],
-    indentStack: new Int32Array(16),
-    indentStackTop: 0,
-  };
+${emitStateInit('state', 'fast')}
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
   if (!ok) return null;
@@ -243,16 +235,7 @@ function emitPublicApi(schema: InferredSchema, validateBody: string): string {
   const preamble = emitPreamble(schema);
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
-${preamble}  const state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode,
-    lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
-    indentStack: new Int32Array(16),
-    indentStackTop: 0,
-  };
+${preamble}${emitStateInit('state', 'parametric')}
   const result = ${rootFn}(state);
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);

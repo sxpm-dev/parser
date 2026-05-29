@@ -28,6 +28,7 @@ import type { SchemaDef, ValidationRuleDef } from '@parser2/parser';
 import { generateParser } from '../../index.ts';
 import type { InferredSchema } from '../../model.ts';
 import { jsString } from '../strings.ts';
+import { emitStateInit } from './state-init.ts';
 
 export type EmitValidateResult = {
   readonly imports: string;
@@ -128,16 +129,7 @@ export function emitValidate(
     const rootParse = `${prefix}parse${r.validator.schema.rootType}`;
     inlineAliases.push(
       `function __validator_${ruleIdx}(input: string): void {`,
-      `  const __state: State = {`,
-      `    input,`,
-      `    len: input.length,`,
-      `    pos: 0,`,
-      `    maxOff: 0,`,
-      `    mode: 'fast',`,
-      `    lineStarts: [],`,
-      `    indentStack: new Int32Array(16),`,
-      `    indentStackTop: 0,`,
-      `  };`,
+      emitStateInit('__state', 'fast'),
       `  const __r = ${rootParse}(__state);`,
       `  if (__r === null || __state.pos !== input.length) {`,
       `    throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);`,
@@ -225,16 +217,7 @@ ${switchCases.join('\n')}
 
 function emitValidateStub(rootFn: string, packageName: string): string {
   return `export function validate(input: string, options?: ParseOptions): void {
-  const __state: State = {
-    input,
-    len: input.length,
-    pos: 0,
-    maxOff: 0,
-    mode: 'fast',
-    lineStarts: [],
-    indentStack: new Int32Array(16),
-    indentStackTop: 0,
-  };
+${emitStateInit('__state', 'fast')}
   const __result = ${rootFn}(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);

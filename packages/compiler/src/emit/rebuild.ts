@@ -110,12 +110,19 @@ function synthesizePieces(production: Production): ReadonlyArray<Piece> {
       // `.optional()` and `.repeats({ min: 0 })` permit zero-length
       // captures; emit a runtime-conditional slot read with empty default
       // so rebuild stays well-defined when the captured value is null.
-      if (isAbsentAllowed(span)) {
+      //
+      // Required-recursive-repeats path: a `.of(roles).repeats({min:>=1})`
+      // span (typically `.indent()`-modified) can legitimately carry empty
+      // text — the slot is always populated at runtime by recursive child
+      // dispatch, and the example text is only ever consulted at compile
+      // time for offset bookkeeping. Recognize this shape so schemas don't
+      // need to inline a synthetic multi-line example string.
+      if (isAbsentAllowed(span) || isRequiredRecursiveRepeats(span)) {
         pieces.push(contributionOf(span));
         continue;
       }
-      // Non-absent-allowed span whose text is not present in the example is
-      // a schema bug already flagged by validate(). Defensive guard:
+      // Other empty-text span shapes are a schema bug already flagged by
+      // validate(). Defensive guard:
       throw new CompilerError(
         `rebuild: span '${span.name ?? span.text ?? '<unnamed>'}' not found in example '${truncate(input)}'`,
       );
@@ -234,6 +241,21 @@ function isAbsentAllowed(span: ResolvedSpan): boolean {
   for (const m of span.modifiers) {
     if (m.kind === 'optional') return true;
     if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
+  }
+  return false;
+}
+
+// True when the span captures one-or-more recursive children — e.g.
+// `.of(roles).repeats({min: 1+})`, with or without `.indent()`. Parsing
+// dispatches by role lookahead so the span's example text is never
+// consumed literally, and rebuild reads the children from the captures
+// dict — neither phase needs the text. Exposed (alongside isAbsentAllowed)
+// as a relaxation target for synthesizePieces so schemas can elide the
+// synthetic multi-line text that yaml-block historically inlined.
+export function isRequiredRecursiveRepeats(span: ResolvedSpan): boolean {
+  if (span.recursiveRoles.length === 0) return false;
+  for (const m of span.modifiers) {
+    if (m.kind === 'repeats' && m.min !== undefined && m.min >= 1) return true;
   }
   return false;
 }

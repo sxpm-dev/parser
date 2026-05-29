@@ -64,13 +64,14 @@ export default defineSchema({
     // --- YamlMapping: indented block of YamlMappingEntry lines.
     //     Uses .indent() to gate each iteration on the column of the first
     //     entry; exits cleanly when the next non-blank line dedents.
-    //     The span text matches the full example so synthesizePieces can
-    //     locate it; the text is not used during recursive parsing.
+    //     The span text is empty — `.of(roles).repeats({min:1})` is a
+    //     required-recursive-repeats shape; synthesizePieces synthesizes
+    //     its slot directly without needing the example text.
     relation('YamlMapping', {
       input: 'foo: 1\nbar: 2',
       encodings: {
         parse: parse([
-          span('entries', 'foo: 1\nbar: 2').of('YamlMappingEntry').indent().repeats({ min: 1 }),
+          span('entries').of('YamlMappingEntry').indent().repeats({ min: 1 }),
         ]),
         ast: { type: 'mapping', entries: $.entries },
         source: tpl`${$.entries}`,
@@ -90,12 +91,13 @@ export default defineSchema({
       },
     }),
 
-    // --- YamlSequence: indented block of YamlSequenceItem lines.
+    // --- YamlSequence: indented block of YamlSequenceItem lines. Same
+    //     empty-text shape as YamlMapping above.
     relation('YamlSequence', {
       input: '- a\n- b',
       encodings: {
         parse: parse([
-          span('items', '- a\n- b').of('YamlSequenceItem').indent().repeats({ min: 1 }),
+          span('items').of('YamlSequenceItem').indent().repeats({ min: 1 }),
         ]),
         ast: { type: 'sequence', items: $.items },
         source: tpl`${$.items}`,

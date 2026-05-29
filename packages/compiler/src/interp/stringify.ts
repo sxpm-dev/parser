@@ -34,7 +34,12 @@ import type {
   Production,
   ResolvedSpan,
 } from '../model.ts';
-import { INDENT_STEP_SPACES, joinOf, type Piece } from '../emit/rebuild.ts';
+import {
+  INDENT_STEP_SPACES,
+  isRequiredRecursiveRepeats,
+  joinOf,
+  type Piece,
+} from '../emit/rebuild.ts';
 
 // --- Public API ------------------------------------------------------------
 
@@ -673,7 +678,13 @@ function rebuildSource(
   for (const span of production.spans) {
     const startOffset = findSpanStart(input, span, cursor);
     if (startOffset === null) {
-      if (isAbsentAllowedSpan(span)) {
+      // Empty-text spans are legal when the span is absent-allowed
+      // (.optional() / .repeats({min:0})) OR a required-recursive-repeats
+      // shape (.of(roles).repeats({min:>=1})) whose runtime children are
+      // always supplied by recursive dispatch. Mirrors the same relaxation
+      // in emit/rebuild.ts so interp and codegen agree on which shapes
+      // skip the text-anchoring requirement.
+      if (isAbsentAllowedSpan(span) || isRequiredRecursiveRepeats(span)) {
         pieces.push(contributionOf(span));
         continue;
       }

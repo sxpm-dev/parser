@@ -363,13 +363,23 @@ need to be addressed if a future schema exposes the gap.
      would make the dead data self-documenting and give TS narrowing. Pure
      cosmetic.
 
-2. **`synthesizePieces` requires literal text on indent spans with `min: 1`.**
-   The yaml-block schema works around `rebuild.ts`'s `findSpanStart` returning
-   null for empty-text indent spans by giving them the full example string as
-   `text` (e.g., `.span('entries', 'foo: 1\nbar: 2', ['YamlMappingEntry']).indent().repeats({ min: 1 })`).
-   This text is only used at compile time for offset calculation and ignored at
-   runtime. The compiler should recognize required-recursive-repeats spans and
-   synthesize their slot directly without requiring text.
+2. ~~`synthesizePieces` requires literal text on indent spans with `min: 1`.~~
+   **Status: Resolved (2026-05-29).** Added `isRequiredRecursiveRepeats` to
+   `packages/compiler/src/emit/rebuild.ts` (exported) and extended both
+   `synthesizePieces` recovery paths (rebuild + interp/stringify) to accept
+   empty-text spans of the shape `.of(roles).repeats({min:>=1})` —
+   recursive-role dispatch supplies the children at runtime, the slot
+   piece is synthesized directly, and the cursor stays put for subsequent
+   spans. Yaml-block's `YamlMapping` and `YamlSequence` schemas updated to
+   drop the synthetic multi-line text — empty `span('entries').of(...)
+   .indent().repeats({min:1})` now works directly. Generated parser is
+   byte-identical (same Piece sequence via different recovery path) so
+   the SHA256 golden hash stays. 4 new compiler tests in
+   `packages/compiler/test/indent-empty-text-required.test.ts` cover the
+   inferSchema path, interp stringify, emit codegen+runtime, and a
+   negative case where the relaxation does NOT apply (empty text on a
+   non-recursive `.repeats({min:1})` span still throws). Compiler tests
+   386 → 390.
 
 3. **Bytecode backend has no indent support.** Phase 6 left cron as the only
    bytecode-tested schema; Phase 7 adds indent only to the v2 TS backend.

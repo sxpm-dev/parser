@@ -1,4 +1,4 @@
-# v2 emit migration status (updated 2026-05-27 after Phase 6 closeout)
+# v2 emit migration status (updated 2026-05-30 after post-session-6 follow-up closeout)
 
 Status of `--v2` codegen + tests for the 3 in-scope parser packages.
 Captured by running
@@ -67,14 +67,19 @@ plus quality-review follow-ups. Summary of what each commit added:
 
 ## Known follow-ups (deferrable)
 
-- AC fast-path inside `.until()` skips the unknownChars guard. No live
-  schema combines AC-eligible scans (≥3 stops, no balanced/strings/url)
-  with `unknownChars: 'reject'`, so it's a documented blind spot. See
-  `packages/compiler/src/emit/v2/span.ts:854` for the comment.
-- `emitRawUntilSpan` does not emit the unknownChars guard. The rawUntil
-  semantic intent is "raw bytes" — applying the guard there has a design
-  tension. Today html and markdown both declare `'tolerate'`, so no live
-  gap. See `packages/compiler/src/emit/v2/span.ts:1067` for the comment.
+- **AC fast-path inside `.until()` skips the unknownChars guard.**
+  **Status: Accepted as documented constraint (2026-05-30 triage).** No
+  live schema combines AC-eligible scans (≥3 stops, no balanced/strings/url)
+  with `unknownChars: 'reject'`. Deferred until a real consumer exposes the
+  gap. See `packages/compiler/src/emit/v2/span.ts:854` for the comment.
+- **`emitRawUntilSpan` does not emit the unknownChars guard.**
+  **Status: Accepted as documented constraint (2026-05-30 triage).** The
+  rawUntil semantic intent is "raw bytes" — applying the guard there has a
+  design tension (the guard would over-reject the very bytes rawUntil is
+  built to pass through). Html and markdown both declare `'tolerate'`, so
+  no live gap. Deferred until a real consumer needs both rawUntil and
+  `unknownChars: 'reject'`. See `packages/compiler/src/emit/v2/span.ts:1067`
+  for the comment.
 - ~~`nonEmpty` failure path does not update `state.maxOff` to the deepest
   reached position.~~
   **Status: Resolved (no-op, 2026-05-29).** Stale claim. The code has
@@ -127,11 +132,14 @@ Eligibility today:
 
 ### Phase 5 follow-ups (deferrable)
 
-- **Allocation profile not verified programmatically.** The Phase-5 master-plan
-  exit gate calls for `node --prof` traces showing no captures-object
-  allocation on the fused html path. Phase 5's actual exit gate is the
-  round-trip correctness theorem (5.4), which is green; the perf-profile
-  check is a follow-up task once a profile-friendly bench harness exists.
+- **Allocation profile not verified programmatically.**
+  **Status: Accepted as documented constraint (2026-05-30 triage).** The
+  Phase-5 master-plan exit gate calls for `node --prof` traces showing no
+  captures-object allocation on the fused html path. Phase 5's actual exit
+  gate is the round-trip correctness theorem (5.4), which is green; the
+  perf-profile check requires a profile-friendly bench harness that doesn't
+  exist yet. Deferred until that tooling investment is warranted by a
+  perf regression signal.
 - **`stopBefore` in fused repeats — Resolved** (post-session-5). The fused
   loop now emits the captures-path `emitStopBeforeCheck` (exported from
   `emit/v2/span.ts`) at the top of each iteration, byte-bucketed by first
@@ -148,9 +156,25 @@ Eligibility today:
   repeats with stopBefore fuses and exits early'`. 14 newly-fused html
   productions in `_generated/parser.ts` after the change. Golden SHA256s
   bumped for all five in-scope packages (cron also recompiled to align).
-- **`isAbsentAllowedSpan` / `repeatsJoinSeparator` helpers** are duplicated
+- ~~**`isAbsentAllowedSpan` / `repeatsJoinSeparator` helpers** are duplicated
   verbatim between `emit/render.ts` and `emit/v2/fusion.ts`. Extract to a
-  shared `emit/span-helpers.ts` to remove the drift risk. Optional.
+  shared `emit/span-helpers.ts` to remove the drift risk. Optional.~~
+  **Status: Resolved (2026-05-30).** Extracted to neutral
+  `packages/compiler/src/span-helpers.ts` (top-level so both `emit/` and
+  `interp/` can import without layering inversion). Five call-sites unified:
+  `emit/render.ts`, `emit/v2/fusion.ts`, `emit/bytecode/encoder.ts`
+  (was `findSpanByNameLocal`), `interp/render.ts`, `interp/stringify.ts`.
+  Two helper variants exported: `repeatsJoinDescriptor` (full
+  `RepeatsDescriptor` form with `kind:'indent'` — used by `emit/render.ts`)
+  and `repeatsJoinSeparator` (simpler `string | null` form — used by
+  `emit/v2/fusion.ts` and `interp/render.ts`). The two variants preserve
+  the pre-existing drift: indent-modified repeats render only through the
+  captures-path TS emitter; fused-path and interp render with a flat space.
+  Closing that gap is tracked as Phase 7 follow-up #1, separately. Pure
+  refactor — SHA goldens unchanged, all five package suites still pass at
+  the baseline (compiler 391/391, parser 82/82, css 77+1skip, html 34/34,
+  markdown 76/76, yaml-block 15/15, cron 11/14 with the same 3 pre-existing
+  user WIP failures).
 - **Multi-prod root fusion.** `__rootProductionKey` is fixed to
   `<rootType>#0`. None of css/html/markdown have a multi-prod root; future
   schemas with one will fall back to captures (still correct, just not
@@ -262,6 +286,69 @@ production-quality cron parser.
    requires a template-inverse opcode set (literal-segment scanner inside
    the bytecode runtime).
 
+   **Design notes for next-session implementation (captured 2026-05-30).**
+
+   _Reference algorithm:_ `packages/compiler/src/interp/stringify.ts:walkInverseTemplate`
+   (lines ~456-527). Given a rendered string `value`, segments[], and
+   captureNames[]:
+   - Assert the value starts with `segments[0]`; bump `pos` past it.
+   - For each capture i: find `segments[i+1]` in value at pos, slice
+     `value[pos..end]` into `captures[capName]`, advance pos.
+   - Tail-optional-absent path: if the next separator is missing AND all
+     remaining captures are optional, slurp the rest into the current
+     capture and null out the trailing captures.
+   - For each capture, route through `invertSlot` — leaf captures pass
+     through `invertLeafValue`, recursive captures route through
+     `STRINGIFY_DISPATCH` (which the bytecode runtime already implements
+     for object/ref captures).
+
+   _Proposed encoding — macro opcode (recommended):_ Add a single
+   `INVERSE_TEMPLATE` opcode that takes the entire template spec inline:
+   `<num_segments u32> <segment_strpool_refs u32...> <num_captures u32>
+   <capture_strpool_refs u32...> <optional_bitfield bytes>`. The runtime
+   handler implements the walkInverseTemplate algorithm directly, calling
+   the existing `invertSlot` plumbing (via `STRINGIFY_DISPATCH` for
+   recursive captures, or just storing the value for leaves). Consistent
+   with how `STRINGIFY_DISPATCH` and `RENDER_DISPATCH` already work — the
+   complex sub-task lives in the runtime, not in opcode soup.
+
+   Alternative — fine-grained opcodes (`SCAN_LITERAL`, `SCAN_UNTIL_LITERAL`,
+   `SLICE_CAPTURE`, etc.): more "bytecode-idiomatic" but explodes the opcode
+   surface for a single use case. Defer unless multiple template-shape
+   inversions arrive.
+
+   _Encoder hook:_ `case 'template':` in `emitInverseIR`
+   (`packages/compiler/src/emit/bytecode/encoder.ts:1222`) — currently
+   throws. Wire to `emitInverseTemplate(state, ir.segments, ir.captures,
+   production)` which writes the macro opcode + operands.
+
+   _Runtime hook:_ Add the `Op.INVERSE_TEMPLATE` case in
+   `packages/compiler/src/emit/bytecode/runtime.ts`'s opcode switch. Read
+   operands per the encoding above, run the algorithm against
+   `state.valueStack` top (the rendered string), populate
+   `state.currentFrame.captures` (already initialized to `{}` by the
+   stringify block's preamble at `emitStringifyBlock:1113`).
+
+   _Test plan:_ Re-enable `target='source'` in the bytecode-equivalence
+   test (`packages/cron/test/bytecode-equivalence.test.ts`); compare
+   `bcodeBackend.stringify(tsAst, { type: 'source' })` against
+   `tsBackend.stringify(tsAst, { type: 'source' })` for the existing
+   EXAMPLES set. Inverse round-trip through `'* * * * *'` and `'5 * * *
+   *'` will exercise both the tail-optional-absent path (Command
+   capture) and the recursive captures path (each cron-field is a
+   recursive child capture).
+
+   _Effort estimate:_ One full session — encoder (~40 LOC), runtime
+   handler (~80 LOC including invertSlot routing), test re-enable,
+   golden bump on cron. The bulk is getting the runtime handler's
+   recursive-capture dispatch correct against the existing
+   `STRINGIFY_DISPATCH` calling convention.
+
+   **Status: Deferred to next session.** Phase-sized item; not blocking
+   any in-repo schema. Cron's `'source'` round-trip works correctly via
+   the TS backend; bytecode `'source'` target is exercised via `render`
+   but not `stringify`.
+
 4. **Bytecode perf budget gap: 15–25× vs 2× target.** Structural cost of
    generic `switch`-based opcode dispatch. Specific to small grammars where
    the JIT cannot fold polymorphic type checks. Fix would require
@@ -293,11 +380,19 @@ production-quality cron parser.
    (a feature cron doesn't use), the dispatch block would leak orphan
    captures on the value stack. Documented as a TODO in `emitRecursiveSpan`
    (`packages/compiler/src/emit/bytecode/encoder.ts` ~line 458).
+   **Status: Accepted as documented constraint (2026-05-30 triage).** No
+   in-scope schema combines bytecode + multi-role recursive spans.
+   Closing would require writing a test schema first (blind work).
+   Deferred until a real consumer emerges.
 
 8. **Repeats separator hardcoded to single space.** Per-span
    `.repeats({ sep })` plumbing not yet wired through bytecode `CONCAT_N`
    opcode. Cron's `.repeats({ min: 1 })` uses default whitespace, so this
    doesn't bite cron but other schemas may need it.
+   **Status: Accepted as documented constraint (2026-05-30 triage).**
+   Closing would require a new `JOIN_ARRAY` opcode (taking a string-pool
+   sep index) OR pre-joining before `CONCAT_N`. No in-scope bytecode-tested
+   schema uses a non-default sep. Deferred until a real consumer emerges.
 
 9. **`syntaxErrorAt` is duplicated** between
    `packages/compiler/src/emit/v2/runtime.ts` (embedded in the TS backend's

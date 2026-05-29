@@ -501,116 +501,116 @@ function parseYamlBlock(state: State): unknown {
 
 const __defaultTarget: string | undefined = undefined;
 
-function __build_YamlScalar_0_ast(captures: any): any {
-  return __renderSlot_ast(captures.value);
+function __build_YamlScalar_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.value, __indentCol);
 }
 
-function __build_YamlScalar_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.value) ?? ""));
+function __build_YamlScalar_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.value, __indentCol) ?? ""));
 }
 
-function __build_YamlMappingEntry_0_ast(captures: any): any {
-  return { type: "entry", key: __renderSlot_ast(captures.key), value: __renderSlot_ast(captures.value) };
+function __build_YamlMappingEntry_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "entry", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_YamlMappingEntry_0_source(captures: any): any {
-  return (__renderSlot_source(captures.key) ?? "") + ": " + (__renderSlot_source(captures.value) ?? "");
+function __build_YamlMappingEntry_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.key, __indentCol) ?? "") + ": " + (__renderSlot_source(captures.value, __indentCol) ?? "");
 }
 
-function __build_YamlMapping_0_ast(captures: any): any {
-  return { type: "mapping", entries: __renderSlot_ast(captures.entries) };
+function __build_YamlMapping_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) };
 }
 
-function __build_YamlMapping_0_source(captures: any): any {
-  return String((Array.isArray(captures.entries) ? captures.entries.map(__renderSlot_source).join("\n") : (__renderSlot_source(captures.entries) ?? "")));
+function __build_YamlMapping_0_source(captures: any, __indentCol: number = 0): any {
+  return String((Array.isArray(captures.entries) ? (__indentCol > 0 ? "\n" + " ".repeat(__indentCol) : "") + captures.entries.map((c: any) => __renderSlot_source(c, (__indentCol + 2))).join(("\n" + " ".repeat(__indentCol))) : (__renderSlot_source(captures.entries, (__indentCol + 2)) ?? "")));
 }
 
-function __build_YamlSequenceItem_0_ast(captures: any): any {
-  return { type: "item", value: __renderSlot_ast(captures.value) };
+function __build_YamlSequenceItem_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "item", value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_YamlSequenceItem_0_source(captures: any): any {
-  return "- " + (__renderSlot_source(captures.value) ?? "");
+function __build_YamlSequenceItem_0_source(captures: any, __indentCol: number = 0): any {
+  return "- " + (__renderSlot_source(captures.value, __indentCol) ?? "");
 }
 
-function __build_YamlSequence_0_ast(captures: any): any {
-  return { type: "sequence", items: __renderSlot_ast(captures.items) };
+function __build_YamlSequence_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) };
 }
 
-function __build_YamlSequence_0_source(captures: any): any {
-  return String((Array.isArray(captures.items) ? captures.items.map(__renderSlot_source).join("\n") : (__renderSlot_source(captures.items) ?? "")));
+function __build_YamlSequence_0_source(captures: any, __indentCol: number = 0): any {
+  return String((Array.isArray(captures.items) ? (__indentCol > 0 ? "\n" + " ".repeat(__indentCol) : "") + captures.items.map((c: any) => __renderSlot_source(c, (__indentCol + 2))).join(("\n" + " ".repeat(__indentCol))) : (__renderSlot_source(captures.items, (__indentCol + 2)) ?? "")));
 }
 
-function __build_YamlNode_0_ast(captures: any): any {
-  return __renderSlot_ast(captures.node);
+function __build_YamlNode_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.node, __indentCol);
 }
 
-function __build_YamlNode_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.node) ?? ""));
+function __build_YamlNode_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.node, __indentCol) ?? ""));
 }
 
-function __build_YamlBlock_0_ast(captures: any): any {
-  return __renderSlot_ast(captures.root);
+function __build_YamlBlock_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.root, __indentCol);
 }
 
-function __build_YamlBlock_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.root) ?? ""));
+function __build_YamlBlock_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.root, __indentCol) ?? ""));
 }
 
-function __dispatchRender_ast(captures: any): any {
+function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
-    case "YamlScalar#0": return __build_YamlScalar_0_ast(captures);
-    case "YamlMappingEntry#0": return __build_YamlMappingEntry_0_ast(captures);
-    case "YamlMapping#0": return __build_YamlMapping_0_ast(captures);
-    case "YamlSequenceItem#0": return __build_YamlSequenceItem_0_ast(captures);
-    case "YamlSequence#0": return __build_YamlSequence_0_ast(captures);
-    case "YamlNode#0": return __build_YamlNode_0_ast(captures);
-    case "YamlBlock#0": return __build_YamlBlock_0_ast(captures);
+    case "YamlScalar#0": return __build_YamlScalar_0_ast(captures, __indentCol);
+    case "YamlMappingEntry#0": return __build_YamlMappingEntry_0_ast(captures, __indentCol);
+    case "YamlMapping#0": return __build_YamlMapping_0_ast(captures, __indentCol);
+    case "YamlSequenceItem#0": return __build_YamlSequenceItem_0_ast(captures, __indentCol);
+    case "YamlSequence#0": return __build_YamlSequence_0_ast(captures, __indentCol);
+    case "YamlNode#0": return __build_YamlNode_0_ast(captures, __indentCol);
+    case "YamlBlock#0": return __build_YamlBlock_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchRender_source(captures: any): any {
+function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
-    case "YamlScalar#0": return __build_YamlScalar_0_source(captures);
-    case "YamlMappingEntry#0": return __build_YamlMappingEntry_0_source(captures);
-    case "YamlMapping#0": return __build_YamlMapping_0_source(captures);
-    case "YamlSequenceItem#0": return __build_YamlSequenceItem_0_source(captures);
-    case "YamlSequence#0": return __build_YamlSequence_0_source(captures);
-    case "YamlNode#0": return __build_YamlNode_0_source(captures);
-    case "YamlBlock#0": return __build_YamlBlock_0_source(captures);
+    case "YamlScalar#0": return __build_YamlScalar_0_source(captures, __indentCol);
+    case "YamlMappingEntry#0": return __build_YamlMappingEntry_0_source(captures, __indentCol);
+    case "YamlMapping#0": return __build_YamlMapping_0_source(captures, __indentCol);
+    case "YamlSequenceItem#0": return __build_YamlSequenceItem_0_source(captures, __indentCol);
+    case "YamlSequence#0": return __build_YamlSequence_0_source(captures, __indentCol);
+    case "YamlNode#0": return __build_YamlNode_0_source(captures, __indentCol);
+    case "YamlBlock#0": return __build_YamlBlock_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __renderSlot_ast(v: any): any {
+function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_ast(v);
+    return __dispatchRender_ast(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_source(v: any): any {
+function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_source(v);
+    return __dispatchRender_source(v, __indentCol);
   }
   return v;
 }
@@ -1388,661 +1388,8 @@ function __fusedRender_YamlScalar_0_source(state: State, out: string[]): boolean
   return __ok === true;
 }
 
-function __fusedRender_YamlMappingEntry_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    const __key_start = off;
-    off++;
-    while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-    const __key_end = off;
-    const key = input.slice(__key_start, __key_end);
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 1;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (input.charCodeAt(off) === 32) { off += 1; }
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_value: string[] = [];
-    let __slotMatched_value = false;
-    // recursive span (YamlMapping, YamlSequence, YamlScalar) — fused dispatch
-    {
-      const __offBefore = off;
-      state.pos = off;
-      if (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlMapping_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlSequence_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlScalar_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-      }
-      if (!__slotMatched_value) __slotBuf_value.length = 0;
-      if (!__slotMatched_value) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push(String(key ?? ""));
-    out.push(": ");
-    for (let __i = 0; __i < __slotBuf_value.length; __i++) out.push(__slotBuf_value[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_YamlMapping_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_entries: string[] = [];
-    let __slotMatched_entries = false;
-    // recursive repeats span (YamlMappingEntry) — fused loop
-    {
-      let __count = 0;
-      while (true) {
-        const __loopStart = off;
-        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-        const __bufLenBefore = __slotBuf_entries.length;
-        const __offBeforeItem = off;
-        state.pos = off;
-        let __itemMatched = false;
-        if (__count > 0) __slotBuf_entries.push(" ");
-        if (off < len) {
-          const __c0 = input.charCodeAt(off);
-          if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 65) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 66) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 67) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 68) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 69) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 70) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 71) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 72) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 73) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 74) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 75) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 76) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 77) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 78) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 79) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 80) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 81) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 82) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 83) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 84) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 85) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 86) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 87) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 88) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 89) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 90) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 95) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 97) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 98) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 99) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 100) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 101) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 102) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 103) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 104) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 105) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 106) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 107) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 108) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 109) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 110) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 111) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 112) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 113) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 114) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 115) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 116) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 117) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 118) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 119) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 120) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 121) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-          else if (__c0 === 122) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_entries.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlMappingEntry_0_source(state, __slotBuf_entries)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-        }
-        if (!__itemMatched) {
-          __slotBuf_entries.length = __bufLenBefore;
-          off = __offBeforeItem;
-          state.pos = __offBeforeItem;
-          break;
-        }
-        __count++;
-        __slotMatched_entries = true;
-        if (off === __loopStart) break;
-      }
-      if (__count < 1) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    for (let __i = 0; __i < __slotBuf_entries.length; __i++) out.push(__slotBuf_entries[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_YamlSequenceItem_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 2;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_value: string[] = [];
-    let __slotMatched_value = false;
-    // recursive span (YamlMapping, YamlSequence, YamlScalar) — fused dispatch
-    {
-      const __offBefore = off;
-      state.pos = off;
-      if (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlMapping_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlSequence_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-        if (!__slotMatched_value) {
-          state.pos = __offBefore;
-          __slotBuf_value.length = 0;
-          if (__fusedRender_YamlScalar_0_source(state, __slotBuf_value)) { __slotMatched_value = true; off = state.pos; }
-        }
-      }
-      if (!__slotMatched_value) __slotBuf_value.length = 0;
-      if (!__slotMatched_value) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push("- ");
-    for (let __i = 0; __i < __slotBuf_value.length; __i++) out.push(__slotBuf_value[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_YamlSequence_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_items: string[] = [];
-    let __slotMatched_items = false;
-    // recursive repeats span (YamlSequenceItem) — fused loop
-    {
-      let __count = 0;
-      while (true) {
-        const __loopStart = off;
-        while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-        const __bufLenBefore = __slotBuf_items.length;
-        const __offBeforeItem = off;
-        state.pos = off;
-        let __itemMatched = false;
-        if (__count > 0) __slotBuf_items.push(" ");
-        if (off < len) {
-          const __c0 = input.charCodeAt(off);
-          if (__c0 === 45) {
-            if (!__itemMatched) {
-              state.pos = __offBeforeItem;
-              __slotBuf_items.length = __bufLenBefore + (__count > 0 ? 1 : 0);
-              if (__fusedRender_YamlSequenceItem_0_source(state, __slotBuf_items)) { __itemMatched = true; off = state.pos; }
-            }
-          }
-        }
-        if (!__itemMatched) {
-          __slotBuf_items.length = __bufLenBefore;
-          off = __offBeforeItem;
-          state.pos = __offBeforeItem;
-          break;
-        }
-        __count++;
-        __slotMatched_items = true;
-        if (off === __loopStart) break;
-      }
-      if (__count < 1) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    for (let __i = 0; __i < __slotBuf_items.length; __i++) out.push(__slotBuf_items[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_YamlNode_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_node: string[] = [];
-    let __slotMatched_node = false;
-    // recursive span (YamlMapping, YamlSequence, YamlScalar) — fused dispatch
-    {
-      const __offBefore = off;
-      state.pos = off;
-      if (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (!__slotMatched_node) {
-          state.pos = __offBefore;
-          __slotBuf_node.length = 0;
-          if (__fusedRender_YamlMapping_0_source(state, __slotBuf_node)) { __slotMatched_node = true; off = state.pos; }
-        }
-        if (!__slotMatched_node) {
-          state.pos = __offBefore;
-          __slotBuf_node.length = 0;
-          if (__fusedRender_YamlSequence_0_source(state, __slotBuf_node)) { __slotMatched_node = true; off = state.pos; }
-        }
-        if (!__slotMatched_node) {
-          state.pos = __offBefore;
-          __slotBuf_node.length = 0;
-          if (__fusedRender_YamlScalar_0_source(state, __slotBuf_node)) { __slotMatched_node = true; off = state.pos; }
-        }
-      }
-      if (!__slotMatched_node) __slotBuf_node.length = 0;
-      if (!__slotMatched_node) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    for (let __i = 0; __i < __slotBuf_node.length; __i++) out.push(__slotBuf_node[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_YamlBlock_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_root: string[] = [];
-    let __slotMatched_root = false;
-    // recursive span (YamlNode) — fused dispatch
-    {
-      const __offBefore = off;
-      state.pos = off;
-      if (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (!__slotMatched_root) {
-          state.pos = __offBefore;
-          __slotBuf_root.length = 0;
-          if (__fusedRender_YamlNode_0_source(state, __slotBuf_root)) { __slotMatched_root = true; off = state.pos; }
-        }
-      }
-      if (!__slotMatched_root) __slotBuf_root.length = 0;
-      if (!__slotMatched_root) { state.pos = entryOff; return null; }
-    }
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    for (let __i = 0; __i < __slotBuf_root.length; __i++) out.push(__slotBuf_root[__i]);
-    return true;
-  })();
-  return __ok === true;
-}
-
 const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
   "YamlScalar#0": __fusedRender_YamlScalar_0_source,
-  "YamlMappingEntry#0": __fusedRender_YamlMappingEntry_0_source,
-  "YamlMapping#0": __fusedRender_YamlMapping_0_source,
-  "YamlSequenceItem#0": __fusedRender_YamlSequenceItem_0_source,
-  "YamlSequence#0": __fusedRender_YamlSequence_0_source,
-  "YamlNode#0": __fusedRender_YamlNode_0_source,
-  "YamlBlock#0": __fusedRender_YamlBlock_0_source,
 };
 
 const __rootProductionKey: string = "YamlBlock#0";

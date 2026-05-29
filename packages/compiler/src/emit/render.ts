@@ -30,6 +30,7 @@
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
 import { syntheticKey } from './captures.ts';
+import { INDENT_STEP_SPACES } from './rebuild.ts';
 import { jsString } from './strings.ts';
 
 export function emitRender(schema: InferredSchema): string {
@@ -95,7 +96,15 @@ function emitBuilder(
 ): string {
   const fnName = builderName(nodeName, prodIdx, target);
   const expr = emitBodyExpr(body, target, production);
-  return `function ${fnName}(captures: any): any {
+  // `__indentCol` is the column at which THIS production's indent-modified
+  // children's join lands. Default 0 keeps top-level entry points (the
+  // public `render()` wrapper, the dispatcher, the dispatch table) calling
+  // builders without an explicit indent. Non-indent productions ignore the
+  // parameter; indent-modified productions use it to compute the dynamic
+  // join separator and leading prefix for their indent slot (mirrors the
+  // inverse rebuild pattern in emit/rebuild.ts — Task 7.7b — for the
+  // forward direction).
+  return `function ${fnName}(captures: any, __indentCol: number = 0): any {
   return ${expr};
 }`;
 }
@@ -129,8 +138,11 @@ function emitRefExpr(ref: StructureRef, target: string): string {
   // span-value may reference a recursive child or array of children. Route
   // it through __renderSlot_<target> so the dispatcher recurses (and so
   // arrays of children get per-child dispatch + target-specific joining).
+  // Pass `__indentCol` through unchanged — a bare span-value reference is
+  // not itself joined by an indent separator; it just unwraps a recursive
+  // child at the current column.
   if (ref.__ref === 'span-value') {
-    return `__renderSlot_${jsIdent(target)}(${access})`;
+    return `__renderSlot_${jsIdent(target)}(${access}, __indentCol)`;
   }
   return access;
 }
@@ -182,14 +194,35 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
       const repeats = span !== undefined ? repeatsJoinSeparator(span) : null;
       let slotExpr: string;
       if (repeats !== null) {
-        // Array-of-children slot: per-child dispatch then join with the
-        // span-declared separator. Fall back to the scalar path when the
-        // capture isn't actually an array (e.g. .repeats({min:0}) with a
-        // single child or a non-array sentinel).
-        const sepLit = jsString(repeats);
-        slotExpr = `(Array.isArray(${access}) ? ${access}.map(__renderSlot_${targetId}).join(${sepLit}) : (__renderSlot_${targetId}(${access}) ?? ""))`;
+        if (repeats.isIndent) {
+          // Indent-modified repeats span: dynamic per-level join + leading
+          // prefix when nested. Mirrors the inverse rebuild pattern in
+          // emit/rebuild.ts (Task 7.7b) for the forward direction. The
+          // children render at __indentCol + INDENT_STEP_SPACES — they need
+          // to know the column at which THEIR indent children will land if
+          // they themselves contain indent spans.
+          const childCol = `(__indentCol + ${INDENT_STEP_SPACES})`;
+          const joinExpr = `("\\n" + " ".repeat(__indentCol))`;
+          const leadingExpr = `(__indentCol > 0 ? "\\n" + " ".repeat(__indentCol) : "")`;
+          slotExpr =
+            `(Array.isArray(${access})`
+            + ` ? ${leadingExpr} + ${access}.map((c: any) => __renderSlot_${targetId}(c, ${childCol})).join(${joinExpr})`
+            + ` : (__renderSlot_${targetId}(${access}, ${childCol}) ?? ""))`;
+        } else {
+          // Array-of-children slot: per-child dispatch then join with the
+          // span-declared separator. Fall back to the scalar path when the
+          // capture isn't actually an array (e.g. .repeats({min:0}) with a
+          // single child or a non-array sentinel). Non-indent slots pass
+          // __indentCol unchanged so a child production that DOES have an
+          // indent slot still receives the correct ambient column.
+          const sepLit = jsString(repeats.sep);
+          slotExpr =
+            `(Array.isArray(${access})`
+            + ` ? ${access}.map((c: any) => __renderSlot_${targetId}(c, __indentCol)).join(${sepLit})`
+            + ` : (__renderSlot_${targetId}(${access}, __indentCol) ?? ""))`;
+        }
       } else {
-        slotExpr = `(__renderSlot_${targetId}(${access}) ?? "")`;
+        slotExpr = `(__renderSlot_${targetId}(${access}, __indentCol) ?? "")`;
       }
       pieces.push({ kind: 'slot', text: slotExpr, optional, access });
     }
@@ -249,32 +282,31 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
   return false;
 }
 
-// Returns the per-array join separator if the span is `.repeats(...)`, or
+// Returns a descriptor `{ sep, isIndent }` for `.repeats(...)` spans, or
 // null when the span doesn't repeat. Mirrors the rebuild-side
 // `joinSeparatorOf` in emit/rebuild.ts and the interpreter's stringify
 // equivalent — keep all three in lockstep.
 //
 // Priority:
-//   1. Indent-modified repeats span → '\n' (structural line break between
-//      siblings in the indented block). The FORWARD render path (parse →
-//      source) uses this for the source target. Per-level indentation
-//      padding is not available here because the forward render templates
-//      don't carry an indentCol context — the source target's forward
-//      render is an approximation that joins at column 0. The INVERSE
-//      stringify path (emit/rebuild.ts + emit/inverse.ts) does carry per-
-//      level indentCol threading (Task 7.7b) and produces correctly
-//      indented output.
+//   1. Indent-modified repeats span → callers compose a dynamic per-level
+//      join expression `'\n' + ' '.repeat(__indentCol)` plus a leading
+//      prefix when `__indentCol > 0`. The static `sep` field is unused
+//      when `isIndent` is true (the caller builds the join inline). Task
+//      7.7b added this threading on the inverse side; Phase 7 follow-up #1
+//      ports it to the forward side so `render(input, {target:'source'})`
+//      produces correctly indented multi-line output for indent-modified
+//      schemas (e.g. yaml-block nested mappings/sequences).
 //   2. `.repeats({ sep })` → declared inter-child separator that the parser
 //      consumed between children — children's rebuilt source carries only
 //      their own content, so we re-introduce the declared separator here.
 //   3. `.repeats()` without `sep` → schema-level whitespace policy (single
 //      space) between children.
-function repeatsJoinSeparator(span: ResolvedSpan): string | null {
+function repeatsJoinSeparator(span: ResolvedSpan): { sep: string; isIndent: boolean } | null {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      if (hasIndent) return '\n';
-      return m.sep === undefined ? ' ' : m.sep;
+      if (hasIndent) return { sep: '\n', isIndent: true };
+      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
     }
   }
   return null;
@@ -290,11 +322,11 @@ function emitDispatcher(target: string, nodeTypes: ReadonlyArray<NodeTypeInfo>):
     for (let i = 0; i < info.productions.length; i++) {
       const key = productionKey(info.name, i);
       const fn = builderName(info.name, i, target);
-      cases.push(`    case ${jsString(key)}: return ${fn}(captures);`);
+      cases.push(`    case ${jsString(key)}: return ${fn}(captures, __indentCol);`);
     }
   }
   const id = jsIdent(target);
-  return `function __dispatchRender_${id}(captures: any): any {
+  return `function __dispatchRender_${id}(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target '${target}')");
   }
@@ -314,15 +346,20 @@ function emitRenderSlotHelper(target: string): string {
   // Distinguishing string vs structured targets here would require a
   // target-shape compile-time decision; for now we ALWAYS preserve the
   // value type (arrays stay arrays unless joined by surrounding concat).
-  return `function __renderSlot_${id}(v: any): any {
+  //
+  // `__indentCol` is threaded through to the dispatcher (and to recursive
+  // self-calls on arrays) so indent-modified builders downstream can
+  // compute their per-level join and leading prefix. Default 0 keeps
+  // legacy non-indent call sites unchanged.
+  return `function __renderSlot_${id}(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_${id}(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_${id}(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_${id}(v);
+    return __dispatchRender_${id}(v, __indentCol);
   }
   return v;
 }`;

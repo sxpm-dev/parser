@@ -1865,306 +1865,306 @@ state.pos = off;
 
 const __defaultTarget: string | undefined = undefined;
 
-function __build_HtmlDocument_0_ast(captures: any): any {
-  return { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlDocument_0_ast(captures: any, __indentCol: number = 0): any {
+  return { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlDocument_0_source(captures: any): any {
-  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))));
+function __build_HtmlDocument_0_source(captures: any, __indentCol: number = 0): any {
+  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))));
 }
 
-function __build_Doctype_0_ast(captures: any): any {
-  return { _kind: "doctype", _keyword: __renderSlot_ast(captures.keyword), nodeName: "#documentType", name: __renderSlot_ast(captures.name), publicId: "", systemId: "", parentNode: null };
+function __build_Doctype_0_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "doctype", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null };
 }
 
-function __build_Doctype_0_source(captures: any): any {
-  return "<!" + (__renderSlot_source(captures.keyword) ?? "") + " " + (__renderSlot_source(captures.name) ?? "") + ">";
+function __build_Doctype_0_source(captures: any, __indentCol: number = 0): any {
+  return "<!" + (__renderSlot_source(captures.keyword, __indentCol) ?? "") + " " + (__renderSlot_source(captures.name, __indentCol) ?? "") + ">";
 }
 
-function __build_Doctype_1_ast(captures: any): any {
-  return { _kind: "doctype-incomplete", _keyword: __renderSlot_ast(captures.keyword), nodeName: "#documentType", name: __renderSlot_ast(captures.name), publicId: "", systemId: "", parentNode: null };
+function __build_Doctype_1_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "doctype-incomplete", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null };
 }
 
-function __build_Doctype_1_source(captures: any): any {
-  return "<!" + (__renderSlot_source(captures.keyword) ?? "") + " " + (__renderSlot_source(captures.name) ?? "");
+function __build_Doctype_1_source(captures: any, __indentCol: number = 0): any {
+  return "<!" + (__renderSlot_source(captures.keyword, __indentCol) ?? "") + " " + (__renderSlot_source(captures.name, __indentCol) ?? "");
 }
 
-function __build_Comment_0_ast(captures: any): any {
-  return { nodeName: "#comment", data: __renderSlot_ast(captures.data), parentNode: null };
+function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
+  return { nodeName: "#comment", data: __renderSlot_ast(captures.data, __indentCol), parentNode: null };
 }
 
-function __build_Comment_0_source(captures: any): any {
-  return "<!--" + (__renderSlot_source(captures.data) ?? "") + "-->";
+function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
+  return "<!--" + (__renderSlot_source(captures.data, __indentCol) ?? "") + "-->";
 }
 
-function __build_HtmlElement_0_ast(captures: any): any {
-  return { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag), nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children), parentNode: null }], parentNode: null };
+function __build_HtmlElement_0_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null };
 }
 
-function __build_HtmlElement_0_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (__renderSlot_source(captures.children) ?? "") + "</" + (__renderSlot_source(captures.closeTag) ?? "") + ">";
+function __build_HtmlElement_0_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (__renderSlot_source(captures.children, __indentCol) ?? "") + "</" + (__renderSlot_source(captures.closeTag, __indentCol) ?? "") + ">";
 }
 
-function __build_HtmlElement_1_ast(captures: any): any {
-  return { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: [], parentNode: null };
+function __build_HtmlElement_1_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
 }
 
-function __build_HtmlElement_1_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">";
+function __build_HtmlElement_1_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">";
 }
 
-function __build_HtmlElement_2_ast(captures: any): any {
-  return { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: [], parentNode: null };
+function __build_HtmlElement_2_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
 }
 
-function __build_HtmlElement_2_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + " />";
+function __build_HtmlElement_2_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + " />";
 }
 
-function __build_HtmlElement_3_ast(captures: any): any {
-  return { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: [], parentNode: null };
+function __build_HtmlElement_3_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
 }
 
-function __build_HtmlElement_3_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + "/>";
+function __build_HtmlElement_3_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + "/>";
 }
 
-function __build_HtmlElement_4_ast(captures: any): any {
-  return { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_4_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_4_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</li>";
+function __build_HtmlElement_4_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</li>";
 }
 
-function __build_HtmlElement_5_ast(captures: any): any {
-  return { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_5_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_5_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</dt>";
+function __build_HtmlElement_5_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</dt>";
 }
 
-function __build_HtmlElement_6_ast(captures: any): any {
-  return { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_6_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_6_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</tr>";
+function __build_HtmlElement_6_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</tr>";
 }
 
-function __build_HtmlElement_7_ast(captures: any): any {
-  return { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_7_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_7_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</td>";
+function __build_HtmlElement_7_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</td>";
 }
 
-function __build_HtmlElement_8_ast(captures: any): any {
-  return { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_8_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_8_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</p>";
+function __build_HtmlElement_8_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</p>";
 }
 
-function __build_HtmlElement_9_ast(captures: any): any {
-  return { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_9_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_9_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</option>";
+function __build_HtmlElement_9_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</option>";
 }
 
-function __build_HtmlElement_10_ast(captures: any): any {
-  return { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_10_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_10_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</html>";
+function __build_HtmlElement_10_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</html>";
 }
 
-function __build_HtmlElement_11_ast(captures: any): any {
-  return { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_11_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_11_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</head>";
+function __build_HtmlElement_11_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</head>";
 }
 
-function __build_HtmlElement_12_ast(captures: any): any {
-  return { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_12_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_12_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</tbody>";
+function __build_HtmlElement_12_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</tbody>";
 }
 
-function __build_HtmlElement_13_ast(captures: any): any {
-  return { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_13_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_13_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</thead>";
+function __build_HtmlElement_13_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</thead>";
 }
 
-function __build_HtmlElement_14_ast(captures: any): any {
-  return { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_14_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_14_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</tfoot>";
+function __build_HtmlElement_14_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</tfoot>";
 }
 
-function __build_HtmlElement_15_ast(captures: any): any {
-  return { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_15_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_15_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</body>";
+function __build_HtmlElement_15_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</body>";
 }
 
-function __build_HtmlElement_16_ast(captures: any): any {
-  return { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag), nodeName: __renderSlot_ast(captures.tag), tagName: __renderSlot_ast(captures.tag), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs), childNodes: __renderSlot_ast(captures.children), parentNode: null };
+function __build_HtmlElement_16_ast(captures: any, __indentCol: number = 0): any {
+  return { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
 }
 
-function __build_HtmlElement_16_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))) + "</" + (__renderSlot_source(captures.closeTag) ?? "") + ">";
+function __build_HtmlElement_16_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))) + "</" + (__renderSlot_source(captures.closeTag, __indentCol) ?? "") + ">";
 }
 
-function __build_TextNode_0_ast(captures: any): any {
-  return { nodeName: "#text", value: __renderSlot_ast(captures.value), parentNode: null };
+function __build_TextNode_0_ast(captures: any, __indentCol: number = 0): any {
+  return { nodeName: "#text", value: __renderSlot_ast(captures.value, __indentCol), parentNode: null };
 }
 
-function __build_TextNode_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.value) ?? ""));
+function __build_TextNode_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.value, __indentCol) ?? ""));
 }
 
-function __build_Attribute_0_ast(captures: any): any {
-  return { _quote: "double", name: __renderSlot_ast(captures.name), value: __renderSlot_ast(captures.value) };
+function __build_Attribute_0_ast(captures: any, __indentCol: number = 0): any {
+  return { _quote: "double", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_Attribute_0_source(captures: any): any {
-  return (__renderSlot_source(captures.name) ?? "") + "=\"" + (__renderSlot_source(captures.value) ?? "") + "\"";
+function __build_Attribute_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.name, __indentCol) ?? "") + "=\"" + (__renderSlot_source(captures.value, __indentCol) ?? "") + "\"";
 }
 
-function __build_Attribute_1_ast(captures: any): any {
-  return { _quote: "single", name: __renderSlot_ast(captures.name), value: __renderSlot_ast(captures.value) };
+function __build_Attribute_1_ast(captures: any, __indentCol: number = 0): any {
+  return { _quote: "single", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_Attribute_1_source(captures: any): any {
-  return (__renderSlot_source(captures.name) ?? "") + "='" + (__renderSlot_source(captures.value) ?? "") + "'";
+function __build_Attribute_1_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.name, __indentCol) ?? "") + "='" + (__renderSlot_source(captures.value, __indentCol) ?? "") + "'";
 }
 
-function __build_Attribute_2_ast(captures: any): any {
-  return { _quote: "none", name: __renderSlot_ast(captures.name), value: __renderSlot_ast(captures.value) };
+function __build_Attribute_2_ast(captures: any, __indentCol: number = 0): any {
+  return { _quote: "none", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_Attribute_2_source(captures: any): any {
-  return (__renderSlot_source(captures.name) ?? "") + "=" + (__renderSlot_source(captures.value) ?? "");
+function __build_Attribute_2_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.name, __indentCol) ?? "") + "=" + (__renderSlot_source(captures.value, __indentCol) ?? "");
 }
 
-function __build_Attribute_3_ast(captures: any): any {
-  return { name: __renderSlot_ast(captures.name), value: "" };
+function __build_Attribute_3_ast(captures: any, __indentCol: number = 0): any {
+  return { name: __renderSlot_ast(captures.name, __indentCol), value: "" };
 }
 
-function __build_Attribute_3_source(captures: any): any {
-  return String((__renderSlot_source(captures.name) ?? ""));
+function __build_Attribute_3_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.name, __indentCol) ?? ""));
 }
 
-function __dispatchRender_ast(captures: any): any {
+function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
-    case "HtmlDocument#0": return __build_HtmlDocument_0_ast(captures);
-    case "Doctype#0": return __build_Doctype_0_ast(captures);
-    case "Doctype#1": return __build_Doctype_1_ast(captures);
-    case "Comment#0": return __build_Comment_0_ast(captures);
-    case "HtmlElement#0": return __build_HtmlElement_0_ast(captures);
-    case "HtmlElement#1": return __build_HtmlElement_1_ast(captures);
-    case "HtmlElement#2": return __build_HtmlElement_2_ast(captures);
-    case "HtmlElement#3": return __build_HtmlElement_3_ast(captures);
-    case "HtmlElement#4": return __build_HtmlElement_4_ast(captures);
-    case "HtmlElement#5": return __build_HtmlElement_5_ast(captures);
-    case "HtmlElement#6": return __build_HtmlElement_6_ast(captures);
-    case "HtmlElement#7": return __build_HtmlElement_7_ast(captures);
-    case "HtmlElement#8": return __build_HtmlElement_8_ast(captures);
-    case "HtmlElement#9": return __build_HtmlElement_9_ast(captures);
-    case "HtmlElement#10": return __build_HtmlElement_10_ast(captures);
-    case "HtmlElement#11": return __build_HtmlElement_11_ast(captures);
-    case "HtmlElement#12": return __build_HtmlElement_12_ast(captures);
-    case "HtmlElement#13": return __build_HtmlElement_13_ast(captures);
-    case "HtmlElement#14": return __build_HtmlElement_14_ast(captures);
-    case "HtmlElement#15": return __build_HtmlElement_15_ast(captures);
-    case "HtmlElement#16": return __build_HtmlElement_16_ast(captures);
-    case "TextNode#0": return __build_TextNode_0_ast(captures);
-    case "Attribute#0": return __build_Attribute_0_ast(captures);
-    case "Attribute#1": return __build_Attribute_1_ast(captures);
-    case "Attribute#2": return __build_Attribute_2_ast(captures);
-    case "Attribute#3": return __build_Attribute_3_ast(captures);
+    case "HtmlDocument#0": return __build_HtmlDocument_0_ast(captures, __indentCol);
+    case "Doctype#0": return __build_Doctype_0_ast(captures, __indentCol);
+    case "Doctype#1": return __build_Doctype_1_ast(captures, __indentCol);
+    case "Comment#0": return __build_Comment_0_ast(captures, __indentCol);
+    case "HtmlElement#0": return __build_HtmlElement_0_ast(captures, __indentCol);
+    case "HtmlElement#1": return __build_HtmlElement_1_ast(captures, __indentCol);
+    case "HtmlElement#2": return __build_HtmlElement_2_ast(captures, __indentCol);
+    case "HtmlElement#3": return __build_HtmlElement_3_ast(captures, __indentCol);
+    case "HtmlElement#4": return __build_HtmlElement_4_ast(captures, __indentCol);
+    case "HtmlElement#5": return __build_HtmlElement_5_ast(captures, __indentCol);
+    case "HtmlElement#6": return __build_HtmlElement_6_ast(captures, __indentCol);
+    case "HtmlElement#7": return __build_HtmlElement_7_ast(captures, __indentCol);
+    case "HtmlElement#8": return __build_HtmlElement_8_ast(captures, __indentCol);
+    case "HtmlElement#9": return __build_HtmlElement_9_ast(captures, __indentCol);
+    case "HtmlElement#10": return __build_HtmlElement_10_ast(captures, __indentCol);
+    case "HtmlElement#11": return __build_HtmlElement_11_ast(captures, __indentCol);
+    case "HtmlElement#12": return __build_HtmlElement_12_ast(captures, __indentCol);
+    case "HtmlElement#13": return __build_HtmlElement_13_ast(captures, __indentCol);
+    case "HtmlElement#14": return __build_HtmlElement_14_ast(captures, __indentCol);
+    case "HtmlElement#15": return __build_HtmlElement_15_ast(captures, __indentCol);
+    case "HtmlElement#16": return __build_HtmlElement_16_ast(captures, __indentCol);
+    case "TextNode#0": return __build_TextNode_0_ast(captures, __indentCol);
+    case "Attribute#0": return __build_Attribute_0_ast(captures, __indentCol);
+    case "Attribute#1": return __build_Attribute_1_ast(captures, __indentCol);
+    case "Attribute#2": return __build_Attribute_2_ast(captures, __indentCol);
+    case "Attribute#3": return __build_Attribute_3_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchRender_source(captures: any): any {
+function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
-    case "HtmlDocument#0": return __build_HtmlDocument_0_source(captures);
-    case "Doctype#0": return __build_Doctype_0_source(captures);
-    case "Doctype#1": return __build_Doctype_1_source(captures);
-    case "Comment#0": return __build_Comment_0_source(captures);
-    case "HtmlElement#0": return __build_HtmlElement_0_source(captures);
-    case "HtmlElement#1": return __build_HtmlElement_1_source(captures);
-    case "HtmlElement#2": return __build_HtmlElement_2_source(captures);
-    case "HtmlElement#3": return __build_HtmlElement_3_source(captures);
-    case "HtmlElement#4": return __build_HtmlElement_4_source(captures);
-    case "HtmlElement#5": return __build_HtmlElement_5_source(captures);
-    case "HtmlElement#6": return __build_HtmlElement_6_source(captures);
-    case "HtmlElement#7": return __build_HtmlElement_7_source(captures);
-    case "HtmlElement#8": return __build_HtmlElement_8_source(captures);
-    case "HtmlElement#9": return __build_HtmlElement_9_source(captures);
-    case "HtmlElement#10": return __build_HtmlElement_10_source(captures);
-    case "HtmlElement#11": return __build_HtmlElement_11_source(captures);
-    case "HtmlElement#12": return __build_HtmlElement_12_source(captures);
-    case "HtmlElement#13": return __build_HtmlElement_13_source(captures);
-    case "HtmlElement#14": return __build_HtmlElement_14_source(captures);
-    case "HtmlElement#15": return __build_HtmlElement_15_source(captures);
-    case "HtmlElement#16": return __build_HtmlElement_16_source(captures);
-    case "TextNode#0": return __build_TextNode_0_source(captures);
-    case "Attribute#0": return __build_Attribute_0_source(captures);
-    case "Attribute#1": return __build_Attribute_1_source(captures);
-    case "Attribute#2": return __build_Attribute_2_source(captures);
-    case "Attribute#3": return __build_Attribute_3_source(captures);
+    case "HtmlDocument#0": return __build_HtmlDocument_0_source(captures, __indentCol);
+    case "Doctype#0": return __build_Doctype_0_source(captures, __indentCol);
+    case "Doctype#1": return __build_Doctype_1_source(captures, __indentCol);
+    case "Comment#0": return __build_Comment_0_source(captures, __indentCol);
+    case "HtmlElement#0": return __build_HtmlElement_0_source(captures, __indentCol);
+    case "HtmlElement#1": return __build_HtmlElement_1_source(captures, __indentCol);
+    case "HtmlElement#2": return __build_HtmlElement_2_source(captures, __indentCol);
+    case "HtmlElement#3": return __build_HtmlElement_3_source(captures, __indentCol);
+    case "HtmlElement#4": return __build_HtmlElement_4_source(captures, __indentCol);
+    case "HtmlElement#5": return __build_HtmlElement_5_source(captures, __indentCol);
+    case "HtmlElement#6": return __build_HtmlElement_6_source(captures, __indentCol);
+    case "HtmlElement#7": return __build_HtmlElement_7_source(captures, __indentCol);
+    case "HtmlElement#8": return __build_HtmlElement_8_source(captures, __indentCol);
+    case "HtmlElement#9": return __build_HtmlElement_9_source(captures, __indentCol);
+    case "HtmlElement#10": return __build_HtmlElement_10_source(captures, __indentCol);
+    case "HtmlElement#11": return __build_HtmlElement_11_source(captures, __indentCol);
+    case "HtmlElement#12": return __build_HtmlElement_12_source(captures, __indentCol);
+    case "HtmlElement#13": return __build_HtmlElement_13_source(captures, __indentCol);
+    case "HtmlElement#14": return __build_HtmlElement_14_source(captures, __indentCol);
+    case "HtmlElement#15": return __build_HtmlElement_15_source(captures, __indentCol);
+    case "HtmlElement#16": return __build_HtmlElement_16_source(captures, __indentCol);
+    case "TextNode#0": return __build_TextNode_0_source(captures, __indentCol);
+    case "Attribute#0": return __build_Attribute_0_source(captures, __indentCol);
+    case "Attribute#1": return __build_Attribute_1_source(captures, __indentCol);
+    case "Attribute#2": return __build_Attribute_2_source(captures, __indentCol);
+    case "Attribute#3": return __build_Attribute_3_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __renderSlot_ast(v: any): any {
+function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_ast(v);
+    return __dispatchRender_ast(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_source(v: any): any {
+function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_source(v);
+    return __dispatchRender_source(v, __indentCol);
   }
   return v;
 }

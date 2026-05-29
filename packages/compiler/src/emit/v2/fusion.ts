@@ -199,9 +199,21 @@ function isProductionFusable(
   // whole production out of fusion until the loop emit grows a stopBefore
   // check. Same gate for any other repeats option the fused emit doesn't
   // honour yet (none today, but keep the predicate co-located).
+  //
+  // `.indent()`-modified spans are also ineligible: `emitFusedRepeatsSpan`
+  // joins children with a static separator (`' '` when no `sep` is
+  // declared), which produces flat output for indent-block schemas like
+  // yaml-block. The captures-based forward path (emit/render.ts) threads
+  // `__indentCol` and emits the correct per-level join + leading prefix
+  // (Phase 7 follow-up #1) — gating fusion here lets that path run.
   for (const span of production.spans) {
     const repeats = findSpanModifier(span, 'repeats');
     if (repeats && repeats.stopBefore && repeats.stopBefore.length > 0) {
+      inProgress.delete(key);
+      cache.set(key, false);
+      return false;
+    }
+    if (findSpanModifier(span, 'indent')) {
       inProgress.delete(key);
       cache.set(key, false);
       return false;

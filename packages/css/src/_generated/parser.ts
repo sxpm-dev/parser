@@ -2749,116 +2749,116 @@ function parseStylesheet(state: State): unknown {
 
 const __defaultTarget: string | undefined = undefined;
 
-function __build_Comment_0_ast(captures: any): any {
-  return { type: "comment", text: __renderSlot_ast(captures.text) };
+function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "comment", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_Comment_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.text) ?? ""));
+function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.text, __indentCol) ?? ""));
 }
 
-function __build_Declaration_0_ast(captures: any): any {
-  return { type: "decl", prop: __renderSlot_ast(captures.prop), value: __renderSlot_ast(captures.value), important: true, _important: __renderSlot_ast(captures.important) };
+function __build_Declaration_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol), important: true, _important: __renderSlot_ast(captures.important, __indentCol) };
 }
 
-function __build_Declaration_0_source(captures: any): any {
-  return (__renderSlot_source(captures.prop) ?? "") + ": " + (__renderSlot_source(captures.value) ?? "") + " !" + (__renderSlot_source(captures.important) ?? "") + ";";
+function __build_Declaration_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.prop, __indentCol) ?? "") + ": " + (__renderSlot_source(captures.value, __indentCol) ?? "") + " !" + (__renderSlot_source(captures.important, __indentCol) ?? "") + ";";
 }
 
-function __build_Declaration_1_ast(captures: any): any {
-  return { type: "decl", prop: __renderSlot_ast(captures.prop), value: __renderSlot_ast(captures.value) };
+function __build_Declaration_1_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_Declaration_1_source(captures: any): any {
-  return (__renderSlot_source(captures.prop) ?? "") + ": " + (__renderSlot_source(captures.value) ?? "") + ";";
+function __build_Declaration_1_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.prop, __indentCol) ?? "") + ": " + (__renderSlot_source(captures.value, __indentCol) ?? "") + ";";
 }
 
-function __build_Rule_0_ast(captures: any): any {
-  return { type: "rule", selector: __renderSlot_ast(captures.selector), nodes: __renderSlot_ast(captures.nodes) };
+function __build_Rule_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "rule", selector: __renderSlot_ast(captures.selector, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
 }
 
-function __build_Rule_0_source(captures: any): any {
-  return (__renderSlot_source(captures.selector) ?? "") + " {" + (captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map(__renderSlot_source).join(";") : (__renderSlot_source(captures.nodes) ?? ""))) + "}";
+function __build_Rule_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.selector, __indentCol) ?? "") + " {" + (captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map((c: any) => __renderSlot_source(c, __indentCol)).join(";") : (__renderSlot_source(captures.nodes, __indentCol) ?? ""))) + "}";
 }
 
-function __build_AtRule_0_ast(captures: any): any {
-  return { type: "atrule", name: __renderSlot_ast(captures.name), params: __renderSlot_ast(captures.params), nodes: __renderSlot_ast(captures.nodes) };
+function __build_AtRule_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
 }
 
-function __build_AtRule_0_source(captures: any): any {
-  return "@" + (__renderSlot_source(captures.name) ?? "") + " " + (__renderSlot_source(captures.params) ?? "") + " {" + (captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map(__renderSlot_source).join(";") : (__renderSlot_source(captures.nodes) ?? ""))) + "}";
+function __build_AtRule_0_source(captures: any, __indentCol: number = 0): any {
+  return "@" + (__renderSlot_source(captures.name, __indentCol) ?? "") + " " + (__renderSlot_source(captures.params, __indentCol) ?? "") + " {" + (captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map((c: any) => __renderSlot_source(c, __indentCol)).join(";") : (__renderSlot_source(captures.nodes, __indentCol) ?? ""))) + "}";
 }
 
-function __build_AtRule_1_ast(captures: any): any {
-  return { type: "atrule", name: __renderSlot_ast(captures.name), params: __renderSlot_ast(captures.params) };
+function __build_AtRule_1_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol) };
 }
 
-function __build_AtRule_1_source(captures: any): any {
-  return "@" + (__renderSlot_source(captures.name) ?? "") + " " + (__renderSlot_source(captures.params) ?? "") + ";";
+function __build_AtRule_1_source(captures: any, __indentCol: number = 0): any {
+  return "@" + (__renderSlot_source(captures.name, __indentCol) ?? "") + " " + (__renderSlot_source(captures.params, __indentCol) ?? "") + ";";
 }
 
-function __build_Stylesheet_0_ast(captures: any): any {
-  return { type: "root", nodes: __renderSlot_ast(captures.nodes) };
+function __build_Stylesheet_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "root", nodes: __renderSlot_ast(captures.nodes, __indentCol) };
 }
 
-function __build_Stylesheet_0_source(captures: any): any {
-  return String((captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map(__renderSlot_source).join(";") : (__renderSlot_source(captures.nodes) ?? ""))));
+function __build_Stylesheet_0_source(captures: any, __indentCol: number = 0): any {
+  return String((captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map((c: any) => __renderSlot_source(c, __indentCol)).join(";") : (__renderSlot_source(captures.nodes, __indentCol) ?? ""))));
 }
 
-function __dispatchRender_ast(captures: any): any {
+function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
-    case "Comment#0": return __build_Comment_0_ast(captures);
-    case "Declaration#0": return __build_Declaration_0_ast(captures);
-    case "Declaration#1": return __build_Declaration_1_ast(captures);
-    case "Rule#0": return __build_Rule_0_ast(captures);
-    case "AtRule#0": return __build_AtRule_0_ast(captures);
-    case "AtRule#1": return __build_AtRule_1_ast(captures);
-    case "Stylesheet#0": return __build_Stylesheet_0_ast(captures);
+    case "Comment#0": return __build_Comment_0_ast(captures, __indentCol);
+    case "Declaration#0": return __build_Declaration_0_ast(captures, __indentCol);
+    case "Declaration#1": return __build_Declaration_1_ast(captures, __indentCol);
+    case "Rule#0": return __build_Rule_0_ast(captures, __indentCol);
+    case "AtRule#0": return __build_AtRule_0_ast(captures, __indentCol);
+    case "AtRule#1": return __build_AtRule_1_ast(captures, __indentCol);
+    case "Stylesheet#0": return __build_Stylesheet_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchRender_source(captures: any): any {
+function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
-    case "Comment#0": return __build_Comment_0_source(captures);
-    case "Declaration#0": return __build_Declaration_0_source(captures);
-    case "Declaration#1": return __build_Declaration_1_source(captures);
-    case "Rule#0": return __build_Rule_0_source(captures);
-    case "AtRule#0": return __build_AtRule_0_source(captures);
-    case "AtRule#1": return __build_AtRule_1_source(captures);
-    case "Stylesheet#0": return __build_Stylesheet_0_source(captures);
+    case "Comment#0": return __build_Comment_0_source(captures, __indentCol);
+    case "Declaration#0": return __build_Declaration_0_source(captures, __indentCol);
+    case "Declaration#1": return __build_Declaration_1_source(captures, __indentCol);
+    case "Rule#0": return __build_Rule_0_source(captures, __indentCol);
+    case "AtRule#0": return __build_AtRule_0_source(captures, __indentCol);
+    case "AtRule#1": return __build_AtRule_1_source(captures, __indentCol);
+    case "Stylesheet#0": return __build_Stylesheet_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __renderSlot_ast(v: any): any {
+function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_ast(v);
+    return __dispatchRender_ast(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_source(v: any): any {
+function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_source(v);
+    return __dispatchRender_source(v, __indentCol);
   }
   return v;
 }

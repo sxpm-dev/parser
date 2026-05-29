@@ -2438,653 +2438,653 @@ function parseMarkdownParagraph(state: State): unknown {
 
 const __defaultTarget: string | undefined = undefined;
 
-function __build_MarkdownDocument_0_ast(captures: any): any {
-  return { type: "document", children: __renderSlot_ast(captures.children) };
+function __build_MarkdownDocument_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "document", children: __renderSlot_ast(captures.children, __indentCol) };
 }
 
-function __build_MarkdownDocument_0_html(captures: any): any {
-  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_html).join(" ") : (__renderSlot_html(captures.children) ?? ""))));
+function __build_MarkdownDocument_0_html(captures: any, __indentCol: number = 0): any {
+  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_html(c, __indentCol)).join(" ") : (__renderSlot_html(captures.children, __indentCol) ?? ""))));
 }
 
-function __build_MarkdownDocument_0_source(captures: any): any {
-  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.children) ?? ""))));
+function __build_MarkdownDocument_0_source(captures: any, __indentCol: number = 0): any {
+  return String((captures.children == null ? "" : (Array.isArray(captures.children) ? captures.children.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.children, __indentCol) ?? ""))));
 }
 
-function __build_MarkdownLeaf_0_ast(captures: any): any {
-  return { type: "heading", depth: 6, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 6, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_0_html(captures: any): any {
-  return "<h6>" + (__renderSlot_html(captures.text) ?? "") + "</h6>";
+function __build_MarkdownLeaf_0_html(captures: any, __indentCol: number = 0): any {
+  return "<h6>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h6>";
 }
 
-function __build_MarkdownLeaf_0_source(captures: any): any {
-  return "###### " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_0_source(captures: any, __indentCol: number = 0): any {
+  return "###### " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_1_ast(captures: any): any {
-  return { type: "heading", depth: 5, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_1_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 5, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_1_html(captures: any): any {
-  return "<h5>" + (__renderSlot_html(captures.text) ?? "") + "</h5>";
+function __build_MarkdownLeaf_1_html(captures: any, __indentCol: number = 0): any {
+  return "<h5>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h5>";
 }
 
-function __build_MarkdownLeaf_1_source(captures: any): any {
-  return "##### " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_1_source(captures: any, __indentCol: number = 0): any {
+  return "##### " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_2_ast(captures: any): any {
-  return { type: "heading", depth: 4, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_2_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 4, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_2_html(captures: any): any {
-  return "<h4>" + (__renderSlot_html(captures.text) ?? "") + "</h4>";
+function __build_MarkdownLeaf_2_html(captures: any, __indentCol: number = 0): any {
+  return "<h4>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h4>";
 }
 
-function __build_MarkdownLeaf_2_source(captures: any): any {
-  return "#### " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_2_source(captures: any, __indentCol: number = 0): any {
+  return "#### " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_3_ast(captures: any): any {
-  return { type: "heading", depth: 3, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_3_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 3, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_3_html(captures: any): any {
-  return "<h3>" + (__renderSlot_html(captures.text) ?? "") + "</h3>";
+function __build_MarkdownLeaf_3_html(captures: any, __indentCol: number = 0): any {
+  return "<h3>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h3>";
 }
 
-function __build_MarkdownLeaf_3_source(captures: any): any {
-  return "### " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_3_source(captures: any, __indentCol: number = 0): any {
+  return "### " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_4_ast(captures: any): any {
-  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_4_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_4_html(captures: any): any {
-  return "<h2>" + (__renderSlot_html(captures.text) ?? "") + "</h2>";
+function __build_MarkdownLeaf_4_html(captures: any, __indentCol: number = 0): any {
+  return "<h2>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h2>";
 }
 
-function __build_MarkdownLeaf_4_source(captures: any): any {
-  return "## " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_4_source(captures: any, __indentCol: number = 0): any {
+  return "## " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_5_ast(captures: any): any {
-  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_5_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_5_html(captures: any): any {
-  return "<h1>" + (__renderSlot_html(captures.text) ?? "") + "</h1>";
+function __build_MarkdownLeaf_5_html(captures: any, __indentCol: number = 0): any {
+  return "<h1>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h1>";
 }
 
-function __build_MarkdownLeaf_5_source(captures: any): any {
-  return "# " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_5_source(captures: any, __indentCol: number = 0): any {
+  return "# " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_6_ast(captures: any): any {
-  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text), style: "setext" };
+function __build_MarkdownLeaf_6_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" };
 }
 
-function __build_MarkdownLeaf_6_html(captures: any): any {
-  return "<h1>" + (__renderSlot_html(captures.text) ?? "") + "</h1>";
+function __build_MarkdownLeaf_6_html(captures: any, __indentCol: number = 0): any {
+  return "<h1>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h1>";
 }
 
-function __build_MarkdownLeaf_6_source(captures: any): any {
-  return (__renderSlot_source(captures.text) ?? "") + " ===";
+function __build_MarkdownLeaf_6_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.text, __indentCol) ?? "") + " ===";
 }
 
-function __build_MarkdownLeaf_7_ast(captures: any): any {
-  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text), style: "setext" };
+function __build_MarkdownLeaf_7_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" };
 }
 
-function __build_MarkdownLeaf_7_html(captures: any): any {
-  return "<h2>" + (__renderSlot_html(captures.text) ?? "") + "</h2>";
+function __build_MarkdownLeaf_7_html(captures: any, __indentCol: number = 0): any {
+  return "<h2>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</h2>";
 }
 
-function __build_MarkdownLeaf_7_source(captures: any): any {
-  return (__renderSlot_source(captures.text) ?? "") + " ---";
+function __build_MarkdownLeaf_7_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.text, __indentCol) ?? "") + " ---";
 }
 
-function __build_MarkdownLeaf_8_ast(captures: any): any {
+function __build_MarkdownLeaf_8_ast(captures: any, __indentCol: number = 0): any {
   return { type: "thematic-break", marker: "*" };
 }
 
-function __build_MarkdownLeaf_8_html(captures: any): any {
+function __build_MarkdownLeaf_8_html(captures: any, __indentCol: number = 0): any {
   return String("<hr>");
 }
 
-function __build_MarkdownLeaf_8_source(captures: any): any {
+function __build_MarkdownLeaf_8_source(captures: any, __indentCol: number = 0): any {
   return String("***");
 }
 
-function __build_MarkdownLeaf_9_ast(captures: any): any {
+function __build_MarkdownLeaf_9_ast(captures: any, __indentCol: number = 0): any {
   return { type: "thematic-break", marker: "_" };
 }
 
-function __build_MarkdownLeaf_9_html(captures: any): any {
+function __build_MarkdownLeaf_9_html(captures: any, __indentCol: number = 0): any {
   return String("<hr>");
 }
 
-function __build_MarkdownLeaf_9_source(captures: any): any {
+function __build_MarkdownLeaf_9_source(captures: any, __indentCol: number = 0): any {
   return String("___");
 }
 
-function __build_MarkdownLeaf_10_ast(captures: any): any {
+function __build_MarkdownLeaf_10_ast(captures: any, __indentCol: number = 0): any {
   return { type: "thematic-break" };
 }
 
-function __build_MarkdownLeaf_10_html(captures: any): any {
+function __build_MarkdownLeaf_10_html(captures: any, __indentCol: number = 0): any {
   return String("<hr>");
 }
 
-function __build_MarkdownLeaf_10_source(captures: any): any {
+function __build_MarkdownLeaf_10_source(captures: any, __indentCol: number = 0): any {
   return String("---");
 }
 
-function __build_MarkdownLeaf_11_ast(captures: any): any {
-  return { type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_11_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_11_html(captures: any): any {
-  return "<li><input type=\"checkbox\" checked>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_11_html(captures: any, __indentCol: number = 0): any {
+  return "<li><input type=\"checkbox\" checked>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_11_source(captures: any): any {
-  return "- [x] " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_11_source(captures: any, __indentCol: number = 0): any {
+  return "- [x] " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_12_ast(captures: any): any {
-  return { type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_12_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_12_html(captures: any): any {
-  return "<li><input type=\"checkbox\">" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_12_html(captures: any, __indentCol: number = 0): any {
+  return "<li><input type=\"checkbox\">" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_12_source(captures: any): any {
-  return "- [ ] " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_12_source(captures: any, __indentCol: number = 0): any {
+  return "- [ ] " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_13_ast(captures: any): any {
-  return { type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_13_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_13_html(captures: any): any {
-  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_13_html(captures: any, __indentCol: number = 0): any {
+  return "<li>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_13_source(captures: any): any {
-  return "+ " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_13_source(captures: any, __indentCol: number = 0): any {
+  return "+ " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_14_ast(captures: any): any {
-  return { type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_14_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_14_html(captures: any): any {
-  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_14_html(captures: any, __indentCol: number = 0): any {
+  return "<li>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_14_source(captures: any): any {
-  return "* " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_14_source(captures: any, __indentCol: number = 0): any {
+  return "* " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_15_ast(captures: any): any {
-  return { type: "list-item", ordered: false, text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_15_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "list-item", ordered: false, text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_15_html(captures: any): any {
-  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_15_html(captures: any, __indentCol: number = 0): any {
+  return "<li>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_15_source(captures: any): any {
-  return "- " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_15_source(captures: any, __indentCol: number = 0): any {
+  return "- " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_16_ast(captures: any): any {
-  return { type: "list-item", ordered: true, index: __renderSlot_ast(captures.index), text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_16_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "list-item", ordered: true, index: __renderSlot_ast(captures.index, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_16_html(captures: any): any {
-  return "<li>" + (__renderSlot_html(captures.text) ?? "") + "</li>";
+function __build_MarkdownLeaf_16_html(captures: any, __indentCol: number = 0): any {
+  return "<li>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</li>";
 }
 
-function __build_MarkdownLeaf_16_source(captures: any): any {
-  return (__renderSlot_source(captures.index) ?? "") + ". " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_16_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.index, __indentCol) ?? "") + ". " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_17_ast(captures: any): any {
-  return { type: "blockquote", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_17_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "blockquote", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_17_html(captures: any): any {
-  return "<blockquote>" + (__renderSlot_html(captures.text) ?? "") + "</blockquote>";
+function __build_MarkdownLeaf_17_html(captures: any, __indentCol: number = 0): any {
+  return "<blockquote>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</blockquote>";
 }
 
-function __build_MarkdownLeaf_17_source(captures: any): any {
-  return "> " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_17_source(captures: any, __indentCol: number = 0): any {
+  return "> " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_18_ast(captures: any): any {
-  return { type: "code-block", lang: __renderSlot_ast(captures.lang), text: __renderSlot_ast(captures.body) };
+function __build_MarkdownLeaf_18_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "code-block", lang: __renderSlot_ast(captures.lang, __indentCol), text: __renderSlot_ast(captures.body, __indentCol) };
 }
 
-function __build_MarkdownLeaf_18_html(captures: any): any {
-  return "<pre><code class=\"lang-" + (__renderSlot_html(captures.lang) ?? "") + "\">" + (__renderSlot_html(captures.body) ?? "") + "</code></pre>";
+function __build_MarkdownLeaf_18_html(captures: any, __indentCol: number = 0): any {
+  return "<pre><code class=\"lang-" + (__renderSlot_html(captures.lang, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.body, __indentCol) ?? "") + "</code></pre>";
 }
 
-function __build_MarkdownLeaf_18_source(captures: any): any {
-  return "```" + (__renderSlot_source(captures.lang) ?? "") + " " + (__renderSlot_source(captures.body) ?? "") + " ```";
+function __build_MarkdownLeaf_18_source(captures: any, __indentCol: number = 0): any {
+  return "```" + (__renderSlot_source(captures.lang, __indentCol) ?? "") + " " + (__renderSlot_source(captures.body, __indentCol) ?? "") + " ```";
 }
 
-function __build_MarkdownLeaf_19_ast(captures: any): any {
-  return { type: "code-block", text: __renderSlot_ast(captures.body) };
+function __build_MarkdownLeaf_19_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "code-block", text: __renderSlot_ast(captures.body, __indentCol) };
 }
 
-function __build_MarkdownLeaf_19_html(captures: any): any {
-  return "<pre><code>" + (__renderSlot_html(captures.body) ?? "") + "</code></pre>";
+function __build_MarkdownLeaf_19_html(captures: any, __indentCol: number = 0): any {
+  return "<pre><code>" + (__renderSlot_html(captures.body, __indentCol) ?? "") + "</code></pre>";
 }
 
-function __build_MarkdownLeaf_19_source(captures: any): any {
-  return "```\n" + (__renderSlot_source(captures.body) ?? "") + " ```";
+function __build_MarkdownLeaf_19_source(captures: any, __indentCol: number = 0): any {
+  return "```\n" + (__renderSlot_source(captures.body, __indentCol) ?? "") + " ```";
 }
 
-function __build_MarkdownLeaf_20_ast(captures: any): any {
-  return { type: "bold", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_20_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "bold", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_20_html(captures: any): any {
-  return "<strong>" + (__renderSlot_html(captures.text) ?? "") + "</strong>";
+function __build_MarkdownLeaf_20_html(captures: any, __indentCol: number = 0): any {
+  return "<strong>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</strong>";
 }
 
-function __build_MarkdownLeaf_20_source(captures: any): any {
-  return "**" + (__renderSlot_source(captures.text) ?? "") + "**";
+function __build_MarkdownLeaf_20_source(captures: any, __indentCol: number = 0): any {
+  return "**" + (__renderSlot_source(captures.text, __indentCol) ?? "") + "**";
 }
 
-function __build_MarkdownLeaf_21_ast(captures: any): any {
-  return { type: "italic", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_21_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "italic", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_21_html(captures: any): any {
-  return "<em>" + (__renderSlot_html(captures.text) ?? "") + "</em>";
+function __build_MarkdownLeaf_21_html(captures: any, __indentCol: number = 0): any {
+  return "<em>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</em>";
 }
 
-function __build_MarkdownLeaf_21_source(captures: any): any {
-  return "*" + (__renderSlot_source(captures.text) ?? "") + "*";
+function __build_MarkdownLeaf_21_source(captures: any, __indentCol: number = 0): any {
+  return "*" + (__renderSlot_source(captures.text, __indentCol) ?? "") + "*";
 }
 
-function __build_MarkdownLeaf_22_ast(captures: any): any {
-  return { type: "strikethrough", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_22_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "strikethrough", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_22_html(captures: any): any {
-  return "<s>" + (__renderSlot_html(captures.text) ?? "") + "</s>";
+function __build_MarkdownLeaf_22_html(captures: any, __indentCol: number = 0): any {
+  return "<s>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</s>";
 }
 
-function __build_MarkdownLeaf_22_source(captures: any): any {
-  return "~~" + (__renderSlot_source(captures.text) ?? "") + "~~";
+function __build_MarkdownLeaf_22_source(captures: any, __indentCol: number = 0): any {
+  return "~~" + (__renderSlot_source(captures.text, __indentCol) ?? "") + "~~";
 }
 
-function __build_MarkdownLeaf_23_ast(captures: any): any {
-  return { type: "inline-code", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_23_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "inline-code", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_23_html(captures: any): any {
-  return "<code>" + (__renderSlot_html(captures.text) ?? "") + "</code>";
+function __build_MarkdownLeaf_23_html(captures: any, __indentCol: number = 0): any {
+  return "<code>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</code>";
 }
 
-function __build_MarkdownLeaf_23_source(captures: any): any {
-  return "`" + (__renderSlot_source(captures.text) ?? "") + "`";
+function __build_MarkdownLeaf_23_source(captures: any, __indentCol: number = 0): any {
+  return "`" + (__renderSlot_source(captures.text, __indentCol) ?? "") + "`";
 }
 
-function __build_MarkdownLeaf_24_ast(captures: any): any {
-  return { type: "link", label: __renderSlot_ast(captures.label), url: __renderSlot_ast(captures.url) };
+function __build_MarkdownLeaf_24_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "link", label: __renderSlot_ast(captures.label, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
 }
 
-function __build_MarkdownLeaf_24_html(captures: any): any {
-  return "<a href=\"" + (__renderSlot_html(captures.url) ?? "") + "\">" + (__renderSlot_html(captures.label) ?? "") + "</a>";
+function __build_MarkdownLeaf_24_html(captures: any, __indentCol: number = 0): any {
+  return "<a href=\"" + (__renderSlot_html(captures.url, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.label, __indentCol) ?? "") + "</a>";
 }
 
-function __build_MarkdownLeaf_24_source(captures: any): any {
-  return "[" + (__renderSlot_source(captures.label) ?? "") + "](" + (__renderSlot_source(captures.url) ?? "") + ")";
+function __build_MarkdownLeaf_24_source(captures: any, __indentCol: number = 0): any {
+  return "[" + (__renderSlot_source(captures.label, __indentCol) ?? "") + "](" + (__renderSlot_source(captures.url, __indentCol) ?? "") + ")";
 }
 
-function __build_MarkdownLeaf_25_ast(captures: any): any {
-  return { type: "reference-link", label: __renderSlot_ast(captures.label), id: __renderSlot_ast(captures.id) };
+function __build_MarkdownLeaf_25_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "reference-link", label: __renderSlot_ast(captures.label, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) };
 }
 
-function __build_MarkdownLeaf_25_html(captures: any): any {
-  return "<a href=\"#" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.label) ?? "") + "</a>";
+function __build_MarkdownLeaf_25_html(captures: any, __indentCol: number = 0): any {
+  return "<a href=\"#" + (__renderSlot_html(captures.id, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.label, __indentCol) ?? "") + "</a>";
 }
 
-function __build_MarkdownLeaf_25_source(captures: any): any {
-  return "[" + (__renderSlot_source(captures.label) ?? "") + "][" + (__renderSlot_source(captures.id) ?? "") + "]";
+function __build_MarkdownLeaf_25_source(captures: any, __indentCol: number = 0): any {
+  return "[" + (__renderSlot_source(captures.label, __indentCol) ?? "") + "][" + (__renderSlot_source(captures.id, __indentCol) ?? "") + "]";
 }
 
-function __build_MarkdownLeaf_26_ast(captures: any): any {
-  return { type: "image", alt: __renderSlot_ast(captures.alt), url: __renderSlot_ast(captures.url) };
+function __build_MarkdownLeaf_26_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "image", alt: __renderSlot_ast(captures.alt, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
 }
 
-function __build_MarkdownLeaf_26_html(captures: any): any {
-  return "<img src=\"" + (__renderSlot_html(captures.url) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt) ?? "") + "\">";
+function __build_MarkdownLeaf_26_html(captures: any, __indentCol: number = 0): any {
+  return "<img src=\"" + (__renderSlot_html(captures.url, __indentCol) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt, __indentCol) ?? "") + "\">";
 }
 
-function __build_MarkdownLeaf_26_source(captures: any): any {
-  return "![" + (__renderSlot_source(captures.alt) ?? "") + "](" + (__renderSlot_source(captures.url) ?? "") + ")";
+function __build_MarkdownLeaf_26_source(captures: any, __indentCol: number = 0): any {
+  return "![" + (__renderSlot_source(captures.alt, __indentCol) ?? "") + "](" + (__renderSlot_source(captures.url, __indentCol) ?? "") + ")";
 }
 
-function __build_MarkdownLeaf_27_ast(captures: any): any {
-  return { type: "reference-image", alt: __renderSlot_ast(captures.alt), id: __renderSlot_ast(captures.id) };
+function __build_MarkdownLeaf_27_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "reference-image", alt: __renderSlot_ast(captures.alt, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) };
 }
 
-function __build_MarkdownLeaf_27_html(captures: any): any {
-  return "<img src=\"#" + (__renderSlot_html(captures.id) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt) ?? "") + "\">";
+function __build_MarkdownLeaf_27_html(captures: any, __indentCol: number = 0): any {
+  return "<img src=\"#" + (__renderSlot_html(captures.id, __indentCol) ?? "") + "\" alt=\"" + (__renderSlot_html(captures.alt, __indentCol) ?? "") + "\">";
 }
 
-function __build_MarkdownLeaf_27_source(captures: any): any {
-  return "![" + (__renderSlot_source(captures.alt) ?? "") + "][" + (__renderSlot_source(captures.id) ?? "") + "]";
+function __build_MarkdownLeaf_27_source(captures: any, __indentCol: number = 0): any {
+  return "![" + (__renderSlot_source(captures.alt, __indentCol) ?? "") + "][" + (__renderSlot_source(captures.id, __indentCol) ?? "") + "]";
 }
 
-function __build_MarkdownLeaf_28_ast(captures: any): any {
-  return { type: "entity", name: __renderSlot_ast(captures.name) };
+function __build_MarkdownLeaf_28_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "entity", name: __renderSlot_ast(captures.name, __indentCol) };
 }
 
-function __build_MarkdownLeaf_28_html(captures: any): any {
-  return "&" + (__renderSlot_html(captures.name) ?? "") + ";";
+function __build_MarkdownLeaf_28_html(captures: any, __indentCol: number = 0): any {
+  return "&" + (__renderSlot_html(captures.name, __indentCol) ?? "") + ";";
 }
 
-function __build_MarkdownLeaf_28_source(captures: any): any {
-  return "&" + (__renderSlot_source(captures.name) ?? "") + ";";
+function __build_MarkdownLeaf_28_source(captures: any, __indentCol: number = 0): any {
+  return "&" + (__renderSlot_source(captures.name, __indentCol) ?? "") + ";";
 }
 
-function __build_MarkdownLeaf_29_ast(captures: any): any {
+function __build_MarkdownLeaf_29_ast(captures: any, __indentCol: number = 0): any {
   return { type: "table-delimiter", variant: "plain", align: ["default", "default"] };
 }
 
-function __build_MarkdownLeaf_29_html(captures: any): any {
+function __build_MarkdownLeaf_29_html(captures: any, __indentCol: number = 0): any {
   return "";
 }
 
-function __build_MarkdownLeaf_29_source(captures: any): any {
+function __build_MarkdownLeaf_29_source(captures: any, __indentCol: number = 0): any {
   return String("| --- | --- |");
 }
 
-function __build_MarkdownLeaf_30_ast(captures: any): any {
+function __build_MarkdownLeaf_30_ast(captures: any, __indentCol: number = 0): any {
   return { type: "table-delimiter", variant: "aligned", align: ["left", "right"] };
 }
 
-function __build_MarkdownLeaf_30_html(captures: any): any {
+function __build_MarkdownLeaf_30_html(captures: any, __indentCol: number = 0): any {
   return "";
 }
 
-function __build_MarkdownLeaf_30_source(captures: any): any {
+function __build_MarkdownLeaf_30_source(captures: any, __indentCol: number = 0): any {
   return String("|:---|---:|");
 }
 
-function __build_MarkdownLeaf_31_ast(captures: any): any {
-  return { type: "table-row", cells: [__renderSlot_ast(captures.first), __renderSlot_ast(captures.second)] };
+function __build_MarkdownLeaf_31_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "table-row", cells: [__renderSlot_ast(captures.first, __indentCol), __renderSlot_ast(captures.second, __indentCol)] };
 }
 
-function __build_MarkdownLeaf_31_html(captures: any): any {
-  return "<tr><td>" + (__renderSlot_html(captures.first) ?? "") + "</td><td>" + (__renderSlot_html(captures.second) ?? "") + "</td></tr>";
+function __build_MarkdownLeaf_31_html(captures: any, __indentCol: number = 0): any {
+  return "<tr><td>" + (__renderSlot_html(captures.first, __indentCol) ?? "") + "</td><td>" + (__renderSlot_html(captures.second, __indentCol) ?? "") + "</td></tr>";
 }
 
-function __build_MarkdownLeaf_31_source(captures: any): any {
-  return "| " + (__renderSlot_source(captures.first) ?? "") + " | " + (__renderSlot_source(captures.second) ?? "") + " |";
+function __build_MarkdownLeaf_31_source(captures: any, __indentCol: number = 0): any {
+  return "| " + (__renderSlot_source(captures.first, __indentCol) ?? "") + " | " + (__renderSlot_source(captures.second, __indentCol) ?? "") + " |";
 }
 
-function __build_MarkdownLeaf_32_ast(captures: any): any {
-  return { type: "definition", id: __renderSlot_ast(captures.id), url: __renderSlot_ast(captures.url) };
+function __build_MarkdownLeaf_32_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "definition", id: __renderSlot_ast(captures.id, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
 }
 
-function __build_MarkdownLeaf_32_html(captures: any): any {
+function __build_MarkdownLeaf_32_html(captures: any, __indentCol: number = 0): any {
   return "";
 }
 
-function __build_MarkdownLeaf_32_source(captures: any): any {
-  return "[" + (__renderSlot_source(captures.id) ?? "") + "]: " + (__renderSlot_source(captures.url) ?? "");
+function __build_MarkdownLeaf_32_source(captures: any, __indentCol: number = 0): any {
+  return "[" + (__renderSlot_source(captures.id, __indentCol) ?? "") + "]: " + (__renderSlot_source(captures.url, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_33_ast(captures: any): any {
-  return { type: "footnote-definition", id: __renderSlot_ast(captures.id), text: __renderSlot_ast(captures.text) };
+function __build_MarkdownLeaf_33_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "footnote-definition", id: __renderSlot_ast(captures.id, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownLeaf_33_html(captures: any): any {
-  return "<div class=\"footnote\" id=\"fn" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.text) ?? "") + "</div>";
+function __build_MarkdownLeaf_33_html(captures: any, __indentCol: number = 0): any {
+  return "<div class=\"footnote\" id=\"fn" + (__renderSlot_html(captures.id, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</div>";
 }
 
-function __build_MarkdownLeaf_33_source(captures: any): any {
-  return "[^" + (__renderSlot_source(captures.id) ?? "") + "]: " + (__renderSlot_source(captures.text) ?? "");
+function __build_MarkdownLeaf_33_source(captures: any, __indentCol: number = 0): any {
+  return "[^" + (__renderSlot_source(captures.id, __indentCol) ?? "") + "]: " + (__renderSlot_source(captures.text, __indentCol) ?? "");
 }
 
-function __build_MarkdownLeaf_34_ast(captures: any): any {
-  return { type: "footnote-reference", id: __renderSlot_ast(captures.id) };
+function __build_MarkdownLeaf_34_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "footnote-reference", id: __renderSlot_ast(captures.id, __indentCol) };
 }
 
-function __build_MarkdownLeaf_34_html(captures: any): any {
-  return "<sup><a href=\"#fn" + (__renderSlot_html(captures.id) ?? "") + "\">" + (__renderSlot_html(captures.id) ?? "") + "</a></sup>";
+function __build_MarkdownLeaf_34_html(captures: any, __indentCol: number = 0): any {
+  return "<sup><a href=\"#fn" + (__renderSlot_html(captures.id, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.id, __indentCol) ?? "") + "</a></sup>";
 }
 
-function __build_MarkdownLeaf_34_source(captures: any): any {
-  return "[^" + (__renderSlot_source(captures.id) ?? "") + "]";
+function __build_MarkdownLeaf_34_source(captures: any, __indentCol: number = 0): any {
+  return "[^" + (__renderSlot_source(captures.id, __indentCol) ?? "") + "]";
 }
 
-function __build_MarkdownLeaf_35_ast(captures: any): any {
-  return { type: "html", tag: __renderSlot_ast(captures.tag), text: __renderSlot_ast(captures.body), closingTag: __renderSlot_ast(captures.closingTag) };
+function __build_MarkdownLeaf_35_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "html", tag: __renderSlot_ast(captures.tag, __indentCol), text: __renderSlot_ast(captures.body, __indentCol), closingTag: __renderSlot_ast(captures.closingTag, __indentCol) };
 }
 
-function __build_MarkdownLeaf_35_html(captures: any): any {
-  return "<" + (__renderSlot_html(captures.tag) ?? "") + ">" + (__renderSlot_html(captures.body) ?? "") + "</" + (__renderSlot_html(captures.closingTag) ?? "") + ">";
+function __build_MarkdownLeaf_35_html(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_html(captures.tag, __indentCol) ?? "") + ">" + (__renderSlot_html(captures.body, __indentCol) ?? "") + "</" + (__renderSlot_html(captures.closingTag, __indentCol) ?? "") + ">";
 }
 
-function __build_MarkdownLeaf_35_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.tag) ?? "") + ">" + (__renderSlot_source(captures.body) ?? "") + "</" + (__renderSlot_source(captures.closingTag) ?? "") + ">";
+function __build_MarkdownLeaf_35_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.tag, __indentCol) ?? "") + ">" + (__renderSlot_source(captures.body, __indentCol) ?? "") + "</" + (__renderSlot_source(captures.closingTag, __indentCol) ?? "") + ">";
 }
 
-function __build_MarkdownLeaf_36_ast(captures: any): any {
-  return { type: "autolink", url: __renderSlot_ast(captures.url) };
+function __build_MarkdownLeaf_36_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "autolink", url: __renderSlot_ast(captures.url, __indentCol) };
 }
 
-function __build_MarkdownLeaf_36_html(captures: any): any {
-  return "<a class=\"autolink\" href=\"" + (__renderSlot_html(captures.url) ?? "") + "\">" + (__renderSlot_html(captures.url) ?? "") + "</a>";
+function __build_MarkdownLeaf_36_html(captures: any, __indentCol: number = 0): any {
+  return "<a class=\"autolink\" href=\"" + (__renderSlot_html(captures.url, __indentCol) ?? "") + "\">" + (__renderSlot_html(captures.url, __indentCol) ?? "") + "</a>";
 }
 
-function __build_MarkdownLeaf_36_source(captures: any): any {
-  return "<" + (__renderSlot_source(captures.url) ?? "") + ">";
+function __build_MarkdownLeaf_36_source(captures: any, __indentCol: number = 0): any {
+  return "<" + (__renderSlot_source(captures.url, __indentCol) ?? "") + ">";
 }
 
-function __build_MarkdownParagraph_0_ast(captures: any): any {
-  return { type: "paragraph", text: __renderSlot_ast(captures.text) };
+function __build_MarkdownParagraph_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "paragraph", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
-function __build_MarkdownParagraph_0_html(captures: any): any {
-  return "<p>" + (__renderSlot_html(captures.text) ?? "") + "</p>";
+function __build_MarkdownParagraph_0_html(captures: any, __indentCol: number = 0): any {
+  return "<p>" + (__renderSlot_html(captures.text, __indentCol) ?? "") + "</p>";
 }
 
-function __build_MarkdownParagraph_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.text) ?? ""));
+function __build_MarkdownParagraph_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.text, __indentCol) ?? ""));
 }
 
-function __dispatchRender_ast(captures: any): any {
+function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
-    case "MarkdownDocument#0": return __build_MarkdownDocument_0_ast(captures);
-    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_ast(captures);
-    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_ast(captures);
-    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_ast(captures);
-    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_ast(captures);
-    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_ast(captures);
-    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_ast(captures);
-    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_ast(captures);
-    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_ast(captures);
-    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_ast(captures);
-    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_ast(captures);
-    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_ast(captures);
-    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_ast(captures);
-    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_ast(captures);
-    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_ast(captures);
-    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_ast(captures);
-    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_ast(captures);
-    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_ast(captures);
-    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_ast(captures);
-    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_ast(captures);
-    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_ast(captures);
-    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_ast(captures);
-    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_ast(captures);
-    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_ast(captures);
-    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_ast(captures);
-    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_ast(captures);
-    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_ast(captures);
-    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_ast(captures);
-    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_ast(captures);
-    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_ast(captures);
-    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_ast(captures);
-    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_ast(captures);
-    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_ast(captures);
-    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_ast(captures);
-    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_ast(captures);
-    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_ast(captures);
-    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_ast(captures);
-    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_ast(captures);
-    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_ast(captures);
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_ast(captures, __indentCol);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_ast(captures, __indentCol);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_ast(captures, __indentCol);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_ast(captures, __indentCol);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_ast(captures, __indentCol);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_ast(captures, __indentCol);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_ast(captures, __indentCol);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_ast(captures, __indentCol);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_ast(captures, __indentCol);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_ast(captures, __indentCol);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_ast(captures, __indentCol);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_ast(captures, __indentCol);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_ast(captures, __indentCol);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_ast(captures, __indentCol);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_ast(captures, __indentCol);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_ast(captures, __indentCol);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_ast(captures, __indentCol);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_ast(captures, __indentCol);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_ast(captures, __indentCol);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_ast(captures, __indentCol);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_ast(captures, __indentCol);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_ast(captures, __indentCol);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_ast(captures, __indentCol);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_ast(captures, __indentCol);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_ast(captures, __indentCol);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_ast(captures, __indentCol);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_ast(captures, __indentCol);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_ast(captures, __indentCol);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_ast(captures, __indentCol);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_ast(captures, __indentCol);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_ast(captures, __indentCol);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_ast(captures, __indentCol);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_ast(captures, __indentCol);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_ast(captures, __indentCol);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_ast(captures, __indentCol);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_ast(captures, __indentCol);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_ast(captures, __indentCol);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_ast(captures, __indentCol);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchRender_html(captures: any): any {
+function __dispatchRender_html(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'html')");
   }
   switch (captures.__production) {
-    case "MarkdownDocument#0": return __build_MarkdownDocument_0_html(captures);
-    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_html(captures);
-    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_html(captures);
-    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_html(captures);
-    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_html(captures);
-    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_html(captures);
-    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_html(captures);
-    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_html(captures);
-    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_html(captures);
-    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_html(captures);
-    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_html(captures);
-    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_html(captures);
-    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_html(captures);
-    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_html(captures);
-    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_html(captures);
-    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_html(captures);
-    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_html(captures);
-    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_html(captures);
-    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_html(captures);
-    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_html(captures);
-    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_html(captures);
-    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_html(captures);
-    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_html(captures);
-    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_html(captures);
-    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_html(captures);
-    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_html(captures);
-    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_html(captures);
-    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_html(captures);
-    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_html(captures);
-    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_html(captures);
-    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_html(captures);
-    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_html(captures);
-    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_html(captures);
-    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_html(captures);
-    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_html(captures);
-    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_html(captures);
-    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_html(captures);
-    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_html(captures);
-    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_html(captures);
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_html(captures, __indentCol);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_html(captures, __indentCol);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_html(captures, __indentCol);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_html(captures, __indentCol);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_html(captures, __indentCol);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_html(captures, __indentCol);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_html(captures, __indentCol);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_html(captures, __indentCol);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_html(captures, __indentCol);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_html(captures, __indentCol);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_html(captures, __indentCol);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_html(captures, __indentCol);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_html(captures, __indentCol);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_html(captures, __indentCol);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_html(captures, __indentCol);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_html(captures, __indentCol);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_html(captures, __indentCol);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_html(captures, __indentCol);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_html(captures, __indentCol);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_html(captures, __indentCol);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_html(captures, __indentCol);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_html(captures, __indentCol);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_html(captures, __indentCol);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_html(captures, __indentCol);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_html(captures, __indentCol);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_html(captures, __indentCol);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_html(captures, __indentCol);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_html(captures, __indentCol);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_html(captures, __indentCol);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_html(captures, __indentCol);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_html(captures, __indentCol);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_html(captures, __indentCol);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_html(captures, __indentCol);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_html(captures, __indentCol);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_html(captures, __indentCol);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_html(captures, __indentCol);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_html(captures, __indentCol);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_html(captures, __indentCol);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_html(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'html'");
 }
 
-function __dispatchRender_source(captures: any): any {
+function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
-    case "MarkdownDocument#0": return __build_MarkdownDocument_0_source(captures);
-    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_source(captures);
-    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_source(captures);
-    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_source(captures);
-    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_source(captures);
-    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_source(captures);
-    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_source(captures);
-    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_source(captures);
-    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_source(captures);
-    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_source(captures);
-    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_source(captures);
-    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_source(captures);
-    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_source(captures);
-    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_source(captures);
-    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_source(captures);
-    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_source(captures);
-    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_source(captures);
-    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_source(captures);
-    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_source(captures);
-    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_source(captures);
-    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_source(captures);
-    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_source(captures);
-    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_source(captures);
-    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_source(captures);
-    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_source(captures);
-    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_source(captures);
-    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_source(captures);
-    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_source(captures);
-    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_source(captures);
-    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_source(captures);
-    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_source(captures);
-    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_source(captures);
-    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_source(captures);
-    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_source(captures);
-    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_source(captures);
-    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_source(captures);
-    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_source(captures);
-    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_source(captures);
-    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_source(captures);
+    case "MarkdownDocument#0": return __build_MarkdownDocument_0_source(captures, __indentCol);
+    case "MarkdownLeaf#0": return __build_MarkdownLeaf_0_source(captures, __indentCol);
+    case "MarkdownLeaf#1": return __build_MarkdownLeaf_1_source(captures, __indentCol);
+    case "MarkdownLeaf#2": return __build_MarkdownLeaf_2_source(captures, __indentCol);
+    case "MarkdownLeaf#3": return __build_MarkdownLeaf_3_source(captures, __indentCol);
+    case "MarkdownLeaf#4": return __build_MarkdownLeaf_4_source(captures, __indentCol);
+    case "MarkdownLeaf#5": return __build_MarkdownLeaf_5_source(captures, __indentCol);
+    case "MarkdownLeaf#6": return __build_MarkdownLeaf_6_source(captures, __indentCol);
+    case "MarkdownLeaf#7": return __build_MarkdownLeaf_7_source(captures, __indentCol);
+    case "MarkdownLeaf#8": return __build_MarkdownLeaf_8_source(captures, __indentCol);
+    case "MarkdownLeaf#9": return __build_MarkdownLeaf_9_source(captures, __indentCol);
+    case "MarkdownLeaf#10": return __build_MarkdownLeaf_10_source(captures, __indentCol);
+    case "MarkdownLeaf#11": return __build_MarkdownLeaf_11_source(captures, __indentCol);
+    case "MarkdownLeaf#12": return __build_MarkdownLeaf_12_source(captures, __indentCol);
+    case "MarkdownLeaf#13": return __build_MarkdownLeaf_13_source(captures, __indentCol);
+    case "MarkdownLeaf#14": return __build_MarkdownLeaf_14_source(captures, __indentCol);
+    case "MarkdownLeaf#15": return __build_MarkdownLeaf_15_source(captures, __indentCol);
+    case "MarkdownLeaf#16": return __build_MarkdownLeaf_16_source(captures, __indentCol);
+    case "MarkdownLeaf#17": return __build_MarkdownLeaf_17_source(captures, __indentCol);
+    case "MarkdownLeaf#18": return __build_MarkdownLeaf_18_source(captures, __indentCol);
+    case "MarkdownLeaf#19": return __build_MarkdownLeaf_19_source(captures, __indentCol);
+    case "MarkdownLeaf#20": return __build_MarkdownLeaf_20_source(captures, __indentCol);
+    case "MarkdownLeaf#21": return __build_MarkdownLeaf_21_source(captures, __indentCol);
+    case "MarkdownLeaf#22": return __build_MarkdownLeaf_22_source(captures, __indentCol);
+    case "MarkdownLeaf#23": return __build_MarkdownLeaf_23_source(captures, __indentCol);
+    case "MarkdownLeaf#24": return __build_MarkdownLeaf_24_source(captures, __indentCol);
+    case "MarkdownLeaf#25": return __build_MarkdownLeaf_25_source(captures, __indentCol);
+    case "MarkdownLeaf#26": return __build_MarkdownLeaf_26_source(captures, __indentCol);
+    case "MarkdownLeaf#27": return __build_MarkdownLeaf_27_source(captures, __indentCol);
+    case "MarkdownLeaf#28": return __build_MarkdownLeaf_28_source(captures, __indentCol);
+    case "MarkdownLeaf#29": return __build_MarkdownLeaf_29_source(captures, __indentCol);
+    case "MarkdownLeaf#30": return __build_MarkdownLeaf_30_source(captures, __indentCol);
+    case "MarkdownLeaf#31": return __build_MarkdownLeaf_31_source(captures, __indentCol);
+    case "MarkdownLeaf#32": return __build_MarkdownLeaf_32_source(captures, __indentCol);
+    case "MarkdownLeaf#33": return __build_MarkdownLeaf_33_source(captures, __indentCol);
+    case "MarkdownLeaf#34": return __build_MarkdownLeaf_34_source(captures, __indentCol);
+    case "MarkdownLeaf#35": return __build_MarkdownLeaf_35_source(captures, __indentCol);
+    case "MarkdownLeaf#36": return __build_MarkdownLeaf_36_source(captures, __indentCol);
+    case "MarkdownParagraph#0": return __build_MarkdownParagraph_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __renderSlot_ast(v: any): any {
+function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_ast(v);
+    return __dispatchRender_ast(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_html(v: any): any {
+function __renderSlot_html(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_html(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_html(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_html(v);
+    return __dispatchRender_html(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_source(v: any): any {
+function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_source(v);
+    return __dispatchRender_source(v, __indentCol);
   }
   return v;
 }

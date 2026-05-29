@@ -386,116 +386,116 @@ function parseCron(state: State): unknown {
 
 const __defaultTarget: string | undefined = undefined;
 
-function __build_CronField_0_ast(captures: any): any {
+function __build_CronField_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "wildcard" };
 }
 
-function __build_CronField_0_source(captures: any): any {
+function __build_CronField_0_source(captures: any, __indentCol: number = 0): any {
   return String("*");
 }
 
-function __build_CronField_1_ast(captures: any): any {
-  return { type: "step", step: __renderSlot_ast(captures.step) };
+function __build_CronField_1_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "step", step: __renderSlot_ast(captures.step, __indentCol) };
 }
 
-function __build_CronField_1_source(captures: any): any {
-  return "*/" + (__renderSlot_source(captures.step) ?? "");
+function __build_CronField_1_source(captures: any, __indentCol: number = 0): any {
+  return "*/" + (__renderSlot_source(captures.step, __indentCol) ?? "");
 }
 
-function __build_CronField_2_ast(captures: any): any {
-  return { type: "value", value: __renderSlot_ast(captures.value) };
+function __build_CronField_2_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "value", value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
-function __build_CronField_2_source(captures: any): any {
-  return String((__renderSlot_source(captures.value) ?? ""));
+function __build_CronField_2_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.value, __indentCol) ?? ""));
 }
 
-function __build_CronField_3_ast(captures: any): any {
-  return { type: "range", start: __renderSlot_ast(captures.start), end: __renderSlot_ast(captures.end) };
+function __build_CronField_3_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "range", start: __renderSlot_ast(captures.start, __indentCol), end: __renderSlot_ast(captures.end, __indentCol) };
 }
 
-function __build_CronField_3_source(captures: any): any {
-  return (__renderSlot_source(captures.start) ?? "") + "-" + (__renderSlot_source(captures.end) ?? "");
+function __build_CronField_3_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.start, __indentCol) ?? "") + "-" + (__renderSlot_source(captures.end, __indentCol) ?? "");
 }
 
-function __build_CommandWord_0_ast(captures: any): any {
-  return __renderSlot_ast(captures.value);
+function __build_CommandWord_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.value, __indentCol);
 }
 
-function __build_CommandWord_0_source(captures: any): any {
-  return String((__renderSlot_source(captures.value) ?? ""));
+function __build_CommandWord_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.value, __indentCol) ?? ""));
 }
 
-function __build_Command_0_ast(captures: any): any {
-  return { type: "command", words: __renderSlot_ast(captures.words) };
+function __build_Command_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "command", words: __renderSlot_ast(captures.words, __indentCol) };
 }
 
-function __build_Command_0_source(captures: any): any {
-  return String((Array.isArray(captures.words) ? captures.words.map(__renderSlot_source).join(" ") : (__renderSlot_source(captures.words) ?? "")));
+function __build_Command_0_source(captures: any, __indentCol: number = 0): any {
+  return String((Array.isArray(captures.words) ? captures.words.map((c: any) => __renderSlot_source(c, __indentCol)).join(" ") : (__renderSlot_source(captures.words, __indentCol) ?? "")));
 }
 
-function __build_Cron_0_ast(captures: any): any {
-  return { type: "cron", minute: __renderSlot_ast(captures.minute), hour: __renderSlot_ast(captures.hour), dayOfMonth: __renderSlot_ast(captures.dayOfMonth), month: __renderSlot_ast(captures.month), dayOfWeek: __renderSlot_ast(captures.dayOfWeek), command: __renderSlot_ast(captures.command) };
+function __build_Cron_0_ast(captures: any, __indentCol: number = 0): any {
+  return { type: "cron", minute: __renderSlot_ast(captures.minute, __indentCol), hour: __renderSlot_ast(captures.hour, __indentCol), dayOfMonth: __renderSlot_ast(captures.dayOfMonth, __indentCol), month: __renderSlot_ast(captures.month, __indentCol), dayOfWeek: __renderSlot_ast(captures.dayOfWeek, __indentCol), command: __renderSlot_ast(captures.command, __indentCol) };
 }
 
-function __build_Cron_0_source(captures: any): any {
-  return (__renderSlot_source(captures.minute) ?? "") + " " + (__renderSlot_source(captures.hour) ?? "") + " " + (__renderSlot_source(captures.dayOfMonth) ?? "") + " " + (__renderSlot_source(captures.month) ?? "") + " " + (__renderSlot_source(captures.dayOfWeek) ?? "") + (captures.command == null ? "" : " " + (__renderSlot_source(captures.command) ?? ""));
+function __build_Cron_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.minute, __indentCol) ?? "") + " " + (__renderSlot_source(captures.hour, __indentCol) ?? "") + " " + (__renderSlot_source(captures.dayOfMonth, __indentCol) ?? "") + " " + (__renderSlot_source(captures.month, __indentCol) ?? "") + " " + (__renderSlot_source(captures.dayOfWeek, __indentCol) ?? "") + (captures.command == null ? "" : " " + (__renderSlot_source(captures.command, __indentCol) ?? ""));
 }
 
-function __dispatchRender_ast(captures: any): any {
+function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
-    case "CronField#0": return __build_CronField_0_ast(captures);
-    case "CronField#1": return __build_CronField_1_ast(captures);
-    case "CronField#2": return __build_CronField_2_ast(captures);
-    case "CronField#3": return __build_CronField_3_ast(captures);
-    case "CommandWord#0": return __build_CommandWord_0_ast(captures);
-    case "Command#0": return __build_Command_0_ast(captures);
-    case "Cron#0": return __build_Cron_0_ast(captures);
+    case "CronField#0": return __build_CronField_0_ast(captures, __indentCol);
+    case "CronField#1": return __build_CronField_1_ast(captures, __indentCol);
+    case "CronField#2": return __build_CronField_2_ast(captures, __indentCol);
+    case "CronField#3": return __build_CronField_3_ast(captures, __indentCol);
+    case "CommandWord#0": return __build_CommandWord_0_ast(captures, __indentCol);
+    case "Command#0": return __build_Command_0_ast(captures, __indentCol);
+    case "Cron#0": return __build_Cron_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
 }
 
-function __dispatchRender_source(captures: any): any {
+function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
   if (captures === null || typeof captures !== "object") {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
-    case "CronField#0": return __build_CronField_0_source(captures);
-    case "CronField#1": return __build_CronField_1_source(captures);
-    case "CronField#2": return __build_CronField_2_source(captures);
-    case "CronField#3": return __build_CronField_3_source(captures);
-    case "CommandWord#0": return __build_CommandWord_0_source(captures);
-    case "Command#0": return __build_Command_0_source(captures);
-    case "Cron#0": return __build_Cron_0_source(captures);
+    case "CronField#0": return __build_CronField_0_source(captures, __indentCol);
+    case "CronField#1": return __build_CronField_1_source(captures, __indentCol);
+    case "CronField#2": return __build_CronField_2_source(captures, __indentCol);
+    case "CronField#3": return __build_CronField_3_source(captures, __indentCol);
+    case "CommandWord#0": return __build_CommandWord_0_source(captures, __indentCol);
+    case "Command#0": return __build_Command_0_source(captures, __indentCol);
+    case "Cron#0": return __build_Cron_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
 }
 
-function __renderSlot_ast(v: any): any {
+function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_ast(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_ast(v);
+    return __dispatchRender_ast(v, __indentCol);
   }
   return v;
 }
 
-function __renderSlot_source(v: any): any {
+function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
-    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i]));
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_source(v[i], __indentCol));
     return out;
   }
   if (typeof v === "object" && typeof v.__production === "string") {
-    return __dispatchRender_source(v);
+    return __dispatchRender_source(v, __indentCol);
   }
   return v;
 }

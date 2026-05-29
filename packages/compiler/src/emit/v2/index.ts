@@ -10,6 +10,7 @@
 
 import { CompilerError, type InferredSchema, type NodeTypeInfo } from '../../model.ts';
 import { emitInverse } from '../inverse.ts';
+import { emitPreamble } from '../preamble.ts';
 import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
 import { jsIdent, jsString } from '../strings.ts';
@@ -235,61 +236,6 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
 // name collisions (default '' is byte-identical to the unprefixed form).
 export function parseFnName(schema: InferredSchema, nodeType: string): string {
   return `${schema.symbolPrefix}parse${nodeType}`;
-}
-
-// Phase 8 Task 8.5 — emit the input-normalization preamble inside __parse.
-// Mirrors `applyPreamble` in src/interp/parse.ts step-for-step so the
-// generated parser produces the same AST as the reference interpreter for
-// any (schema, input) pair.
-//
-// IMPORTANT: we intentionally do NOT short-circuit at "all defaults". The
-// default `bom: 'allow'` actively strips a leading U+FEFF — if the emit
-// path skipped the BOM block at default the generated parser would fail
-// the literal match on BOM-prefixed input while the interpreter strips it
-// and parses successfully. That divergence breaks the differential-fuzzing
-// invariant Phase 2 established. Each per-dial block below emits NO code
-// for `'LF'` / `'none'` / `caseSensitive: true`, so non-BOM dials at
-// default carry zero overhead.
-export function emitPreamble(schema: InferredSchema): string {
-  const blocks: string[] = [];
-  // 1. BOM handling.
-  switch (schema.bom) {
-    case 'allow':
-      blocks.push(`if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);`);
-      break;
-    case 'reject':
-      blocks.push(
-        `if (input.charCodeAt(0) === 0xfeff) throw new SyntaxError('parse: schema rejects BOM; input begins with U+FEFF');`,
-      );
-      break;
-    case 'require':
-      blocks.push(
-        `if (input.charCodeAt(0) !== 0xfeff) throw new SyntaxError('parse: schema requires BOM; input does not begin with U+FEFF');`,
-      );
-      blocks.push(`input = input.slice(1);`);
-      break;
-  }
-  // 2. Unicode normalization.
-  if (schema.unicode !== 'none') {
-    blocks.push(`input = input.normalize(${JSON.stringify(schema.unicode)});`);
-  }
-  // 3. Newline canonicalization.
-  switch (schema.newlines) {
-    case 'LF':
-      break;
-    case 'CRLF':
-      blocks.push(`input = input.replace(/\\r\\n/g, '\\n');`);
-      break;
-    case 'either-preserve':
-      blocks.push(`input = input.replace(/\\r\\n?/g, '\\n');`);
-      break;
-  }
-  // 4. Case fold. ASCII-correctness only — non-ASCII case folding has
-  // documented edge cases (see Phase 8 closeout follow-ups).
-  if (!schema.caseSensitive) {
-    blocks.push(`input = input.toLowerCase();`);
-  }
-  return blocks.length === 0 ? '' : '  ' + blocks.join('\n  ') + '\n';
 }
 
 function emitPublicApi(schema: InferredSchema, validateBody: string): string {

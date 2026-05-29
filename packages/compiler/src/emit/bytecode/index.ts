@@ -20,7 +20,7 @@
 import type { Backend } from '../backend.ts';
 import type { InferredSchema } from '../../model.ts';
 import { encodeSchema, type EncodedSchema } from './encoder.ts';
-import { emitPreamble } from '../v2/index.ts';
+import { emitPreamble } from '../preamble.ts';
 
 export { encodeSchema } from './encoder.ts';
 export type { EncodedSchema } from './encoder.ts';

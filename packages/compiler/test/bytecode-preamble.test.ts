@@ -5,7 +5,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inferSchema } from '../src/index.ts';
 import { BYTECODE_BACKEND } from '../src/emit/bytecode/index.ts';
-import { emitPreamble } from '../src/emit/v2/index.ts';
+import { emitPreamble } from '../src/emit/preamble.ts';
 import type { InferredSchema } from '../src/model.ts';
 
 // Helper: clone an InferredSchema with dial overrides.

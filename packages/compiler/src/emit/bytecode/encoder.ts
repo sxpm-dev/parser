@@ -42,6 +42,7 @@ import type {
   ResolvedSpan,
 } from '../../model.ts';
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
+import { findSpanByName } from '../../span-helpers.ts';
 import { syntheticKey } from '../captures.ts';
 import { productionKey } from '../render.ts';
 import { Op, OPERAND_SIZES, ScanClassKind } from './ops.ts';
@@ -929,7 +930,7 @@ function emitRenderTemplate(
     if (part.length > 0) pieces.push({ kind: 'literal', text: part });
     if (i < slots.length) {
       const slot = slots[i]!;
-      const span = findSpanByNameLocal(production, slot.ref);
+      const span = findSpanByName(production, slot.ref);
       const optional = span !== undefined && isOptionalLocal(span);
       pieces.push({ kind: 'slot', ref: slot.ref, optional });
     }
@@ -1051,15 +1052,6 @@ function emitSoloOptionalSlot(
   // End.
   const endLand = state.len;
   writeI32At(state, jumpEndSite, endLand - jumpAfter);
-}
-
-// Mirrors `findSpanByName` in `emit/render.ts` and the fused-emitter local.
-// Optionality detection only — we don't need the full ResolvedSpan API here.
-function findSpanByNameLocal(production: Production, name: string): ResolvedSpan | undefined {
-  for (const span of production.spans) {
-    if (span.name === name) return span;
-  }
-  return undefined;
 }
 
 // Returns true when the span carries an `.optional()` modifier. Narrower

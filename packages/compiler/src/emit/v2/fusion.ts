@@ -25,6 +25,7 @@
 
 import { isTemplate, type Template } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
+import { findSpanByName, isAbsentAllowedSpan, repeatsJoinSeparator } from '../../span-helpers.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { classFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, emitStopBeforeCheck, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
@@ -940,37 +941,6 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
   };
-}
-
-function findSpanByName(production: Production, name: string): ResolvedSpan | undefined {
-  for (const span of production.spans) {
-    if (span.name === name) return span;
-  }
-  return undefined;
-}
-
-// Mirrors emit/render.ts's `isAbsentAllowedSpan`. A span is "absent-allowed"
-// when its capture may legitimately be null/undefined at render time —
-// either via .optional() or .repeats() with min: 0 (no children).
-function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
-  for (const m of span.modifiers) {
-    if (m.kind === 'optional') return true;
-    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
-  }
-  return false;
-}
-
-// Mirrors emit/render.ts's `repeatsJoinSeparator`. Returns the per-array
-// join separator declared by `.repeats(...)`, or null when the span doesn't
-// repeat. `.repeats()` without explicit `sep` defaults to a single space
-// (matches the schema-level whitespace policy that drives parsing).
-function repeatsJoinSeparator(span: ResolvedSpan): string | null {
-  for (const m of span.modifiers) {
-    if (m.kind === 'repeats') {
-      return m.sep === undefined ? ' ' : m.sep;
-    }
-  }
-  return null;
 }
 
 // Inline-literal match for repeats-loop sep sweeps. The captured-path

@@ -49,7 +49,8 @@ import {
   type StructureRef,
   type Template,
 } from '@parser2/parser';
-import type { InferredSchema, Production, ResolvedSpan } from '../model.ts';
+import type { InferredSchema, Production } from '../model.ts';
+import { findSpanByName, isAbsentAllowedSpan, repeatsJoinSeparator } from '../span-helpers.ts';
 import { interpretParseCaptures } from './parse.ts';
 
 // --- Public API ------------------------------------------------------------
@@ -279,35 +280,6 @@ function stringifyForConcat(value: unknown): string {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return value.map((v) => stringifyForConcat(v)).join('');
   return String(value);
-}
-
-// --- Span lookup helpers ---------------------------------------------------
-
-function findSpanByName(production: Production, name: string): ResolvedSpan | undefined {
-  for (const span of production.spans) {
-    if (span.name === name) return span;
-  }
-  return undefined;
-}
-
-function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
-  for (const m of span.modifiers) {
-    if (m.kind === 'optional') return true;
-    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
-  }
-  return false;
-}
-
-// Mirrors repeatsJoinSeparator in emit/render.ts. `.repeats()` without a
-// sep argument joins with a single space (matches the parser's inter-
-// child whitespace-skip).
-function repeatsJoinSeparator(span: ResolvedSpan): string | null {
-  for (const m of span.modifiers) {
-    if (m.kind === 'repeats') {
-      return m.sep === undefined ? ' ' : m.sep;
-    }
-  }
-  return null;
 }
 
 // Re-derives the synthetic captures key for a structure ref. Kept in sync

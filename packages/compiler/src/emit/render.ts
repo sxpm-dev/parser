@@ -28,7 +28,8 @@
 //                                          exprs
 
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
-import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
+import type { InferredSchema, NodeTypeInfo, Production } from '../model.ts';
+import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../span-helpers.ts';
 import { syntheticKey } from './captures.ts';
 import { INDENT_STEP_SPACES } from './rebuild.ts';
 import { jsString } from './strings.ts';
@@ -191,7 +192,7 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
       const access = `captures${memberAccess(slot.ref)}`;
       const span = findSpanByName(production, slot.ref);
       const optional = span !== undefined && isAbsentAllowedSpan(span);
-      const repeats = span !== undefined ? repeatsJoinSeparator(span) : null;
+      const repeats = span !== undefined ? repeatsJoinDescriptor(span) : null;
       let slotExpr: string;
       if (repeats === null) {
         slotExpr = `(__renderSlot_${targetId}(${access}, __indentCol) ?? "")`;
@@ -263,52 +264,6 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
   if (fused.length === 0) return '""';
   if (fused.length === 1) return `String(${fused[0]})`;
   return fused.join(' + ');
-}
-
-function findSpanByName(production: Production, name: string): ResolvedSpan | undefined {
-  for (const span of production.spans) {
-    if (span.name === name) return span;
-  }
-  return undefined;
-}
-
-function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
-  for (const m of span.modifiers) {
-    if (m.kind === 'optional') return true;
-    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
-  }
-  return false;
-}
-
-// Returns a discriminated descriptor for `.repeats(...)` spans, or null when
-// the span doesn't repeat. Mirrors the rebuild-side `joinOf` in
-// emit/rebuild.ts and the interpreter's stringify equivalent — keep all
-// three in lockstep.
-//
-// Priority:
-//   1. Indent-modified repeats span → `{ kind: 'indent' }`. Callers compose
-//      a dynamic per-level join `'\n' + ' '.repeat(__indentCol)` plus a
-//      leading prefix when `__indentCol > 0`. Task 7.7b added this threading
-//      on the inverse side; Phase 7 follow-up #1 ports it to the forward
-//      side so `render(input, {target:'source'})` produces correctly
-//      indented multi-line output for indent-modified schemas (e.g.
-//      yaml-block nested mappings/sequences).
-//   2. `.repeats({ sep })` → `{ kind: 'sep', sep }`. Declared inter-child
-//      separator that the parser consumed between children — children's
-//      rebuilt source carries only their own content, so we re-introduce
-//      the declared separator here.
-//   3. `.repeats()` without `sep` → `{ kind: 'sep', sep: ' ' }`. Schema-
-//      level whitespace policy (single space) between children.
-type RepeatsDescriptor = { kind: 'indent' } | { kind: 'sep'; sep: string };
-function repeatsJoinSeparator(span: ResolvedSpan): RepeatsDescriptor | null {
-  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
-  for (const m of span.modifiers) {
-    if (m.kind === 'repeats') {
-      if (hasIndent) return { kind: 'indent' };
-      return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
-    }
-  }
-  return null;
 }
 
 // ---------------------------------------------------------------------------

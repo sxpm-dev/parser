@@ -40,6 +40,7 @@ import {
   joinOf,
   type Piece,
 } from '../emit/rebuild.ts';
+import { findSpanByName, isAbsentAllowedSpan } from '../span-helpers.ts';
 
 // --- Public API ------------------------------------------------------------
 
@@ -791,21 +792,6 @@ function rebuildSlotValue(v: unknown, joinSep: string, leadingPrefix = false): s
 }
 
 // --- Helpers --------------------------------------------------------------
-
-function findSpanByName(production: Production, name: string): ResolvedSpan | undefined {
-  for (const span of production.spans) {
-    if (span.name === name) return span;
-  }
-  return undefined;
-}
-
-function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
-  for (const m of span.modifiers) {
-    if (m.kind === 'optional') return true;
-    if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;
-  }
-  return false;
-}
 
 function isOptionalCapture(production: Production, captureName: string): boolean {
   const span = findSpanByName(production, captureName);

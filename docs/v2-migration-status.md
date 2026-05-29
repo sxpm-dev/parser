@@ -75,10 +75,19 @@ plus quality-review follow-ups. Summary of what each commit added:
   semantic intent is "raw bytes" — applying the guard there has a design
   tension. Today html and markdown both declare `'tolerate'`, so no live
   gap. See `packages/compiler/src/emit/v2/span.ts:1067` for the comment.
-- `nonEmpty` failure path does not update `state.maxOff` to the deepest
-  reached position — degrades error-position quality, not correctness.
-  Shared between codegen and interpreter (no drift). Track if error
-  diagnostics surface as an issue.
+- ~~`nonEmpty` failure path does not update `state.maxOff` to the deepest
+  reached position.~~
+  **Status: Resolved (no-op, 2026-05-29).** Stale claim. The code has
+  always updated `state.maxOff` on nonEmpty failure: codegen at
+  `packages/compiler/src/emit/v2/span.ts:1144,1291` and interpreter at
+  `packages/compiler/src/interp/parse.ts:715,763`, both using the
+  monotonic `if (off > state.maxOff) state.maxOff = off` pattern. Verified
+  by `v2 .until() nonEmpty failure surfaces error position past the
+  production start` in `packages/compiler/test/v2-regressions.test.ts` —
+  a multi-span schema where nonEmpty fails after consuming a literal
+  prefix reports the failure position at the failing span's entry (>= 3),
+  not at offset 0 of the production. No drift between codegen and
+  interpreter.
 - v2 codegen does not emit `.lengths([])` refinement. css-color's hex
   schema dropped the call in Phase 1.5 / Task 5 with a TODO comment.
   Restore once codegen support exists.

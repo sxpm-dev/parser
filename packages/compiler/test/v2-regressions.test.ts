@@ -1785,6 +1785,55 @@ test('v2 .until() honors nonEmpty + rejectSuffix array', async () => {
   assert.match(src, /\.length === 0/);
 });
 
+test('v2 .until() nonEmpty failure surfaces error position past the production start', async () => {
+  // Regression check for the Phase 1.5 "nonEmpty maxOff" follow-up. The
+  // emit and interp paths both record `if (off > state.maxOff) state.maxOff = off`
+  // on the nonEmpty failure path; the question this test answers is whether
+  // the resulting error position lands at (or past) the failing span's
+  // entry — not back at offset 0 of the production.
+  //
+  // Construction: a root that consumes `AAA` first, then a nonEmpty-guarded
+  // until-span. Input `AAASTOP` reaches offset 3, finds the stop immediately,
+  // captures empty → nonEmpty fails. We expect the surfaced parse-failure
+  // position to be 3 or later, never 0.
+  const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'R',
+    examples: [
+      relation('R', {
+        input: 'AAAxSTOP',
+        encodings: {
+          src: parse([
+            literal('AAA'),
+            span('body', 'x').until(['STOP'], { nonEmpty: true }),
+            literal('STOP'),
+          ]),
+          ast: { body: $.body },
+        },
+      }),
+    ],
+  });
+  const src = generateParser(schema, undefined, {});
+  const mod = await loadV2Parser(src);
+  // Sanity: happy path returns a captures object.
+  const ok = mod.render('AAAxSTOP', { target: 'ast' });
+  assert.ok(ok);
+
+  // Failure path: empty body. Parser should throw, and the failure-position
+  // text in the message must NOT report offset 0 — it should land at offset 3
+  // (where the nonEmpty-guarded span entered) or deeper.
+  try {
+    mod.render('AAASTOP', { target: 'ast' });
+    assert.fail('expected parse failure for empty nonEmpty capture');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const match = /position\s+(\d+)/.exec(msg);
+    assert.ok(match, `expected a "position N" in error message, got: ${msg}`);
+    const pos = Number(match[1]);
+    assert.ok(pos >= 3, `expected failure position >= 3, got ${pos} (msg: ${msg})`);
+  }
+});
+
 test('v2 .until() with requireStop fails on EOF without stop match', async () => {
   const { defineSchema, relation, parse, span, literal, $ } = await import('@parser2/parser');
   const schema = defineSchema({

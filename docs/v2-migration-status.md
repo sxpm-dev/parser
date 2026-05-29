@@ -491,12 +491,17 @@ tests work around or don't exercise.
    strict input expansion; documented as the chosen default.
 
 6. **No per-pattern case-insensitive escape hatch.** Phase 8 dials are
-   schema-wide. The existing `.oneOf({ caseInsensitive: true })` refinement is
-   value-level (it lowercases the candidate AND the captured token before
-   comparison) and unchanged by Phase 8. With `caseSensitive: false` at schema
-   level, this refinement becomes redundant — both `.html().oneOf(...)` and
-   the schema-level dial now lowercase. Worth simplifying the HTML schema in
-   a future cleanup pass.
+   schema-wide.
+   **Status: Resolved (no-op, 2026-05-29).** The `.oneOf({caseInsensitive:true})`
+   option referenced in the original follow-up was part of the `ex()` builder API
+   that was deleted in Phase 9 Task 9.10c (commit `56b383d`). The current
+   `relation()` API exposes only `oneOf(values: ReadonlyArray<string>)` — no
+   per-pattern case-insensitive option exists or is reachable. HTML schema's
+   `.html().oneOf(...)` calls now lowercase implicitly via the schema-level
+   `caseSensitive: false` preamble. No redundancy remains to simplify.
+   The remaining `caseInsensitive` flag on `.rawUntil()` is orthogonal (it
+   covers case-insensitive STOP-string matching for raw-text content like
+   `</script>` vs `</SCRIPT>`) and is unaffected.
 
 7. **Switch exhaustiveness gap on `bom` and `newlines`.** Neither
    `applyPreamble` (interp) nor `emitPreamble` (emit) has a `default` branch

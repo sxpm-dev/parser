@@ -34,7 +34,7 @@ import type {
   Production,
   ResolvedSpan,
 } from '../model.ts';
-import { INDENT_STEP_SPACES, type Piece } from '../emit/rebuild.ts';
+import { INDENT_STEP_SPACES, joinOf, type Piece } from '../emit/rebuild.ts';
 
 // --- Public API ------------------------------------------------------------
 
@@ -711,11 +711,21 @@ function rebuildSource(
     }
     // For indent-modified slots, compute the per-level separator and
     // whether to add a leading prefix (when indentCol > 0 the whole block
-    // starts on a new indented line).
-    const effectiveJoinSep = p.isIndent
-      ? '\n' + ' '.repeat(indentCol)
-      : p.joinSep;
-    const leadingPrefix = p.isIndent && indentCol > 0;
+    // starts on a new indented line). Non-indent slots use the static join
+    // string ('sep') or empty ('none' — non-repeats slots never reach the
+    // array-join path inside rebuildSlotValue anyway).
+    let effectiveJoinSep: string;
+    let leadingPrefix: boolean;
+    if (p.join.kind === 'indent') {
+      effectiveJoinSep = '\n' + ' '.repeat(indentCol);
+      leadingPrefix = indentCol > 0;
+    } else if (p.join.kind === 'sep') {
+      effectiveJoinSep = p.join.sep;
+      leadingPrefix = false;
+    } else {
+      effectiveJoinSep = '';
+      leadingPrefix = false;
+    }
     built.push(rebuildSlotValue(raw, effectiveJoinSep, leadingPrefix));
   }
   for (const s of built) result += s;
@@ -724,39 +734,25 @@ function rebuildSource(
 
 function contributionOf(span: ResolvedSpan): Piece {
   const optional = isAbsentAllowedSpan(span);
-  const { sep: joinSep, isIndent } = joinSeparatorOf(span);
+  const join = joinOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new Error('stringify: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new Error('stringify: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new Error(`stringify: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, join };
   if (!span.text) throw new Error('stringify: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
-}
-
-// Returns the join separator for a repeats span AND whether it carries an
-// indent modifier. Callers use `isIndent` to decide whether to apply
-// per-level column padding at runtime (see rebuildSource).
-function joinSeparatorOf(span: ResolvedSpan): { sep: string; isIndent: boolean } {
-  const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
-  for (const m of span.modifiers) {
-    if (m.kind === 'repeats') {
-      if (hasIndent) return { sep: '\n', isIndent: true };
-      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
-    }
-  }
-  return { sep: '', isIndent: false };
 }
 
 // Coerces a captured value to its rebuilt-source string. Recursive children

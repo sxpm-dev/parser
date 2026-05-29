@@ -193,36 +193,34 @@ function emitTemplateExpr(template: Template, target: string, production: Produc
       const optional = span !== undefined && isAbsentAllowedSpan(span);
       const repeats = span !== undefined ? repeatsJoinSeparator(span) : null;
       let slotExpr: string;
-      if (repeats !== null) {
-        if (repeats.isIndent) {
-          // Indent-modified repeats span: dynamic per-level join + leading
-          // prefix when nested. Mirrors the inverse rebuild pattern in
-          // emit/rebuild.ts (Task 7.7b) for the forward direction. The
-          // children render at __indentCol + INDENT_STEP_SPACES — they need
-          // to know the column at which THEIR indent children will land if
-          // they themselves contain indent spans.
-          const childCol = `(__indentCol + ${INDENT_STEP_SPACES})`;
-          const joinExpr = `("\\n" + " ".repeat(__indentCol))`;
-          const leadingExpr = `(__indentCol > 0 ? "\\n" + " ".repeat(__indentCol) : "")`;
-          slotExpr =
-            `(Array.isArray(${access})`
-            + ` ? ${leadingExpr} + ${access}.map((c: any) => __renderSlot_${targetId}(c, ${childCol})).join(${joinExpr})`
-            + ` : (__renderSlot_${targetId}(${access}, ${childCol}) ?? ""))`;
-        } else {
-          // Array-of-children slot: per-child dispatch then join with the
-          // span-declared separator. Fall back to the scalar path when the
-          // capture isn't actually an array (e.g. .repeats({min:0}) with a
-          // single child or a non-array sentinel). Non-indent slots pass
-          // __indentCol unchanged so a child production that DOES have an
-          // indent slot still receives the correct ambient column.
-          const sepLit = jsString(repeats.sep);
-          slotExpr =
-            `(Array.isArray(${access})`
-            + ` ? ${access}.map((c: any) => __renderSlot_${targetId}(c, __indentCol)).join(${sepLit})`
-            + ` : (__renderSlot_${targetId}(${access}, __indentCol) ?? ""))`;
-        }
-      } else {
+      if (repeats === null) {
         slotExpr = `(__renderSlot_${targetId}(${access}, __indentCol) ?? "")`;
+      } else if (repeats.kind === 'indent') {
+        // Indent-modified repeats span: dynamic per-level join + leading
+        // prefix when nested. Mirrors the inverse rebuild pattern in
+        // emit/rebuild.ts (Task 7.7b) for the forward direction. The
+        // children render at __indentCol + INDENT_STEP_SPACES — they need
+        // to know the column at which THEIR indent children will land if
+        // they themselves contain indent spans.
+        const childCol = `(__indentCol + ${INDENT_STEP_SPACES})`;
+        const joinExpr = `("\\n" + " ".repeat(__indentCol))`;
+        const leadingExpr = `(__indentCol > 0 ? "\\n" + " ".repeat(__indentCol) : "")`;
+        slotExpr =
+          `(Array.isArray(${access})`
+          + ` ? ${leadingExpr} + ${access}.map((c: any) => __renderSlot_${targetId}(c, ${childCol})).join(${joinExpr})`
+          + ` : (__renderSlot_${targetId}(${access}, ${childCol}) ?? ""))`;
+      } else {
+        // Array-of-children slot: per-child dispatch then join with the
+        // span-declared separator. Fall back to the scalar path when the
+        // capture isn't actually an array (e.g. .repeats({min:0}) with a
+        // single child or a non-array sentinel). Non-indent slots pass
+        // __indentCol unchanged so a child production that DOES have an
+        // indent slot still receives the correct ambient column.
+        const sepLit = jsString(repeats.sep);
+        slotExpr =
+          `(Array.isArray(${access})`
+          + ` ? ${access}.map((c: any) => __renderSlot_${targetId}(c, __indentCol)).join(${sepLit})`
+          + ` : (__renderSlot_${targetId}(${access}, __indentCol) ?? ""))`;
       }
       pieces.push({ kind: 'slot', text: slotExpr, optional, access });
     }
@@ -282,31 +280,32 @@ function isAbsentAllowedSpan(span: ResolvedSpan): boolean {
   return false;
 }
 
-// Returns a descriptor `{ sep, isIndent }` for `.repeats(...)` spans, or
-// null when the span doesn't repeat. Mirrors the rebuild-side
-// `joinSeparatorOf` in emit/rebuild.ts and the interpreter's stringify
-// equivalent — keep all three in lockstep.
+// Returns a discriminated descriptor for `.repeats(...)` spans, or null when
+// the span doesn't repeat. Mirrors the rebuild-side `joinOf` in
+// emit/rebuild.ts and the interpreter's stringify equivalent — keep all
+// three in lockstep.
 //
 // Priority:
-//   1. Indent-modified repeats span → callers compose a dynamic per-level
-//      join expression `'\n' + ' '.repeat(__indentCol)` plus a leading
-//      prefix when `__indentCol > 0`. The static `sep` field is unused
-//      when `isIndent` is true (the caller builds the join inline). Task
-//      7.7b added this threading on the inverse side; Phase 7 follow-up #1
-//      ports it to the forward side so `render(input, {target:'source'})`
-//      produces correctly indented multi-line output for indent-modified
-//      schemas (e.g. yaml-block nested mappings/sequences).
-//   2. `.repeats({ sep })` → declared inter-child separator that the parser
-//      consumed between children — children's rebuilt source carries only
-//      their own content, so we re-introduce the declared separator here.
-//   3. `.repeats()` without `sep` → schema-level whitespace policy (single
-//      space) between children.
-function repeatsJoinSeparator(span: ResolvedSpan): { sep: string; isIndent: boolean } | null {
+//   1. Indent-modified repeats span → `{ kind: 'indent' }`. Callers compose
+//      a dynamic per-level join `'\n' + ' '.repeat(__indentCol)` plus a
+//      leading prefix when `__indentCol > 0`. Task 7.7b added this threading
+//      on the inverse side; Phase 7 follow-up #1 ports it to the forward
+//      side so `render(input, {target:'source'})` produces correctly
+//      indented multi-line output for indent-modified schemas (e.g.
+//      yaml-block nested mappings/sequences).
+//   2. `.repeats({ sep })` → `{ kind: 'sep', sep }`. Declared inter-child
+//      separator that the parser consumed between children — children's
+//      rebuilt source carries only their own content, so we re-introduce
+//      the declared separator here.
+//   3. `.repeats()` without `sep` → `{ kind: 'sep', sep: ' ' }`. Schema-
+//      level whitespace policy (single space) between children.
+type RepeatsDescriptor = { kind: 'indent' } | { kind: 'sep'; sep: string };
+function repeatsJoinSeparator(span: ResolvedSpan): RepeatsDescriptor | null {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      if (hasIndent) return { sep: '\n', isIndent: true };
-      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
+      if (hasIndent) return { kind: 'indent' };
+      return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
     }
   }
   return null;

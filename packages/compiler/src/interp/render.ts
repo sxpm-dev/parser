@@ -24,6 +24,16 @@
 //          whitespace, both collapse to "" (avoids dangling separators).
 //   - Object / Array bodies recurse over their children.
 //
+// KNOWN DIVERGENCE (Phase 7 follow-up #1 deferred item): indent-modified
+// `.repeats()` spans here join with a flat `'\n'`, whereas emit/render.ts
+// joins with the per-level dynamic `'\n' + ' '.repeat(__indentCol)` and
+// adds a leading prefix when `__indentCol > 0`. interpretRender is only
+// used by the compiler's internal test infra (fusion-round-trip,
+// interp-render, fuzz) against non-indent schemas (markdown, css, html),
+// so no live gap. If a test ever needs to render yaml-block-style nested
+// source through the interpreter, port emit/render.ts's __indentCol
+// threading + repeatsJoinSeparator's `kind:'indent'` branch here.
+//
 // Public surface:
 //   - interpretRender(schema, captures, target): walk one captures object
 //   - interpretRenderFromInput(schema, input, target): convenience parse+render

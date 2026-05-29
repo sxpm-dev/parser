@@ -61,28 +61,33 @@ export function emitRebuild(schema: InferredSchema): string {
 // Shared between rebuild.ts and interp/stringify.ts — both synthesize the
 // same Piece sequence per production. Exported so the interp side imports
 // the definition rather than re-declaring it locally.
+//
+// `SlotJoin` is a discriminated union describing how a slot's captured value
+// is joined when it's an array (recursive / `.repeats()` children):
+//   - `'none'`   — non-repeats slot; no array join needed.
+//   - `'indent'` — `.indent()`-modified `.repeats()`; runtime computes
+//     `'\n' + ' '.repeat(__indentCol)` dynamically per level and adds a
+//     leading prefix when `__indentCol > 0`.
+//   - `'sep'`    — `.repeats({ sep })` or `.repeats()` with a static join
+//     string (single space when `sep` was omitted).
+// Callers branch on `kind` to choose the static or dynamic emit path.
+export type SlotJoin =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'indent' }
+  | { readonly kind: 'sep'; readonly sep: string };
+
 export type Piece =
   | { readonly kind: 'literal'; readonly text: string }
   | {
       readonly kind: 'slot';
       readonly ref: string;
       readonly optional: boolean;
-      // Join separator for repeated children captured as an array. Empty
-      // string when `.repeats({ sep })` is declared (children carry their
-      // own separator suffix); single space when `.repeats()` without `sep`
-      // (whitespace-separated at parse time). Non-repeating slots carry an
-      // empty join separator — the field is unused but type-stable.
-      readonly joinSep: string;
-      // True when this slot carries an `.indent()` modifier. When true the
-      // rebuild function receives an `__indentCol` parameter and uses a
-      // dynamic join separator `'\n' + ' '.repeat(__indentCol)` plus a
-      // leading prefix when `__indentCol > 0`.
-      readonly isIndent: boolean;
+      readonly join: SlotJoin;
     };
 
 function emitOne(nodeName: string, prodIdx: number, production: Production): string {
   const pieces = synthesizePieces(production);
-  const hasIndentPiece = pieces.some((p) => p.kind === 'slot' && p.isIndent);
+  const hasIndentPiece = pieces.some((p) => p.kind === 'slot' && p.join.kind === 'indent');
   const expr = piecesToConcat(pieces);
   if (hasIndentPiece) {
     return `function ${rebuildFnName(nodeName, prodIdx)}(captures: any, __indentCol: number = 0): string {
@@ -129,49 +134,44 @@ function contributionOf(span: ResolvedSpan): Piece {
   // Treat both .optional() and .repeats({ min: 0 }) as absent-allowed: the
   // captured value may be null and the slot must collapse to "" at runtime.
   const optional = isAbsentAllowed(span);
-  const { sep: joinSep, isIndent } = joinSeparatorOf(span);
+  const join = joinOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('rebuild: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new CompilerError('rebuild: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new CompilerError(`rebuild: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+    return { kind: 'slot', ref: span.name, optional, join };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, joinSep, isIndent };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, join };
   if (!span.text) throw new CompilerError('rebuild: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
 }
 
-// Fix 3: determine the runtime join separator for a span captured as an
-// array. `.repeats({ sep })` declares an explicit inter-child separator
-// consumed by the parser between children — each child's rebuilt source
-// only carries its own content, so rebuild must re-introduce the declared
-// separator at join time. `.repeats()` without `sep` relies on the
-// schema-level whitespace policy (typically a single space) between
-// children — rebuild joins with " ". Spans that don't repeat get "" too
-// (unused; arrays only land here for repeats and recursive captures, the
-// latter joined via __rebuildSlot's nested recursion).
-//
-// Returns `{ sep, isIndent }` so callers can distinguish indent spans and
-// emit a dynamic join expression (`'\n' + ' '.repeat(__indentCol)`) rather
-// than a static string literal.
-function joinSeparatorOf(span: ResolvedSpan): { sep: string; isIndent: boolean } {
+// Fix 3: determine the runtime join shape for a span captured as an array.
+// `.indent()`-modified `.repeats()` returns 'indent' — callers emit a
+// dynamic per-level join (`'\n' + ' '.repeat(__indentCol)`) and a leading
+// prefix when `__indentCol > 0`. `.repeats({ sep })` returns 'sep' with the
+// declared separator (parser consumed it between children, so rebuild must
+// re-introduce it). `.repeats()` without `sep` defaults to single-space
+// (schema-level whitespace policy). Non-repeats spans return 'none' — they
+// never reach the array-join code path at runtime.
+export function joinOf(span: ResolvedSpan): SlotJoin {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
-      if (hasIndent) return { sep: '\n', isIndent: true };
-      return { sep: m.sep === undefined ? ' ' : m.sep, isIndent: false };
+      if (hasIndent) return { kind: 'indent' };
+      return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
     }
   }
-  return { sep: '', isIndent: false };
+  return { kind: 'none' };
 }
 
 function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
@@ -190,12 +190,14 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
     // parameter is only emitted by `emitOne` when the production has at
     // least one indent-modified slot (see `hasIndentPiece` check above).
     let slotExpr: string;
-    if (p.isIndent) {
+    if (p.join.kind === 'indent') {
       // Dynamic join: '\n' + ' '.repeat(__indentCol)
       // Dynamic leading prefix: __indentCol > 0 → also prefix the first child
       slotExpr = `__rebuildSlot(${slotAccess}, "\\n" + " ".repeat(__indentCol), __indentCol > 0)`;
+    } else if (p.join.kind === 'sep') {
+      slotExpr = `__rebuildSlot(${slotAccess}${p.join.sep ? `, ${jsString(p.join.sep)}` : ''})`;
     } else {
-      slotExpr = `__rebuildSlot(${slotAccess}${p.joinSep ? `, ${jsString(p.joinSep)}` : ''})`;
+      slotExpr = `__rebuildSlot(${slotAccess})`;
     }
     if (p.optional) {
       // Fuse the slot with its preceding literal separator (Fix 2 — ports

@@ -816,7 +816,7 @@ function emitRefinementChecks(span: ResolvedSpan, captureVar: string, entryOffVa
   // Number-shape refinements (.int / .float / .scientific / .separator / .bigint
   // / .binary / .octal) are handled at scan time by numberScanCode below — they
   // change which bytes the scanner accepts. This function only emits post-scan
-  // value tests: currently `.oneOf([...])`.
+  // value tests: `.oneOf([...])` and `.lengths([N, ...])`.
   const checks: string[] = [];
   for (const ref of span.refinements) {
     if (ref.name === 'oneOf') {
@@ -825,6 +825,22 @@ function emitRefinementChecks(span: ResolvedSpan, captureVar: string, entryOffVa
         const lowered = (values as string[]).map((v) => v.toLowerCase());
         const cond = lowered.map((v) => `${captureVar}.toLowerCase() === ${jsString(v)}`).join(' || ');
         checks.push(`if (!(${cond})) { state.pos = ${entryOffVar}; return null; }`);
+      }
+    }
+    if (ref.name === 'lengths') {
+      // .lengths([N1, N2, ...]) requires the captured byte-length to match
+      // one of the listed values. Used by css-color's hex schema to gate
+      // accepted hex widths (`.lengths([3, 4, 6, 8])` — RGB / RGBA / RRGGBB
+      // / RRGGBBAA). Without this refinement, malformed widths like `#12`
+      // or `#123456789` would slip through the hex scanner. Phase 1.5
+      // codegen gap, deferred at the time; restored here.
+      const values = ref.args?.[0];
+      if (Array.isArray(values) && values.every((x) => typeof x === 'number')) {
+        const lens = [...new Set(values as number[])];
+        if (lens.length > 0) {
+          const cond = lens.map((n) => `${captureVar}.length === ${n | 0}`).join(' || ');
+          checks.push(`if (!(${cond})) { state.pos = ${entryOffVar}; return null; }`);
+        }
       }
     }
   }

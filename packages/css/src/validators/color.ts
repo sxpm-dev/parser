@@ -110,10 +110,12 @@ export default defineSchema({
       encodings: {
         parse: parse([
           literal('#').noWhitespaceAfter(),
-          // TODO: restore .lengths([3, 4, 6, 8]) once the v2 compiler emits the
-          // refinement. Without it, malformed hex like `#12` or `#123456789` is
-          // accepted. Tracked alongside Phase 1.5 closeout.
-          span('value', '00ff99').hex(),
+          // .lengths([3, 4, 6, 8]) — RGB / RGBA / RRGGBB / RRGGBBAA. The v2
+          // compiler emits this as a post-scan length check (see
+          // emit/v2/span.ts:emitRefinementChecks); the interpreter mirrors
+          // it. Without the refinement, malformed widths like `#12` or
+          // `#123456789` would slip through the hex scanner.
+          span('value', '00ff99').hex().lengths([3, 4, 6, 8]),
         ]),
         ast: { type: 'hash-color', value: $.value },
       },

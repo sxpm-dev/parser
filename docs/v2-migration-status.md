@@ -88,9 +88,18 @@ plus quality-review follow-ups. Summary of what each commit added:
   prefix reports the failure position at the failing span's entry (>= 3),
   not at offset 0 of the production. No drift between codegen and
   interpreter.
-- v2 codegen does not emit `.lengths([])` refinement. css-color's hex
-  schema dropped the call in Phase 1.5 / Task 5 with a TODO comment.
-  Restore once codegen support exists.
+- ~~v2 codegen does not emit `.lengths([])` refinement. css-color's hex
+  schema dropped the call in Phase 1.5 / Task 5 with a TODO comment.~~
+  **Status: Resolved (2026-05-29).** Added the `lengths` arm to both
+  `packages/compiler/src/emit/v2/span.ts:emitRefinementChecks` (post-scan
+  width check via `value.length === N || ...`) and the interpreter's
+  parallel handler in `packages/compiler/src/interp/parse.ts`. Restored
+  `.lengths([3, 4, 6, 8])` on the hex span in
+  `packages/css/src/validators/color.ts` so malformed widths like `#12`
+  and `#123456789` now fail validation. The previously-skipped css test
+  `validate rejects malformed short hex #12` re-enabled and a parallel
+  long-hex test added. CSS 75+2 skip → 77+1 skip. Golden hash bumped for
+  the css generated parser.
 
 ## Phase 5 closeout (2026-05-27)
 

@@ -197,6 +197,7 @@ function __v0_parseCssColorValue__alt1(state: State): unknown {
   while (off < len && isHexDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  if (!(value.length === 3 || value.length === 4 || value.length === 6 || value.length === 8)) { state.pos = entryOff; return null; }
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {

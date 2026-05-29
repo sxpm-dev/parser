@@ -92,10 +92,12 @@ test('validate rejects non-color strings', () => {
   assert.throws(() => mod.validate(''));
 });
 
-// The css-color schema (color.ts:113-115) flags an outstanding TODO: short-
-// or long-hex strings like `#12` are currently accepted because the .lengths()
-// refinement is not yet emitted. When that lands, drop `skip: true` and the
-// test should pass.
-test('validate rejects malformed short hex #12 (Phase 1.5 follow-up)', { skip: true }, () => {
+// Phase 1.5 follow-up — .lengths([3, 4, 6, 8]) on the hex span now emits
+// as a post-scan width check in both v2 codegen and the interpreter, so
+// malformed widths like `#12` or `#123456789` are rejected.
+test('validate rejects malformed short hex #12 (Phase 1.5 follow-up)', () => {
   assert.throws(() => mod.validate('#12'));
+});
+test('validate rejects malformed long hex #123456789 (Phase 1.5 follow-up)', () => {
+  assert.throws(() => mod.validate('#123456789'));
 });

@@ -421,13 +421,25 @@ function parseClassSpan(
   } else {
     value = rawSlice;
   }
-  // Post-scan refinement checks (.oneOf).
+  // Post-scan refinement checks (.oneOf / .lengths). Mirror of the codegen
+  // path in emit/v2/span.ts:emitRefinementChecks — kept in lockstep so
+  // interp and emit agree on accepted captures.
   for (const ref of span.refinements) {
     if (ref.name === 'oneOf') {
       const values = ref.args?.[0];
       if (Array.isArray(values) && values.every((x) => typeof x === 'string')) {
         const lowered = (values as string[]).map((v) => v.toLowerCase());
         if (!lowered.includes(value.toLowerCase())) {
+          state.pos = start;
+          return false;
+        }
+      }
+    }
+    if (ref.name === 'lengths') {
+      const values = ref.args?.[0];
+      if (Array.isArray(values) && values.every((x) => typeof x === 'number')) {
+        const lens = new Set((values as number[]).map((n) => n | 0));
+        if (!lens.has(value.length)) {
           state.pos = start;
           return false;
         }

@@ -14,25 +14,19 @@
 //       were populated at parse time by attachSyntheticRefs and read
 //       directly here.
 //   - Template bodies fuse into a string: parts[0] + slot0 + parts[1] +
-//     slot1 + ... — with two important nuances mirrored from
-//     emitTemplateExpr:
+//     slot1 + ... — with three nuances mirrored from emitTemplateExpr:
 //       1. `.repeats()` arrays join with the span's declared separator
-//          (NOT a hardcoded ' '); look it up via repeatsJoinSeparator on
+//          (NOT a hardcoded ' '); look it up via repeatsJoinDescriptor on
 //          the owning production's span definition.
-//       2. Optional-absent slot fusion: when the captured value is
+//       2. `.indent()`-modified `.repeats()` arrays join with the per-
+//          level dynamic separator `'\n' + ' '.repeat(indentCol)` and add
+//          a leading prefix when `indentCol > 0`. Children recurse at
+//          `indentCol + INDENT_STEP_SPACES` so a nested indent block
+//          knows the column its OWN children will land at.
+//       3. Optional-absent slot fusion: when the captured value is
 //          null/undefined AND the immediately-preceding part is purely
 //          whitespace, both collapse to "" (avoids dangling separators).
 //   - Object / Array bodies recurse over their children.
-//
-// KNOWN DIVERGENCE (Phase 7 follow-up #1 deferred item): indent-modified
-// `.repeats()` spans here join with a flat `'\n'`, whereas emit/render.ts
-// joins with the per-level dynamic `'\n' + ' '.repeat(__indentCol)` and
-// adds a leading prefix when `__indentCol > 0`. interpretRender is only
-// used by the compiler's internal test infra (fusion-round-trip,
-// interp-render, fuzz) against non-indent schemas (markdown, css, html),
-// so no live gap. If a test ever needs to render yaml-block-style nested
-// source through the interpreter, port emit/render.ts's __indentCol
-// threading + repeatsJoinSeparator's `kind:'indent'` branch here.
 //
 // Public surface:
 //   - interpretRender(schema, captures, target): walk one captures object
@@ -50,7 +44,8 @@ import {
   type Template,
 } from '@parser2/parser';
 import type { InferredSchema, Production } from '../model.ts';
-import { findSpanByName, isAbsentAllowedSpan, repeatsJoinSeparator } from '../span-helpers.ts';
+import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../span-helpers.ts';
+import { INDENT_STEP_SPACES } from '../emit/rebuild.ts';
 import { interpretParseCaptures } from './parse.ts';
 
 // --- Public API ------------------------------------------------------------
@@ -60,7 +55,7 @@ export function interpretRender(
   captures: unknown,
   target: string,
 ): unknown {
-  return renderSlot(schema, captures, target);
+  return renderSlot(schema, captures, target, 0);
 }
 
 export function interpretRenderFromInput(
@@ -69,7 +64,7 @@ export function interpretRenderFromInput(
   target: string,
 ): unknown {
   const captures = interpretParseCaptures(schema, input);
-  return renderSlot(schema, captures, target);
+  return renderSlot(schema, captures, target, 0);
 }
 
 // --- Slot helper -----------------------------------------------------------
@@ -79,15 +74,25 @@ export function interpretRenderFromInput(
 // maps arrays element-wise. Returning the value as-is for non-captures
 // non-array values means the caller's surrounding concat handles
 // stringification.
-function renderSlot(schema: InferredSchema, value: unknown, target: string): unknown {
+//
+// `indentCol` is the column at which children of an indent-modified
+// repeats span land. Passed through verbatim for non-indent slots and
+// for array elements (the array-bearing slot already advanced indentCol
+// for its children before calling here).
+function renderSlot(
+  schema: InferredSchema,
+  value: unknown,
+  target: string,
+  indentCol: number,
+): unknown {
   if (value === null || value === undefined) return value;
   if (Array.isArray(value)) {
-    return value.map((v) => renderSlot(schema, v, target));
+    return value.map((v) => renderSlot(schema, v, target, indentCol));
   }
   if (typeof value === 'object') {
     const c = value as Record<string, unknown>;
     if (typeof c.__production === 'string') {
-      return dispatchProduction(schema, c, target);
+      return dispatchProduction(schema, c, target, indentCol);
     }
   }
   return value;
@@ -99,6 +104,7 @@ function dispatchProduction(
   schema: InferredSchema,
   captures: Record<string, unknown>,
   target: string,
+  indentCol: number,
 ): unknown {
   const prodKey = captures.__production;
   if (typeof prodKey !== 'string') {
@@ -122,7 +128,7 @@ function dispatchProduction(
   if (!entry) {
     throw new Error(`interp render: production '${prodKey}' has no '${target}' target`);
   }
-  return walkBody(schema, entry.body, captures, target, production);
+  return walkBody(schema, entry.body, captures, target, production, indentCol);
 }
 
 // --- Body walker -----------------------------------------------------------
@@ -133,6 +139,7 @@ function walkBody(
   captures: Record<string, unknown>,
   target: string,
   production: Production,
+  indentCol: number,
 ): unknown {
   if (body === null) return null;
   const t = typeof body;
@@ -142,14 +149,14 @@ function walkBody(
     return Number.isFinite(body as number) ? body : null;
   }
   if (t === 'boolean') return body;
-  if (isStructureRef(body)) return readRef(schema, body, captures, target);
-  if (isTemplate(body)) return walkTemplate(schema, body, captures, target, production);
+  if (isStructureRef(body)) return readRef(schema, body, captures, target, indentCol);
+  if (isTemplate(body)) return walkTemplate(schema, body, captures, target, production, indentCol);
   if (Array.isArray(body)) {
-    return body.map((child) => walkBody(schema, child, captures, target, production));
+    return body.map((child) => walkBody(schema, child, captures, target, production, indentCol));
   }
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(body as Record<string, RenderBody>)) {
-    out[k] = walkBody(schema, v, captures, target, production);
+    out[k] = walkBody(schema, v, captures, target, production, indentCol);
   }
   return out;
 }
@@ -159,12 +166,13 @@ function readRef(
   ref: StructureRef,
   captures: Record<string, unknown>,
   target: string,
+  indentCol: number,
 ): unknown {
   if (ref.__ref === 'span-presence') {
     return captures[ref.name] != null;
   }
   if (ref.__ref === 'span-value') {
-    return renderSlot(schema, captures[ref.name], target);
+    return renderSlot(schema, captures[ref.name], target, indentCol);
   }
   const key = syntheticKey(ref);
   return captures[key];
@@ -178,6 +186,7 @@ function walkTemplate(
   captures: Record<string, unknown>,
   target: string,
   production: Production,
+  indentCol: number,
 ): string {
   // Build the same `pieces` list emit/render.ts builds, then apply the
   // same optional-absent fusion before string-concat. Keeping the two
@@ -210,26 +219,50 @@ function walkTemplate(
       if (absent) {
         valueText = '';
       } else {
-        const repeatsSep = span !== undefined ? repeatsJoinSeparator(span) : null;
-        if (repeatsSep !== null) {
-          // Array-of-children slot: per-child slot then join with the
-          // span-declared separator. Fall back to scalar dispatch when the
-          // capture isn't actually an array (e.g. .repeats({min:0}) with
-          // a sentinel scalar).
+        const repeats = span !== undefined ? repeatsJoinDescriptor(span) : null;
+        if (repeats !== null && repeats.kind === 'indent') {
+          // Indent-modified repeats slot: dynamic per-level join +
+          // leading prefix when nested. Mirrors emit/render.ts (Phase 7
+          // follow-up #1). Children recurse at indentCol +
+          // INDENT_STEP_SPACES so a child production with its OWN
+          // indent slot receives the correct column for the level
+          // below it.
+          const childCol = indentCol + INDENT_STEP_SPACES;
+          const joinSep = '\n' + ' '.repeat(indentCol);
+          const leading = indentCol > 0 ? '\n' + ' '.repeat(indentCol) : '';
           if (Array.isArray(raw)) {
             const parts2: string[] = [];
             for (const child of raw) {
-              const r = renderSlot(schema, child, target);
+              const r = renderSlot(schema, child, target, childCol);
               if (r === null || r === undefined) continue;
               parts2.push(stringifyForConcat(r));
             }
-            valueText = parts2.join(repeatsSep);
+            valueText = leading + parts2.join(joinSep);
           } else {
-            const r = renderSlot(schema, raw, target);
+            const r = renderSlot(schema, raw, target, childCol);
+            valueText = r === null || r === undefined ? '' : stringifyForConcat(r);
+          }
+        } else if (repeats !== null) {
+          // Non-indent repeats slot: per-child render then join with the
+          // span-declared separator. Fall back to scalar dispatch when
+          // the capture isn't actually an array (e.g. .repeats({min:0})
+          // with a sentinel scalar). indentCol is passed through
+          // unchanged so a child production that DOES have an indent
+          // slot still receives the correct ambient column.
+          if (Array.isArray(raw)) {
+            const parts2: string[] = [];
+            for (const child of raw) {
+              const r = renderSlot(schema, child, target, indentCol);
+              if (r === null || r === undefined) continue;
+              parts2.push(stringifyForConcat(r));
+            }
+            valueText = parts2.join(repeats.sep);
+          } else {
+            const r = renderSlot(schema, raw, target, indentCol);
             valueText = r === null || r === undefined ? '' : stringifyForConcat(r);
           }
         } else {
-          const r = renderSlot(schema, raw, target);
+          const r = renderSlot(schema, raw, target, indentCol);
           valueText = r === null || r === undefined ? '' : stringifyForConcat(r);
         }
       }

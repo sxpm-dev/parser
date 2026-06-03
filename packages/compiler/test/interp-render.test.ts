@@ -14,6 +14,7 @@ import { strict as assert } from 'node:assert';
 import markdownSchema from '../../markdown/src/schema.ts';
 import cssSchema from '../../css/src/schema.ts';
 import htmlSchema from '../../html/src/schema.ts';
+import yamlBlockSchema from '../../yaml-block/src/schema.ts';
 import { inferSchema } from '../src/index.ts';
 import { interpretRenderFromInput } from '../src/interp/render.ts';
 
@@ -158,6 +159,48 @@ for (const input of htmlInputs) {
       fromInterp,
       fromV2,
       `interp vs v2 html source mismatch for input: ${JSON.stringify(input)}`,
+    );
+  });
+}
+
+// --- YAML-block (indent coverage) -------------------------------------------
+//
+// Phase 7 follow-up #1 closeout: yaml-block exercises the indent-modified
+// repeats path in interp/render. Before the closeout, indent slots in
+// interp/render joined siblings with a flat '\n' and dropped the per-level
+// prefix — these assertions would have failed. After it, interp/render
+// threads `indentCol` through and uses `repeatsJoinDescriptor` with the
+// 'indent' variant, producing output byte-identical to the v2 captures-
+// path render.
+
+const yamlBlockInferred = inferSchema(yamlBlockSchema);
+
+const yamlBlockInputs: ReadonlyArray<string> = [
+  'foo: bar',
+  'foo: 1\nbar: 2',
+  'outer:\n  inner: 1',
+  'a:\n  b:\n    c: 1',
+  'list:\n  - one\n  - two',
+  'mix:\n  scalar: value\n  list:\n    - one\n    - two',
+];
+
+let yamlBlockRender: RenderFn | null = null;
+async function getYamlBlockRender(): Promise<RenderFn> {
+  if (yamlBlockRender) return yamlBlockRender;
+  const mod = (await import('../../yaml-block/src/_generated/parser.ts')) as { render: RenderFn };
+  yamlBlockRender = mod.render;
+  return yamlBlockRender;
+}
+
+for (const input of yamlBlockInputs) {
+  test(`interp render yaml-block source — ${JSON.stringify(input)}`, async () => {
+    const render = await getYamlBlockRender();
+    const fromInterp = interpretRenderFromInput(yamlBlockInferred, input, 'source');
+    const fromV2 = render(input, { target: 'source' });
+    assert.equal(
+      fromInterp,
+      fromV2,
+      `interp vs v2 yaml-block source mismatch for input: ${JSON.stringify(input)}`,
     );
   });
 }

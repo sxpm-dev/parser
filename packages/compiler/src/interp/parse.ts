@@ -1252,7 +1252,7 @@ function walkTemplate(
         // v2 joins with " " by default for .repeats() arrays — we don't
         // have access to the per-slot span's repeats sep here. The parse-
         // path tests don't exercise template-with-array slots; if they
-        // do this needs the same `repeatsJoinSeparator` lookup that
+        // do this needs the same `repeatsJoinDescriptor` lookup that
         // emit/render.ts performs.
         out += rendered.join(' ');
       } else {

@@ -25,7 +25,7 @@
 
 import { isTemplate, type Template } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
-import { findSpanByName, isAbsentAllowedSpan, repeatsJoinSeparator } from '../../span-helpers.ts';
+import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../../span-helpers.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { classFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, emitStopBeforeCheck, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
@@ -496,7 +496,7 @@ function emitFusedRepeatsSpan(
   // The render-time join separator for the slot. When the schema author
   // wrote `.repeats({ sep: ', ' })` we emit `, ` between children. With no
   // explicit `sep` the captures path defaults to a single space via
-  // `repeatsJoinSeparator`. We mirror that for fusion so the rendered
+  // `repeatsJoinDescriptor`. We mirror that for fusion so the rendered
   // output matches the captures-fallback exactly.
   const joinSep = sep === undefined ? ' ' : sep;
   // stopBefore literals — when the next bytes start with any of these
@@ -841,13 +841,22 @@ function emitTemplatePushes(
           `fusion: slot '${slot.ref}' has no binding (template references an unnamed span)`,
         );
       }
-      const repeatsSep = span !== undefined ? repeatsJoinSeparator(span) : null;
+      const repeats = span !== undefined ? repeatsJoinDescriptor(span) : null;
       let pushExpr: string;
-      if (repeatsSep !== null) {
+      if (repeats !== null && repeats.kind === 'indent') {
+        // Unreachable: `isProductionFusable` (line 211) gates productions
+        // with any indent-modified span out of the fused path so the
+        // captures-based emitter in `emit/render.ts` can run instead
+        // (it threads `__indentCol` and emits the dynamic per-level
+        // join). If this throws, the eligibility check has drifted.
+        throw new Error(
+          `fusion: indent-modified repeats slot '${slot.ref}' reached the fused path — eligibility gate at fusion.ts:211 should have prevented this`,
+        );
+      } else if (repeats !== null) {
         // Array-of-children slot whose children are NOT recursive (eligibility
         // gates recursive-arrays through the streamed path). Stringify each
         // child and join with the declared separator.
-        const sepLit = jsString(repeatsSep);
+        const sepLit = jsString(repeats.sep);
         pushExpr = `(Array.isArray(${varExpr}) ? ${varExpr}.map((__v: any) => String(__v ?? "")).join(${sepLit}) : String(${varExpr} ?? ""))`;
       } else {
         // Coalesce null/undefined to "" so optional-absent captures don't

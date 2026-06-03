@@ -509,21 +509,28 @@ need to be addressed if a future schema exposes the gap.
    output of non-indent schemas is unchanged). Bytecode runtime untouched
    per the standing deferral (this follow-up's #3).
 
-   Deferred from review (genuine future work, not blocking):
-   - **`interp/render.ts` still uses the pre-fix flat-`'\n'` behavior for
-     indent schemas.** `interpretRender` is only used by the compiler's
-     internal test infra (`fusion-round-trip.test.ts`, `interp-render.test.ts`,
-     the fuzz runner) against non-indent schemas (markdown, css, html), so
-     no live gap. But the module comment claims it "mirrors emit/render.ts
-     semantics exactly" — now wider divergence for indent schemas. Track
-     parity if the interpreter ever needs to render yaml-block-style nested
-     source.
-   - **Dead `sep` field in the indent-branch return of `repeatsJoinSeparator`.**
-     The descriptor returns `{ sep: '\n', isIndent: true }` for indent
-     spans; callers build the dynamic join inline and never read `sep`.
-     Refactoring to a discriminated union (`IndentDescriptor | SepDescriptor`)
-     would make the dead data self-documenting and give TS narrowing. Pure
-     cosmetic.
+   Deferred-from-review items — both resolved 2026-06-03:
+   - ~~`interp/render.ts` still uses the pre-fix flat-`'\n'` behavior for
+     indent schemas.~~ **Resolved (2026-06-03).** Threaded `indentCol`
+     through `interpretRender` / `renderSlot` / `dispatchProduction` /
+     `walkBody` / `walkTemplate`; switched `walkTemplate`'s slot logic
+     from `repeatsJoinSeparator` to `repeatsJoinDescriptor`; emits
+     dynamic per-level join + leading-prefix for `kind:'indent'`
+     descriptors, recurses with `indentCol + INDENT_STEP_SPACES` into
+     indent children. Module docstring's "KNOWN DIVERGENCE" note
+     dropped. The fused path (`emit/v2/fusion.ts`) also migrated to
+     `repeatsJoinDescriptor` and now throws defensively if it ever
+     sees a `kind:'indent'` descriptor — the eligibility gate at
+     `fusion.ts:211` is supposed to prevent that. 6 new yaml-block
+     interp-vs-v2 tests in `interp-render.test.ts` (flat, two-entry,
+     one-level nest, two-level nest, sequence, mixed) — compiler tests
+     391 → 397.
+   - ~~Dead `sep` field in the indent-branch return of
+     `repeatsJoinSeparator`.~~ **Resolved (2026-05-29, commit `a47cfa1`).**
+     `RepeatsDescriptor` is now a true discriminated union
+     (`{ kind: 'indent' } | { kind: 'sep'; sep: string }`); the
+     `repeatsJoinSeparator` helper itself is now deleted (2026-06-03)
+     since the three forward render paths consume the full descriptor.
 
 2. ~~`synthesizePieces` requires literal text on indent spans with `min: 1`.~~
    **Status: Resolved (2026-05-29).** Added `isRequiredRecursiveRepeats` to

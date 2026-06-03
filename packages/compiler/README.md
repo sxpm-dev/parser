@@ -114,12 +114,12 @@ It never ships:
 - Package-local codegen
 - Package-local validation, typed-value parsing, or semantic sidecars
 
-Standalone value packages follow the same rule. If a package is named
-`@parser2/css-color`, its `validate(input)` export must be the generated
-validator for that package's generic schema. It must not be a handwritten
-CSS-color scanner in `src/index.ts`, even as a performance optimization. If
-`validate()` is too slow, fix the compiler's generic `validate()` codegen so
-every schema benefits.
+Standalone value packages follow the same rule. If a package is named after
+a value type, its `validate(input)` export must be the generated validator
+for that package's generic schema. It must not be a handwritten scanner in
+`src/index.ts`, even as a performance optimization. If `validate()` is too
+slow, fix the compiler's generic `validate()` codegen so every schema
+benefits.
 
 The generated parser at `src/_generated/parser.ts` is the only runtime parser
 code in the package. Package-level composition may wire generated parsers
@@ -281,7 +281,7 @@ npm run generate
 Or per package:
 
 ```sh
-npm run generate -w @parser2/proto
+npm run generate -w @parser2/cron
 ```
 
 The CLI path (current implementation, `packages/compiler/src/`):

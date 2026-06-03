@@ -45,7 +45,7 @@ import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Te
 import { findSpanByName, isAbsentAllowedSpan } from '../../span-helpers.ts';
 import { syntheticKey } from '../captures.ts';
 import { productionKey } from '../render.ts';
-import { Op, OPERAND_SIZES, ScanClassKind } from './ops.ts';
+import { Op, OPERAND_SIZES, ScanClassKind, INVERSE_TEMPLATE_ROLE_NONE } from './ops.ts';
 
 export type EncodedSchema = {
   readonly ops: Uint8Array;
@@ -1273,7 +1273,6 @@ function emitInverseTemplate(
   }
   // Per-capture metadata: role (if recursive) + optionality.
   type CapMeta = { readonly nameIdx: number; readonly roleIdx: number; readonly optional: boolean };
-  const ROLE_NONE = 0xffffffff;
   const meta: CapMeta[] = captures.map((capName) => {
     const span = findSpanByName(production, capName);
     const optional = span !== undefined && isAbsentAllowedSpan(span);
@@ -1289,7 +1288,7 @@ function emitInverseTemplate(
       const role = span.recursiveRoles[0]!;
       return { nameIdx: internString(state, capName), roleIdx: internString(state, role), optional };
     }
-    return { nameIdx: internString(state, capName), roleIdx: ROLE_NONE, optional };
+    return { nameIdx: internString(state, capName), roleIdx: INVERSE_TEMPLATE_ROLE_NONE, optional };
   });
   writeOp(state, Op.INVERSE_TEMPLATE);
   writeU32(state, segments.length);

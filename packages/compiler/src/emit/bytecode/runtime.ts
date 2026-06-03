@@ -20,7 +20,7 @@
 // the top-of-stack as the return value.
 
 import type { EncodedSchema } from './encoder.ts';
-import { Op } from './ops.ts';
+import { Op, INVERSE_TEMPLATE_ROLE_NONE } from './ops.ts';
 
 export type RuntimeState = {
   readonly input: string;
@@ -635,122 +635,135 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
-    case Op.INVERSE_TEMPLATE: {
-      const numSegs = readU32(state);
-      const numCaps = readU32(state);
-      const target = state.stringPool[readU32(state)]!;
-      const segments: string[] = new Array(numSegs);
-      for (let i = 0; i < numSegs; i++) {
-        segments[i] = state.stringPool[readU32(state)]!;
-      }
-      const capNames: string[] = new Array(numCaps);
-      const capRoles: (string | null)[] = new Array(numCaps);
-      const capOptional: boolean[] = new Array(numCaps);
-      const ROLE_NONE = 0xffffffff;
-      for (let i = 0; i < numCaps; i++) {
-        capNames[i] = state.stringPool[readU32(state)]!;
-        const roleRaw = readU32(state);
-        capRoles[i] = roleRaw === ROLE_NONE ? null : state.stringPool[roleRaw]!;
-        capOptional[i] = readU8(state) !== 0;
-      }
-
-      // The top of stack is the input value being inverted. The
-      // emitStringifyBlock prologue (PUSH_NEW_CAPTURES; POP) leaves it on
-      // top. We PEEK (do not pop) so the caller's Phase 2 POP cleans it.
-      if (state.valueStack.length === 0) {
-        throw new Error(`bytecode runtime: INVERSE_TEMPLATE with empty value stack`);
-      }
-      const value = state.valueStack[state.valueStack.length - 1];
-      if (typeof value !== 'string') {
-        // Template-form expects string input. Fail this production so the
-        // chain-try (in stringifySlot) moves to the next alt.
-        if (failProduction(state, frames)) return { kind: 'return', value: null };
-        return { kind: 'continue' };
-      }
-
-      const frame = frames[frames.length - 1]!;
-      if (frame.captures === null) {
-        throw new Error(`bytecode runtime: INVERSE_TEMPLATE before frame captures init`);
-      }
-      const captures = frame.captures;
-
-      // Per-capture tail-optional flags: tailOptional[j] is true iff
-      // captures[j..end] are all optional. Used by the indexOf-miss
-      // fallback below to slurp the rest into capture i and null the
-      // trailing captures.
-      const tailOptional: boolean[] = new Array(numCaps);
-      let allOpt = true;
-      for (let j = numCaps - 1; j >= 0; j--) {
-        if (!capOptional[j]) allOpt = false;
-        tailOptional[j] = allOpt;
-      }
-
-      // Walk segments[0] (leading literal) → captures[0] (slice to
-      // segments[1]) → ... → captures[N-1] (slice to segments[N]).
-      let pos = 0;
-      const seg0 = segments[0] ?? '';
-      if (seg0.length > 0) {
-        if (value.indexOf(seg0, pos) !== pos) {
-          if (failProduction(state, frames)) return { kind: 'return', value: null };
-          return { kind: 'continue' };
-        }
-        pos += seg0.length;
-      }
-
-      let succeeded = true;
-      walkCaps: for (let i = 0; i < numCaps; i++) {
-        const nextSeg = segments[i + 1] ?? '';
-        const capName = capNames[i]!;
-        const role = capRoles[i];
-
-        if (i === numCaps - 1 && nextSeg.length === 0) {
-          if (capOptional[i] && pos >= value.length) {
-            captures[capName] = null;
-          } else {
-            const slice = value.slice(pos);
-            captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
-            pos = value.length;
-          }
-          continue;
-        }
-        if (nextSeg.length === 0) {
-          succeeded = false;
-          break;
-        }
-        const end = value.indexOf(nextSeg, pos);
-        const nextIdx = i + 1;
-        const nextIsTailOptional = nextIdx < numCaps && tailOptional[nextIdx];
-        if (end < 0) {
-          if (nextIsTailOptional) {
-            const slice = value.slice(pos);
-            captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
-            pos = value.length;
-            for (let k = nextIdx; k < numCaps; k++) {
-              captures[capNames[k]!] = null;
-            }
-            break walkCaps;
-          }
-          succeeded = false;
-          break;
-        }
-        const slice = value.slice(pos, end);
-        captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
-        pos = end + nextSeg.length;
-      }
-
-      if (succeeded && pos !== value.length) {
-        succeeded = false;
-      }
-      if (!succeeded) {
-        if (failProduction(state, frames)) return { kind: 'return', value: null };
-        return { kind: 'continue' };
-      }
-      return { kind: 'continue' };
-    }
+    case Op.INVERSE_TEMPLATE:
+      return handleInverseTemplate(state, frames);
 
     default:
       throw new Error(`bytecode runtime: unknown opcode 0x${op.toString(16)} at pc=${state.pc - 1}`);
   }
+}
+
+// Handler for Op.INVERSE_TEMPLATE — mirrors `walkInverseTemplate`
+// (`packages/compiler/src/interp/stringify.ts:457-527`) against
+// `frame.captures` populated from `state.valueStack` top. Extracted from
+// stepOpcode to keep that switch focused; the case body itself was the
+// largest opcode in the file. Reads operands per the layout documented at
+// `Op.INVERSE_TEMPLATE`:
+//   u32 numSegs, u32 numCaps, u32 targetIdx
+//   numSegs × u32 stringPool refs (segment literals)
+//   numCaps × { u32 nameIdx, u32 roleIdx_or_max, u8 flags }
+// PEEKs (does not POP) the value on top of stack so the caller's Phase 2
+// POP in emitStringifyBlock keeps the stack invariant intact.
+function handleInverseTemplate(state: RuntimeState, frames: Frame[]): StepResult {
+  const numSegs = readU32(state);
+  const numCaps = readU32(state);
+  const target = state.stringPool[readU32(state)]!;
+  const segments: string[] = new Array(numSegs);
+  for (let i = 0; i < numSegs; i++) {
+    segments[i] = state.stringPool[readU32(state)]!;
+  }
+  const capNames: string[] = new Array(numCaps);
+  const capRoles: (string | null)[] = new Array(numCaps);
+  const capOptional: boolean[] = new Array(numCaps);
+  for (let i = 0; i < numCaps; i++) {
+    capNames[i] = state.stringPool[readU32(state)]!;
+    const roleRaw = readU32(state);
+    capRoles[i] = roleRaw === INVERSE_TEMPLATE_ROLE_NONE ? null : state.stringPool[roleRaw]!;
+    capOptional[i] = readU8(state) !== 0;
+  }
+
+  if (state.valueStack.length === 0) {
+    throw new Error(`bytecode runtime: INVERSE_TEMPLATE with empty value stack`);
+  }
+  const value = state.valueStack[state.valueStack.length - 1];
+  if (typeof value !== 'string') {
+    // Template-form expects string input. Fail this production so the
+    // chain-try (in stringifySlot) moves to the next alt.
+    if (failProduction(state, frames)) return { kind: 'return', value: null };
+    return { kind: 'continue' };
+  }
+
+  const frame = frames[frames.length - 1]!;
+  if (frame.captures === null) {
+    throw new Error(`bytecode runtime: INVERSE_TEMPLATE before frame captures init`);
+  }
+  const captures = frame.captures;
+
+  // tailOptional[j] = true iff captures[j..end] are all optional. Used by
+  // the indexOf-miss fallback to slurp the rest into capture i and null
+  // the trailing captures (matches walkInverseTemplate's tail-optional
+  // fusion).
+  const tailOptional: boolean[] = new Array(numCaps);
+  let allOpt = true;
+  for (let j = numCaps - 1; j >= 0; j--) {
+    if (!capOptional[j]) allOpt = false;
+    tailOptional[j] = allOpt;
+  }
+
+  let pos = 0;
+  const seg0 = segments[0] ?? '';
+  if (seg0.length > 0) {
+    if (value.indexOf(seg0, pos) !== pos) {
+      if (failProduction(state, frames)) return { kind: 'return', value: null };
+      return { kind: 'continue' };
+    }
+    pos += seg0.length;
+  }
+
+  let succeeded = true;
+  walkCaps: for (let i = 0; i < numCaps; i++) {
+    const nextSeg = segments[i + 1] ?? '';
+    const capName = capNames[i]!;
+    const role = capRoles[i];
+
+    if (i === numCaps - 1 && nextSeg.length === 0) {
+      if (capOptional[i] && pos >= value.length) {
+        captures[capName] = null;
+      } else {
+        const slice = value.slice(pos);
+        captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+        pos = value.length;
+      }
+      continue;
+    }
+    if (nextSeg.length === 0) {
+      // Empty mid-segment is an encoder-time bug — the TS reference
+      // walkInverseTemplate throws here (interp/stringify.ts:500-503).
+      // Surface loudly so chain-try doesn't mask the encoding defect by
+      // silently moving to the next alt.
+      throw new Error(
+        `bytecode runtime: INVERSE_TEMPLATE empty separator between captures '${capName}' and '${capNames[i + 1] ?? ''}'`,
+      );
+    }
+    const end = value.indexOf(nextSeg, pos);
+    const nextIdx = i + 1;
+    const nextIsTailOptional = nextIdx < numCaps && tailOptional[nextIdx];
+    if (end < 0) {
+      if (nextIsTailOptional) {
+        const slice = value.slice(pos);
+        captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+        pos = value.length;
+        for (let k = nextIdx; k < numCaps; k++) {
+          captures[capNames[k]!] = null;
+        }
+        break walkCaps;
+      }
+      succeeded = false;
+      break;
+    }
+    const slice = value.slice(pos, end);
+    captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+    pos = end + nextSeg.length;
+  }
+
+  if (succeeded && pos !== value.length) {
+    succeeded = false;
+  }
+  if (!succeeded) {
+    if (failProduction(state, frames)) return { kind: 'return', value: null };
+    return { kind: 'continue' };
+  }
+  return { kind: 'continue' };
 }
 
 // Public entry: render captures into a value of the given target.

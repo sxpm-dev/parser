@@ -170,6 +170,13 @@ export enum Op {
   INVERSE_TEMPLATE = 0x90,
 }
 
+// Sentinel stored in INVERSE_TEMPLATE's per-capture `roleIdx` slot when the
+// capture is non-recursive (a leaf). The runtime compares against this
+// before dereferencing the stringPool, so a leaf capture never reads a
+// bogus pool entry. Shared between encoder (`emitInverseTemplate`) and
+// runtime (`handleInverseTemplate`) so the contract is single-sourced.
+export const INVERSE_TEMPLATE_ROLE_NONE = 0xffffffff;
+
 // Class-kind enum values for SCAN_CLASS's first operand byte. Kept small
 // (u8) so the operand fits in a single byte. The runtime maps these to its
 // existing class scanners (ident / number / hex / string / comment).

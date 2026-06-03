@@ -3,18 +3,7 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Bench } from 'tinybench';
 
-type PackageName =
-  | 'arn'
-  | 'cron'
-  | 'css'
-  | 'css-color'
-  | 'css-length-percentage'
-  | 'html'
-  | 'log'
-  | 'mac'
-  | 'markdown'
-  | 'proto'
-  | 'url';
+type PackageName = 'cron' | 'css' | 'html' | 'markdown';
 
 type PerfCase = {
   readonly name: string;
@@ -31,19 +20,7 @@ type BaselineEntry = {
 
 type Baseline = Record<string, BaselineEntry>;
 
-const packageNames = new Set<PackageName>([
-  'arn',
-  'cron',
-  'css',
-  'css-color',
-  'css-length-percentage',
-  'html',
-  'log',
-  'mac',
-  'markdown',
-  'proto',
-  'url',
-]);
+const packageNames = new Set<PackageName>(['cron', 'css', 'html', 'markdown']);
 const args = process.argv.slice(2);
 const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
@@ -132,168 +109,60 @@ async function measure(perfCase: PerfCase, api: Record<string, unknown>): Promis
 
 function createCases(name: PackageName): PerfCase[] {
   const sizes = [5, 20, 100];
-  const validateRows = (api: Record<string, unknown>, input: string): number => {
-    const validate = api.validate as (value: string) => void;
-    let rows = 0;
-    for (const row of input.trim().split(/\n/)) {
-      validate(row);
-      rows++;
-    }
-    return rows;
-  };
-
-  const validationCases = (seed: string): PerfCase[] => sizes.map((kb) => ({
-    name: `validate:${kb}KB`,
-    kb,
-    input: repeat(seed, kb * 1024),
-    run: validateRows,
-  }));
-
-  if (name === 'arn') {
-    return validationCases(
-      'arn:aws:lambda:us-east-1:123456789012:function:MyFn\n' +
-      'arn:aws:ec2:eu-west-1:987654321098:instance/i-0abcdef\n' +
-      'arn:aws:sqs:ap-south-1:444455556666:order-queue\n',
-    );
-  }
 
   if (name === 'cron') {
-    return validationCases('*/5 * * * *\n0 9 * * 1-5 npm test\n15 14 1 * * deploy\n');
+    const seed = '*/5 * * * *\n0 9 * * 1-5 npm test\n15 14 1 * * deploy\n';
+    return sizes.map((kb) => ({
+      name: `validate:${kb}KB`,
+      kb,
+      input: repeat(seed, kb * 1024),
+      run: (api, input) => {
+        const validate = api.validate as (value: string) => void;
+        let rows = 0;
+        for (const row of input.trim().split(/\n/)) {
+          validate(row);
+          rows++;
+        }
+        return rows;
+      },
+    }));
   }
 
   if (name === 'css') {
-    return sizes.flatMap((kb) => {
-      const input = generateCss(kb * 1024);
-      return [
-        {
-          name: `parse:${kb}KB`,
-          kb,
-          input,
-          run: (api, css) => (api.parse as (input: string) => unknown)(css),
-        },
-      ];
-    });
-  }
-
-  if (name === 'css-color') {
-    return validationCases(
-      'red\n' +
-      '#00ff99\n' +
-      '#fff\n' +
-      'rgb(0 0 0 / 50%)\n' +
-      'rgba(255, 0, 0)\n' +
-      'oklch(60% 0.2 30)\n' +
-      'color(display-p3 1 0 0)\n' +
-      'var(--brand-color, red)\n',
-    );
-  }
-
-  if (name === 'css-length-percentage') {
-    return validationCases(
-      '0\n' +
-      '10px\n' +
-      '-1.5rem\n' +
-      '50%\n' +
-      '10px 20%\n' +
-      '1px 2px 3px 4px\n' +
-      'calc(100% - 1rem)\n' +
-      'var(--space, 1rem)\n',
-    );
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateCss(kb * 1024),
+      run: (api, css) => (api.render as (input: string, opts: { target: string }) => unknown)(css, { target: 'ast' }),
+    }));
   }
 
   if (name === 'html') {
-    return sizes.flatMap((kb) => {
-      const input = generateHtml(kb * 1024);
-      return [
-        {
-          name: `parse:${kb}KB`,
-          kb,
-          input,
-          run: (api, html) => (api.parse as (input: string) => unknown)(html),
-        },
-      ];
-    });
-  }
-
-  if (name === 'js') {
-    const seed = 'a + b * c; arr.map(function (x) { return x * 2; }); obj.foo(1, 2); if (x > 0) y = z; for (var i = 0; i < n; i++) sum += i; switch (k) { case 1: break; default: break; }\n';
-    return sizes.flatMap((kb) => {
-      const input = repeat(seed, kb * 1024);
-      return [
-        {
-          name: `tokenize:${kb}KB`,
-          kb,
-          input,
-          run: (api, js) => (api.tokenize as (input: string) => unknown)(js),
-        },
-        {
-          name: `parse:${kb}KB`,
-          kb,
-          input,
-          run: (api, js) => (api.parse as (input: string) => unknown)(js),
-        },
-      ];
-    });
-  }
-
-  if (name === 'markdown') {
-    return sizes.flatMap((kb) => {
-      const input = generateMarkdown(kb * 1024);
-      return [
-        {
-          name: `parse:${kb}KB`,
-          kb,
-          input,
-          run: (api, markdown) => (api.parse as (input: string) => unknown)(markdown),
-        },
-        {
-          name: `render:${kb}KB`,
-          kb,
-          input,
-          run: (api, markdown) =>
-            (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'html' }),
-        },
-      ];
-    });
-  }
-
-  if (name === 'log') {
-    return validationCases(
-      '192.168.0.1 - frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326\n',
-    );
-  }
-
-  if (name === 'mac') {
-    return validationCases('00:1A:2B:3C:4D:5E\nDE-AD-BE-EF-CA-FE\naa:bb:cc:dd:ee:ff\n');
-  }
-
-  if (name === 'proto') {
-    return sizes.flatMap((kb) => {
-      const input = generateProto(kb * 1024);
-      return [
-        {
-          name: `parse:${kb}KB`,
-          kb,
-          input,
-          run: (api, proto) => (api.parse as (input: string) => unknown)(proto),
-        },
-      ];
-    });
-  }
-
-  if (name === 'url') {
-    return validationCases('/foo/bar?q=hello&tag=one\nhttps://example.com/search\n');
-  }
-
-  const seed = '{"id":__I__,"name":"item-__I__","ok":true,"score":12.5,"tags":["a","b","c"],"meta":{"next":null,"flag":false}}';
-  return sizes.map((kb) => {
-    const input = repeatJson(seed, kb * 1024);
-    return {
+    return sizes.map((kb) => ({
       name: `parse:${kb}KB`,
       kb,
-      input,
-      run: (api, json) => (api.parse as (input: string) => unknown)(json),
-    };
+      input: generateHtml(kb * 1024),
+      run: (api, html) => (api.render as (input: string, opts: { target: string }) => unknown)(html, { target: 'ast' }),
+    }));
+  }
+
+  // markdown
+  return sizes.flatMap((kb) => {
+    const input = generateMarkdown(kb * 1024);
+    return [
+      {
+        name: `parse:${kb}KB`,
+        kb,
+        input,
+        run: (api, markdown) => (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'ast' }),
+      },
+      {
+        name: `render:${kb}KB`,
+        kb,
+        input,
+        run: (api, markdown) => (api.render as (input: string, opts: { target: string }) => unknown)(markdown, { target: 'html' }),
+      },
+    ];
   });
 }
 
@@ -348,49 +217,9 @@ function generateMarkdown(targetBytes: number): string {
   return repeat(seed, targetBytes);
 }
 
-function generateProto(targetBytes: number): string {
-  const seed = 'syntax = "proto3"; package example.v1; message User { string name = 1; int32 age = 2; }\n';
-  return repeat(seed, targetBytes).trim();
-}
-
 function generateHtml(targetBytes: number): string {
   const seed = '<!doctype html><h1 class="title">Hello world</h1><p class="copy" disabled>Parser benchmark text</p><br />\n';
   return repeat(seed, targetBytes);
-}
-
-function resolvePackageName(arg: string | undefined): PackageName {
-  const candidate = arg ?? basename(process.cwd());
-  if (packageNames.has(candidate as PackageName)) return candidate as PackageName;
-  throw new Error(`usage: tsx scripts/perf-gate.ts <${[...packageNames].join('|')}> [--write]`);
-}
-
-function readTolerance(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (!raw) return fallback;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed >= 1) {
-    throw new Error(`${name} must be a number from 0 to 0.99`);
-  }
-  return parsed;
-}
-
-function repeat(seed: string, targetBytes: number): string {
-  let out = '';
-  while (out.length < targetBytes) out += seed;
-  return out;
-}
-
-function repeatJson(seed: string, targetBytes: number): string {
-  const items: string[] = [];
-  let bytes = 2;
-  let i = 0;
-  while (bytes < targetBytes) {
-    const item = seed.replaceAll('__I__', String(i));
-    items.push(item);
-    bytes += item.length + 1;
-    i++;
-  }
-  return `[${items.join(',')}]`;
 }
 
 function generateCss(targetBytes: number): string {
@@ -419,6 +248,28 @@ function realisticRule(i: number): string {
     default:
       return `.grid-${i} > .item:not(.disabled), .grid-${i} + .summary { --gap: ${i % 20}px; color: rgb(${i % 255}, ${(i * 2) % 255}, ${(i * 3) % 255}); }\n`;
   }
+}
+
+function resolvePackageName(arg: string | undefined): PackageName {
+  const candidate = arg ?? basename(process.cwd());
+  if (packageNames.has(candidate as PackageName)) return candidate as PackageName;
+  throw new Error(`usage: tsx scripts/perf-gate.ts <${[...packageNames].join('|')}> [--write]`);
+}
+
+function readTolerance(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed >= 1) {
+    throw new Error(`${name} must be a number from 0 to 0.99`);
+  }
+  return parsed;
+}
+
+function repeat(seed: string, targetBytes: number): string {
+  let out = '';
+  while (out.length < targetBytes) out += seed;
+  return out;
 }
 
 function hashInput(input: string): string {

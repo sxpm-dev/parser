@@ -153,6 +153,21 @@ export enum Op {
   // No operands — pop top of value stack. Used to discard values after
   // assertions / discriminator probes.
   POP = 0x8c,
+
+  // operands: u32 numSegs, u32 numCaps, u32 targetIdx, then variable tail:
+  //   numSegs × u32 stringPool refs (segment literals)
+  //   numCaps × { u32 nameIdx, u32 roleIdx_or_max, u8 flags }
+  //     roleIdx_or_max = 0xFFFFFFFF when capture is non-recursive (leaf)
+  //     flags bit 0 = isOptional; bits 1-7 reserved
+  // At runtime: top-of-stack is a string (the rendered source). Slice it
+  // against `segments` to populate `frame.captures[<capName>]` for each
+  // capture; recursive captures recursively stringify via stringifySlot
+  // (which chain-tries the role's template-form productions). Leaves the
+  // input string on top of stack (Phase 2's POP in emitStringifyBlock
+  // cleans it). On scan failure (leading literal mismatch, missing
+  // separator without tail-optional fallback, trailing content) calls
+  // failProduction so the chain-try moves to the next alt.
+  INVERSE_TEMPLATE = 0x90,
 }
 
 // Class-kind enum values for SCAN_CLASS's first operand byte. Kept small
@@ -229,4 +244,8 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.PEEK_FIELD]: [4],
   [Op.ASSERT_TOP_STRING_EQ]: [4],
   [Op.POP]: [],
+
+  // numSegs + numCaps + targetIdx fixed prefix; variable tail computed
+  // by the encoder/runtime from the counts.
+  [Op.INVERSE_TEMPLATE]: [4, 4, 4],
 };

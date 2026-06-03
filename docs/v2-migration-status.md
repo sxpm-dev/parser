@@ -344,10 +344,23 @@ production-quality cron parser.
    recursive-capture dispatch correct against the existing
    `STRINGIFY_DISPATCH` calling convention.
 
-   **Status: Deferred to next session.** Phase-sized item; not blocking
-   any in-repo schema. Cron's `'source'` round-trip works correctly via
-   the TS backend; bytecode `'source'` target is exercised via `render`
-   but not `stringify`.
+   **Status: Resolved (2026-06-03).** Implemented as a single
+   `INVERSE_TEMPLATE` macro opcode (`packages/compiler/src/emit/bytecode/
+   ops.ts:Op.INVERSE_TEMPLATE`). Encoder: `canEncodeInverse` now accepts
+   `kind: 'template'`; `emitInverseTemplate` in `encoder.ts` writes the
+   opcode + segments + per-capture metadata (name, role-or-sentinel,
+   optional flag). Runtime: `stepOpcode` handles `Op.INVERSE_TEMPLATE`
+   with a literal-scanner mirroring `walkInverseTemplate`
+   (`interp/stringify.ts:457-527`), populating `frame.captures`
+   directly; recursive captures route via `stringifySlot`. `stringifySlot`
+   itself was extended so string inputs participate in chain-try (was
+   short-circuiting to `String(v)`); object-form productions fail on
+   strings via `PEEK_FIELD + ASSERT_TOP_STRING_EQ` so the chain falls
+   through to template-form productions. `bytecode-equivalence.test.ts`
+   gained a `target='source'` cross-backend assertion exercising both
+   the tail-optional-absent path (Command capture absent on
+   `'* * * * *'`) and the recursive-captures path (CronField + Command
+   per cron field).
 
 4. **Bytecode perf budget gap: 15–25× vs 2× target.** Structural cost of
    generic `switch`-based opcode dispatch. Specific to small grammars where

@@ -26,14 +26,20 @@ import * as bcodeBackend from '../src/_generated/parser.bcode.ts';
 //      two shapes is not meaningful; we compare the rendered AST and
 //      source instead, which is what callers actually observe.
 //
-//   2) The plan's example calls `bcodeBackend.stringify(tsAst, { type:
+//   2) ~~The plan's example calls `bcodeBackend.stringify(tsAst, { type:
 //      'source' })`. The bytecode backend's stringify currently uses
-//      target='ast' as the input-shape identifier (the dispatcher routes
-//      on the AST's `.type` field, and the output is always source
-//      text). Template-form inverse for target='source' is a Task 6.4
-//      deferred follow-up. We therefore pass `{ target: 'ast' }` to both
-//      backends here; both produce source text via their respective
-//      inverse dispatchers.
+//      target='ast' as the input-shape identifier...~~
+//      **Status: Resolved (Phase 6 follow-up #3, 2026-06-03.)** The
+//      bytecode backend now supports template-form inverse stringify via
+//      the `INVERSE_TEMPLATE` opcode (`packages/compiler/src/emit/bytecode/
+//      ops.ts:Op.INVERSE_TEMPLATE`). The runtime handler implements
+//      `walkInverseTemplate` (leading-literal assert, mid-segment
+//      indexOf scan, tail-optional-absent fusion); recursive captures
+//      route through `stringifySlot`, which now chain-tries string
+//      inputs over the role's productions (template-form productions
+//      succeed on strings; object-form productions fail gracefully via
+//      PEEK_FIELD + ASSERT_TOP_STRING_EQ). The `target='source'`
+//      assertion below exercises both backends end-to-end.
 //
 //   3) ~~Inputs containing step expressions (`*/N`) or range expressions
 //      (`A-B`) are excluded from this fixture set.~~
@@ -125,6 +131,14 @@ for (const input of EXAMPLES) {
     // deep-equal to it after stripping metadata).
     const bcBack = bcodeBackend.stringify(tsAst, { target: 'ast' });
     assert.equal(bcBack, input);
+
+    // Phase 6 follow-up #3 — template-form inverse stringify for
+    // target='source'. The bytecode backend now matches the TS backend
+    // on source→source round-trip via the INVERSE_TEMPLATE opcode.
+    const bcSourceBack = bcodeBackend.stringify(input, { target: 'source' });
+    const tsSourceBack = tsBackend.stringify(input, { target: 'source' });
+    assert.equal(bcSourceBack, tsSourceBack);
+    assert.equal(bcSourceBack, input);
   });
 }
 

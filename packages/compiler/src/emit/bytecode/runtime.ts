@@ -198,7 +198,12 @@ function stringifySlot(
     }
     return parts.join(' ');
   }
-  if (typeof value !== 'object') {
+  // Strings AND objects participate in chain-try: object-form productions
+  // succeed on objects (PEEK_FIELD + ASSERT_TOP_STRING_EQ pattern) and
+  // fail on strings; template-form productions succeed on strings
+  // (INVERSE_TEMPLATE scans literal segments). The chain-try takes the
+  // first non-null result.
+  if (typeof value !== 'string' && typeof value !== 'object') {
     return String(value);
   }
   const offsetsByNodeType = state.stringifyOffsetsByNodeType;
@@ -208,13 +213,20 @@ function stringifySlot(
   const key = `${nodeType}:${target}`;
   const offsets = offsetsByNodeType.get(key);
   if (!offsets || offsets.length === 0) {
+    // For strings we fall back to the input itself (matches TS backend's
+    // __invertSlotFor_<Role>_<target> try/catch fallback). For objects
+    // this remains a hard error — a missing object-form inverse signals
+    // a real bug.
+    if (typeof value === 'string') return value;
     throw new Error(`bytecode runtime: no stringify offsets for '${key}'`);
   }
   for (const offset of offsets) {
     const result = runStringifyNested(state, value, offset);
     if (result !== null) return result;
   }
-  // All alts failed — surface a descriptive error.
+  // All alts failed. Match TS backend: strings fall back to themselves;
+  // other shapes are a hard error.
+  if (typeof value === 'string') return value;
   throw new Error(`bytecode runtime: no production matched for stringify '${key}' (value: ${safeJson(value)})`);
 }
 
@@ -620,6 +632,119 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
 
     case Op.POP: {
       if (state.valueStack.length > 0) state.valueStack.pop();
+      return { kind: 'continue' };
+    }
+
+    case Op.INVERSE_TEMPLATE: {
+      const numSegs = readU32(state);
+      const numCaps = readU32(state);
+      const target = state.stringPool[readU32(state)]!;
+      const segments: string[] = new Array(numSegs);
+      for (let i = 0; i < numSegs; i++) {
+        segments[i] = state.stringPool[readU32(state)]!;
+      }
+      const capNames: string[] = new Array(numCaps);
+      const capRoles: (string | null)[] = new Array(numCaps);
+      const capOptional: boolean[] = new Array(numCaps);
+      const ROLE_NONE = 0xffffffff;
+      for (let i = 0; i < numCaps; i++) {
+        capNames[i] = state.stringPool[readU32(state)]!;
+        const roleRaw = readU32(state);
+        capRoles[i] = roleRaw === ROLE_NONE ? null : state.stringPool[roleRaw]!;
+        capOptional[i] = readU8(state) !== 0;
+      }
+
+      // The top of stack is the input value being inverted. The
+      // emitStringifyBlock prologue (PUSH_NEW_CAPTURES; POP) leaves it on
+      // top. We PEEK (do not pop) so the caller's Phase 2 POP cleans it.
+      if (state.valueStack.length === 0) {
+        throw new Error(`bytecode runtime: INVERSE_TEMPLATE with empty value stack`);
+      }
+      const value = state.valueStack[state.valueStack.length - 1];
+      if (typeof value !== 'string') {
+        // Template-form expects string input. Fail this production so the
+        // chain-try (in stringifySlot) moves to the next alt.
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
+
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) {
+        throw new Error(`bytecode runtime: INVERSE_TEMPLATE before frame captures init`);
+      }
+      const captures = frame.captures;
+
+      // Per-capture tail-optional flags: tailOptional[j] is true iff
+      // captures[j..end] are all optional. Used by the indexOf-miss
+      // fallback below to slurp the rest into capture i and null the
+      // trailing captures.
+      const tailOptional: boolean[] = new Array(numCaps);
+      let allOpt = true;
+      for (let j = numCaps - 1; j >= 0; j--) {
+        if (!capOptional[j]) allOpt = false;
+        tailOptional[j] = allOpt;
+      }
+
+      // Walk segments[0] (leading literal) → captures[0] (slice to
+      // segments[1]) → ... → captures[N-1] (slice to segments[N]).
+      let pos = 0;
+      const seg0 = segments[0] ?? '';
+      if (seg0.length > 0) {
+        if (value.indexOf(seg0, pos) !== pos) {
+          if (failProduction(state, frames)) return { kind: 'return', value: null };
+          return { kind: 'continue' };
+        }
+        pos += seg0.length;
+      }
+
+      let succeeded = true;
+      walkCaps: for (let i = 0; i < numCaps; i++) {
+        const nextSeg = segments[i + 1] ?? '';
+        const capName = capNames[i]!;
+        const role = capRoles[i];
+
+        if (i === numCaps - 1 && nextSeg.length === 0) {
+          if (capOptional[i] && pos >= value.length) {
+            captures[capName] = null;
+          } else {
+            const slice = value.slice(pos);
+            captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+            pos = value.length;
+          }
+          continue;
+        }
+        if (nextSeg.length === 0) {
+          succeeded = false;
+          break;
+        }
+        const end = value.indexOf(nextSeg, pos);
+        const nextIdx = i + 1;
+        const nextIsTailOptional = nextIdx < numCaps && tailOptional[nextIdx];
+        if (end < 0) {
+          if (nextIsTailOptional) {
+            const slice = value.slice(pos);
+            captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+            pos = value.length;
+            for (let k = nextIdx; k < numCaps; k++) {
+              captures[capNames[k]!] = null;
+            }
+            break walkCaps;
+          }
+          succeeded = false;
+          break;
+        }
+        const slice = value.slice(pos, end);
+        captures[capName] = role === null ? slice : stringifySlot(state, slice, role, target);
+        pos = end + nextSeg.length;
+      }
+
+      if (succeeded && pos !== value.length) {
+        succeeded = false;
+      }
+      if (!succeeded) {
+        if (failProduction(state, frames)) return { kind: 'return', value: null };
+        return { kind: 'continue' };
+      }
       return { kind: 'continue' };
     }
 

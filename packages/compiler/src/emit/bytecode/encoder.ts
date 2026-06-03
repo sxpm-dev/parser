@@ -42,7 +42,7 @@ import type {
   ResolvedSpan,
 } from '../../model.ts';
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
-import { findSpanByName } from '../../span-helpers.ts';
+import { findSpanByName, isAbsentAllowedSpan } from '../../span-helpers.ts';
 import { syntheticKey } from '../captures.ts';
 import { productionKey } from '../render.ts';
 import { Op, OPERAND_SIZES, ScanClassKind } from './ops.ts';
@@ -1171,7 +1171,10 @@ function canEncodeInverse(ir: InverseIR): boolean {
     case 'array':
       return false;
     case 'template':
-      return false;
+      // Phase 6 follow-up #3 — template-form inverses encode as a single
+      // INVERSE_TEMPLATE macro opcode. The runtime handler implements
+      // walkInverseTemplate against frame.captures.
+      return true;
   }
 }
 
@@ -1212,7 +1215,8 @@ function emitInverseIR(
       emitInverseArray(state, ir.elements);
       return;
     case 'template':
-      throw new Error(`bytecode encoder: template-form inverse stringify not yet wired (cron exercises object-form discriminators only)`);
+      emitInverseTemplate(state, ir.segments, ir.captures, production);
+      return;
   }
 }
 
@@ -1245,6 +1249,60 @@ function emitInverseObject(
 function emitInverseArray(state: EncoderState, _elements: ReadonlyArray<InverseIR>): void {
   // Defensive placeholder — cron doesn't use array-form inverse IRs.
   throw new Error(`bytecode encoder: array-form inverse IR not yet supported`);
+}
+
+// Emit the INVERSE_TEMPLATE macro opcode for a template-form inverse.
+// Layout (also documented at Op.INVERSE_TEMPLATE):
+//   u32 numSegs, u32 numCaps, u32 targetIdx
+//   numSegs × u32 stringPool refs (segment literals)
+//   numCaps × { u32 nameIdx, u32 roleIdx_or_max, u8 flags }
+//     roleIdx_or_max = 0xFFFFFFFF for non-recursive (leaf) captures
+//     flags bit 0 = isOptional; bits 1-7 reserved
+//
+// The runtime peeks top-of-stack (must be string), populates
+// frame.captures from the scan, and leaves the input string on top so
+// the caller's Phase 2 POP (in emitStringifyBlock) cleans it.
+function emitInverseTemplate(
+  state: EncoderState,
+  segments: ReadonlyArray<string>,
+  captures: ReadonlyArray<string>,
+  production: Production,
+): void {
+  if (state.currentTarget === undefined) {
+    throw new Error(`bytecode encoder: emitInverseTemplate called without state.currentTarget`);
+  }
+  // Per-capture metadata: role (if recursive) + optionality.
+  type CapMeta = { readonly nameIdx: number; readonly roleIdx: number; readonly optional: boolean };
+  const ROLE_NONE = 0xffffffff;
+  const meta: CapMeta[] = captures.map((capName) => {
+    const span = findSpanByName(production, capName);
+    const optional = span !== undefined && isAbsentAllowedSpan(span);
+    if (span && span.recursiveRoles.length > 0) {
+      if (span.recursiveRoles.length !== 1) {
+        // Phase 6 follow-up #7 documents multi-role recursive as out of
+        // bytecode scope. Match emitWriteRefValue's behaviour: loud
+        // failure so a new schema doesn't silently drop captures.
+        throw new Error(
+          `bytecode encoder: multi-role recursive capture '${capName}' not yet supported in template-form inverse`,
+        );
+      }
+      const role = span.recursiveRoles[0]!;
+      return { nameIdx: internString(state, capName), roleIdx: internString(state, role), optional };
+    }
+    return { nameIdx: internString(state, capName), roleIdx: ROLE_NONE, optional };
+  });
+  writeOp(state, Op.INVERSE_TEMPLATE);
+  writeU32(state, segments.length);
+  writeU32(state, captures.length);
+  writeU32(state, internString(state, state.currentTarget));
+  for (const seg of segments) {
+    writeU32(state, internString(state, seg));
+  }
+  for (const m of meta) {
+    writeU32(state, m.nameIdx);
+    writeU32(state, m.roleIdx);
+    writeU8(state, m.optional ? 1 : 0);
+  }
 }
 
 // Write the top-of-stack value into captures[<captureName>]. If the

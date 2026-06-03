@@ -18,7 +18,7 @@ const contestants: Contestant[] = [
     label: "parser2 css fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(render(input, { type: "ast", mode: "fast" })),
+      units: countParser2Nodes(render(input, { target: "ast", mode: "fast" })),
     }),
   },
   {

@@ -19,14 +19,14 @@ const contestants: Contestant[] = [
     label: "parser2 markdown fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(render(input, { type: "ast", mode: "fast" })),
+      units: countParser2Nodes(render(input, { target: "ast", mode: "fast" })),
     }),
   },
   {
     label: "parser2 markdown raws",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(render(input, { type: "ast", mode: "raws" })),
+      units: countParser2Nodes(render(input, { target: "ast", mode: "raws" })),
     }),
   },
   {

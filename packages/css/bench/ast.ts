@@ -10,14 +10,14 @@ const contestants: Contestant[] = [
     label: "parser2 css fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countAst(render(input, { type: "ast", mode: "fast" })),
+      units: countAst(render(input, { target: "ast", mode: "fast" })),
     }),
   },
   {
     label: "parser2 css raws",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countAst(render(input, { type: "ast", mode: "raws" })),
+      units: countAst(render(input, { target: "ast", mode: "raws" })),
     }),
   },
   {

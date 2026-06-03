@@ -33,7 +33,7 @@ const astContestants: Contestant[] = [
     label: "parser2 markdown fast",
     unit: "nodes",
     fn: (input: string): BenchResult => ({
-      units: countParser2Nodes(render(input, { type: "ast" })),
+      units: countParser2Nodes(render(input, { target: "ast" })),
     }),
   },
   {
@@ -58,7 +58,7 @@ const htmlContestants: Contestant[] = [
     label: "parser2 render html",
     unit: "bytes",
     fn: (input: string): BenchResult => ({
-      units: (render(input, { type: "html" }) as string).length,
+      units: (render(input, { target: "html" }) as string).length,
     }),
   },
   {

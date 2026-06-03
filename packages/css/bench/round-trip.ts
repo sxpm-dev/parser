@@ -33,7 +33,7 @@ const contestants: Contestant[] = [
     label: 'parser2 render source (forward)',
     unit: 'bytes',
     fn: (input: string): BenchResult => {
-      const out = render(input, { type: 'source' }) as string;
+      const out = render(input, { target: 'source' }) as string;
       return { units: out.length };
     },
   },
@@ -41,9 +41,9 @@ const contestants: Contestant[] = [
     label: 'parser2 stringify source (reverse)',
     unit: 'bytes',
     fn: (input: string): BenchResult => {
-      const ast = render(input, { type: 'ast' });
+      const ast = render(input, { target: 'ast' });
       try {
-        const out = stringify(ast, { type: 'source' });
+        const out = stringify(ast, { target: 'source' });
         return { units: out.length };
       } catch {
         // Fall back to the JSON byte-size of the AST so the unit column
@@ -56,7 +56,7 @@ const contestants: Contestant[] = [
     label: 'JSON.stringify(render ast)',
     unit: 'bytes',
     fn: (input: string): BenchResult => {
-      const ast = render(input, { type: 'ast' });
+      const ast = render(input, { target: 'ast' });
       const out = JSON.stringify(ast);
       return { units: out.length };
     },

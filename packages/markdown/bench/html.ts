@@ -8,7 +8,7 @@ import { type BenchResult, type Contestant, runBenchTable } from "./common.ts";
 // Renders markdown straight to HTML. Mirrors the bench:ast harness (same
 // release-notes.md fixture, same SIZES_KB cadence via runBenchTable), but
 // the contestants are HTML-emitting renderers — not AST parsers. Parser2's
-// generated render(input, { type: 'html' }) is compared against every
+// generated render(input, { target: 'html' }) is compared against every
 // markdown library in deps that can produce HTML.
 
 const markdownIt = new MarkdownIt();
@@ -20,7 +20,7 @@ const contestants: Contestant[] = [
     label: "parser2 render html",
     unit: "bytes",
     fn: (input: string): BenchResult => ({
-      units: (render(input, { type: "html" }) as string).length,
+      units: (render(input, { target: "html" }) as string).length,
     }),
   },
   {

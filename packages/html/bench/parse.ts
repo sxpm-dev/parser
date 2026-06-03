@@ -12,7 +12,7 @@ const contestants: Contestant[] = [
     fn: (input: string): BenchResult => ({
       units: countParser2Nodes(
         render(input, {
-          type: "ast",
+          target: "ast",
           mode: "fast",
         }),
       ),
@@ -24,7 +24,7 @@ const contestants: Contestant[] = [
     fn: (input: string): BenchResult => ({
       units: countParser2Nodes(
         render(input, {
-          type: "ast",
+          target: "ast",
           mode: "raws",
         }),
       ),

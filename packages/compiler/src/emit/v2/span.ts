@@ -560,6 +560,19 @@ while (${literalMatchExpr(sep, 'off')}) {
     lines.push(indent(sepBlock, 1));
   }
   if (stopBeforeCheck) {
+    if (sep === undefined) {
+      // Inter-iteration ws-skip BEFORE the stop check. tryItemBlock's own
+      // ws-skip (via emitRoleLadder) runs AFTER this check, so without this
+      // line a whitespace-prefixed stop trigger (e.g. `</code> <tr>`) would
+      // miss the check; the dispatch would then match the trigger as a
+      // child. When that child is itself a stopBefore-bearing repeats span
+      // (HTML's `<tr>` inside a `<td>`), every sibling row drives one extra
+      // recursion frame and the stack blows on large documents. The fused-
+      // render path in fusion.ts emits the same skip in the same spot for
+      // byte-equivalence. When `sep` is defined, sepBlock already lands us
+      // on the post-ws byte and this skip would be redundant.
+      lines.push(`  while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
+    }
     lines.push(indent(stopBeforeCheck, 1));
   }
   lines.push(`  let __cand: unknown = null;`);

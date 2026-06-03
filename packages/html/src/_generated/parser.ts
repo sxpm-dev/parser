@@ -587,6 +587,7 @@ function parseHtmlElement__alt4(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</menu>", off) || input.startsWith("</li>", off) || input.startsWith("</ol>", off) || input.startsWith("</ul>", off) || input.startsWith("<li>", off) || input.startsWith("<li ", off) || input.startsWith("<li/", off))) break;
@@ -664,6 +665,7 @@ function parseHtmlElement__alt5(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</dt>", off) || input.startsWith("</dd>", off) || input.startsWith("</dl>", off) || input.startsWith("<dt>", off) || input.startsWith("<dt ", off) || input.startsWith("<dt/", off) || input.startsWith("<dd>", off) || input.startsWith("<dd ", off) || input.startsWith("<dd/", off))) break;
@@ -743,6 +745,7 @@ function parseHtmlElement__alt6(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</thead>", off) || input.startsWith("</tfoot>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<thead>", off) || input.startsWith("<thead ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off) || input.startsWith("</tr>", off) || input.startsWith("<tr>", off) || input.startsWith("<tr ", off) || input.startsWith("<tr/", off))) break;
@@ -820,6 +823,7 @@ function parseHtmlElement__alt7(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</thead>", off) || input.startsWith("</tfoot>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<thead>", off) || input.startsWith("<thead ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off) || input.startsWith("</td>", off) || input.startsWith("</th>", off) || input.startsWith("</tr>", off) || input.startsWith("<td>", off) || input.startsWith("<td ", off) || input.startsWith("<td/", off) || input.startsWith("<th>", off) || input.startsWith("<th ", off) || input.startsWith("<th/", off) || input.startsWith("<tr>", off) || input.startsWith("<tr ", off))) break;
@@ -899,6 +903,7 @@ function parseHtmlElement__alt8(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("<blockquote>", off) || input.startsWith("<blockquote ", off) || input.startsWith("<section>", off) || input.startsWith("<section ", off) || input.startsWith("<article>", off) || input.startsWith("<article ", off) || input.startsWith("<address>", off) || input.startsWith("<address ", off) || input.startsWith("<header>", off) || input.startsWith("<header ", off) || input.startsWith("<footer>", off) || input.startsWith("<footer ", off) || input.startsWith("<table>", off) || input.startsWith("<table ", off) || input.startsWith("<aside>", off) || input.startsWith("<aside ", off) || input.startsWith("<form>", off) || input.startsWith("<form ", off) || input.startsWith("<div>", off) || input.startsWith("<div ", off) || input.startsWith("<pre>", off) || input.startsWith("<pre ", off) || input.startsWith("<nav>", off) || input.startsWith("<nav ", off) || input.startsWith("</p>", off) || input.startsWith("<ul>", off) || input.startsWith("<ul ", off) || input.startsWith("<ol>", off) || input.startsWith("<ol ", off) || input.startsWith("<dl>", off) || input.startsWith("<dl ", off) || input.startsWith("<h1>", off) || input.startsWith("<h1 ", off) || input.startsWith("<h2>", off) || input.startsWith("<h2 ", off) || input.startsWith("<h3>", off) || input.startsWith("<h3 ", off) || input.startsWith("<h4>", off) || input.startsWith("<h4 ", off) || input.startsWith("<h5>", off) || input.startsWith("<h5 ", off) || input.startsWith("<h6>", off) || input.startsWith("<h6 ", off) || input.startsWith("<hr>", off) || input.startsWith("<hr ", off) || input.startsWith("<hr/", off) || input.startsWith("<p>", off) || input.startsWith("<p ", off) || input.startsWith("<p/", off))) break;
@@ -976,6 +981,7 @@ function parseHtmlElement__alt9(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</optgroup>", off) || input.startsWith("</datalist>", off) || input.startsWith("<optgroup>", off) || input.startsWith("<optgroup ", off) || input.startsWith("</option>", off) || input.startsWith("</select>", off) || input.startsWith("<option>", off) || input.startsWith("<option ", off))) break;
@@ -1055,6 +1061,7 @@ function parseHtmlElement__alt10(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</html>", off))) break;
@@ -1132,6 +1139,7 @@ function parseHtmlElement__alt11(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</head>", off) || input.startsWith("<body>", off) || input.startsWith("<body ", off) || input.startsWith("<body/", off))) break;
@@ -1209,6 +1217,7 @@ function parseHtmlElement__alt12(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</tbody>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off))) break;
@@ -1286,6 +1295,7 @@ function parseHtmlElement__alt13(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</thead>", off) || input.startsWith("</table>", off) || input.startsWith("<tbody>", off) || input.startsWith("<tbody ", off) || input.startsWith("<tfoot>", off) || input.startsWith("<tfoot ", off))) break;
@@ -1363,6 +1373,7 @@ function parseHtmlElement__alt14(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</tfoot>", off) || input.startsWith("</table>", off))) break;
@@ -1440,6 +1451,7 @@ function parseHtmlElement__alt15(state: State): unknown {
   const children: unknown[] = [];
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     if (off < len) {
       const __sb = input.charCodeAt(off);
       if (__sb === 60 && (input.startsWith("</body>", off) || input.startsWith("</html>", off))) break;

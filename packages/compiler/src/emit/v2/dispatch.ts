@@ -13,6 +13,7 @@
 import type { ResolvedSpan } from '../../model.ts';
 import type { InferredSchema, NodeTypeInfo, Production } from '../../model.ts';
 import { jsString } from '../strings.ts';
+import { detectSharedDispatch, emitSharedDispatcher } from './shared-dispatch.ts';
 import { findModifier, hasModifier } from './span.ts';
 
 type FirstToken =
@@ -27,6 +28,20 @@ export function emitDispatcher(
   const fnName = parseFnName(info.name);
   const prods = info.productions;
   const tokens: Array<FirstToken | null> = prods.map((p) => firstTokenOf(p));
+
+  // Try shared-prefix oneOf-discriminated dispatch first. When a relation's
+  // alts share a literal-then-ident-with-oneOf prefix (HTML's HtmlElement is
+  // the motivating case: 17 alts, ~15 with `.oneOf(...)` on the tag), peek
+  // the tag once and switch directly to the alts whose oneOf could match —
+  // catch-all alts (no oneOf at the discriminator position) still get probed
+  // afterward in declaration order, preserving the existing semantics.
+  const shared = detectSharedDispatch(info);
+  if (shared !== null) {
+    const altFnNames = prods.map((_p, idx) => `${fnName}__alt${idx}`);
+    const leadingLiteral = prods[0]!.spans[0]!.text!;
+    const discriminatorSpan = prods[0]!.spans[shared.discriminatorIdx]!;
+    return emitSharedDispatcher(fnName, altFnNames, shared, leadingLiteral, discriminatorSpan);
+  }
 
   // Try byte-prefix dispatch first.
   const bytePrefix = tryEmitBytePrefix(info, prods, tokens, fnName);

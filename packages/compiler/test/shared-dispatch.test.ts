@@ -94,6 +94,28 @@ test('detectSharedDispatch groups overlapping oneOf values in declaration order'
   assert.deepEqual(result.catchAllAlts, [2]);
 });
 
+test('detectSharedDispatch ignores ident span `text` differences (example vs literal)', () => {
+  // For ident/capturing spans, `text` carries the schema example (the actual
+  // input shown in `relation(..., { input: '<script>...' })`), NOT a literal
+  // to match. Two alts whose discriminator spans differ ONLY in their
+  // example should still be detected as a shared dispatch.
+  const a = identOneOf('tag', ['script']);
+  const b = identOneOf('tag', ['br']);
+  // Mimic the inferred shape: ident spans carry the example text alongside.
+  const aWithText: ResolvedSpan = { ...a, text: 'script' };
+  const bWithText: ResolvedSpan = { ...b, text: 'br' };
+  const info: NodeTypeInfo = {
+    name: 'X',
+    productions: [
+      prod([literal('<'), aWithText]),
+      prod([literal('<'), bWithText]),
+    ],
+  };
+  const result = detectSharedDispatch(info);
+  assert.ok(result);
+  assert.deepEqual([...result.tagToAlts.keys()].sort(), ['br', 'script']);
+});
+
 test('detectSharedDispatch lowercases oneOf values for the routing key', () => {
   const info: NodeTypeInfo = {
     name: 'X',

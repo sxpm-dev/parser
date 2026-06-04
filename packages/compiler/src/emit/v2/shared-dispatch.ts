@@ -32,31 +32,39 @@ export function detectSharedDispatch(info: NodeTypeInfo): SharedDispatch | null 
   const prods = info.productions;
   if (prods.length < 2) return null;
 
-  // Phase 1: walk spans left-to-right while every alt's span at index i is
-  // identical to alt 0's span at the same index — with the ONE exception
-  // that the `oneOf` refinement on the last shared span is allowed to differ.
-  // (That difference is precisely the dispatch signal we're after.)
+  // Walk spans left-to-right. A span position is:
+  //   - strict-shared (every alt's span byte-identical to alt 0's) → keep walking
+  //   - oneOf-diverged (every alt's span matches alt 0's EXCEPT possibly the
+  //     oneOf refinement) → this is the discriminator; stop here
+  //   - otherwise → no shared dispatch; bail
+  // We want the FIRST oneOf-diverged span as the discriminator, not the
+  // longest loose-match run — alts can coincidentally agree on later spans
+  // (e.g. all share the same `attrs` slot after the tag) and using the run
+  // would land the discriminator past the ident.
   const first = prods[0]!.spans;
   if (first.length === 0) return null;
 
-  let prefixLen = 0;
+  let discriminatorIdx = -1;
   for (let i = 0; i < first.length; i++) {
-    const ok = prods.every(
+    const strictMatch = prods.every(
+      (p) => i < p.spans.length && spansMatchExactly(first[i]!, p.spans[i]!),
+    );
+    if (strictMatch) continue;
+    const looseMatch = prods.every(
       (p) => i < p.spans.length && spansMatchIgnoringOneOf(first[i]!, p.spans[i]!),
     );
-    if (!ok) break;
-    prefixLen = i + 1;
+    if (looseMatch && first[i]!.class === 'ident') {
+      discriminatorIdx = i;
+    }
+    break;
   }
-  if (prefixLen < 2) return null;
+  if (discriminatorIdx < 1) return null;
 
-  // Phase 2: validate the discriminator span.
-  // The leading span(s) must include a literal prefix (so the dispatcher
-  // can emit a fixed first-byte gate), and the discriminator itself must
-  // be an `ident` span. At least one alt must carry a oneOf there.
-  const discriminatorIdx = prefixLen - 1;
-  if (first[discriminatorIdx]!.class !== 'ident') return null;
+  // The leading span MUST be a fixed literal so the dispatcher can emit a
+  // single-byte first-byte gate before peeking the discriminator.
   if (first[0]!.class !== 'literal' || !first[0]!.text) return null;
 
+  const prefixLen = discriminatorIdx + 1;
   const tagToAlts = new Map<string, number[]>();
   const catchAllAlts: number[] = [];
   let anyOneOf = false;
@@ -82,12 +90,29 @@ export function detectSharedDispatch(info: NodeTypeInfo): SharedDispatch | null 
 
 // --- helpers ---------------------------------------------------------------
 
+/** Spans are byte-identical — used to walk the strict-shared prefix before
+ *  the discriminator. Like `spansMatchIgnoringOneOf` but DOES compare the
+ *  oneOf refinement (no exception). */
+function spansMatchExactly(a: ResolvedSpan, b: ResolvedSpan): boolean {
+  if (a.class !== b.class) return false;
+  if (a.class === 'literal' && a.text !== b.text) return false;
+  if (!arraysEqual(a.modifiers, b.modifiers, sameJson)) return false;
+  if (!arraysEqual(a.recursiveRoles, b.recursiveRoles, (x, y) => x === y)) return false;
+  return arraysEqual(a.refinements, b.refinements, sameRefinement);
+}
+
 /** Spans match modulo their `oneOf` refinement (used for the discriminator).
- *  All other fields — class, text, refinements, modifiers, recursiveRoles
- *  — must be byte-identical. */
+ *  All other shape fields — class, refinements, modifiers, recursiveRoles —
+ *  must be byte-identical. The `text` field carries different meaning by
+ *  class: for `literal` it's the literal text the parser matches and MUST
+ *  agree across alts; for capturing classes (ident/number/string/…) it's the
+ *  example input from the schema (e.g. `<script>` vs `<br>`) and would
+ *  reject otherwise-identical alts that just happen to use different
+ *  examples. So only compare `text` when the class makes it semantically
+ *  load-bearing. */
 function spansMatchIgnoringOneOf(a: ResolvedSpan, b: ResolvedSpan): boolean {
   if (a.class !== b.class) return false;
-  if (a.text !== b.text) return false;
+  if (a.class === 'literal' && a.text !== b.text) return false;
   if (!arraysEqual(a.modifiers, b.modifiers, sameJson)) return false;
   if (!arraysEqual(a.recursiveRoles, b.recursiveRoles, (x, y) => x === y)) return false;
   const ar = a.refinements.filter((r) => r.name !== 'oneOf');

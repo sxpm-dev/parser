@@ -1579,27 +1579,100 @@ function parseHtmlElement(state: State): unknown {
   const len = state.len;
   let off = state.pos;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-state.pos = off;
+  state.pos = off;
   if (off >= len) return null;
-  if (input.charCodeAt(off) === 60) {
-  { const r = parseHtmlElement__alt0(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt5(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt7(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt9(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt4(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt6(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt8(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt10(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt11(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt12(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt13(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt14(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt15(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt1(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt2(state); if (r !== null) return r; }
+  if (!(input.charCodeAt(off) === 60)) return null;
+  let __peekOff = off + 1;
+  while (__peekOff < len) { const c = input.charCodeAt(__peekOff); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { __peekOff++; continue; } break; }
+  if (__peekOff >= len || !(isCssIdentStart(input.charCodeAt(__peekOff)))) {
+  { const r = parseHtmlElement__alt3(state); if (r !== null) return r; }
   { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
-  return parseHtmlElement__alt3(state);
-}
+    return null;
+  }
+  const __tagStart = __peekOff;
+  __peekOff++;
+  while (__peekOff < len && isCssIdentPart(input.charCodeAt(__peekOff))) __peekOff++;
+  const __dispatchTag = input.slice(__tagStart, __peekOff).toLowerCase();
+  switch (__dispatchTag) {
+    case "script":
+    case "style":
+    case "textarea":
+    case "title": {
+      { const r = parseHtmlElement__alt0(state); if (r !== null) return r; }
+      break;
+    }
+    case "area":
+    case "base":
+    case "br":
+    case "col":
+    case "embed":
+    case "hr":
+    case "img":
+    case "input":
+    case "link":
+    case "meta":
+    case "param":
+    case "source":
+    case "track":
+    case "wbr": {
+      { const r = parseHtmlElement__alt1(state); if (r !== null) return r; }
+      { const r = parseHtmlElement__alt2(state); if (r !== null) return r; }
+      break;
+    }
+    case "li": {
+      { const r = parseHtmlElement__alt4(state); if (r !== null) return r; }
+      break;
+    }
+    case "dt":
+    case "dd": {
+      { const r = parseHtmlElement__alt5(state); if (r !== null) return r; }
+      break;
+    }
+    case "tr": {
+      { const r = parseHtmlElement__alt6(state); if (r !== null) return r; }
+      break;
+    }
+    case "td":
+    case "th": {
+      { const r = parseHtmlElement__alt7(state); if (r !== null) return r; }
+      break;
+    }
+    case "p": {
+      { const r = parseHtmlElement__alt8(state); if (r !== null) return r; }
+      break;
+    }
+    case "option":
+    case "optgroup": {
+      { const r = parseHtmlElement__alt9(state); if (r !== null) return r; }
+      break;
+    }
+    case "html": {
+      { const r = parseHtmlElement__alt10(state); if (r !== null) return r; }
+      break;
+    }
+    case "head": {
+      { const r = parseHtmlElement__alt11(state); if (r !== null) return r; }
+      break;
+    }
+    case "tbody": {
+      { const r = parseHtmlElement__alt12(state); if (r !== null) return r; }
+      break;
+    }
+    case "thead": {
+      { const r = parseHtmlElement__alt13(state); if (r !== null) return r; }
+      break;
+    }
+    case "tfoot": {
+      { const r = parseHtmlElement__alt14(state); if (r !== null) return r; }
+      break;
+    }
+    case "body": {
+      { const r = parseHtmlElement__alt15(state); if (r !== null) return r; }
+      break;
+    }
+  }
+  { const r = parseHtmlElement__alt3(state); if (r !== null) return r; }
+  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
   return null;
 }
 

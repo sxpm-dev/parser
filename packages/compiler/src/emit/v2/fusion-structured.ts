@@ -22,6 +22,7 @@ import { isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
+import { computeRoleFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
 
 export function canFuseStructured(
@@ -96,7 +97,7 @@ export function emitFusedRenderStructured(
     const span = production.spans[i]!;
     if (i > 0) lines.push(skipWsBlock());
     if (span.recursiveRoles.length > 0) {
-      lines.push(emitStructuredRecursiveSpan(span, opts.target, bindings));
+      lines.push(emitStructuredRecursiveSpan(span, opts.target, bindings, schema));
     } else {
       lines.push(emitSpan(span, ctx, bindings));
     }
@@ -168,12 +169,15 @@ export function isRoleStructurallyFusable(
  * an array of structured-fused child values bound under `span.name`. The
  * dispatcher calls the per-role structured dispatcher emitted separately;
  * we assume it exists for every role in span.recursiveRoles (the
- * eligibility walk above is the gate).
+ * eligibility walk above is the gate). The dispatch is first-byte-aware
+ * so an HTML children loop at `</…` does NOT fall through into TextNode
+ * (which would happily accept empty input and pollute the children array).
  */
 function emitStructuredRecursiveSpan(
   span: ResolvedSpan,
   target: string,
   bindings: SpanBindings,
+  schema: InferredSchema,
 ): string {
   const name = span.name;
   if (!name) throw new Error('emitStructuredRecursiveSpan: recursive span has no name');
@@ -185,9 +189,10 @@ function emitStructuredRecursiveSpan(
         readonly max?: number;
         readonly sep?: string;
         readonly stopBefore?: ReadonlyArray<string>;
+        readonly trailing?: 'allowed' | 'required' | 'forbidden';
       }
     | undefined;
-  const dispatch = emitFusedStructuredRoleDispatch(span.recursiveRoles, target);
+  const dispatch = emitFusedStructuredRoleDispatch(span.recursiveRoles, target, schema);
 
   if (!repeats) {
     // Non-repeats recursive span — single attempt, bound directly.
@@ -210,18 +215,25 @@ function emitStructuredRecursiveSpan(
   const max = repeats.max;
   const sep = repeats.sep;
   const stopBefore = repeats.stopBefore;
+  const trailing = repeats.trailing;
 
   const out: string[] = [];
   out.push(`const ${name}: unknown[] = [];`);
+  if (sep !== undefined) {
+    // Top-of-loop sweep — mirrors the captures-path repeats. `__sepConsumed`
+    // tracks whether the MOST RECENT sweep consumed at least one sep, used
+    // by the post-loop trailing-required/forbidden checks.
+    out.push(`let __sepConsumed = false;`);
+    out.push(`let __preSweep = off;`);
+  }
   out.push(`while (true) {`);
   out.push(`  const __loopStart = off;`);
   if (sep !== undefined) {
-    // Top-of-loop ws + optional sep sweep. The first iteration takes the
-    // straight-through path (no sep consumed); subsequent iterations look
-    // for the declared sep with surrounding whitespace.
+    out.push(`  __preSweep = off;`);
+    out.push(`  __sepConsumed = false;`);
     out.push(`  ${skipWsBlock()}`);
-    out.push(`  if (${name}.length > 0) {`);
-    out.push(`    if (!(${literalMatchExpr(sep, 'off')})) break;`);
+    out.push(`  while (${literalMatchExpr(sep, 'off')}) {`);
+    out.push(`    __sepConsumed = true;`);
     out.push(`    off += ${sep.length};`);
     out.push(`    ${skipWsBlock()}`);
     out.push(`  }`);
@@ -238,12 +250,21 @@ function emitStructuredRecursiveSpan(
   }
   out.push(`  state.pos = off;`);
   out.push(`  let __cand: unknown = null;`);
-  out.push(indent(dispatch, 1));
-  out.push(`  if (__cand === null) { off = __loopStart; break; }`);
+  out.push(`  if (off < len) {`);
+  out.push(indent(dispatch, 2));
+  out.push(`  }`);
+  out.push(`  if (__cand === null) break;`);
   out.push(`  ${name}.push(__cand);`);
   out.push(`  off = state.pos;`);
   out.push(`  if (off === __loopStart) break;`);
   out.push(`}`);
+  if (sep !== undefined && trailing === 'forbidden') {
+    // Rewind to before the trailing sep so the parent sees it.
+    out.push(`if (__sepConsumed) { off = __preSweep; }`);
+  }
+  if (sep !== undefined && trailing === 'required') {
+    out.push(`if (${name}.length > 0 && !__sepConsumed) { state.pos = entryOff; return null; }`);
+  }
   if (min > 0) out.push(`if (${name}.length < ${min}) { state.pos = entryOff; return null; }`);
   if (max !== undefined) out.push(`if (${name}.length > ${max}) { state.pos = entryOff; return null; }`);
   return out.join('\n');
@@ -252,17 +273,107 @@ function emitStructuredRecursiveSpan(
 function emitFusedStructuredRoleDispatch(
   roles: ReadonlyArray<string>,
   target: string,
+  schema: InferredSchema,
 ): string {
-  // First cut: serial dispatch via per-role structured dispatchers. The
-  // dispatchers handle multi-production roles and route to the right alt.
-  // Later optimization: weave in byte-prefix routing like role-ladder does
-  // for the captures path — but that's a perf tweak on top of correct
-  // behaviour and can land as a follow-up.
+  // Mirror the captures-path role-ladder's first-byte gate so we DON'T
+  // fall through into a fallthrough role (e.g. TextNode's `rawUntil`) when
+  // the current byte clearly belongs to a byte-signatured role (e.g.
+  // HtmlElement starts with `<`). Without this gate a children loop at
+  // `</div>` would try Comment/Doctype/HtmlElement (all fail), then fall
+  // through to TextNode which happily matches an empty string and pollutes
+  // the children array with `{nodeName:'#text', value:''}`.
+  const signatures = roles.map((role, idx) => {
+    const info = schema.nodeTypes.get(role);
+    if (!info) throw new Error(`emitFusedStructuredRoleDispatch: unknown role '${role}'`);
+    return { ...computeRoleFirstBytes(role, info, schema.nodeTypes), role, declOrder: idx };
+  });
+  const byteRoles = signatures.filter((s) => !s.fallthrough && s.bytes.size > 0);
+  const fallthroughRoles = signatures.filter((s) => s.fallthrough);
+
+  // Group byte-roles by transitively-shared first bytes (so multi-byte
+  // overlap still routes together).
+  const visited = new Set<typeof byteRoles[number]>();
+  const groups: Array<{ readonly bytes: Set<number>; readonly roles: typeof byteRoles }> = [];
+  const byteToRoles = new Map<number, typeof byteRoles>();
+  for (const sig of byteRoles) {
+    for (const b of sig.bytes) {
+      const bucket = byteToRoles.get(b) ?? [];
+      bucket.push(sig);
+      byteToRoles.set(b, bucket);
+    }
+  }
+  for (const sig of byteRoles) {
+    if (visited.has(sig)) continue;
+    const group: typeof byteRoles = [];
+    const bytes = new Set<number>();
+    const queue: typeof byteRoles = [sig];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      if (visited.has(cur)) continue;
+      visited.add(cur);
+      group.push(cur);
+      for (const b of cur.bytes) {
+        bytes.add(b);
+        const neighbors = byteToRoles.get(b) ?? [];
+        for (const n of neighbors) if (!visited.has(n)) queue.push(n);
+      }
+    }
+    groups.push({ bytes, roles: group });
+  }
+
+  // Stable: byte groups in declaration order (lowest declOrder wins).
+  for (const g of groups) g.roles.sort((a, b) => a.declOrder - b.declOrder);
+  groups.sort((a, b) => Math.min(...a.roles.map((r) => r.declOrder)) - Math.min(...b.roles.map((r) => r.declOrder)));
+
+  const callExpr = (role: string) => `${structuredRoleDispatcherName(role, target)}(state)`;
+  const probesFor = (rolesInGroup: ReadonlyArray<{ role: string }>): string =>
+    rolesInGroup.map((r, i) => {
+      const c = callExpr(r.role);
+      return i === 0 ? `  __cand = ${c};` : `  if (__cand === null) __cand = ${c};`;
+    }).join('\n');
+
   const lines: string[] = [];
-  for (let i = 0; i < roles.length; i++) {
-    const fn = structuredRoleDispatcherName(roles[i]!, target);
-    if (i === 0) lines.push(`__cand = ${fn}(state);`);
-    else lines.push(`if (__cand === null) { __cand = ${fn}(state); }`);
+  lines.push(`const __c0 = input.charCodeAt(off);`);
+
+  // Match the captures-path role-ladder's switch threshold: when the total
+  // arms count reaches DISPATCH_SWITCH_MIN_BYTES we emit a switch jump
+  // table, otherwise a chained if/else. v2-regressions.test pins the shape.
+  let totalBytes = 0;
+  for (const g of groups) totalBytes += g.bytes.size;
+  if (groups.length > 0 && totalBytes >= 4) {
+    lines.push(`switch (__c0) {`);
+    for (const g of groups) {
+      const sortedBytes = [...g.bytes].sort((a, b) => a - b);
+      const caseLabels = sortedBytes.map((b) => `  case ${b}:`).join('\n');
+      lines.push(caseLabels);
+      lines.push(`  {`);
+      lines.push(probesFor(g.roles));
+      lines.push(`    break;`);
+      lines.push(`  }`);
+    }
+    if (fallthroughRoles.length > 0) {
+      lines.push(`  default: {`);
+      lines.push(probesFor(fallthroughRoles));
+      lines.push(`    break;`);
+      lines.push(`  }`);
+    }
+    lines.push(`}`);
+  } else {
+    const branches: string[] = [];
+    for (const g of groups) {
+      const cond = [...g.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
+      branches.push(`if (${cond}) {\n${probesFor(g.roles)}\n}`);
+    }
+    if (fallthroughRoles.length > 0) {
+      if (branches.length > 0) {
+        branches.push(`{\n${probesFor(fallthroughRoles)}\n}`);
+        lines.push(branches.join(' else '));
+      } else {
+        lines.push(probesFor(fallthroughRoles));
+      }
+    } else if (branches.length > 0) {
+      lines.push(branches.join(' else '));
+    }
   }
   return lines.join('\n');
 }

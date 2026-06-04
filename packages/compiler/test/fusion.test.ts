@@ -33,7 +33,11 @@ test('fusion: render() entry tries __renderFused before __renderDispatch', async
   const schema = (await import('../../markdown/src/schema.ts')).default;
   const src = generateParser(schema, undefined, { packageName: 'markdown' });
   // The fused entry function must be present unconditionally.
-  assert.match(src, /function __renderFused\(input: string, target: string\): string \| null/);
+  // F1/F2: `__renderFused` now serves BOTH Template/string targets AND
+  // structured-object targets, so its return type widened from
+  // `string | null` to `unknown` (caller still treats null as "fall through
+  // to captures path"). The body must still consult __fusedRenderDispatchLookup.
+  assert.match(src, /function __renderFused\(input: string, target: string\): unknown/);
   // The dispatch lookup must be emitted.
   assert.match(src, /function __fusedRenderDispatchLookup\(target: string\)/);
   // Root production key must be the rootType#0 string.

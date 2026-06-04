@@ -2160,7 +2160,13 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
-  if (target !== 'ast') {
+  // Fused fast path covers BOTH Template-bodied targets (e.g. 'source') AND
+  // structurally-fused object-bodied targets (e.g. 'ast' for schemas whose
+  // ast body is a structured object with statically resolvable refs). In
+  // raws mode the captures path attaches a per-node `source: string` field
+  // that the structured-fused emit does not synthesize — skip fusion so the
+  // returned shape matches caller expectations.
+  if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
   }
@@ -27747,6 +27753,2667 @@ const __fusedRenderDispatch_source: Record<string, (state: State, out: string[])
   "Attribute#3": __fusedRender_Attribute_3_source,
 };
 
+function __fusedRenderStructured_HtmlDocument_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { nodeName: "#document", mode: "no-quirks", childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_Doctype_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __keyword_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __keyword_end = off;
+  const keyword = input.slice(__keyword_start, __keyword_end);
+  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "doctype", _keyword: keyword, nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
+}
+
+function __fusedRenderStructured_Doctype_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __keyword_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __keyword_end = off;
+  const keyword = input.slice(__keyword_start, __keyword_end);
+  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "doctype-incomplete", _keyword: keyword, nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
+}
+
+function __fusedRenderStructured_Comment_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("<!--", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let data: string = '';
+  let __data_start = off;
+  let __data_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __data_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && ((__c === 45 && input.startsWith("-->", off)))) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __data_start;
+    if (__lastNonWs === __data_start) {
+      off = __emptyAnchor;
+      data = '';
+    } else {
+      off = __lastNonWs;
+      data = input.slice(__data_start, __lastNonWs);
+    }
+    __data_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("-->", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { nodeName: "#comment", data: data, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let children: string = '';
+  let __children_start = off;
+  let __children_end = off;
+  {
+    __children_start = off;
+    let __earliest = len;
+    for (let __i = __children_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    }
+    off = __earliest;
+    __children_end = off;
+    children = input.slice(__children_start, __children_end);
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closeTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closeTag_end = off;
+  const closeTag = input.slice(__closeTag_start, __closeTag_end);
+  if (!(closeTag.toLowerCase() === "script" || closeTag.toLowerCase() === "style" || closeTag.toLowerCase() === "textarea" || closeTag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-rawtext", _closeTag: closeTag, nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [{ nodeName: "#text", value: children, parentNode: null }], parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-void", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_2_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-void-selfclose", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_3_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-selfclose-recovery", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: [], parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_4_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "li")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</li>", off)) break;
+      if (__sb === 60 && input.startsWith("<li>", off)) break;
+      if (__sb === 60 && input.startsWith("<li ", off)) break;
+      if (__sb === 60 && input.startsWith("<li/", off)) break;
+      if (__sb === 60 && input.startsWith("</ol>", off)) break;
+      if (__sb === 60 && input.startsWith("</ul>", off)) break;
+      if (__sb === 60 && input.startsWith("</menu>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</li>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-li", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_5_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</dt>", off)) break;
+      if (__sb === 60 && input.startsWith("</dd>", off)) break;
+      if (__sb === 60 && input.startsWith("<dt>", off)) break;
+      if (__sb === 60 && input.startsWith("<dt ", off)) break;
+      if (__sb === 60 && input.startsWith("<dt/", off)) break;
+      if (__sb === 60 && input.startsWith("<dd>", off)) break;
+      if (__sb === 60 && input.startsWith("<dd ", off)) break;
+      if (__sb === 60 && input.startsWith("<dd/", off)) break;
+      if (__sb === 60 && input.startsWith("</dl>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</dt>", off)) { off += 5; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</dd>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-dt-dd", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_6_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tr")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</tr>", off)) break;
+      if (__sb === 60 && input.startsWith("<tr>", off)) break;
+      if (__sb === 60 && input.startsWith("<tr ", off)) break;
+      if (__sb === 60 && input.startsWith("<tr/", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody ", off)) break;
+      if (__sb === 60 && input.startsWith("<thead>", off)) break;
+      if (__sb === 60 && input.startsWith("<thead ", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot ", off)) break;
+      if (__sb === 60 && input.startsWith("</tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("</thead>", off)) break;
+      if (__sb === 60 && input.startsWith("</tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("</table>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tr>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-tr", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_7_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</td>", off)) break;
+      if (__sb === 60 && input.startsWith("</th>", off)) break;
+      if (__sb === 60 && input.startsWith("<td>", off)) break;
+      if (__sb === 60 && input.startsWith("<td ", off)) break;
+      if (__sb === 60 && input.startsWith("<td/", off)) break;
+      if (__sb === 60 && input.startsWith("<th>", off)) break;
+      if (__sb === 60 && input.startsWith("<th ", off)) break;
+      if (__sb === 60 && input.startsWith("<th/", off)) break;
+      if (__sb === 60 && input.startsWith("<tr>", off)) break;
+      if (__sb === 60 && input.startsWith("<tr ", off)) break;
+      if (__sb === 60 && input.startsWith("</tr>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody ", off)) break;
+      if (__sb === 60 && input.startsWith("<thead>", off)) break;
+      if (__sb === 60 && input.startsWith("<thead ", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot ", off)) break;
+      if (__sb === 60 && input.startsWith("</tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("</thead>", off)) break;
+      if (__sb === 60 && input.startsWith("</tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("</table>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</td>", off)) { off += 5; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</th>", off)) { off += 5; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-td-th", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_8_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "p")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</p>", off)) break;
+      if (__sb === 60 && input.startsWith("<p>", off)) break;
+      if (__sb === 60 && input.startsWith("<p ", off)) break;
+      if (__sb === 60 && input.startsWith("<p/", off)) break;
+      if (__sb === 60 && input.startsWith("<div>", off)) break;
+      if (__sb === 60 && input.startsWith("<div ", off)) break;
+      if (__sb === 60 && input.startsWith("<table>", off)) break;
+      if (__sb === 60 && input.startsWith("<table ", off)) break;
+      if (__sb === 60 && input.startsWith("<ul>", off)) break;
+      if (__sb === 60 && input.startsWith("<ul ", off)) break;
+      if (__sb === 60 && input.startsWith("<ol>", off)) break;
+      if (__sb === 60 && input.startsWith("<ol ", off)) break;
+      if (__sb === 60 && input.startsWith("<dl>", off)) break;
+      if (__sb === 60 && input.startsWith("<dl ", off)) break;
+      if (__sb === 60 && input.startsWith("<h1>", off)) break;
+      if (__sb === 60 && input.startsWith("<h1 ", off)) break;
+      if (__sb === 60 && input.startsWith("<h2>", off)) break;
+      if (__sb === 60 && input.startsWith("<h2 ", off)) break;
+      if (__sb === 60 && input.startsWith("<h3>", off)) break;
+      if (__sb === 60 && input.startsWith("<h3 ", off)) break;
+      if (__sb === 60 && input.startsWith("<h4>", off)) break;
+      if (__sb === 60 && input.startsWith("<h4 ", off)) break;
+      if (__sb === 60 && input.startsWith("<h5>", off)) break;
+      if (__sb === 60 && input.startsWith("<h5 ", off)) break;
+      if (__sb === 60 && input.startsWith("<h6>", off)) break;
+      if (__sb === 60 && input.startsWith("<h6 ", off)) break;
+      if (__sb === 60 && input.startsWith("<hr>", off)) break;
+      if (__sb === 60 && input.startsWith("<hr ", off)) break;
+      if (__sb === 60 && input.startsWith("<hr/", off)) break;
+      if (__sb === 60 && input.startsWith("<pre>", off)) break;
+      if (__sb === 60 && input.startsWith("<pre ", off)) break;
+      if (__sb === 60 && input.startsWith("<blockquote>", off)) break;
+      if (__sb === 60 && input.startsWith("<blockquote ", off)) break;
+      if (__sb === 60 && input.startsWith("<form>", off)) break;
+      if (__sb === 60 && input.startsWith("<form ", off)) break;
+      if (__sb === 60 && input.startsWith("<section>", off)) break;
+      if (__sb === 60 && input.startsWith("<section ", off)) break;
+      if (__sb === 60 && input.startsWith("<article>", off)) break;
+      if (__sb === 60 && input.startsWith("<article ", off)) break;
+      if (__sb === 60 && input.startsWith("<header>", off)) break;
+      if (__sb === 60 && input.startsWith("<header ", off)) break;
+      if (__sb === 60 && input.startsWith("<footer>", off)) break;
+      if (__sb === 60 && input.startsWith("<footer ", off)) break;
+      if (__sb === 60 && input.startsWith("<aside>", off)) break;
+      if (__sb === 60 && input.startsWith("<aside ", off)) break;
+      if (__sb === 60 && input.startsWith("<nav>", off)) break;
+      if (__sb === 60 && input.startsWith("<nav ", off)) break;
+      if (__sb === 60 && input.startsWith("<address>", off)) break;
+      if (__sb === 60 && input.startsWith("<address ", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</p>", off)) { off += 4; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-p", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_9_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</option>", off)) break;
+      if (__sb === 60 && input.startsWith("</optgroup>", off)) break;
+      if (__sb === 60 && input.startsWith("<option>", off)) break;
+      if (__sb === 60 && input.startsWith("<option ", off)) break;
+      if (__sb === 60 && input.startsWith("<optgroup>", off)) break;
+      if (__sb === 60 && input.startsWith("<optgroup ", off)) break;
+      if (__sb === 60 && input.startsWith("</select>", off)) break;
+      if (__sb === 60 && input.startsWith("</datalist>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</option>", off)) { off += 9; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</optgroup>", off)) { off += 11; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-option", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_10_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "html")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</html>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</html>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-html", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_11_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "head")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</head>", off)) break;
+      if (__sb === 60 && input.startsWith("<body>", off)) break;
+      if (__sb === 60 && input.startsWith("<body ", off)) break;
+      if (__sb === 60 && input.startsWith("<body/", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</head>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-head", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_12_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tbody")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody ", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot ", off)) break;
+      if (__sb === 60 && input.startsWith("</table>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tbody>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-tbody", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_13_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "thead")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</thead>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody>", off)) break;
+      if (__sb === 60 && input.startsWith("<tbody ", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("<tfoot ", off)) break;
+      if (__sb === 60 && input.startsWith("</table>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</thead>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-thead", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_14_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "tfoot")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</tfoot>", off)) break;
+      if (__sb === 60 && input.startsWith("</table>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</tfoot>", off)) { off += 8; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-tfoot", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_15_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "body")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 60 && input.startsWith("</body>", off)) break;
+      if (__sb === 60 && input.startsWith("</html>", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (input.startsWith("</body>", off)) { off += 7; }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element-body", nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_HtmlElement_16_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const attrs: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 45:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_Attribute_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    attrs.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 60) {
+        __cand = __fusedRenderStructuredDispatch_Doctype_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_Comment_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_HtmlElement_ast(state);
+      } else {
+        __cand = __fusedRenderStructuredDispatch_TextNode_ast(state);
+      }
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closeTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closeTag_end = off;
+  const closeTag = input.slice(__closeTag_start, __closeTag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _kind: "element", _closeTag: closeTag, nodeName: tag, tagName: tag, namespaceURI: "http://www.w3.org/1999/xhtml", attrs: attrs, childNodes: children, parentNode: null };
+}
+
+function __fusedRenderStructured_TextNode_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    __value_start = off;
+    let __earliest = len;
+    for (let __i = __value_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 60) { __earliest = __i; break; }
+    }
+    off = __earliest;
+    __value_end = off;
+    value = input.slice(__value_start, __value_end);
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { nodeName: "#text", value: value, parentNode: null };
+}
+
+function __fusedRenderStructured_Attribute_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __value_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && (__c === 34)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    if (off >= len || __depth !== 0) {
+      if (off > state.maxOff) state.maxOff = off;
+      state.pos = entryOff;
+      return null;
+    }
+    const __emptyAnchor = __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
+      value = '';
+    } else {
+      off = __lastNonWs;
+      value = input.slice(__value_start, __lastNonWs);
+    }
+    __value_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 34)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _quote: "double", name: name, value: value };
+}
+
+function __fusedRenderStructured_Attribute_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __value_start = off;
+    let __lastNonWs = off;
+    let __depth = 0;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__depth === 0 && (__c === 39)) break;
+      if (__c === 0x28 || __c === 0x5b || __c === 0x7b) {
+        __depth++; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+        if (__depth === 0) break;
+        __depth--; off++;
+        __lastNonWs = off;
+        continue;
+      }
+      if (__c === 0x5c && off + 1 < len) {
+        __lastNonWs = off + 2;
+        off += 2;
+        continue;
+      }
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    if (off >= len || __depth !== 0) {
+      if (off > state.maxOff) state.maxOff = off;
+      state.pos = entryOff;
+      return null;
+    }
+    const __emptyAnchor = __value_start;
+    if (__lastNonWs === __value_start) {
+      off = __emptyAnchor;
+      value = '';
+    } else {
+      off = __lastNonWs;
+      value = input.slice(__value_start, __lastNonWs);
+    }
+    __value_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 39)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _quote: "single", name: name, value: value };
+}
+
+function __fusedRenderStructured_Attribute_2_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let value: string = '';
+  let __value_start = off;
+  let __value_end = off;
+  {
+    __value_start = off;
+    let __earliest = len;
+    for (let __i = __value_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 34 || __c === 39 || __c === 32 || __c === 9 || __c === 10 || __c === 13 || __c === 12 || __c === 62) { __earliest = __i; break; }
+      if (__c === 47 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 62))) { __earliest = __i; break; }
+    }
+    off = __earliest;
+    __value_end = off;
+    value = input.slice(__value_start, __value_end);
+    if (value.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { _quote: "none", name: name, value: value };
+}
+
+function __fusedRenderStructured_Attribute_3_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { name: name, value: "" };
+}
+
+function __fusedRenderStructuredDispatch_Attribute_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_Attribute_0_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_Attribute_1_ast(state); if (r1 !== null) return r1;
+  const r2 = __fusedRenderStructured_Attribute_2_ast(state); if (r2 !== null) return r2;
+  const r3 = __fusedRenderStructured_Attribute_3_ast(state); if (r3 !== null) return r3;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_Comment_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_Comment_0_ast(state); if (r0 !== null) return r0;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_Doctype_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_Doctype_0_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_Doctype_1_ast(state); if (r1 !== null) return r1;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_HtmlElement_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_HtmlElement_0_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_HtmlElement_1_ast(state); if (r1 !== null) return r1;
+  const r2 = __fusedRenderStructured_HtmlElement_2_ast(state); if (r2 !== null) return r2;
+  const r3 = __fusedRenderStructured_HtmlElement_3_ast(state); if (r3 !== null) return r3;
+  const r4 = __fusedRenderStructured_HtmlElement_4_ast(state); if (r4 !== null) return r4;
+  const r5 = __fusedRenderStructured_HtmlElement_5_ast(state); if (r5 !== null) return r5;
+  const r6 = __fusedRenderStructured_HtmlElement_6_ast(state); if (r6 !== null) return r6;
+  const r7 = __fusedRenderStructured_HtmlElement_7_ast(state); if (r7 !== null) return r7;
+  const r8 = __fusedRenderStructured_HtmlElement_8_ast(state); if (r8 !== null) return r8;
+  const r9 = __fusedRenderStructured_HtmlElement_9_ast(state); if (r9 !== null) return r9;
+  const r10 = __fusedRenderStructured_HtmlElement_10_ast(state); if (r10 !== null) return r10;
+  const r11 = __fusedRenderStructured_HtmlElement_11_ast(state); if (r11 !== null) return r11;
+  const r12 = __fusedRenderStructured_HtmlElement_12_ast(state); if (r12 !== null) return r12;
+  const r13 = __fusedRenderStructured_HtmlElement_13_ast(state); if (r13 !== null) return r13;
+  const r14 = __fusedRenderStructured_HtmlElement_14_ast(state); if (r14 !== null) return r14;
+  const r15 = __fusedRenderStructured_HtmlElement_15_ast(state); if (r15 !== null) return r15;
+  const r16 = __fusedRenderStructured_HtmlElement_16_ast(state); if (r16 !== null) return r16;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_TextNode_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_TextNode_0_ast(state); if (r0 !== null) return r0;
+  return null;
+}
+
+const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown> = {
+  "HtmlDocument#0": __fusedRenderStructured_HtmlDocument_0_ast,
+  "Doctype#0": __fusedRenderStructured_Doctype_0_ast,
+  "Doctype#1": __fusedRenderStructured_Doctype_1_ast,
+  "Comment#0": __fusedRenderStructured_Comment_0_ast,
+  "HtmlElement#0": __fusedRenderStructured_HtmlElement_0_ast,
+  "HtmlElement#1": __fusedRenderStructured_HtmlElement_1_ast,
+  "HtmlElement#2": __fusedRenderStructured_HtmlElement_2_ast,
+  "HtmlElement#3": __fusedRenderStructured_HtmlElement_3_ast,
+  "HtmlElement#4": __fusedRenderStructured_HtmlElement_4_ast,
+  "HtmlElement#5": __fusedRenderStructured_HtmlElement_5_ast,
+  "HtmlElement#6": __fusedRenderStructured_HtmlElement_6_ast,
+  "HtmlElement#7": __fusedRenderStructured_HtmlElement_7_ast,
+  "HtmlElement#8": __fusedRenderStructured_HtmlElement_8_ast,
+  "HtmlElement#9": __fusedRenderStructured_HtmlElement_9_ast,
+  "HtmlElement#10": __fusedRenderStructured_HtmlElement_10_ast,
+  "HtmlElement#11": __fusedRenderStructured_HtmlElement_11_ast,
+  "HtmlElement#12": __fusedRenderStructured_HtmlElement_12_ast,
+  "HtmlElement#13": __fusedRenderStructured_HtmlElement_13_ast,
+  "HtmlElement#14": __fusedRenderStructured_HtmlElement_14_ast,
+  "HtmlElement#15": __fusedRenderStructured_HtmlElement_15_ast,
+  "HtmlElement#16": __fusedRenderStructured_HtmlElement_16_ast,
+  "TextNode#0": __fusedRenderStructured_TextNode_0_ast,
+  "Attribute#0": __fusedRenderStructured_Attribute_0_ast,
+  "Attribute#1": __fusedRenderStructured_Attribute_1_ast,
+  "Attribute#2": __fusedRenderStructured_Attribute_2_ast,
+  "Attribute#3": __fusedRenderStructured_Attribute_3_ast,
+};
+
 const __rootProductionKey: string = "HtmlDocument#0";
 
 function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
@@ -27756,7 +30423,41 @@ function __fusedRenderDispatchLookup(target: string): Record<string, (state: Sta
   }
 }
 
-function __renderFused(input: string, target: string): string | null {
+function __fusedRenderStructuredTableLookup(target: string): Record<string, (state: State) => unknown> | null {
+  switch (target) {
+    case "ast": return __fusedRenderStructuredTable_ast;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): unknown {
+  // Structured-fused path: when the target's body is a structured object
+  // and every leaf is statically resolvable, the parsed value IS the
+  // rendered output — one pass, no captures intermediate.
+  const sTable = __fusedRenderStructuredTableLookup(target);
+  if (sTable !== null) {
+    const sRoot = sTable[__rootProductionKey];
+    if (sRoot !== undefined) {
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
+  input = input.toLowerCase();
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+      const result = sRoot(state);
+      if (result === null) return null;
+      if (state.pos !== input.length) return null;
+      return result;
+    }
+  }
+  // String-fused path: Template-bodied targets emit text directly into a
+  // shared buffer.
   const table = __fusedRenderDispatchLookup(target);
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];

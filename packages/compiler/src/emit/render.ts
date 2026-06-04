@@ -361,7 +361,13 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
-  if (target !== 'ast') {
+  // Fused fast path covers BOTH Template-bodied targets (e.g. 'source') AND
+  // structurally-fused object-bodied targets (e.g. 'ast' for schemas whose
+  // ast body is a structured object with statically resolvable refs). In
+  // raws mode the captures path attaches a per-node \`source: string\` field
+  // that the structured-fused emit does not synthesize — skip fusion so the
+  // returned shape matches caller expectations.
+  if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
   }

@@ -3100,7 +3100,13 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
-  if (target !== 'ast') {
+  // Fused fast path covers BOTH Template-bodied targets (e.g. 'source') AND
+  // structurally-fused object-bodied targets (e.g. 'ast' for schemas whose
+  // ast body is a structured object with statically resolvable refs). In
+  // raws mode the captures path attaches a per-node `source: string` field
+  // that the structured-fused emit does not synthesize — skip fusion so the
+  // returned shape matches caller expectations.
+  if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
   }
@@ -11415,6 +11421,2132 @@ const __fusedRenderDispatch_source: Record<string, (state: State, out: string[])
   "MarkdownParagraph#0": __fusedRender_MarkdownParagraph_0_source,
 };
 
+function __fusedRenderStructured_MarkdownDocument_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const children: unknown[] = [];
+  while (true) {
+    const __loopStart = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+        __cand = __fusedRenderStructuredDispatch_MarkdownLeaf_ast(state);
+        if (__cand === null) __cand = __fusedRenderStructuredDispatch_MarkdownParagraph_ast(state);
+    }
+    if (__cand === null) break;
+    children.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "document", children: children };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 6;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 6, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 5, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_2_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 4, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_3_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 3, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_4_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 2, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_5_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 1, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_6_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 1, text: text, style: "setext" };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_7_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "heading", depth: 2, text: text, style: "setext" };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_8_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "thematic-break", marker: "*" };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_9_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "thematic-break", marker: "_" };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_10_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "thematic-break" };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_11_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "task-list-item", checked: true, marker: "x", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_12_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "task-list-item", checked: false, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_13_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "list-item", ordered: false, marker: "+", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_14_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "list-item", ordered: false, marker: "*", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_15_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "list-item", ordered: false, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_16_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __index_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __index_end = off;
+  const index = input.slice(__index_start, __index_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "list-item", ordered: true, index: index, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_17_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "blockquote", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_18_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __lang_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __lang_end = off;
+  const lang = input.slice(__lang_start, __lang_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __body_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 96 && input.startsWith("```", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __body_start;
+    if (__lastNonWs === __body_start) {
+      off = __emptyAnchor;
+      body = '';
+    } else {
+      off = __lastNonWs;
+      body = input.slice(__body_start, __lastNonWs);
+    }
+    __body_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "code-block", lang: lang, text: body };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_19_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __body_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 96 && input.startsWith("```", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __body_start;
+    if (__lastNonWs === __body_start) {
+      off = __emptyAnchor;
+      body = '';
+    } else {
+      off = __lastNonWs;
+      body = input.slice(__body_start, __lastNonWs);
+    }
+    __body_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "code-block", text: body };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_20_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 42 && input.startsWith("**", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "bold", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_21_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 42) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "italic", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_22_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if ((__c === 126 && input.startsWith("~~", off))) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "strikethrough", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_23_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 96) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "inline-code", text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_24_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let label: string = '';
+  let __label_start = off;
+  let __label_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __label_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __label_start;
+    if (__lastNonWs === __label_start) {
+      off = __emptyAnchor;
+      label = '';
+    } else {
+      off = __lastNonWs;
+      label = input.slice(__label_start, __lastNonWs);
+    }
+    __label_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 41) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
+      url = '';
+    } else {
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
+    }
+    __url_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "link", label: label, url: url };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_25_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let label: string = '';
+  let __label_start = off;
+  let __label_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __label_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __label_start;
+    if (__lastNonWs === __label_start) {
+      off = __emptyAnchor;
+      label = '';
+    } else {
+      off = __lastNonWs;
+      label = input.slice(__label_start, __lastNonWs);
+    }
+    __label_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
+      id = '';
+    } else {
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
+    }
+    __id_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "reference-link", label: label, id: id };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_26_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let alt: string = '';
+  let __alt_start = off;
+  let __alt_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __alt_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __alt_start;
+    if (__lastNonWs === __alt_start) {
+      off = __emptyAnchor;
+      alt = '';
+    } else {
+      off = __lastNonWs;
+      alt = input.slice(__alt_start, __lastNonWs);
+    }
+    __alt_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 41) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
+      url = '';
+    } else {
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
+    }
+    __url_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "image", alt: alt, url: url };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_27_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let alt: string = '';
+  let __alt_start = off;
+  let __alt_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __alt_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __alt_start;
+    if (__lastNonWs === __alt_start) {
+      off = __emptyAnchor;
+      alt = '';
+    } else {
+      off = __lastNonWs;
+      alt = input.slice(__alt_start, __lastNonWs);
+    }
+    __alt_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
+      id = '';
+    } else {
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
+    }
+    __id_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "reference-image", alt: alt, id: id };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_28_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __name_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __name_end = off;
+  const name = input.slice(__name_start, __name_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "entity", name: name };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_29_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "table-delimiter", variant: "plain", align: ["default", "default"] };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_30_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 3;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "table-delimiter", variant: "aligned", align: ["left", "right"] };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_31_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let first: string = '';
+  let __first_start = off;
+  let __first_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __first_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 124) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __first_start;
+    if (__lastNonWs === __first_start) {
+      off = __emptyAnchor;
+      first = '';
+    } else {
+      off = __lastNonWs;
+      first = input.slice(__first_start, __lastNonWs);
+    }
+    __first_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let second: string = '';
+  let __second_start = off;
+  let __second_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __second_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 124) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __second_start;
+    if (__lastNonWs === __second_start) {
+      off = __emptyAnchor;
+      second = '';
+    } else {
+      off = __lastNonWs;
+      second = input.slice(__second_start, __lastNonWs);
+    }
+    __second_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "table-row", cells: [first, second] };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_32_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
+      id = '';
+    } else {
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
+    }
+    __id_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
+      url = '';
+    } else {
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
+    }
+    __url_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "definition", id: id, url: url };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_33_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
+      id = '';
+    } else {
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
+    }
+    __id_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 10) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "footnote-definition", id: id, text: text };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_34_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let id: string = '';
+  let __id_start = off;
+  let __id_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __id_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 93) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __id_start;
+    if (__lastNonWs === __id_start) {
+      off = __emptyAnchor;
+      id = '';
+    } else {
+      off = __lastNonWs;
+      id = input.slice(__id_start, __lastNonWs);
+    }
+    __id_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "footnote-reference", id: id };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_35_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __tag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __tag_end = off;
+  const tag = input.slice(__tag_start, __tag_end);
+  if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let body: string = '';
+  let __body_start = off;
+  let __body_end = off;
+  {
+    __body_start = off;
+    let __earliest = len;
+    for (let __i = __body_start; __i < len; __i++) {
+      const __c = input.charCodeAt(__i);
+      if (__c === 60 && ((__i + 1 < len && input.charCodeAt(__i + 1) === 47))) { __earliest = __i; break; }
+    }
+    off = __earliest;
+    __body_end = off;
+    body = input.slice(__body_start, __body_end);
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 2;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __closingTag_start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const __closingTag_end = off;
+  const closingTag = input.slice(__closingTag_start, __closingTag_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "html", tag: tag, text: body, closingTag: closingTag };
+}
+
+function __fusedRenderStructured_MarkdownLeaf_36_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let url: string = '';
+  let __url_start = off;
+  let __url_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __url_start = off;
+    let __lastNonWs = off;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 62) break;
+      if (__c !== 0x20 && __c !== 0x09 && __c !== 0x0a && __c !== 0x0d) __lastNonWs = off + 1;
+      off++;
+    }
+    const __emptyAnchor = __url_start;
+    if (__lastNonWs === __url_start) {
+      off = __emptyAnchor;
+      url = '';
+    } else {
+      off = __lastNonWs;
+      url = input.slice(__url_start, __lastNonWs);
+    }
+    __url_end = off;
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "autolink", url: url };
+}
+
+function __fusedRenderStructured_MarkdownParagraph_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let text: string = '';
+  let __text_start = off;
+  let __text_end = off;
+  {
+    while (off < len) {
+      const __c0 = input.charCodeAt(off);
+      if (__c0 === 0x20 || __c0 === 0x09 || __c0 === 0x0a || __c0 === 0x0d) { off++; continue; }
+      break;
+    }
+    __text_start = off;
+    let __lastNonWs = off;
+    {
+      let __acState = 0;
+      const __acLen = input.length;
+      let __acBest = -1;
+      const __acMaxLen = 4;
+      while (off < __acLen) {
+        const __acC = input.charCodeAt(off);
+        switch (__acState) {
+          case 0: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { break; }
+          }
+          case 1: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 2: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 3: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 4: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 5: {
+            if (__acC === 10) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 7;
+              break;
+            }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 6;
+              break;
+            }
+            else if (__acC === 45) { __acState = 16; break; }
+            else { __acState = 0; continue; }
+          }
+          case 6: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 7: {
+            if (__acC === 10) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 2;
+              break;
+            }
+            else if (__acC === 35) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 3;
+              break;
+            }
+            else if (__acC === 42) { __acState = 10; break; }
+            else if (__acC === 43) { __acState = 8; break; }
+            else if (__acC === 45) { __acState = 5; break; }
+            else if (__acC === 61) { __acState = 23; break; }
+            else if (__acC === 62) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 4;
+              break;
+            }
+            else if (__acC === 91) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 26;
+              break;
+            }
+            else if (__acC === 95) { __acState = 20; break; }
+            else if (__acC === 96) { __acState = 12; break; }
+            else if (__acC === 124) {
+              const __acStart = off - 1;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 15;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 8: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 9;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 9: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 10: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 32) {
+              const __acStart = off - 2;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 11;
+              break;
+            }
+            else if (__acC === 42) { __acState = 18; break; }
+            else { __acState = 0; continue; }
+          }
+          case 11: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 12: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 96) { __acState = 13; break; }
+            else { __acState = 0; continue; }
+          }
+          case 13: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 96) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 14;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 14: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 15: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 16: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 45) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 17;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 17: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 18: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 42) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 19;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 19: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 20: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 95) { __acState = 21; break; }
+            else { __acState = 0; continue; }
+          }
+          case 21: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 95) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 22;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 22: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 23: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 61) { __acState = 24; break; }
+            else { __acState = 0; continue; }
+          }
+          case 24: {
+            if (__acC === 10) { __acState = 1; break; }
+            else if (__acC === 61) {
+              const __acStart = off - 3;
+              if (__acBest === -1 || __acStart < __acBest) __acBest = __acStart;
+              __acState = 25;
+              break;
+            }
+            else { __acState = 0; continue; }
+          }
+          case 25: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+          case 26: {
+            if (__acC === 10) { __acState = 1; break; }
+            else { __acState = 0; continue; }
+          }
+        }
+        off++;
+        if (__acBest !== -1 && off >= __acBest + __acMaxLen) break;
+      }
+      off = __acBest === -1 ? __acLen : __acBest;
+    }
+    __lastNonWs = off;
+    while (__lastNonWs > __text_start) {
+      const __wc = input.charCodeAt(__lastNonWs - 1);
+      if (__wc !== 0x20 && __wc !== 0x09 && __wc !== 0x0a && __wc !== 0x0d) break;
+      __lastNonWs--;
+    }
+    const __emptyAnchor = __text_start;
+    if (__lastNonWs === __text_start) {
+      off = __emptyAnchor;
+      text = '';
+    } else {
+      off = __lastNonWs;
+      text = input.slice(__text_start, __lastNonWs);
+    }
+    __text_end = off;
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "paragraph", text: text };
+}
+
+function __fusedRenderStructuredDispatch_MarkdownLeaf_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_MarkdownLeaf_6_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_MarkdownLeaf_7_ast(state); if (r1 !== null) return r1;
+  const r2 = __fusedRenderStructured_MarkdownLeaf_0_ast(state); if (r2 !== null) return r2;
+  const r3 = __fusedRenderStructured_MarkdownLeaf_1_ast(state); if (r3 !== null) return r3;
+  const r4 = __fusedRenderStructured_MarkdownLeaf_11_ast(state); if (r4 !== null) return r4;
+  const r5 = __fusedRenderStructured_MarkdownLeaf_12_ast(state); if (r5 !== null) return r5;
+  const r6 = __fusedRenderStructured_MarkdownLeaf_2_ast(state); if (r6 !== null) return r6;
+  const r7 = __fusedRenderStructured_MarkdownLeaf_19_ast(state); if (r7 !== null) return r7;
+  const r8 = __fusedRenderStructured_MarkdownLeaf_3_ast(state); if (r8 !== null) return r8;
+  const r9 = __fusedRenderStructured_MarkdownLeaf_8_ast(state); if (r9 !== null) return r9;
+  const r10 = __fusedRenderStructured_MarkdownLeaf_9_ast(state); if (r10 !== null) return r10;
+  const r11 = __fusedRenderStructured_MarkdownLeaf_10_ast(state); if (r11 !== null) return r11;
+  const r12 = __fusedRenderStructured_MarkdownLeaf_18_ast(state); if (r12 !== null) return r12;
+  const r13 = __fusedRenderStructured_MarkdownLeaf_4_ast(state); if (r13 !== null) return r13;
+  const r14 = __fusedRenderStructured_MarkdownLeaf_13_ast(state); if (r14 !== null) return r14;
+  const r15 = __fusedRenderStructured_MarkdownLeaf_14_ast(state); if (r15 !== null) return r15;
+  const r16 = __fusedRenderStructured_MarkdownLeaf_15_ast(state); if (r16 !== null) return r16;
+  const r17 = __fusedRenderStructured_MarkdownLeaf_20_ast(state); if (r17 !== null) return r17;
+  const r18 = __fusedRenderStructured_MarkdownLeaf_22_ast(state); if (r18 !== null) return r18;
+  const r19 = __fusedRenderStructured_MarkdownLeaf_33_ast(state); if (r19 !== null) return r19;
+  const r20 = __fusedRenderStructured_MarkdownLeaf_34_ast(state); if (r20 !== null) return r20;
+  const r21 = __fusedRenderStructured_MarkdownLeaf_5_ast(state); if (r21 !== null) return r21;
+  const r22 = __fusedRenderStructured_MarkdownLeaf_17_ast(state); if (r22 !== null) return r22;
+  const r23 = __fusedRenderStructured_MarkdownLeaf_21_ast(state); if (r23 !== null) return r23;
+  const r24 = __fusedRenderStructured_MarkdownLeaf_23_ast(state); if (r24 !== null) return r24;
+  const r25 = __fusedRenderStructured_MarkdownLeaf_24_ast(state); if (r25 !== null) return r25;
+  const r26 = __fusedRenderStructured_MarkdownLeaf_25_ast(state); if (r26 !== null) return r26;
+  const r27 = __fusedRenderStructured_MarkdownLeaf_26_ast(state); if (r27 !== null) return r27;
+  const r28 = __fusedRenderStructured_MarkdownLeaf_27_ast(state); if (r28 !== null) return r28;
+  const r29 = __fusedRenderStructured_MarkdownLeaf_28_ast(state); if (r29 !== null) return r29;
+  const r30 = __fusedRenderStructured_MarkdownLeaf_29_ast(state); if (r30 !== null) return r30;
+  const r31 = __fusedRenderStructured_MarkdownLeaf_30_ast(state); if (r31 !== null) return r31;
+  const r32 = __fusedRenderStructured_MarkdownLeaf_31_ast(state); if (r32 !== null) return r32;
+  const r33 = __fusedRenderStructured_MarkdownLeaf_32_ast(state); if (r33 !== null) return r33;
+  const r34 = __fusedRenderStructured_MarkdownLeaf_35_ast(state); if (r34 !== null) return r34;
+  const r35 = __fusedRenderStructured_MarkdownLeaf_36_ast(state); if (r35 !== null) return r35;
+  const r36 = __fusedRenderStructured_MarkdownLeaf_16_ast(state); if (r36 !== null) return r36;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_MarkdownParagraph_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_MarkdownParagraph_0_ast(state); if (r0 !== null) return r0;
+  return null;
+}
+
+const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown> = {
+  "MarkdownDocument#0": __fusedRenderStructured_MarkdownDocument_0_ast,
+  "MarkdownLeaf#0": __fusedRenderStructured_MarkdownLeaf_0_ast,
+  "MarkdownLeaf#1": __fusedRenderStructured_MarkdownLeaf_1_ast,
+  "MarkdownLeaf#2": __fusedRenderStructured_MarkdownLeaf_2_ast,
+  "MarkdownLeaf#3": __fusedRenderStructured_MarkdownLeaf_3_ast,
+  "MarkdownLeaf#4": __fusedRenderStructured_MarkdownLeaf_4_ast,
+  "MarkdownLeaf#5": __fusedRenderStructured_MarkdownLeaf_5_ast,
+  "MarkdownLeaf#6": __fusedRenderStructured_MarkdownLeaf_6_ast,
+  "MarkdownLeaf#7": __fusedRenderStructured_MarkdownLeaf_7_ast,
+  "MarkdownLeaf#8": __fusedRenderStructured_MarkdownLeaf_8_ast,
+  "MarkdownLeaf#9": __fusedRenderStructured_MarkdownLeaf_9_ast,
+  "MarkdownLeaf#10": __fusedRenderStructured_MarkdownLeaf_10_ast,
+  "MarkdownLeaf#11": __fusedRenderStructured_MarkdownLeaf_11_ast,
+  "MarkdownLeaf#12": __fusedRenderStructured_MarkdownLeaf_12_ast,
+  "MarkdownLeaf#13": __fusedRenderStructured_MarkdownLeaf_13_ast,
+  "MarkdownLeaf#14": __fusedRenderStructured_MarkdownLeaf_14_ast,
+  "MarkdownLeaf#15": __fusedRenderStructured_MarkdownLeaf_15_ast,
+  "MarkdownLeaf#16": __fusedRenderStructured_MarkdownLeaf_16_ast,
+  "MarkdownLeaf#17": __fusedRenderStructured_MarkdownLeaf_17_ast,
+  "MarkdownLeaf#18": __fusedRenderStructured_MarkdownLeaf_18_ast,
+  "MarkdownLeaf#19": __fusedRenderStructured_MarkdownLeaf_19_ast,
+  "MarkdownLeaf#20": __fusedRenderStructured_MarkdownLeaf_20_ast,
+  "MarkdownLeaf#21": __fusedRenderStructured_MarkdownLeaf_21_ast,
+  "MarkdownLeaf#22": __fusedRenderStructured_MarkdownLeaf_22_ast,
+  "MarkdownLeaf#23": __fusedRenderStructured_MarkdownLeaf_23_ast,
+  "MarkdownLeaf#24": __fusedRenderStructured_MarkdownLeaf_24_ast,
+  "MarkdownLeaf#25": __fusedRenderStructured_MarkdownLeaf_25_ast,
+  "MarkdownLeaf#26": __fusedRenderStructured_MarkdownLeaf_26_ast,
+  "MarkdownLeaf#27": __fusedRenderStructured_MarkdownLeaf_27_ast,
+  "MarkdownLeaf#28": __fusedRenderStructured_MarkdownLeaf_28_ast,
+  "MarkdownLeaf#29": __fusedRenderStructured_MarkdownLeaf_29_ast,
+  "MarkdownLeaf#30": __fusedRenderStructured_MarkdownLeaf_30_ast,
+  "MarkdownLeaf#31": __fusedRenderStructured_MarkdownLeaf_31_ast,
+  "MarkdownLeaf#32": __fusedRenderStructured_MarkdownLeaf_32_ast,
+  "MarkdownLeaf#33": __fusedRenderStructured_MarkdownLeaf_33_ast,
+  "MarkdownLeaf#34": __fusedRenderStructured_MarkdownLeaf_34_ast,
+  "MarkdownLeaf#35": __fusedRenderStructured_MarkdownLeaf_35_ast,
+  "MarkdownLeaf#36": __fusedRenderStructured_MarkdownLeaf_36_ast,
+  "MarkdownParagraph#0": __fusedRenderStructured_MarkdownParagraph_0_ast,
+};
+
 const __rootProductionKey: string = "MarkdownDocument#0";
 
 function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
@@ -11425,7 +13557,40 @@ function __fusedRenderDispatchLookup(target: string): Record<string, (state: Sta
   }
 }
 
-function __renderFused(input: string, target: string): string | null {
+function __fusedRenderStructuredTableLookup(target: string): Record<string, (state: State) => unknown> | null {
+  switch (target) {
+    case "ast": return __fusedRenderStructuredTable_ast;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): unknown {
+  // Structured-fused path: when the target's body is a structured object
+  // and every leaf is statically resolvable, the parsed value IS the
+  // rendered output — one pass, no captures intermediate.
+  const sTable = __fusedRenderStructuredTableLookup(target);
+  if (sTable !== null) {
+    const sRoot = sTable[__rootProductionKey];
+    if (sRoot !== undefined) {
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+      const result = sRoot(state);
+      if (result === null) return null;
+      if (state.pos !== input.length) return null;
+      return result;
+    }
+  }
+  // String-fused path: Template-bodied targets emit text directly into a
+  // shared buffer.
   const table = __fusedRenderDispatchLookup(target);
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];

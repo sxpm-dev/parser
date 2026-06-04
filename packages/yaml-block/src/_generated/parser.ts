@@ -625,7 +625,13 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
-  if (target !== 'ast') {
+  // Fused fast path covers BOTH Template-bodied targets (e.g. 'source') AND
+  // structurally-fused object-bodied targets (e.g. 'ast' for schemas whose
+  // ast body is a structured object with statically resolvable refs). In
+  // raws mode the captures path attaches a per-node `source: string` field
+  // that the structured-fused emit does not synthesize — skip fusion so the
+  // returned shape matches caller expectations.
+  if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
   }
@@ -1401,7 +1407,39 @@ function __fusedRenderDispatchLookup(target: string): Record<string, (state: Sta
   }
 }
 
-function __renderFused(input: string, target: string): string | null {
+function __fusedRenderStructuredTableLookup(target: string): Record<string, (state: State) => unknown> | null {
+  switch (target) {
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): unknown {
+  // Structured-fused path: when the target's body is a structured object
+  // and every leaf is statically resolvable, the parsed value IS the
+  // rendered output — one pass, no captures intermediate.
+  const sTable = __fusedRenderStructuredTableLookup(target);
+  if (sTable !== null) {
+    const sRoot = sTable[__rootProductionKey];
+    if (sRoot !== undefined) {
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+      const result = sRoot(state);
+      if (result === null) return null;
+      if (state.pos !== input.length) return null;
+      return result;
+    }
+  }
+  // String-fused path: Template-bodied targets emit text directly into a
+  // shared buffer.
   const table = __fusedRenderDispatchLookup(target);
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];

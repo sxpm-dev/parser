@@ -510,7 +510,13 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
   }
-  if (target !== 'ast') {
+  // Fused fast path covers BOTH Template-bodied targets (e.g. 'source') AND
+  // structurally-fused object-bodied targets (e.g. 'ast' for schemas whose
+  // ast body is a structured object with statically resolvable refs). In
+  // raws mode the captures path attaches a per-node `source: string` field
+  // that the structured-fused emit does not synthesize — skip fusion so the
+  // returned shape matches caller expectations.
+  if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
   }
@@ -2381,6 +2387,93 @@ const __fusedRenderDispatch_source: Record<string, (state: State, out: string[])
   "Cron#0": __fusedRender_Cron_0_source,
 };
 
+function __fusedRenderStructured_CronField_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "wildcard" };
+}
+
+function __fusedRenderStructured_CronField_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __step_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __step_end = off;
+  const step = input.slice(__step_start, __step_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "step", step: step };
+}
+
+function __fusedRenderStructured_CronField_2_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __value_end = off;
+  const value = input.slice(__value_start, __value_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "value", value: value };
+}
+
+function __fusedRenderStructured_CronField_3_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __start_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __start_end = off;
+  const start = input.slice(__start_start, __start_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __end_start = off;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __end_end = off;
+  const end = input.slice(__end_start, __end_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "range", start: start, end: end };
+}
+
+const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown> = {
+  "CronField#0": __fusedRenderStructured_CronField_0_ast,
+  "CronField#1": __fusedRenderStructured_CronField_1_ast,
+  "CronField#2": __fusedRenderStructured_CronField_2_ast,
+  "CronField#3": __fusedRenderStructured_CronField_3_ast,
+};
+
 const __rootProductionKey: string = "Cron#0";
 
 function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
@@ -2390,7 +2483,40 @@ function __fusedRenderDispatchLookup(target: string): Record<string, (state: Sta
   }
 }
 
-function __renderFused(input: string, target: string): string | null {
+function __fusedRenderStructuredTableLookup(target: string): Record<string, (state: State) => unknown> | null {
+  switch (target) {
+    case "ast": return __fusedRenderStructuredTable_ast;
+    default: return null;
+  }
+}
+
+function __renderFused(input: string, target: string): unknown {
+  // Structured-fused path: when the target's body is a structured object
+  // and every leaf is statically resolvable, the parsed value IS the
+  // rendered output — one pass, no captures intermediate.
+  const sTable = __fusedRenderStructuredTableLookup(target);
+  if (sTable !== null) {
+    const sRoot = sTable[__rootProductionKey];
+    if (sRoot !== undefined) {
+  if (input.charCodeAt(0) === 0xfeff) input = input.slice(1);
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    mode: 'fast',
+    lineStarts: [],
+    indentStack: new Int32Array(16),
+    indentStackTop: 0,
+  };
+      const result = sRoot(state);
+      if (result === null) return null;
+      if (state.pos !== input.length) return null;
+      return result;
+    }
+  }
+  // String-fused path: Template-bodied targets emit text directly into a
+  // shared buffer.
   const table = __fusedRenderDispatchLookup(target);
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];

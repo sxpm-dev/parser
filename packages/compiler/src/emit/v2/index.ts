@@ -17,6 +17,13 @@ import { jsIdent, jsString } from '../strings.ts';
 import { productionKey } from '../render.ts';
 import { emitDispatcher } from './dispatch.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
+import {
+  canFuseStructured,
+  emitFusedRenderStructured,
+  isRoleStructurallyFusable,
+  structuredFnName,
+  structuredRoleDispatcherName,
+} from './fusion-structured.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { emitProduction } from './production.ts';
 import { V2_RUNTIME } from './runtime.ts';
@@ -67,7 +74,8 @@ export function emitV2Parser(schema: InferredSchema): string {
   // ineligible cases just short-circuit to null and the captures path
   // handles them.
   const { source: fusion, targets: fusedTargets } = emitFusion(schema);
-  const fusedEntry = emitFusedRenderEntry(schema, fusedTargets);
+  const { source: structuredFusion, targets: structuredTargets } = emitStructuredFusion(schema);
+  const fusedEntry = emitFusedRenderEntry(schema, fusedTargets, structuredTargets);
   const api = emitPublicApi(schema, validateBody);
   return [
     header,
@@ -83,6 +91,7 @@ export function emitV2Parser(schema: InferredSchema): string {
     rebuild,
     inverse,
     fusion,
+    structuredFusion,
     fusedEntry,
     api,
   ].filter((p) => p !== '').join('\n\n') + '\n';
@@ -147,6 +156,121 @@ ${entries.join('\n')}
   return { source, targets: sortedTargets };
 }
 
+/**
+ * F1/F2 — Structured fusion. Mirrors `emitFusion` but for OBJECT/scalar
+ * bodies (typically the schema author's `ast` target). When a (production,
+ * target) pair has a statically resolvable structured body whose recursive
+ * roles are themselves structurally fusable, emit a function that parses
+ * AND builds the target object inline. Per-role dispatchers route into the
+ * right production for each role. Per-target tables keyed by
+ * `<NodeType>#<prodIdx>` plug into __renderFused.
+ *
+ * Returns the joined source and the list of targets that actually got at
+ * least one fused production (the entry-point switch only references
+ * targets that exist).
+ */
+function emitStructuredFusion(schema: InferredSchema): { source: string; targets: ReadonlyArray<string> } {
+  // Determine the candidate target set: every target named on any production.
+  const allTargets = new Set<string>();
+  for (const info of schema.nodeTypes.values()) {
+    for (const prod of info.productions) {
+      for (const target of prod.renders.keys()) allTargets.add(target);
+    }
+  }
+
+  const fns: string[] = [];
+  // Per-target dispatch table entries: `"<NodeType>#<prodIdx>": __fusedRenderStructured_X_N_target,`
+  const tableEntries = new Map<string, string[]>();
+  // Roles that need a per-role dispatcher emitted (because some recursive
+  // span references them and they're structurally fusable for this target).
+  const roleDispatchersByTarget = new Map<string, Set<string>>();
+
+  for (const target of allTargets) {
+    const cache = new Map<string, boolean>();
+    for (const info of schema.nodeTypes.values()) {
+      for (let i = 0; i < info.productions.length; i++) {
+        const production = info.productions[i]!;
+        const src = emitFusedRenderStructured(production, schema, {
+          nodeName: info.name,
+          prodIdx: i,
+          target,
+        });
+        if (src === null) continue;
+        fns.push(src);
+        const key = productionKey(info.name, i);
+        const list = tableEntries.get(target) ?? [];
+        list.push(`  ${jsString(key)}: ${structuredFnName(info.name, i, target)},`);
+        tableEntries.set(target, list);
+        // Collect roles referenced by recursive spans in this production —
+        // each one needs its own dispatcher emitted (since the production's
+        // body calls `__fusedRenderStructuredDispatch_<Role>_<target>`).
+        for (const span of production.spans) {
+          for (const role of span.recursiveRoles) {
+            if (!isRoleStructurallyFusable(role, schema, target, cache)) continue;
+            const set = roleDispatchersByTarget.get(target) ?? new Set();
+            set.add(role);
+            roleDispatchersByTarget.set(target, set);
+          }
+        }
+      }
+    }
+  }
+
+  // Per-role dispatchers — emitted once per (role, target). Order productions
+  // by longest leading-literal-prefix descending so a more-specific opener
+  // (e.g. markdown's `\`\`\`\n` no-lang fenced-code) wins over a shorter
+  // shared prefix (`\`\`\`` with-lang). Matches the captures-path role-
+  // ladder's emitGroupSpeculation tie-break; without it the structured-
+  // fused path would commit to the wrong production for an input that
+  // happens to be claimed by both. Declaration order is the stable
+  // tiebreaker.
+  for (const [target, roles] of roleDispatchersByTarget) {
+    for (const role of [...roles].sort()) {
+      const info = schema.nodeTypes.get(role)!;
+      const fusableIdxs: number[] = [];
+      for (let i = 0; i < info.productions.length; i++) {
+        if (canFuseStructured(info.productions[i]!, schema, target)) fusableIdxs.push(i);
+      }
+      fusableIdxs.sort((a, b) => {
+        const litLen = (idx: number): number => {
+          const s0 = info.productions[idx]!.spans[0];
+          if (s0 && s0.class === 'literal' && typeof s0.text === 'string') return s0.text.length;
+          return 0;
+        };
+        const diff = litLen(b) - litLen(a);
+        return diff !== 0 ? diff : a - b;
+      });
+      const probes: string[] = [];
+      let probeCount = 0;
+      for (const idx of fusableIdxs) {
+        const fn = structuredFnName(role, idx, target);
+        if (probeCount === 0) probes.push(`  const r${probeCount} = ${fn}(state); if (r${probeCount} !== null) return r${probeCount};`);
+        else probes.push(`  const r${probeCount} = ${fn}(state); if (r${probeCount} !== null) return r${probeCount};`);
+        probeCount++;
+      }
+      const dispatcherName = structuredRoleDispatcherName(role, target);
+      fns.push(`function ${dispatcherName}(state: State): unknown {
+${probes.join('\n')}
+  return null;
+}`);
+    }
+  }
+
+  const sortedTargets = [...tableEntries.keys()].sort();
+  const tables = sortedTargets.map((target) => {
+    const id = jsIdent(target);
+    const entries = tableEntries.get(target) ?? [];
+    return `const __fusedRenderStructuredTable_${id}: Record<string, (state: State) => unknown> = {
+${entries.join('\n')}
+};`;
+  });
+  if (fns.length === 0 && tables.length === 0) {
+    return { source: '', targets: sortedTargets };
+  }
+  const source = [fns.join('\n\n'), tables.join('\n\n')].filter((p) => p !== '').join('\n\n');
+  return { source, targets: sortedTargets };
+}
+
 // Phase 5 Task 5.2 — entry point that the public `render()` body calls
 // before falling back to the captures path. Walks the same `State` shape
 // the parser uses (mode 'fast' since the fused path never needs raws
@@ -164,7 +288,11 @@ ${entries.join('\n')}
 // When no production fused for ANY target (sortedTargets is empty) the
 // lookup switch has just a `default` arm that returns null — `render()`
 // always falls back to the captures path. Same shape, no behavior change.
-function emitFusedRenderEntry(schema: InferredSchema, fusedTargets: ReadonlyArray<string>): string {
+function emitFusedRenderEntry(
+  schema: InferredSchema,
+  fusedTargets: ReadonlyArray<string>,
+  structuredTargets: ReadonlyArray<string>,
+): string {
   const rootKey = `${schema.rootType}#0`;
   const cases = fusedTargets.map((target) => {
     const id = jsIdent(target);
@@ -173,6 +301,14 @@ function emitFusedRenderEntry(schema: InferredSchema, fusedTargets: ReadonlyArra
   const switchBody = cases.length === 0
     ? '    default: return null;'
     : `${cases.join('\n')}\n    default: return null;`;
+  // Same shape for the structured table lookup.
+  const sCases = structuredTargets.map((target) => {
+    const id = jsIdent(target);
+    return `    case ${jsString(target)}: return __fusedRenderStructuredTable_${id};`;
+  });
+  const sSwitchBody = sCases.length === 0
+    ? '    default: return null;'
+    : `${sCases.join('\n')}\n    default: return null;`;
   // The fused entry MUST apply the input-normalization preamble (BOM strip,
   // unicode/newline normalize, ASCII case fold) BEFORE state init, mirroring
   // `__parse`. Without it a case-insensitive schema (html) parses the raw
@@ -189,7 +325,29 @@ ${switchBody}
   }
 }
 
-function __renderFused(input: string, target: string): string | null {
+function __fusedRenderStructuredTableLookup(target: string): Record<string, (state: State) => unknown> | null {
+  switch (target) {
+${sSwitchBody}
+  }
+}
+
+function __renderFused(input: string, target: string): unknown {
+  // Structured-fused path: when the target's body is a structured object
+  // and every leaf is statically resolvable, the parsed value IS the
+  // rendered output — one pass, no captures intermediate.
+  const sTable = __fusedRenderStructuredTableLookup(target);
+  if (sTable !== null) {
+    const sRoot = sTable[__rootProductionKey];
+    if (sRoot !== undefined) {
+${preamble}${emitStateInit('state', 'fast')}
+      const result = sRoot(state);
+      if (result === null) return null;
+      if (state.pos !== input.length) return null;
+      return result;
+    }
+  }
+  // String-fused path: Template-bodied targets emit text directly into a
+  // shared buffer.
   const table = __fusedRenderDispatchLookup(target);
   if (table === null) return null;
   const rootFusedFn = table[__rootProductionKey];

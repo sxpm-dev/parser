@@ -20,7 +20,7 @@
 
 import { isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
-import type { InferredSchema, Production } from '../../model.ts';
+import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
 
@@ -58,9 +58,11 @@ export type StructuredFusedOptions = {
  * rewound to the entry offset, mirroring the captures-path parse fn
  * contract).
  *
- * First-cut limitation: any recursive span on the production disqualifies
- * the production. Task 3 lifts that — until then those productions stay on
- * the captures path.
+ * Recursive spans are supported: each span's recursive-role candidates must
+ * themselves be structurally fusable for the same target (verified by
+ * isRoleStructurallyFusable with cycle-detecting cache). On match, the
+ * recursive span emits a repeats loop that calls per-role structured
+ * dispatchers (emitted by the caller in emit/v2/index.ts).
  */
 export function emitFusedRenderStructured(
   production: Production,
@@ -68,8 +70,11 @@ export function emitFusedRenderStructured(
   opts: StructuredFusedOptions,
 ): string | null {
   if (!canFuseStructured(production, schema, opts.target)) return null;
+  const cache = new Map<string, boolean>();
   for (const span of production.spans) {
-    if (span.recursiveRoles.length > 0) return null;
+    for (const role of span.recursiveRoles) {
+      if (!isRoleStructurallyFusable(role, schema, opts.target, cache)) return null;
+    }
   }
   const entry = production.renders.get(opts.target)!;
 
@@ -90,7 +95,11 @@ export function emitFusedRenderStructured(
   for (let i = 0; i < production.spans.length; i++) {
     const span = production.spans[i]!;
     if (i > 0) lines.push(skipWsBlock());
-    lines.push(emitSpan(span, ctx, bindings));
+    if (span.recursiveRoles.length > 0) {
+      lines.push(emitStructuredRecursiveSpan(span, opts.target, bindings));
+    } else {
+      lines.push(emitSpan(span, ctx, bindings));
+    }
   }
   lines.push(`state.pos = off;`);
   lines.push(`if (off > state.maxOff) state.maxOff = off;`);
@@ -100,6 +109,167 @@ export function emitFusedRenderStructured(
   return `function ${fnName}(state: State): unknown {
 ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
 }`;
+}
+
+/**
+ * Names of the per-role structured dispatcher and per-(production, target)
+ * structured-fused fn. Exported so emit/v2/index.ts can use the SAME naming
+ * when it generates the dispatcher (which calls each production's fused fn
+ * in declaration order).
+ */
+export function structuredFnName(nodeName: string, prodIdx: number, target: string): string {
+  return `__fusedRenderStructured_${jsIdent(nodeName)}_${prodIdx}_${jsIdent(target)}`;
+}
+
+export function structuredRoleDispatcherName(role: string, target: string): string {
+  return `__fusedRenderStructuredDispatch_${jsIdent(role)}_${jsIdent(target)}`;
+}
+
+/**
+ * Decide whether ALL productions of `role` can fuse structurally for
+ * `target`. Cache results to avoid quadratic blow-up on mutually recursive
+ * schemas. To break cycles we mark a role optimistically true on entry —
+ * if any descendant proves it ineligible later, we overwrite the cache
+ * entry before returning.
+ */
+export function isRoleStructurallyFusable(
+  role: string,
+  schema: InferredSchema,
+  target: string,
+  cache: Map<string, boolean>,
+): boolean {
+  const cached = cache.get(role);
+  if (cached !== undefined) return cached;
+  const info = schema.nodeTypes.get(role);
+  if (!info || info.productions.length === 0) {
+    cache.set(role, false);
+    return false;
+  }
+  cache.set(role, true); // optimistic, breaks self-recursive cycles
+  for (const prod of info.productions) {
+    if (!canFuseStructured(prod, schema, target)) {
+      cache.set(role, false);
+      return false;
+    }
+    for (const span of prod.spans) {
+      for (const childRole of span.recursiveRoles) {
+        if (!isRoleStructurallyFusable(childRole, schema, target, cache)) {
+          cache.set(role, false);
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Emit a recursive span — single dispatch or a repeats loop — that builds
+ * an array of structured-fused child values bound under `span.name`. The
+ * dispatcher calls the per-role structured dispatcher emitted separately;
+ * we assume it exists for every role in span.recursiveRoles (the
+ * eligibility walk above is the gate).
+ */
+function emitStructuredRecursiveSpan(
+  span: ResolvedSpan,
+  target: string,
+  bindings: SpanBindings,
+): string {
+  const name = span.name;
+  if (!name) throw new Error('emitStructuredRecursiveSpan: recursive span has no name');
+
+  const repeats = span.modifiers.find((m) => m.kind === 'repeats') as
+    | {
+        readonly kind: 'repeats';
+        readonly min?: number;
+        readonly max?: number;
+        readonly sep?: string;
+        readonly stopBefore?: ReadonlyArray<string>;
+      }
+    | undefined;
+  const dispatch = emitFusedStructuredRoleDispatch(span.recursiveRoles, target);
+
+  if (!repeats) {
+    // Non-repeats recursive span — single attempt, bound directly.
+    bindings.valueExpr.set(name, name);
+    return [
+      `let ${name}: unknown = null;`,
+      `{`,
+      `  const __before = off;`,
+      `  state.pos = off;`,
+      `  let __cand: unknown = null;`,
+      indent(dispatch, 1),
+      `  ${name} = __cand;`,
+      `  if (${name} === null) { off = __before; state.pos = __before; } else { off = state.pos; }`,
+      `}`,
+    ].join('\n');
+  }
+
+  bindings.valueExpr.set(name, name);
+  const min = repeats.min ?? 0;
+  const max = repeats.max;
+  const sep = repeats.sep;
+  const stopBefore = repeats.stopBefore;
+
+  const out: string[] = [];
+  out.push(`const ${name}: unknown[] = [];`);
+  out.push(`while (true) {`);
+  out.push(`  const __loopStart = off;`);
+  if (sep !== undefined) {
+    // Top-of-loop ws + optional sep sweep. The first iteration takes the
+    // straight-through path (no sep consumed); subsequent iterations look
+    // for the declared sep with surrounding whitespace.
+    out.push(`  ${skipWsBlock()}`);
+    out.push(`  if (${name}.length > 0) {`);
+    out.push(`    if (!(${literalMatchExpr(sep, 'off')})) break;`);
+    out.push(`    off += ${sep.length};`);
+    out.push(`    ${skipWsBlock()}`);
+    out.push(`  }`);
+  } else {
+    out.push(`  ${skipWsBlock()}`);
+  }
+  if (stopBefore && stopBefore.length > 0) {
+    out.push(`  if (off < len) {`);
+    out.push(`    const __sb = input.charCodeAt(off);`);
+    for (const stop of stopBefore) {
+      out.push(`    if (__sb === ${stop.charCodeAt(0)} && input.startsWith(${jsString(stop)}, off)) break;`);
+    }
+    out.push(`  }`);
+  }
+  out.push(`  state.pos = off;`);
+  out.push(`  let __cand: unknown = null;`);
+  out.push(indent(dispatch, 1));
+  out.push(`  if (__cand === null) { off = __loopStart; break; }`);
+  out.push(`  ${name}.push(__cand);`);
+  out.push(`  off = state.pos;`);
+  out.push(`  if (off === __loopStart) break;`);
+  out.push(`}`);
+  if (min > 0) out.push(`if (${name}.length < ${min}) { state.pos = entryOff; return null; }`);
+  if (max !== undefined) out.push(`if (${name}.length > ${max}) { state.pos = entryOff; return null; }`);
+  return out.join('\n');
+}
+
+function emitFusedStructuredRoleDispatch(
+  roles: ReadonlyArray<string>,
+  target: string,
+): string {
+  // First cut: serial dispatch via per-role structured dispatchers. The
+  // dispatchers handle multi-production roles and route to the right alt.
+  // Later optimization: weave in byte-prefix routing like role-ladder does
+  // for the captures path — but that's a perf tweak on top of correct
+  // behaviour and can land as a follow-up.
+  const lines: string[] = [];
+  for (let i = 0; i < roles.length; i++) {
+    const fn = structuredRoleDispatcherName(roles[i]!, target);
+    if (i === 0) lines.push(`__cand = ${fn}(state);`);
+    else lines.push(`if (__cand === null) { __cand = ${fn}(state); }`);
+  }
+  return lines.join('\n');
+}
+
+function literalMatchExpr(text: string, offVar: string): string {
+  if (text.length === 1) return `input.charCodeAt(${offVar}) === ${text.charCodeAt(0)}`;
+  return `input.startsWith(${jsString(text)}, ${offVar})`;
 }
 
 // --- internal helpers ------------------------------------------------------

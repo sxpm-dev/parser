@@ -21,6 +21,7 @@
 import { isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
+import { detectSharedDispatch } from './shared-dispatch.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
 import { computeKnownLeadingBytes, emitSpan, type SpanBindings, type SpanContext } from './span.ts';
@@ -30,7 +31,16 @@ export function canFuseStructured(
   schema: InferredSchema,
   target: string,
 ): boolean {
-  void schema; // reserved for future recursive-role eligibility checks
+  // Skip when the captures-path dispatcher for this relation already has
+  // shared-dispatch optimizations (Path 1 + 2): emitting a structured fast
+  // path with a serial-probe per-role dispatcher would lose the tag-routed
+  // direct dispatch, costing more per-element than the captures→build walk
+  // it replaces. Measured regression on HTML huge-page (~30 → ~42 ms) is
+  // entirely from this case. Other schemas (CSS, markdown, ...) don't have
+  // shared-dispatch, so structural fusion is a net win there.
+  const info = schema.nodeTypes.get(production.nodeType);
+  if (info && detectSharedDispatch(info) !== null) return false;
+
   const entry = production.renders.get(target);
   if (!entry) return false;
   const body = entry.body;

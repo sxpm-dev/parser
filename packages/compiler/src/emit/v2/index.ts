@@ -16,6 +16,7 @@ import { emitRender } from '../render.ts';
 import { jsIdent, jsString } from '../strings.ts';
 import { productionKey } from '../render.ts';
 import { emitDispatcher } from './dispatch.ts';
+import { detectSharedDispatch } from './shared-dispatch.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { emitProduction } from './production.ts';
 import { V2_RUNTIME } from './runtime.ts';
@@ -219,16 +220,53 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
   if (info.productions.length === 1) {
     return emitProduction(info.name, info.productions[0]!, schema, { fnName: parseFnName(schema, info.name), prodIdx: 0 });
   }
-  // Multi-prod: emit each alt as its own function plus a dispatcher.
+  // Multi-prod: emit each alt as its own function plus a dispatcher. When
+  // the shared-dispatch pattern matches (literal+ident-with-oneOf prefix
+  // across alts), emit alts as TAIL bodies — the dispatcher captures the
+  // prefix once and passes the discriminator value + entryOff to each tail
+  // by parameter. The full-prologue form is dropped for those alts; nothing
+  // else calls them.
+  const shared = detectSharedDispatch(info);
   const altFns: string[] = [];
   for (let i = 0; i < info.productions.length; i++) {
+    const prefixOpt = shared !== null ? buildPrefixOption(info.productions[i]!, shared) : undefined;
     altFns.push(emitProduction(info.name, info.productions[i]!, schema, {
       fnName: `${parseFnName(schema, info.name)}__alt${i}`,
       prodIdx: i,
+      prefix: prefixOpt,
     }));
   }
   const dispatcher = emitDispatcher(info, schema, (n) => parseFnName(schema, n));
   return [altFns.join('\n\n'), dispatcher].join('\n\n');
+}
+
+/** Materialise the EmitProductionOptions.prefix payload from a SharedDispatch
+ *  description: which spans to skip, which capture names the dispatcher will
+ *  pass as parameters, and the source-offset parameter names. The parameter
+ *  expressions are the capture names themselves (e.g. capture `tag` → param
+ *  `tag`) so the emitted captures object stays byte-identical to the prior
+ *  shape. */
+function buildPrefixOption(production: import('../../model.ts').Production, shared: import('./shared-dispatch.ts').SharedDispatch) {
+  const valueParams = new Map<string, string>();
+  const startOffParams = new Map<string, string>();
+  const endOffParams = new Map<string, string>();
+  // Every span in spans[0..discriminatorIdx] is shared across alts and is
+  // emitted by the dispatcher. We only forward the captures that downstream
+  // span/refinement code might reference — those are the named spans (the
+  // unnamed leading literal `<` has no capture and needs no parameter).
+  for (let i = 0; i <= shared.discriminatorIdx; i++) {
+    const span = production.spans[i]!;
+    if (!span.name) continue;
+    valueParams.set(span.name, span.name);
+    startOffParams.set(span.name, `${span.name}__start`);
+    endOffParams.set(span.name, `${span.name}__end`);
+  }
+  return {
+    skipCount: shared.discriminatorIdx + 1,
+    valueParams,
+    startOffParams,
+    endOffParams,
+  } as const;
 }
 
 // Returns the top-level parse function name for a node type. The schema's

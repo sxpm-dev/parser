@@ -34,6 +34,27 @@ const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
 export type EmitProductionOptions = {
   readonly fnName: string;
   readonly prodIdx: number;
+  /** When set, emit this production as a TAIL body: the first `skipCount`
+   *  spans have already been consumed by the caller (typically a shared
+   *  dispatcher), and the captures from those spans are passed in as
+   *  function parameters instead of locally derived. The leading ws-skip
+   *  is also dropped (the caller did it before scanning the prefix). */
+  readonly prefix?: {
+    /** Number of leading spans whose emission is skipped. */
+    readonly skipCount: number;
+    /** Captured-name → parameter expression. The function signature
+     *  receives a parameter for each entry (in insertion order, after the
+     *  `entryOff` parameter); span emit treats these as already-bound. */
+    readonly valueParams: ReadonlyMap<string, string>;
+    /** Captured-name → parameter expression for source-start offsets.
+     *  Same semantics as valueParams. Empty when the caller can't supply
+     *  per-span offsets (downstream synthetic refs that need them would
+     *  emit `undefined`; for the html shape no such refs reference the
+     *  dispatched span). */
+    readonly startOffParams: ReadonlyMap<string, string>;
+    /** Captured-name → parameter expression for source-end offsets. */
+    readonly endOffParams: ReadonlyMap<string, string>;
+  };
 };
 
 export function emitProduction(
@@ -42,12 +63,22 @@ export function emitProduction(
   schema: InferredSchema,
   opts: EmitProductionOptions,
 ): string {
+  const prefix = opts.prefix;
   const bindings: SpanBindings = {
     valueExpr: new Map(),
     presenceExpr: new Map(),
     startOffExpr: new Map(),
     endOffExpr: new Map(),
   };
+  // In tail mode the caller has already captured the prefix spans and
+  // passed them in as parameters. Pre-populate the binding maps so any
+  // downstream span/refinement/captures expression that references those
+  // names sees the parameter directly instead of an undefined local.
+  if (prefix) {
+    for (const [name, paramExpr] of prefix.valueParams) bindings.valueExpr.set(name, paramExpr);
+    for (const [name, paramExpr] of prefix.startOffParams) bindings.startOffExpr.set(name, paramExpr);
+    for (const [name, paramExpr] of prefix.endOffParams) bindings.endOffExpr.set(name, paramExpr);
+  }
   // Derive scan-kernel feature flags from the schema's declared token classes
   // and ident refinement. These teach .until() captures how to handle strings
   // / comments / CSS url() as opaque units.
@@ -79,15 +110,18 @@ export function emitProduction(
   lines.push(`const input = state.input;`);
   lines.push(`const len = state.len;`);
   lines.push(`let off = state.pos;`);
-  lines.push(`const entryOff = off;`);
-  // Skip leading ws — required by 'standard' whitespace policy. The leading
-  // skip is ALWAYS ws-only (never comment-aware). Otherwise productions whose
-  // first span captures a /* … */ comment would consume the comment they're
-  // meant to capture. v1 emits the same shape.
-  lines.push(skipWsBlock());
+  // In tail mode `entryOff` is a parameter, not a local — the dispatcher
+  // owns the rewind boundary because state.pos was committed past the
+  // shared prefix before calling the tail. Skip the leading ws-skip too;
+  // the dispatcher already consumed leading whitespace before the prefix.
+  if (!prefix) {
+    lines.push(`const entryOff = off;`);
+    lines.push(skipWsBlock());
+  }
 
   const spans = production.spans;
-  for (let i = 0; i < spans.length; i++) {
+  const startIdx = prefix ? prefix.skipCount : 0;
+  for (let i = startIdx; i < spans.length; i++) {
     const span = spans[i]!;
     if (i > 0) {
       // Inter-span gap skip strategy. Three conditions must hold for the
@@ -144,9 +178,28 @@ return ${fastCaptures};`
 return ${fastCaptures};`;
   lines.push(returnBlock);
 
-  return `function ${opts.fnName}(state: State): unknown {
+  const extraParams = prefix
+    ? [
+        ', entryOff: number',
+        ...[...prefix.valueParams.keys()].map((name) => `, ${name}: string`),
+        ...[...prefix.startOffParams.keys()].map((name) => `, ${startOffParamName(name)}: number`),
+        ...[...prefix.endOffParams.keys()].map((name) => `, ${endOffParamName(name)}: number`),
+      ].join('')
+    : '';
+  return `function ${opts.fnName}(state: State${extraParams}): unknown {
 ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
 }`;
+}
+
+/** Mirror of the parameter-name convention used by the shared dispatcher
+ *  caller. When the start-offset parameter for `tag` is referenced from the
+ *  tail body's bindings the caller MUST supply it under this exact name. */
+function startOffParamName(captureName: string): string {
+  return `${captureName}__start`;
+}
+
+function endOffParamName(captureName: string): string {
+  return `${captureName}__end`;
 }
 
 function toCapturesBindings(b: SpanBindings): CapturesBindings {

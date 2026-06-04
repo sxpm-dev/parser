@@ -349,22 +349,10 @@ function parseComment(state: State): unknown {
   return { __production: "Comment#0", data: data };
 }
 
-function parseHtmlElement__alt0(state: State): unknown {
+function parseHtmlElement__alt0(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "title")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -421,22 +409,10 @@ function parseHtmlElement__alt0(state: State): unknown {
   return { __production: "HtmlElement#0", tag: tag, attrs: attrs, children: children, closeTag: closeTag };
 }
 
-function parseHtmlElement__alt1(state: State): unknown {
+function parseHtmlElement__alt1(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -464,22 +440,10 @@ function parseHtmlElement__alt1(state: State): unknown {
   return { __production: "HtmlElement#1", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElement__alt2(state: State): unknown {
+function parseHtmlElement__alt2(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "area" || tag.toLowerCase() === "base" || tag.toLowerCase() === "br" || tag.toLowerCase() === "col" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "img" || tag.toLowerCase() === "input" || tag.toLowerCase() === "link" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "param" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "wbr")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -507,21 +471,10 @@ function parseHtmlElement__alt2(state: State): unknown {
   return { __production: "HtmlElement#2", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElement__alt3(state: State): unknown {
+function parseHtmlElement__alt3(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -549,22 +502,10 @@ function parseHtmlElement__alt3(state: State): unknown {
   return { __production: "HtmlElement#3", tag: tag, attrs: attrs };
 }
 
-function parseHtmlElement__alt4(state: State): unknown {
+function parseHtmlElement__alt4(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "li")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -627,22 +568,10 @@ function parseHtmlElement__alt4(state: State): unknown {
   return { __production: "HtmlElement#4", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt5(state: State): unknown {
+function parseHtmlElement__alt5(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -707,22 +636,10 @@ function parseHtmlElement__alt5(state: State): unknown {
   return { __production: "HtmlElement#5", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt6(state: State): unknown {
+function parseHtmlElement__alt6(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "tr")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -785,22 +702,10 @@ function parseHtmlElement__alt6(state: State): unknown {
   return { __production: "HtmlElement#6", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt7(state: State): unknown {
+function parseHtmlElement__alt7(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "td" || tag.toLowerCase() === "th")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -865,22 +770,10 @@ function parseHtmlElement__alt7(state: State): unknown {
   return { __production: "HtmlElement#7", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt8(state: State): unknown {
+function parseHtmlElement__alt8(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "p")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -943,22 +836,10 @@ function parseHtmlElement__alt8(state: State): unknown {
   return { __production: "HtmlElement#8", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt9(state: State): unknown {
+function parseHtmlElement__alt9(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1023,22 +904,10 @@ function parseHtmlElement__alt9(state: State): unknown {
   return { __production: "HtmlElement#9", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt10(state: State): unknown {
+function parseHtmlElement__alt10(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "html")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1101,22 +970,10 @@ function parseHtmlElement__alt10(state: State): unknown {
   return { __production: "HtmlElement#10", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt11(state: State): unknown {
+function parseHtmlElement__alt11(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "head")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1179,22 +1036,10 @@ function parseHtmlElement__alt11(state: State): unknown {
   return { __production: "HtmlElement#11", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt12(state: State): unknown {
+function parseHtmlElement__alt12(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "tbody")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1257,22 +1102,10 @@ function parseHtmlElement__alt12(state: State): unknown {
   return { __production: "HtmlElement#12", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt13(state: State): unknown {
+function parseHtmlElement__alt13(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "thead")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1335,22 +1168,10 @@ function parseHtmlElement__alt13(state: State): unknown {
   return { __production: "HtmlElement#13", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt14(state: State): unknown {
+function parseHtmlElement__alt14(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "tfoot")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1413,22 +1234,10 @@ function parseHtmlElement__alt14(state: State): unknown {
   return { __production: "HtmlElement#14", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt15(state: State): unknown {
+function parseHtmlElement__alt15(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
-  if (!(tag.toLowerCase() === "body")) { state.pos = entryOff; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1491,21 +1300,10 @@ function parseHtmlElement__alt15(state: State): unknown {
   return { __production: "HtmlElement#15", tag: tag, attrs: attrs, children: children };
 }
 
-function parseHtmlElement__alt16(state: State): unknown {
+function parseHtmlElement__alt16(state: State, entryOff: number, tag: string, tag__start: number, tag__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __tag_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __tag_end = off;
-  const tag = input.slice(__tag_start, __tag_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -1578,27 +1376,26 @@ function parseHtmlElement(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
+  const __entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  state.pos = off;
-  if (off >= len) return null;
-  if (!(input.charCodeAt(off) === 60)) return null;
-  let __peekOff = off + 1;
-  while (__peekOff < len) { const c = input.charCodeAt(__peekOff); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { __peekOff++; continue; } break; }
-  if (__peekOff >= len || !(isCssIdentStart(input.charCodeAt(__peekOff)))) {
-  { const r = parseHtmlElement__alt3(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
-    return null;
-  }
-  const __tagStart = __peekOff;
-  __peekOff++;
-  while (__peekOff < len && isCssIdentPart(input.charCodeAt(__peekOff))) __peekOff++;
-  const __dispatchTag = input.slice(__tagStart, __peekOff).toLowerCase();
+  if (off >= len) { state.pos = __entryOff; return null; }
+  if (!(input.charCodeAt(off) === 60)) { state.pos = __entryOff; return null; }
+  off += 1;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (off >= len || !(isCssIdentStart(input.charCodeAt(off)))) { state.pos = __entryOff; return null; }
+  const tag__start = off;
+  off++;
+  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
+  const tag__end = off;
+  const tag = input.slice(tag__start, tag__end);
+  const __postScan = off;
+  const __dispatchTag = tag.toLowerCase();
   switch (__dispatchTag) {
     case "script":
     case "style":
     case "textarea":
     case "title": {
-      { const r = parseHtmlElement__alt0(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt0(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "area":
@@ -1615,64 +1412,65 @@ function parseHtmlElement(state: State): unknown {
     case "source":
     case "track":
     case "wbr": {
-      { const r = parseHtmlElement__alt1(state); if (r !== null) return r; }
-      { const r = parseHtmlElement__alt2(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt1(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt2(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "li": {
-      { const r = parseHtmlElement__alt4(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt4(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "dt":
     case "dd": {
-      { const r = parseHtmlElement__alt5(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt5(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "tr": {
-      { const r = parseHtmlElement__alt6(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt6(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "td":
     case "th": {
-      { const r = parseHtmlElement__alt7(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt7(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "p": {
-      { const r = parseHtmlElement__alt8(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt8(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "option":
     case "optgroup": {
-      { const r = parseHtmlElement__alt9(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt9(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "html": {
-      { const r = parseHtmlElement__alt10(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt10(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "head": {
-      { const r = parseHtmlElement__alt11(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt11(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "tbody": {
-      { const r = parseHtmlElement__alt12(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt12(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "thead": {
-      { const r = parseHtmlElement__alt13(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt13(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "tfoot": {
-      { const r = parseHtmlElement__alt14(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt14(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
     case "body": {
-      { const r = parseHtmlElement__alt15(state); if (r !== null) return r; }
+      state.pos = __postScan; { const r = parseHtmlElement__alt15(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
       break;
     }
   }
-  { const r = parseHtmlElement__alt3(state); if (r !== null) return r; }
-  { const r = parseHtmlElement__alt16(state); if (r !== null) return r; }
+  state.pos = __postScan; { const r = parseHtmlElement__alt3(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
+  state.pos = __postScan; { const r = parseHtmlElement__alt16(state, __entryOff, tag, tag__start, tag__end); if (r !== null) return r; }
+  state.pos = __entryOff;
   return null;
 }
 

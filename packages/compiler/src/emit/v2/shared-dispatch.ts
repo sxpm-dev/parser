@@ -156,19 +156,18 @@ function findOneOfValues(refinements: ReadonlyArray<Refinement>): ReadonlyArray<
  * Shape:
  *   1. ws-skip
  *   2. first-byte gate on the leading literal (e.g. `<`)
- *   3. peek the discriminator ident (start/end via __peekOff — no state.pos
- *      commit), lowercased
- *   4. switch on the peeked tag → call matching alts in declaration order
- *   5. fall through to catch-all alts in declaration order
+ *   3. scan the discriminator ident (capture start/end/value), commit
+ *      state.pos to the byte AFTER the tag scan
+ *   4. switch on the lowercased tag → call matching alt TAILS with the
+ *      captured prefix, falling back to catch-all tails if all fail
  *
- * Each alt call is the existing `${fnName}__altN(state)`; alt bodies are
- * unchanged. They still do their own prologue (re-scan the tag, re-check the
- * literal) and rewind state.pos on failure. We just stop probing alts whose
- * `oneOf` couldn't match.
- *
- * The dispatcher does NOT commit state.pos past the leading-literal check:
- * the peek lives in __peekOff. That way alts start from exactly the same
- * state.pos they would have under the old serial probe — no contract change.
+ * Alt-tail bodies skip the shared prefix entirely — the dispatcher owns the
+ * leading ws-skip, the literal check, the ident scan, the tag-string slice,
+ * and the entryOff. Tails are called as:
+ *   ${altFn}(state, entryOff, ${discriminator}, ${discriminator}__start, ${discriminator}__end)
+ * On failure each tail rewinds `state.pos = entryOff` and returns null, at
+ * which point the dispatcher resets `state.pos = __postScan` (the offset
+ * right after the tag scan) so the next tail starts from the same place.
  */
 export function emitSharedDispatcher(
   fnName: string,
@@ -177,23 +176,37 @@ export function emitSharedDispatcher(
   leadingLiteral: string,
   discriminatorSpan: ResolvedSpan,
 ): string {
-  // Multiple oneOf values can route to the same alt list (e.g. the void-
-  // element pattern, where every void tag tries alt1 then alt2). Group by
-  // alt-list so the emitted JS has one `case 'a': case 'b': { body }` per
-  // shared list, keeping the output compact and deterministic.
+  const discriminatorName = discriminatorSpan.name;
+  if (!discriminatorName) {
+    throw new Error(`emitSharedDispatcher: discriminator span must have a name (got: ${JSON.stringify(discriminatorSpan)})`);
+  }
+
+  // Build the per-tail call expression. The parameter order MUST match
+  // buildPrefixOption in emit/v2/index.ts: state, entryOff, then for every
+  // named span in spans[0..discriminatorIdx]: value, start-offset, end-offset.
+  // For the html shape only the discriminator span itself is named, so the
+  // call has 5 args total. If a future shape names earlier spans (e.g. a
+  // typed punctuator capture), they'd need to be added here in the same
+  // order.
+  const tailCallArgs = `state, __entryOff, ${discriminatorName}, ${discriminatorName}__start, ${discriminatorName}__end`;
+
   const grouped = groupCasesByAltList(dispatch.tagToAlts);
 
   const caseBlocks: string[] = [];
   for (const { tags, alts } of grouped) {
     const caseLabels = tags.map((t) => `    case ${jsStringLiteral(t)}:`).join('\n');
     const probes = alts
-      .map((idx) => `      { const r = ${altFnNames[idx]}(state); if (r !== null) return r; }`)
+      .map((idx) =>
+        `      state.pos = __postScan; { const r = ${altFnNames[idx]}(${tailCallArgs}); if (r !== null) return r; }`,
+      )
       .join('\n');
     caseBlocks.push(`${caseLabels} {\n${probes}\n      break;\n    }`);
   }
 
   const catchAllProbes = dispatch.catchAllAlts
-    .map((idx) => `  { const r = ${altFnNames[idx]}(state); if (r !== null) return r; }`)
+    .map((idx) =>
+      `  state.pos = __postScan; { const r = ${altFnNames[idx]}(${tailCallArgs}); if (r !== null) return r; }`,
+    )
     .join('\n');
 
   const firstByte = leadingLiteral.charCodeAt(0);
@@ -202,45 +215,39 @@ export function emitSharedDispatcher(
     ? `input.charCodeAt(off) === ${firstByte}`
     : `input.startsWith(${jsStringLiteral(leadingLiteral)}, off)`;
 
-  // The peek scan mirrors classScanCode's ident form for the same refinements
-  // as the discriminator span. Stays byte-identical with how alt bodies scan
-  // the same ident so a value that would parse one way in an alt never gets
-  // dispatched to a different bucket.
   const refSet = new Set(discriminatorSpan.refinements.map((r) => r.name));
   const isJs = refSet.has('js');
   const identStart = isJs ? 'isJsIdentStart' : 'isCssIdentStart';
   const identPart = isJs ? 'isJsIdentPart' : 'isCssIdentPart';
-  // Non-css/non-html ident also admits backslash-escape starts (matches
-  // classScanCode); html/css discriminator does not.
   const isCss = refSet.has('css');
   const isHtml = refSet.has('html');
-  const extraStartByte = !isJs && !isCss && !isHtml ? ' || input.charCodeAt(__peekOff) === 0x5c' : '';
+  const extraStartByte = !isJs && !isCss && !isHtml ? ' || input.charCodeAt(off) === 0x5c' : '';
 
   const wsSkip = `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
-  const wsSkipPeek = `while (__peekOff < len) { const c = input.charCodeAt(__peekOff); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { __peekOff++; continue; } break; }`;
 
   return `function ${fnName}(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
+  const __entryOff = off;
   ${wsSkip}
-  state.pos = off;
-  if (off >= len) return null;
-  if (!(${leadingMatchExpr})) return null;
-  let __peekOff = off + ${leadingLen};
-  ${wsSkipPeek}
-  if (__peekOff >= len || !(${identStart}(input.charCodeAt(__peekOff))${extraStartByte})) {
-${catchAllProbes}
-    return null;
-  }
-  const __tagStart = __peekOff;
-  __peekOff++;
-  while (__peekOff < len && ${identPart}(input.charCodeAt(__peekOff))) __peekOff++;
-  const __dispatchTag = input.slice(__tagStart, __peekOff).toLowerCase();
+  if (off >= len) { state.pos = __entryOff; return null; }
+  if (!(${leadingMatchExpr})) { state.pos = __entryOff; return null; }
+  off += ${leadingLen};
+  ${wsSkip}
+  if (off >= len || !(${identStart}(input.charCodeAt(off))${extraStartByte})) { state.pos = __entryOff; return null; }
+  const ${discriminatorName}__start = off;
+  off++;
+  while (off < len && ${identPart}(input.charCodeAt(off))) off++;
+  const ${discriminatorName}__end = off;
+  const ${discriminatorName} = input.slice(${discriminatorName}__start, ${discriminatorName}__end);
+  const __postScan = off;
+  const __dispatchTag = ${discriminatorName}.toLowerCase();
   switch (__dispatchTag) {
 ${caseBlocks.join('\n')}
   }
 ${catchAllProbes}
+  state.pos = __entryOff;
   return null;
 }`;
 }

@@ -177,9 +177,16 @@ function parseHtmlDocument(state: State): unknown {
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -543,9 +550,16 @@ function parseHtmlElement__alt4(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -609,9 +623,16 @@ function parseHtmlElement__alt5(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -677,9 +698,16 @@ function parseHtmlElement__alt6(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -743,9 +771,16 @@ function parseHtmlElement__alt7(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -811,9 +846,16 @@ function parseHtmlElement__alt8(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -877,9 +919,16 @@ function parseHtmlElement__alt9(state: State, entryOff: number, tag: string, tag
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -945,9 +994,16 @@ function parseHtmlElement__alt10(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1011,9 +1067,16 @@ function parseHtmlElement__alt11(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1077,9 +1140,16 @@ function parseHtmlElement__alt12(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1143,9 +1213,16 @@ function parseHtmlElement__alt13(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1209,9 +1286,16 @@ function parseHtmlElement__alt14(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1275,9 +1359,16 @@ function parseHtmlElement__alt15(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }
@@ -1336,9 +1427,16 @@ function parseHtmlElement__alt16(state: State, entryOff: number, tag: string, ta
     if (off < len) {
       const __c0 = input.charCodeAt(off);
       if (__c0 === 60) {
-        __cand = parseComment(state);
-        if (__cand === null) { __cand = parseDoctype(state); }
-        if (__cand === null) { __cand = parseHtmlElement(state); }
+        if (off + 1 < len) {
+          const __c1 = input.charCodeAt(off + 1);
+          if (__c1 === 33) {
+            __cand = parseComment(state);
+            if (__cand === null) { __cand = parseDoctype(state); }
+          }
+          else {
+            __cand = parseHtmlElement(state);
+          }
+        }
       } else {
         __cand = parseTextNode(state);
       }

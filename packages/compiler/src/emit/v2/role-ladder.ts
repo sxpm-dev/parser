@@ -193,30 +193,28 @@ export function emitRoleLadder(
   let totalBytes = 0;
   for (const group of groups) totalBytes += group.bytes.size;
 
+  // Per-group body builder. Singleton group → direct call. Multi-role group
+  // → speculation, optionally pre-filtered by a second-byte gate when the
+  // roles' 2nd-byte signatures partition cleanly. The 2nd-byte gate is the
+  // win for HTML children loops: at every `<` byte we currently probe
+  // parseComment → parseDoctype → parseHtmlElement serially; only one of
+  // them can ever match (`<!--` vs `<!D...` vs `<` + ident). Peeking the
+  // 2nd byte lets us call only the matching probe.
+  const bodyFor = (groupRoles: ReadonlyArray<typeof byteRoles[number]>): string =>
+    groupRoles.length === 1
+      ? `${resultVar} = ${ctx.symbolPrefix}parse${groupRoles[0]!.role}(state);`
+      : emitSpeculationGroupWithSecondByte(groupRoles, resultVar, ctx);
+
   if (groups.length > 0 && totalBytes >= DISPATCH_SWITCH_MIN_BYTES) {
     // Switch form: emit one `case N:` per byte in each group, all sharing
     // the same body (a direct call or a speculation chain). Multiple bytes
     // for the same group are emitted as stacked case labels — the JIT
     // compiles all labels to a single jump-table entry.
-    //
-    //   switch (__c0) {
-    //     case 35: case 36:
-    //       __r = parseHash(state);
-    //       break;
-    //     case 64:
-    //       __r = parseAt(state);
-    //       break;
-    //     default:
-    //       <fallthrough>
-    //       break;
-    //   }
     lines.push(`  switch (__c0) {`);
     for (const group of groups) {
       const sortedBytes = [...group.bytes].sort((a, b) => a - b);
       const caseLabels = sortedBytes.map((b) => `case ${b}:`).join(' ');
-      const body = group.roles.length === 1
-        ? `${resultVar} = ${ctx.symbolPrefix}parse${group.roles[0]!.role}(state);`
-        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar, ctx.symbolPrefix);
+      const body = bodyFor(group.roles);
       lines.push(`    ${caseLabels}`);
       lines.push(`${indent(body, 3)}`);
       lines.push(`      break;`);
@@ -234,9 +232,7 @@ export function emitRoleLadder(
     const branchTexts: string[] = [];
     for (const group of groups) {
       const cond = [...group.bytes].sort((a, b) => a - b).map((b) => `__c0 === ${b}`).join(' || ');
-      const body = group.roles.length === 1
-        ? `${resultVar} = ${ctx.symbolPrefix}parse${group.roles[0]!.role}(state);`
-        : emitSpeculationGroup(group.roles.map((r) => r.role), resultVar, ctx.symbolPrefix);
+      const body = bodyFor(group.roles);
       branchTexts.push(`if (${cond}) {\n${indent(body, 2)}\n  }`);
     }
 
@@ -266,6 +262,202 @@ export function emitRoleLadder(
 // while chained ifs rely on branch prediction. 4 is the spec'd Task 4.4
 // threshold and matches the AC_MIN_STOPS pattern used by .until() scans.
 export const DISPATCH_SWITCH_MIN_BYTES = 4;
+
+// Emit a 2nd-byte-aware speculation form when the roles' possible 2nd bytes
+// partition cleanly across the group, otherwise fall back to plain serial
+// speculation. The motivating case is HTML children loops, where every `<`
+// byte today probes parseComment → parseDoctype → parseHtmlElement serially
+// even though only one of them can ever match for a given input:
+//
+//   <!--  → Comment (others fail their first-span literal/scan immediately)
+//   <!D…  → Doctype
+//   <X    → HtmlElement (X is ident-start)
+//
+// When we can compute a non-overlapping 2nd-byte signature per role, emit:
+//
+//   if (off + 1 < len && (input.charCodeAt(off + 1) === 33)) {
+//     __cand = parseComment(state);
+//     if (__cand === null) { __cand = parseDoctype(state); }
+//   } else {
+//     __cand = parseHtmlElement(state);
+//   }
+//
+// instead of the 3-call serial form. For huge-page (~24K elements) this saves
+// ~48K wasted fn-calls. Falls back to plain speculation when:
+//   - any role's 2nd-byte set can't be statically computed (returns null)
+//   - the role's 2nd-byte sets overlap (no clean partition)
+function emitSpeculationGroupWithSecondByte(
+  groupRoles: ReadonlyArray<typeof EMPTY_SIG_PROTO & { readonly role: string; readonly declOrder: number }>,
+  resultVar: string,
+  ctx: SpanContext,
+): string {
+  const symbolPrefix = ctx.symbolPrefix;
+  // Compute each role's possible 2nd bytes (or null on can't-determine).
+  const perRole = groupRoles.map((sig) => {
+    const info = ctx.nodeTypes.get(sig.role)!;
+    return { sig, secondBytes: compute2ndByteSignature(sig.role, info, ctx.nodeTypes) };
+  });
+
+  // If ANY role's 2nd-byte set can't be determined, we can't safely peek
+  // and skip — that role might match for any 2nd byte we'd dispatch elsewhere.
+  if (perRole.some((r) => r.secondBytes === null)) {
+    return emitSpeculationGroup(groupRoles.map((r) => r.role), resultVar, symbolPrefix);
+  }
+
+  // Partition roles by exact set of possible 2nd bytes. A role joins a bucket
+  // whose `roles[*].secondBytes` overlaps it — in HTML's case Comment and
+  // Doctype both have {33} so they share one bucket; HtmlElement has the
+  // ident-start byte set so it's in a separate bucket. Cleanly disjoint
+  // partitions are the only ones we can safely gate on.
+  type Bucket = { readonly bytes: Set<number>; readonly roles: typeof perRole };
+  const buckets: Bucket[] = [];
+  for (const r of perRole) {
+    const overlapping = buckets.find((b) => setsOverlap(b.bytes, r.secondBytes!));
+    if (overlapping) {
+      for (const byte of r.secondBytes!) overlapping.bytes.add(byte);
+      overlapping.roles.push(r);
+    } else {
+      buckets.push({ bytes: new Set(r.secondBytes!), roles: [r] });
+    }
+  }
+
+  // Falls back to plain speculation when only one bucket emerges — the gate
+  // wouldn't filter anything and just adds an extra branch.
+  if (buckets.length < 2) {
+    return emitSpeculationGroup(groupRoles.map((r) => r.role), resultVar, symbolPrefix);
+  }
+
+  // Sort buckets so the smallest byte-set goes first (most specific) and ties
+  // by total declaration order so the emission stays deterministic.
+  buckets.sort((a, b) => {
+    if (a.bytes.size !== b.bytes.size) return a.bytes.size - b.bytes.size;
+    const aMin = Math.min(...a.roles.map((r) => r.sig.declOrder));
+    const bMin = Math.min(...b.roles.map((r) => r.sig.declOrder));
+    return aMin - bMin;
+  });
+
+  // Build the gate. We avoid an `else { ... }` final bucket because the last
+  // role group's bytes may be a broad class set (e.g. ident-start) and
+  // checking equality of __c1 against each byte in that set would be
+  // expensive; instead we close with `else` to catch everything not yet
+  // matched. The last bucket's speculation is the catch-all here.
+  const lines: string[] = [];
+  lines.push(`if (off + 1 < len) {`);
+  lines.push(`  const __c1 = input.charCodeAt(off + 1);`);
+  for (let i = 0; i < buckets.length; i++) {
+    const bucket = buckets[i]!;
+    const body = bucket.roles.length === 1
+      ? `${resultVar} = ${symbolPrefix}parse${bucket.roles[0]!.sig.role}(state);`
+      : emitSpeculationGroup(bucket.roles.map((r) => r.sig.role), resultVar, symbolPrefix);
+    const isLast = i === buckets.length - 1;
+    const cond = isLast ? '' : ` (${byteSetCondition(bucket.bytes, '__c1')})`;
+    if (i === 0) lines.push(`  if${cond} {\n${indent(body, 2)}\n  }`);
+    else if (isLast) lines.push(`  else {\n${indent(body, 2)}\n  }`);
+    else lines.push(`  else if${cond} {\n${indent(body, 2)}\n  }`);
+  }
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+// A small marker type for the byteRoles array element shape (signatures
+// returned by computeRoleFirstBytes plus declOrder/role). We can't export
+// the anonymous tuple element type from `groups[*].roles[*]`, so this stub
+// is intersected into the function parameter to capture the shape.
+const EMPTY_SIG_PROTO = {
+  bytes: new Set<number>() as ReadonlySet<number>,
+  fallthrough: false as boolean,
+  longestLiteralPrefix: 0 as number,
+};
+
+function setsOverlap(a: ReadonlySet<number>, b: ReadonlySet<number>): boolean {
+  for (const v of a) if (b.has(v)) return true;
+  return false;
+}
+
+function byteSetCondition(bytes: ReadonlySet<number>, varName: string): string {
+  return [...bytes].sort((a, b) => a - b).map((b) => `${varName} === ${b}`).join(' || ');
+}
+
+/** Returns the set of bytes that could appear at offset+1 if a role's first
+ *  span matched at offset. Returns null when not statically determinable
+ *  (e.g. a length-1 literal followed by a recursive/until/raw-class span
+ *  that admits the universe). For literal first spans of length >= 2, the
+ *  2nd byte is text[1]. For length-1 literals followed by a class span, the
+ *  byte set is classFirstBytes on that follow-up class span. */
+function compute2ndByteSignature(
+  role: string,
+  info: NodeTypeInfo,
+  nodeTypes: ReadonlyMap<string, NodeTypeInfo>,
+  visiting: Set<string> = new Set(),
+): Set<number> | null {
+  if (visiting.has(role)) return null;
+  visiting.add(role);
+  const out = new Set<number>();
+  for (const prod of info.productions) {
+    const span0 = prod.spans[0];
+    if (!span0) {
+      visiting.delete(role);
+      return null;
+    }
+    // Literal first span: 2nd byte is text[1] when it exists.
+    if (span0.class === 'literal' && span0.text) {
+      if (span0.text.length >= 2) {
+        out.add(span0.text.charCodeAt(1));
+        continue;
+      }
+      // Length-1 literal — look at span1 to determine the byte AFTER the
+      // single literal byte.
+      const span1 = prod.spans[1];
+      if (!span1) {
+        // No follow-up span — the production matches a 1-byte literal in
+        // isolation. Any byte could follow; treat as undeterminable.
+        visiting.delete(role);
+        return null;
+      }
+      const span1Bytes = firstBytesOfSpan(span1);
+      if (span1Bytes === null) {
+        visiting.delete(role);
+        return null;
+      }
+      for (const b of span1Bytes) out.add(b);
+      continue;
+    }
+    // Class first span: 2nd byte is whatever a CONTINUED scan of the class
+    // can be — for ident class that's the same set as start, plus digits.
+    // We over-approximate by using the same classFirstBytes; if a class
+    // role is in a speculation group its 2nd byte rarely partitions cleanly
+    // anyway.
+    if (span0.class !== 'comment') {
+      visiting.delete(role);
+      return null;
+    }
+    // Comment class first span: first two bytes are `/` then `*`.
+    out.add(0x2a);
+  }
+  visiting.delete(role);
+  return out;
+}
+
+/** First-byte set of a single span. Returns null when not determinable. */
+function firstBytesOfSpan(span: ResolvedSpan): ReadonlySet<number> | null {
+  if (
+    findSpanModifier(span, 'until') ||
+    findSpanModifier(span, 'rawUntil') ||
+    findSpanModifier(span, 'repeats') ||
+    hasSpanModifier(span, 'optional')
+  ) {
+    return null;
+  }
+  if (span.class === 'literal' && span.text && span.text.length > 0) {
+    return new Set([span.text.charCodeAt(0)]);
+  }
+  if (span.class === 'literal') return null;
+  try {
+    return classFirstBytes(span);
+  } catch {
+    return null;
+  }
+}
 
 // Emit a sentinel-speculation chain over `roles`, writing the first non-null
 // parse result to `resultVar`. Pure null-return + state.pos rewind — no

@@ -187,8 +187,9 @@ function parseCronField__alt1(state: State): unknown {
   if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __step_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __step_end = off;
@@ -209,8 +210,9 @@ function parseCronField__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
@@ -231,8 +233,9 @@ function parseCronField__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __start_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __start_end = off;
@@ -241,8 +244,9 @@ function parseCronField__alt3(state: State): unknown {
   if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __end_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __end_end = off;
@@ -1228,8 +1232,9 @@ function __fusedRender_CronField_1_source(state: State, out: string[]): boolean 
     if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __step_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __step_end = off;
@@ -1250,8 +1255,9 @@ function __fusedRender_CronField_2_source(state: State, out: string[]): boolean 
     let off = state.pos;
     const entryOff = off;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __value_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __value_end = off;
@@ -1271,8 +1277,9 @@ function __fusedRender_CronField_3_source(state: State, out: string[]): boolean 
     let off = state.pos;
     const entryOff = off;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __start_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __start_end = off;
@@ -1281,8 +1288,9 @@ function __fusedRender_CronField_3_source(state: State, out: string[]): boolean 
     if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     off += 1;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __end_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __end_end = off;
@@ -1766,6 +1774,30 @@ function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
             if (__fusedRender_CronField_0_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
           }
         }
+        else if (__c0 === 43) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 45) {
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+          if (!__slotMatched_minute) {
+            state.pos = __offBefore;
+            __slotBuf_minute.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_minute)) { __slotMatched_minute = true; off = state.pos; }
+          }
+        }
         else if (__c0 === 48) {
           if (!__slotMatched_minute) {
             state.pos = __offBefore;
@@ -1909,6 +1941,30 @@ function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
             state.pos = __offBefore;
             __slotBuf_hour.length = 0;
             if (__fusedRender_CronField_0_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 43) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 45) {
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
+          }
+          if (!__slotMatched_hour) {
+            state.pos = __offBefore;
+            __slotBuf_hour.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_hour)) { __slotMatched_hour = true; off = state.pos; }
           }
         }
         else if (__c0 === 48) {
@@ -2056,6 +2112,30 @@ function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
             if (__fusedRender_CronField_0_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
           }
         }
+        else if (__c0 === 43) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 45) {
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfMonth) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfMonth.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfMonth)) { __slotMatched_dayOfMonth = true; off = state.pos; }
+          }
+        }
         else if (__c0 === 48) {
           if (!__slotMatched_dayOfMonth) {
             state.pos = __offBefore;
@@ -2201,6 +2281,30 @@ function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
             if (__fusedRender_CronField_0_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
           }
         }
+        else if (__c0 === 43) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 45) {
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+          if (!__slotMatched_month) {
+            state.pos = __offBefore;
+            __slotBuf_month.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_month)) { __slotMatched_month = true; off = state.pos; }
+          }
+        }
         else if (__c0 === 48) {
           if (!__slotMatched_month) {
             state.pos = __offBefore;
@@ -2344,6 +2448,30 @@ function __fusedRender_Cron_0_source(state: State, out: string[]): boolean {
             state.pos = __offBefore;
             __slotBuf_dayOfWeek.length = 0;
             if (__fusedRender_CronField_0_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 43) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+        }
+        else if (__c0 === 45) {
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_3_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
+          }
+          if (!__slotMatched_dayOfWeek) {
+            state.pos = __offBefore;
+            __slotBuf_dayOfWeek.length = 0;
+            if (__fusedRender_CronField_2_source(state, __slotBuf_dayOfWeek)) { __slotMatched_dayOfWeek = true; off = state.pos; }
           }
         }
         else if (__c0 === 48) {
@@ -2540,8 +2668,9 @@ function __fusedRenderStructured_CronField_1_ast(state: State): unknown {
   if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __step_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __step_end = off;
@@ -2557,8 +2686,9 @@ function __fusedRenderStructured_CronField_2_ast(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
@@ -2574,8 +2704,9 @@ function __fusedRenderStructured_CronField_3_ast(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __start_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __start_end = off;
@@ -2584,8 +2715,9 @@ function __fusedRenderStructured_CronField_3_ast(state: State): unknown {
   if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __end_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __end_end = off;

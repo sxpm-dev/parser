@@ -4,7 +4,7 @@
   "packages": {
     "css": {
       "path": "packages/css/src/_generated/parser.ts",
-      "sha256": "2cd323664db4f865e228eae8c2393bb84957df70a6a93b5a458abd865512952e"
+      "sha256": "bfc3fe76511d4c2f3b15b843fc49e389a20b3d216efcc26ba17fefbe0c7296cd"
     },
     "html": {
       "path": "packages/html/src/_generated/parser.ts",
@@ -12,11 +12,11 @@
     },
     "markdown": {
       "path": "packages/markdown/src/_generated/parser.ts",
-      "sha256": "cffe71254e3b51a06b9e77e815072117bceb4ead006ef2500c04484cba57cf7e"
+      "sha256": "6dfb75ce1ab7489713662a058d92962ce8739746f8a198af8f6b12e0ab1f7743"
     },
     "cron": {
       "path": "packages/cron/src/_generated/parser.ts",
-      "sha256": "5f5b0bd1727bcfe7e576c9e1bd2645f9f95d6b02267020b4cdbce82f45739f5a"
+      "sha256": "3345a923744a647730e9bf5f12d409f23322ca4d02080d4e3a883f0277e7b5f0"
     },
     "yaml-block": {
       "path": "packages/yaml-block/src/_generated/parser.ts",

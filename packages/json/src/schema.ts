@@ -45,12 +45,27 @@ export default defineSchema({
       },
     }),
 
+    // --- JsonNumber -----------------------------------------------------
+    // Single production. `.scientific()` is the broadest number refinement —
+    // accepts int, float, and exponent forms. The compiler's number scanner
+    // also handles optional leading sign so negatives work without a
+    // separate production. `.coerce()` makes the captured value a JS
+    // number (Number(slice)) so `ast: $.value` matches JSON.parse.
+    relation('JsonNumber', {
+      input: '42',
+      encodings: {
+        parse: parse([span('value', '42').number().scientific().coerce()]),
+        ast: $.value,
+        source: $.value,
+      },
+    }),
+
     // --- JsonValue: dispatcher (grows as productions are added) ----------
     relation('JsonValue', {
       input: 'true',
       encodings: {
         parse: parse([
-          span('node', 'true').of('JsonTrue', 'JsonFalse', 'JsonNull'),
+          span('node', 'true').of('JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
         ]),
         ast: $.node,
         source: $.node,

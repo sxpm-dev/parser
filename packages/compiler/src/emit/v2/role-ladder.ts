@@ -622,6 +622,8 @@ export function classFirstBytes(span: ResolvedSpan): ReadonlySet<number> {
   }
   if (cls === 'number') {
     addRange(0x30, 0x39); // 0-9
+    out.add(0x2d); // - (leading sign)
+    out.add(0x2b); // + (leading sign)
     return out;
   }
   if (cls === 'hex') {

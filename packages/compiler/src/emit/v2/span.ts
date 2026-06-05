@@ -708,6 +708,12 @@ while (off < len && ((input.charCodeAt(off) >= 0x30 && input.charCodeAt(off) <= 
   // mantissa+exponent if both float and bigint are mixed; current schemas
   // don't combine them but the emitter is tolerant.
   const lines: string[] = [];
+  // Optional leading sign. JSON requires `-` for negatives; the scan also
+  // accepts `+` so schemas matching signed numerics (JSON5, scientific
+  // exponents already covered separately) work without a separate
+  // production. Behaviorally a no-op for unsigned numbers — startPredicate
+  // still requires the next byte to be a digit.
+  lines.push(`if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;`);
   // Integer (or mantissa) digit run.
   lines.push(`off++;\nwhile (off < len && ${digitOrSep}) off++;`);
   if (isFloat) {
@@ -736,7 +742,10 @@ while (off < len && ((input.charCodeAt(off) >= 0x30 && input.charCodeAt(off) <= 
     lines.push(`if (off < len && input.charCodeAt(off) === 0x6e) off++;`);
   }
   return {
-    startPredicate: `off < len && isDigit(input.charCodeAt(off))`,
+    // Accept either a digit (positive number) or a leading sign followed
+    // by a digit (signed number). The scan body consumes the sign first
+    // and the digit-run thereafter.
+    startPredicate: `off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1))))`,
     scanBody: lines.join('\n'),
   };
 }
@@ -801,13 +810,21 @@ if (off < len) off += 2;`,
 // class with the `.comment()` refinement (the schema author explicitly
 // asked for the comment's INTERIOR), strip `/* ... */` delimiters and
 // trim surrounding whitespace — matches v1's commentInterior() runtime
-// helper. Other class spans return the raw byte slice.
+// helper. When a span has the explicit `.coerce()` refinement, the slice
+// is coerced to the class's native JS type — `Number(slice)` for the
+// `number` class. This is opt-in so existing schemas that consume the
+// raw slice (e.g. cron's structural fields) aren't silently retyped.
+// Other class spans return the raw byte slice.
 function emitClassSpanValueExpr(
   span: ResolvedSpan,
   captureVar: string,
   startVar: string,
   endVar: string,
 ): string {
+  const refSet = new Set(span.refinements.map((r) => r.name));
+  if (span.class === 'number' && refSet.has('coerce')) {
+    return `const ${captureVar} = Number(input.slice(${startVar}, ${endVar}));`;
+  }
   if (span.class === 'comment') {
     // .comment() refinement is implicit for comment-class spans (the
     // schema's .span(...).comment() call sets class='comment' AND

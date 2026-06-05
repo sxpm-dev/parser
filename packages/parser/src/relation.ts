@@ -76,6 +76,7 @@ export class SpanNode {
   js(): SpanNode { return this.refine('js'); }
   html(): SpanNode { return this.refine('html'); }
   oneOf(values: ReadonlyArray<string>): SpanNode { return this.refine('oneOf', [values]); }
+  coerce(): SpanNode { return this.refine('coerce'); }
   line(marker: string): SpanNode { return this.refine('line', [marker]); }
   block(open: string, close: string): SpanNode { return this.refine('block', [open, close]); }
 

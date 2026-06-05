@@ -853,8 +853,9 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __index_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __index_end = off;
@@ -6497,6 +6498,11 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
               if (__fusedRender_MarkdownLeaf_13_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
           }
           else if (__c0 === 45) {
             if (!__itemMatched) {
@@ -6518,6 +6524,11 @@ function __fusedRender_MarkdownDocument_0_html(state: State, out: string[]): boo
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
               if (__fusedRender_MarkdownLeaf_15_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_html(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
           }
           else if (__c0 === 48) {
@@ -6822,6 +6833,11 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
               if (__fusedRender_MarkdownLeaf_13_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
           }
           else if (__c0 === 45) {
             if (!__itemMatched) {
@@ -6843,6 +6859,11 @@ function __fusedRender_MarkdownDocument_0_source(state: State, out: string[]): b
               state.pos = __offBeforeItem;
               __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
               if (__fusedRender_MarkdownLeaf_15_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
+            }
+            if (!__itemMatched) {
+              state.pos = __offBeforeItem;
+              __slotBuf_children.length = __bufLenBefore + (__count > 0 ? 1 : 0);
+              if (__fusedRender_MarkdownLeaf_16_source(state, __slotBuf_children)) { __itemMatched = true; off = state.pos; }
             }
           }
           else if (__c0 === 48) {
@@ -8364,8 +8385,9 @@ function __fusedRender_MarkdownLeaf_16_html(state: State, out: string[]): boolea
     let off = state.pos;
     const entryOff = off;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __index_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __index_end = off;
@@ -8418,8 +8440,9 @@ function __fusedRender_MarkdownLeaf_16_source(state: State, out: string[]): bool
     let off = state.pos;
     const entryOff = off;
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     const __index_start = off;
+    if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
     off++;
     while (off < len && isDigit(input.charCodeAt(off))) off++;
     const __index_end = off;
@@ -12212,8 +12235,9 @@ function __fusedRenderStructured_MarkdownLeaf_16_ast(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __index_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
   off++;
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __index_end = off;

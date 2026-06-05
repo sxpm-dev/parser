@@ -211,6 +211,41 @@ function parseJsonFalse(state: State): unknown {
   return { __production: "JsonFalse#0" };
 }
 
+function parseJsonNumber(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  if (off + 1 < len && input.charCodeAt(off) === 0x2e && isDigit(input.charCodeAt(off + 1))) {
+    off++;
+    while (off < len && isDigit(input.charCodeAt(off))) off++;
+  }
+  if (off < len && (input.charCodeAt(off) === 0x65 || input.charCodeAt(off) === 0x45)) {
+    let __expProbe = off + 1;
+    if (__expProbe < len && (input.charCodeAt(__expProbe) === 0x2b || input.charCodeAt(__expProbe) === 0x2d)) __expProbe++;
+    if (__expProbe < len && isDigit(input.charCodeAt(__expProbe))) {
+      off = __expProbe;
+      while (off < len && isDigit(input.charCodeAt(off))) off++;
+    }
+  }
+  const __value_end = off;
+  const value = Number(input.slice(__value_start, __value_end));
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "JsonNumber#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "JsonNumber#0", value: value };
+}
+
 function parseJsonValue(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -230,12 +265,19 @@ function parseJsonValue(state: State): unknown {
     state.pos = off;
     if (off < len) {
       const __c0 = input.charCodeAt(off);
-      if (__c0 === 116) {
-        __r = parseJsonTrue(state);
-      } else if (__c0 === 102) {
-        __r = parseJsonFalse(state);
-      } else if (__c0 === 110) {
-        __r = parseJsonNull(state);
+      switch (__c0) {
+        case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
+          __r = parseJsonNumber(state);
+          break;
+        case 116:
+          __r = parseJsonTrue(state);
+          break;
+        case 102:
+          __r = parseJsonFalse(state);
+          break;
+        case 110:
+          __r = parseJsonNull(state);
+          break;
       }
     }
     node = __r;
@@ -279,6 +321,14 @@ function __build_JsonFalse_0_source(captures: any, __indentCol: number = 0): any
   return "false";
 }
 
+function __build_JsonNumber_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.value, __indentCol);
+}
+
+function __build_JsonNumber_0_source(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_source(captures.value, __indentCol);
+}
+
 function __build_JsonValue_0_ast(captures: any, __indentCol: number = 0): any {
   return __renderSlot_ast(captures.node, __indentCol);
 }
@@ -295,6 +345,7 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     case "JsonNull#0": return __build_JsonNull_0_ast(captures, __indentCol);
     case "JsonTrue#0": return __build_JsonTrue_0_ast(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_ast(captures, __indentCol);
+    case "JsonNumber#0": return __build_JsonNumber_0_ast(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
@@ -308,6 +359,7 @@ function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
     case "JsonNull#0": return __build_JsonNull_0_source(captures, __indentCol);
     case "JsonTrue#0": return __build_JsonTrue_0_source(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_source(captures, __indentCol);
+    case "JsonNumber#0": return __build_JsonNumber_0_source(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
@@ -393,6 +445,10 @@ function __rebuild_JsonFalse_0(captures: any): string {
   return "false";
 }
 
+function __rebuild_JsonNumber_0(captures: any): string {
+  return String(__rebuildSlot(captures.value));
+}
+
 function __rebuild_JsonValue_0(captures: any): string {
   return String(__rebuildSlot(captures.node));
 }
@@ -418,9 +474,15 @@ function __invert_JsonFalse_0_ast(value: any, __indentCol: number = 0): string {
   return "false";
 }
 
+function __invert_JsonNumber_0_ast(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  captures.value = __invertSlotLeaf_ast(value);
+  return __rebuild_JsonNumber_0(captures, __indentCol);
+}
+
 function __invert_JsonValue_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.node = __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
+  captures.node = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
@@ -445,9 +507,15 @@ function __invert_JsonFalse_0_source(value: any, __indentCol: number = 0): strin
   return "false";
 }
 
+function __invert_JsonNumber_0_source(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  captures.value = __invertSlotLeaf_source(value);
+  return __rebuild_JsonNumber_0(captures, __indentCol);
+}
+
 function __invert_JsonValue_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.node = __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_source(value, __indentCol);
+  captures.node = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
@@ -463,6 +531,13 @@ function __dispatchInverse_JsonTrue_ast(value: any, __indentCol: number = 0): st
 
 function __dispatchInverse_JsonFalse_ast(value: any, __indentCol: number = 0): string {
   if (Object.is(value, false)) return __invert_JsonFalse_0_ast(value, __indentCol);
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_JsonNumber_ast(value: any, __indentCol: number = 0): string {
+  if (typeof value === "number") {
+    return __invert_JsonNumber_0_ast(value, __indentCol);
+  }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
@@ -489,6 +564,13 @@ function __dispatchInverse_JsonTrue_source(value: any, __indentCol: number = 0):
 
 function __dispatchInverse_JsonFalse_source(value: any, __indentCol: number = 0): string {
   if (Object.is(value, "false")) return __invert_JsonFalse_0_source(value, __indentCol);
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_JsonNumber_source(value: any, __indentCol: number = 0): string {
+  if (typeof value === "number") {
+    return __invert_JsonNumber_0_source(value, __indentCol);
+  }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
@@ -602,6 +684,39 @@ function __invertSlotFor_JsonFalse_ast(v: any, __indentCol: number = 0): any {
   try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
+function __invertSlotFor_JsonNumber_ast(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_JsonNumber_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_JsonNumber_ast(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { return String(v); }
+}
+
 function __invertSlotFor_JsonValue_ast(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays are ambiguous between "list of values to recurse" (.repeats()
@@ -635,17 +750,18 @@ function __invertSlotFor_JsonValue_ast(v: any, __indentCol: number = 0): any {
   try { return __dispatchInverse_JsonValue_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
-function __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_ast(v: any, __indentCol: number = 0): any {
+function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays: try each role first (some roles like JsonArray accept arrays as
   // whole values); if all reject, recurse element-wise for .repeats() uses.
   if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_ast(v[i], __indentCol);
+      const r = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -653,24 +769,28 @@ function __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_ast(v: any, __indentCol: 
   // null: try roles for intentional-null productions (e.g. JsonNull); else
   // treat as absent for optional-slot semantics.
   if (v === null) {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return null;
   }
   if (typeof v === "string") {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (typeof v === "object") {
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
-    throw new Error("stringify: no role matched for multi-role capture (roles: JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
+    throw new Error("stringify: no role matched for multi-role capture (roles: JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
   }
   // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -790,6 +910,39 @@ function __invertSlotFor_JsonFalse_source(v: any, __indentCol: number = 0): any 
   try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
+function __invertSlotFor_JsonNumber_source(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_JsonNumber_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_JsonNumber_source(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { return String(v); }
+}
+
 function __invertSlotFor_JsonValue_source(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays are ambiguous between "list of values to recurse" (.repeats()
@@ -823,17 +976,18 @@ function __invertSlotFor_JsonValue_source(v: any, __indentCol: number = 0): any 
   try { return __dispatchInverse_JsonValue_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
-function __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_source(v: any, __indentCol: number = 0): any {
+function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays: try each role first (some roles like JsonArray accept arrays as
   // whole values); if all reject, recurse element-wise for .repeats() uses.
   if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_source(v[i], __indentCol);
+      const r = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -841,24 +995,28 @@ function __invertSlotMulti_JsonTrue_JsonFalse_JsonNull_source(v: any, __indentCo
   // null: try roles for intentional-null productions (e.g. JsonNull); else
   // treat as absent for optional-slot semantics.
   if (v === null) {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return null;
   }
   if (typeof v === "string") {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
     return v;
   }
   if (typeof v === "object") {
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
-    throw new Error("stringify: no role matched for multi-role capture (roles: JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
+    throw new Error("stringify: no role matched for multi-role capture (roles: JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
   }
   // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }

@@ -3758,123 +3758,234 @@ function __dispatchInverse_source(value: any): string {
 }
 
 function __invertSlotFor_HtmlDocument_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_HtmlDocument_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_HtmlDocument_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_HtmlDocument_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_HtmlDocument_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlDocument_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_HtmlDocument_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_HtmlDocument_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Doctype_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Doctype_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Doctype_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Doctype_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Comment_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Comment_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Comment_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_HtmlElement_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_HtmlElement_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlElement_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_HtmlElement_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_TextNode_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_TextNode_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_TextNode_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_TextNode_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Attribute_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Attribute_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Attribute_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Attribute_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Attribute_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Attribute_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Attribute_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Attribute_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
+  }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
   }
   if (typeof v === "object") {
     try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -3883,6 +3994,11 @@ function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any, __in
     try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Doctype, Comment, HtmlElement, TextNode; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_Doctype_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_ast(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 
@@ -3901,123 +4017,234 @@ function __invertSlotLeaf_ast(v: any): any {
 }
 
 function __invertSlotFor_HtmlDocument_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_HtmlDocument_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_HtmlDocument_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_HtmlDocument_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_HtmlDocument_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlDocument_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_HtmlDocument_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_HtmlDocument_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Doctype_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Doctype_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Doctype_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Doctype_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Comment_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Comment_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Comment_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Comment_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_HtmlElement_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_HtmlElement_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_HtmlElement_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_HtmlElement_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_TextNode_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_TextNode_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_TextNode_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_TextNode_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Attribute_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Attribute_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Attribute_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Attribute_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Attribute_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Attribute_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Attribute_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Attribute_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
+  }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
   }
   if (typeof v === "object") {
     try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -4026,6 +4253,11 @@ function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any, _
     try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: Doctype, Comment, HtmlElement, TextNode; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_Doctype_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_HtmlElement_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_TextNode_source(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 

@@ -830,7 +830,7 @@ function __dispatchInverse_CronField_ast(value: any, __indentCol: number = 0): s
 }
 
 function __dispatchInverse_CommandWord_ast(value: any, __indentCol: number = 0): string {
-  if (value !== null && value !== undefined && !Array.isArray(value)) {
+  if (typeof value === "string") {
     return __invert_CommandWord_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
@@ -890,71 +890,135 @@ function __dispatchInverse_source(value: any): string {
 }
 
 function __invertSlotFor_CronField_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_CronField_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_CronField_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_CronField_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_CronField_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_CronField_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_CronField_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_CronField_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_CommandWord_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_CommandWord_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_CommandWord_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_CommandWord_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_CommandWord_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_CommandWord_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_CommandWord_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_CommandWord_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Command_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Command_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Command_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Command_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Command_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Command_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Command_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Command_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Cron_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Cron_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Cron_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Cron_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Cron_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Cron_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Cron_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Cron_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotLeaf_ast(v: any): any {
@@ -972,71 +1036,135 @@ function __invertSlotLeaf_ast(v: any): any {
 }
 
 function __invertSlotFor_CronField_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_CronField_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_CronField_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_CronField_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_CronField_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_CronField_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_CronField_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_CronField_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_CommandWord_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_CommandWord_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_CommandWord_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_CommandWord_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_CommandWord_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_CommandWord_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_CommandWord_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_CommandWord_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Command_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Command_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Command_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Command_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Command_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Command_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Command_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Command_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Cron_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Cron_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Cron_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Cron_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_Cron_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_Cron_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_Cron_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Cron_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotLeaf_source(v: any): any {

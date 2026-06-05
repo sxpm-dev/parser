@@ -359,6 +359,75 @@ function emitMergeSlotHelper(
   return lines.join('\n');
 }
 
+// Compute the dispatcher's accept condition for a set of bare-ref branches.
+// The condition expresses what JS value shapes the ref's capture span can
+// produce. Returns the literal string 'always' to denote unconditional
+// acceptance (emitter then drops the guard entirely).
+function refsAcceptCondition(
+  productions: ReadonlyArray<Production>,
+  refs: ReadonlyArray<{ readonly prodIdx: number; readonly ir: InverseIR }>,
+): string {
+  // Track which JS shapes are admissible across all ref branches in this
+  // dispatcher. Defaulting to 'no shape allowed' and unioning each branch's
+  // shapes preserves "must be all of {a, b}" if every branch agrees.
+  let acceptsNull = false;
+  let acceptsString = false;
+  let acceptsNumber = false;
+  let acceptsBoolean = false;
+  let acceptsArray = false;
+  let acceptsObject = false;
+  for (const b of refs) {
+    if (b.ir.kind !== 'ref') continue;
+    const refIR = b.ir;
+    const prod = productions[b.prodIdx]!;
+    const span = prod.spans.find((s) => s.name === refIR.capture);
+    if (!span) {
+      // Couldn't resolve — admit everything (conservative).
+      return 'value !== undefined';
+    }
+    const hasRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+    const hasOptional = span.modifiers.some((m) => m.kind === 'optional');
+    const isRecursive = span.recursiveRoles.length > 0;
+    if (hasRepeats) {
+      acceptsArray = true;
+    } else if (isRecursive) {
+      // Multi-role recursive span — could yield any shape (scalar, object,
+      // array, etc.) depending on which role matched. Admit anything.
+      return 'value !== undefined';
+    } else {
+      // Classed scalar capture (.string(), .number(), .until(), .ident(), …).
+      // Use the class to narrow further.
+      switch (span.class) {
+        case 'string':
+        case 'ident':
+        case 'literal':
+        case 'hex':
+        case 'comment':
+        case 'keyword':
+        case 'operator':
+          acceptsString = true;
+          break;
+        case 'number':
+          acceptsNumber = true;
+          break;
+        default:
+          // Unknown class — be conservative.
+          return 'value !== undefined';
+      }
+    }
+    if (hasOptional) acceptsNull = true;
+  }
+  const parts: string[] = [];
+  if (acceptsNull) parts.push('value === null');
+  if (acceptsString) parts.push('typeof value === "string"');
+  if (acceptsNumber) parts.push('typeof value === "number"');
+  if (acceptsBoolean) parts.push('typeof value === "boolean"');
+  if (acceptsArray) parts.push('Array.isArray(value)');
+  if (acceptsObject) parts.push('(typeof value === "object" && value !== null && !Array.isArray(value))');
+  if (parts.length === 0) return 'value !== undefined';
+  return parts.join(' || ');
+}
+
 function bucketForIR(ir: InverseIR): 'string' | 'object' | 'array' | 'any' {
   if (ir.kind !== 'dynKey') return 'any';
   switch (ir.value.kind) {
@@ -673,14 +742,22 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
   };
   const branches: Branch[] = [];
   for (let i = 0; i < info.productions.length; i++) {
-    const entry = info.productions[i]!.renders.get(target);
+    const production = info.productions[i]!;
+    const entry = production.renders.get(target);
     if (!entry || !entry.inverseDerived) continue;
-    // `body: null` opts a production out of this target — no value ever
-    // round-trips through it (forward returns null, merge filters it out,
-    // public stringify never enters it). Skip so the dispatcher doesn't
-    // emit a dead `if (value === null) return ...` branch that would
-    // accidentally shadow a real production for null inputs.
-    if (entry.inverseDerived.kind === 'scalar' && entry.inverseDerived.value === null) continue;
+    // `body: null` is ambiguous between two intents:
+    //   - "Opt out of this target" (e.g. CSS Comment's `json: null` — the
+    //     production parses real content with captures but the body discards
+    //     them; null acts as a sentinel that `merge` filters out).
+    //   - "This production yields the literal null value" (e.g. JSON
+    //     `JsonNull` parses `literal('null')` and produces null).
+    // Distinguish by capture presence: capture-less productions whose body
+    // is the literal null are intentional null-yielders and belong in the
+    // dispatcher's scalars branch. Capture-having productions are opt-outs.
+    if (entry.inverseDerived.kind === 'scalar' && entry.inverseDerived.value === null) {
+      const hasCaptures = production.spans.some((s) => s.name !== undefined);
+      if (hasCaptures) continue;
+    }
     branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
   }
   if (branches.length === 0) {
@@ -860,16 +937,29 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     lines.push('}');
   }
   if (refs.length > 0) {
-    // Bare-ref bodies pass the value through to the inverter which delegates
-    // to the recursive slot helper. The slot helper handles both strings and
-    // objects (e.g. when the ref resolves through a multi-role chain whose
-    // children render as objects). Accept any non-null, non-array value.
-    lines.push('if (value !== null && value !== undefined && !Array.isArray(value)) {');
-    for (const b of refs) {
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
-      lines.push(`  return ${call};`);
+    // Bare-ref bodies (`ast: $.x`) — the dispatcher's accept condition
+    // depends on what shape the capture span can produce:
+    //   .repeats()          → array
+    //   .of(roles)          → union (any shape — recursive role(s) decide)
+    //   class/.until()      → string (or whatever the class captures)
+    //   .optional() on any  → also allows null
+    // Without this analysis we'd either miss valid inputs (e.g. JsonNull's
+    // null) or accept invalid ones (e.g. a yaml-item ref accepting arrays
+    // that belong to its parent's .repeats() slot).
+    const cond = refsAcceptCondition(info.productions, refs);
+    if (cond === 'always') {
+      for (const b of refs) {
+        const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+        lines.push(`return ${call};`);
+      }
+    } else {
+      lines.push(`if (${cond}) {`);
+      for (const b of refs) {
+        const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+        lines.push(`  return ${call};`);
+      }
+      lines.push('}');
     }
-    lines.push('}');
   }
   if (scalars.length > 0) {
     for (const b of scalars) {
@@ -1008,20 +1098,36 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   //                    source string.
   //   other          → String(v).
   return `function ${helper}(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return ${childDispatch}(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = ${helper}(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return ${childDispatch}(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return ${childDispatch}(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = ${helper}(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return ${childDispatch}(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return ${childDispatch}(v, __indentCol); } catch (_e) { return String(v); }
 }`;
 }
 
@@ -1054,12 +1160,11 @@ function emitMultiRoleSlotHelper(
     );
   }
   return `function ${helper}(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
-${tryCalls.join('\n')}
-    return v;
-  }
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
   if (Array.isArray(v)) {
+${tryCalls.join('\n')}
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = ${helper}(v[i], __indentCol);
@@ -1067,10 +1172,22 @@ ${tryCalls.join('\n')}
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+${tryCalls.join('\n')}
+    return null;
+  }
+  if (typeof v === "string") {
+${tryCalls.join('\n')}
+    return v;
+  }
   if (typeof v === "object") {
 ${tryCalls.join('\n')}
     throw new Error("stringify: no role matched for multi-role capture (roles: ${roles.join(', ')}; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+${tryCalls.join('\n')}
   return String(v);
 }`;
 }

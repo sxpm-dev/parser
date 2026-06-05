@@ -5929,64 +5929,111 @@ function __dispatchInverse_source(value: any): string {
 }
 
 function __invertSlotFor_MarkdownDocument_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownDocument_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownDocument_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownDocument_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownDocument_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownDocument_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownDocument_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownLeaf_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownLeaf_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownParagraph_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownParagraph_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v[i], __indentCol);
@@ -5994,11 +6041,26 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any, __indentCo
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (typeof v === "object") {
     try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_MarkdownLeaf_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_ast(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 
@@ -6017,64 +6079,111 @@ function __invertSlotLeaf_ast(v: any): any {
 }
 
 function __invertSlotFor_MarkdownDocument_html(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownDocument_html(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownDocument_html(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownDocument_html(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownDocument_html(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_html(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownDocument_html(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownDocument_html(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownLeaf_html(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownLeaf_html(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_html(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_html(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownParagraph_html(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownParagraph_html(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_html(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_html(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v[i], __indentCol);
@@ -6082,11 +6191,26 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any, __indentC
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (typeof v === "object") {
     try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_MarkdownLeaf_html(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_html(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 
@@ -6105,64 +6229,111 @@ function __invertSlotLeaf_html(v: any): any {
 }
 
 function __invertSlotFor_MarkdownDocument_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownDocument_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownDocument_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownDocument_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownDocument_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownDocument_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownDocument_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownDocument_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownLeaf_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownLeaf_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownLeaf_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownLeaf_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_MarkdownParagraph_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_MarkdownParagraph_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_MarkdownParagraph_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_MarkdownParagraph_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v[i], __indentCol);
@@ -6170,11 +6341,26 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any, __inden
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (typeof v === "object") {
     try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: MarkdownLeaf, MarkdownParagraph; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_MarkdownLeaf_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_MarkdownParagraph_source(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 

@@ -870,7 +870,7 @@ function __invert_YamlBlock_0_source(value: any, __indentCol: number = 0): strin
 }
 
 function __dispatchInverse_YamlScalar_ast(value: any, __indentCol: number = 0): string {
-  if (value !== null && value !== undefined && !Array.isArray(value)) {
+  if (typeof value === "string") {
     return __invert_YamlScalar_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
@@ -905,14 +905,14 @@ function __dispatchInverse_YamlSequence_ast(value: any, __indentCol: number = 0)
 }
 
 function __dispatchInverse_YamlNode_ast(value: any, __indentCol: number = 0): string {
-  if (value !== null && value !== undefined && !Array.isArray(value)) {
+  if (value !== undefined) {
     return __invert_YamlNode_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_YamlBlock_ast(value: any, __indentCol: number = 0): string {
-  if (value !== null && value !== undefined && !Array.isArray(value)) {
+  if (value !== undefined) {
     return __invert_YamlBlock_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
@@ -976,133 +976,244 @@ function __dispatchInverse_source(value: any): string {
 }
 
 function __invertSlotFor_YamlScalar_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlScalar_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlScalar_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlScalar_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlMappingEntry_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlMappingEntry_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMappingEntry_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlMappingEntry_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlMapping_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlMapping_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMapping_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlMapping_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlSequenceItem_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlSequenceItem_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequenceItem_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlSequenceItem_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlSequence_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlSequence_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequence_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlSequence_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlNode_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlNode_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlNode_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlNode_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlNode_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlNode_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlNode_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlNode_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlBlock_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlBlock_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlBlock_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlBlock_ast(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlBlock_ast(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlBlock_ast(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlBlock_ast(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlBlock_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v[i], __indentCol);
@@ -1110,12 +1221,30 @@ function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(v: any, __ind
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (typeof v === "object") {
     try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: YamlMapping, YamlSequence, YamlScalar; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_YamlMapping_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_ast(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_ast(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 
@@ -1134,133 +1263,244 @@ function __invertSlotLeaf_ast(v: any): any {
 }
 
 function __invertSlotFor_YamlScalar_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlScalar_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlScalar_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlScalar_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlMappingEntry_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlMappingEntry_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlMappingEntry_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlMappingEntry_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlMappingEntry_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMappingEntry_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlMappingEntry_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlMappingEntry_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlMapping_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlMapping_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlMapping_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlMapping_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlSequenceItem_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlSequenceItem_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlSequenceItem_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlSequenceItem_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlSequenceItem_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequenceItem_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlSequenceItem_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlSequenceItem_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlSequence_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlSequence_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlSequence_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlSequence_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlNode_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlNode_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlNode_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlNode_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlNode_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlNode_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlNode_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlNode_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_YamlBlock_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_YamlBlock_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_YamlBlock_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_YamlBlock_source(v, __indentCol); } catch (_e) { return null; }
+  }
   if (typeof v === "string") {
     try { return __dispatchInverse_YamlBlock_source(v, __indentCol); } catch (_e) { return v; }
   }
-  if (Array.isArray(v)) {
-    const out: any[] = [];
-    for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotFor_YamlBlock_source(v[i], __indentCol);
-      if (r != null) out.push(r);
-    }
-    return out;
-  }
   if (typeof v === "object") return __dispatchInverse_YamlBlock_source(v, __indentCol);
-  return String(v);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_YamlBlock_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v: any, __indentCol: number = 0): any {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "string") {
+  if (v === undefined) return null;
+  // Arrays: try each role first (some roles like JsonArray accept arrays as
+  // whole values); if all reject, recurse element-wise for .repeats() uses.
+  if (Array.isArray(v)) {
     try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
-    return v;
-  }
-  if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v[i], __indentCol);
@@ -1268,12 +1508,30 @@ function __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_source(v: any, __
     }
     return out;
   }
+  // null: try roles for intentional-null productions (e.g. JsonNull); else
+  // treat as absent for optional-slot semantics.
+  if (v === null) {
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return null;
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
   if (typeof v === "object") {
     try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
     throw new Error("stringify: no role matched for multi-role capture (roles: YamlMapping, YamlSequence, YamlScalar; value: " + JSON.stringify(v) + ")");
   }
+  // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_YamlMapping_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlSequence_source(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_YamlScalar_source(v, __indentCol); } catch (_e) { /* try next role */ }
   return String(v);
 }
 

@@ -576,6 +576,17 @@ function invertSlot(
     // Defensive fallback — validate.ts catches unknown captures.
     return invertLeafValue(value);
   }
+  // For source-target captures whose span is `.string().coerce()` the
+  // inbound slice is encoded — decode so the shared rebuild's encoder
+  // round-trips cleanly. Mirrors emit/inverse.ts slotHelperCall.
+  if (
+    target === 'source' &&
+    span.class === 'string' &&
+    span.refinements.some((r) => r.name === 'coerce') &&
+    typeof value === 'string'
+  ) {
+    return decodeJsonStringInterp(value);
+  }
   const roles = span.recursiveRoles;
   if (roles.length === 0) {
     return invertLeafValue(value);

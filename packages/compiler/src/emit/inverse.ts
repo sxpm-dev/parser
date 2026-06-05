@@ -317,11 +317,23 @@ function emitMergeSlotHelper(
     const info = schema.nodeTypes.get(role);
     if (!info) continue;
     for (let i = 0; i < info.productions.length; i++) {
-      const entry = info.productions[i]!.renders.get(target);
+      const production = info.productions[i]!;
+      const entry = production.renders.get(target);
       const ir = entry?.inverseDerived;
       if (!ir) continue;
       if (ir.kind === 'scalar' && ir.value === null) continue;
-      const bucket = bucketForIR(ir);
+      // For dynKey-with-ref bodies whose ref capture is a recursive
+      // `.of(...)` span, the entry value can be any shape (the recursive
+      // role chain produces scalars, objects, arrays, etc.). Force such
+      // productions into the 'any' bucket so every entry-value type is
+      // tried, not just strings.
+      let bucket = bucketForIR(ir);
+      if (bucket === 'string' && ir.kind === 'dynKey' && ir.value.kind === 'ref') {
+        const refSpan = production.spans.find((s) => s.name === (ir.value as { capture: string }).capture);
+        if (refSpan && refSpan.recursiveRoles.length > 0) {
+          bucket = 'any';
+        }
+      }
       const call = `${nodeDispatcherName(role, target)}(__mWrapped, __indentCol)`;
       switch (bucket) {
         case 'string': stringBucket.push(call); break;
@@ -570,6 +582,17 @@ function slotHelperCall(
 ): string {
   for (const span of production.spans) {
     if (span.name !== capture) continue;
+    // For source-target captures whose span is `.string().coerce()` the
+    // inbound slice is encoded (`"…"` or `'…'`). Decode here so the
+    // shared rebuild's encoder round-trips cleanly. Mirrors the
+    // ref-body case in emitInverseBody.
+    if (
+      target === 'source' &&
+      span.class === 'string' &&
+      span.refinements.some((r) => r.name === 'coerce')
+    ) {
+      return `decodeJsonString(${valueExpr})`;
+    }
     const roles = span.recursiveRoles;
     if (roles.length === 0) {
       // Non-recursive capture — primitive or repeated primitive. The
@@ -1043,7 +1066,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     lines.push('    const __dkV = (value as Record<string, unknown>)[__dkKeys[0]!];');
     for (const b of dynKeys) {
       const valueIR = (b.ir as Extract<InverseIR, { kind: 'dynKey' }>).value;
-      const cond = dynKeyEntryTypeCondition(valueIR);
+      const cond = dynKeyEntryTypeCondition(valueIR, info.productions[b.prodIdx]);
       const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
       if (cond === 'true') lines.push(`    return ${call};`);
       else lines.push(`    if (${cond}) return ${call};`);
@@ -1086,12 +1109,23 @@ function templateShapeKey(ir: Extract<InverseIR, { kind: 'template' }>): string 
  *  Used by the per-node dispatcher to discriminate dynKey-bodied productions
  *  in the same role (e.g. CSS Declaration vs Rule when both have flat-shape
  *  `{ [key]: ... }` bodies — Decl expects string, Rule expects object). */
-function dynKeyEntryTypeCondition(valueIR: InverseIR): string {
+function dynKeyEntryTypeCondition(valueIR: InverseIR, production?: Production): string {
   switch (valueIR.kind) {
-    case 'ref':
-      // Leaf — the entry value is captured directly by a single
-      // non-recursive span. In flat-json shapes that's a string.
+    case 'ref': {
+      // Leaf — the entry value is captured directly by a single span. For
+      // a non-recursive class span (e.g. CSS Declaration's `$.value` →
+      // .until() string), the runtime type is a string. For a recursive
+      // `.of(...)` span (e.g. JSON's JsonMember `$.value` → JsonValue),
+      // the runtime type can be anything the role chain produces — admit
+      // any defined value and let the role's dispatcher resolve.
+      if (production) {
+        const refSpan = production.spans.find((s) => s.name === valueIR.capture);
+        if (refSpan && refSpan.recursiveRoles.length > 0) {
+          return '__dkV !== undefined';
+        }
+      }
       return 'typeof __dkV === "string"';
+    }
     case 'merge':
     case 'dynKey':
     case 'object':

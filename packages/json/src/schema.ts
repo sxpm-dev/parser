@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, dynKey, literal, merge, parse, relation, span, tpl } from '@parser2/parser';
 
 // JSON parser schema. Root is JsonValue, which dispatches to the
 // JSON value type productions. Strict-JSON-only at this stage;
@@ -87,12 +87,40 @@ export default defineSchema({
       },
     }),
 
+    // --- JsonMember -----------------------------------------------------
+    relation('JsonMember', {
+      input: '"a":1',
+      encodings: {
+        parse: parse([
+          span('key', '"a"').string().doubleQuoted().coerce(),
+          literal(':'),
+          span('value', '1').of('JsonValue'),
+        ]),
+        ast: dynKey($.key, $.value),
+        source: tpl`${$.key}:${$.value}`,
+      },
+    }),
+
+    // --- JsonObject -----------------------------------------------------
+    relation('JsonObject', {
+      input: '{"a":1,"b":2}',
+      encodings: {
+        parse: parse([
+          literal('{'),
+          span('entries', '"a":1,"b":2').of('JsonMember').repeats({ sep: ',', min: 0 }),
+          literal('}'),
+        ]),
+        ast: merge($.entries),
+        source: tpl`{${$.entries}}`,
+      },
+    }),
+
     // --- JsonValue: dispatcher (grows as productions are added) ----------
     relation('JsonValue', {
       input: 'true',
       encodings: {
         parse: parse([
-          span('node', 'true').of('JsonArray', 'JsonString', 'JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
+          span('node', 'true').of('JsonObject', 'JsonArray', 'JsonString', 'JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
         ]),
         ast: $.node,
         source: $.node,

@@ -7033,6 +7033,17 @@ function __parse(input: string, options?: ParseOptions): unknown {
     indentStackTop: 0,
   };
   const result = parseStylesheet(state);
+  while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    if (__c === 0x2f && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < state.len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    break;
+  }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }

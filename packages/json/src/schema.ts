@@ -15,6 +15,20 @@ export default defineSchema({
   },
   tokens: ['number', 'string', 'comment'],
   examples: [
+    // --- Comment (block) -------------------------------------------------
+    // Not surfaced in the AST; recognized by the tokenizer so standard
+    // whitespace can absorb it between spans (JSON5 tolerance).
+    relation('Comment', {
+      input: '/* hello */',
+      encodings: {
+        parse: parse([
+          span('text', '/* hello */').comment().block('/*', '*/'),
+        ]),
+        ast: null,
+        source: tpl`${$.text}`,
+      },
+    }),
+
     // --- JsonNull --------------------------------------------------------
     relation('JsonNull', {
       input: 'null',

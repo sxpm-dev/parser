@@ -1807,6 +1807,11 @@ function __parse(input: string, options?: ParseOptions): unknown {
     indentStackTop: 0,
   };
   const result = parseYamlBlock(state);
+  while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    break;
+  }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }

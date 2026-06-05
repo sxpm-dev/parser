@@ -437,10 +437,35 @@ export function parseFnName(schema: InferredSchema, nodeType: string): string {
 function emitPublicApi(schema: InferredSchema, validateBody: string): string {
   const rootFn = parseFnName(schema, schema.rootType);
   const preamble = emitPreamble(schema);
+  // Trailing-whitespace + (optional) comment skip before the EOF check.
+  // Without this, `42 /* trailing */` would parse `42` and then complain
+  // at position 2 because the root parse leaves `state.pos` at the end of
+  // the value. Comment skipping is conditional on the schema declaring
+  // `tokens: ['comment']` so non-comment-aware schemas stay
+  // byte-identical to the prior emit.
+  const hasComment = schema.classes.some((t) => t.class === 'comment');
+  const trailingSkip = hasComment
+    ? `while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    if (__c === 0x2f && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < state.len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    break;
+  }`
+    : `while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    break;
+  }`;
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
 ${preamble}${emitStateInit('state', 'parametric')}
   const result = ${rootFn}(state);
+  ${trailingSkip}
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }

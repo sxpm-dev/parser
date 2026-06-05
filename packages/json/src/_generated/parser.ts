@@ -230,6 +230,41 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+function parseComment(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __text_start = off;
+  off += 2;
+  while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+  if (off < len) off += 2;
+  const __text_end = off;
+  let __text_ts = __text_start + 2;
+  let __text_te = __text_end - 2;
+  while (__text_ts < __text_te) {
+    const __lc = input.charCodeAt(__text_ts);
+    if (__lc !== 0x20 && __lc !== 0x09 && __lc !== 0x0a && __lc !== 0x0d) break;
+    __text_ts++;
+  }
+  while (__text_te > __text_ts) {
+    const __tc = input.charCodeAt(__text_te - 1);
+    if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+    __text_te--;
+  }
+  const text = input.slice(__text_ts, __text_te);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Comment#0", text: text };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "Comment#0", text: text };
+}
+
 function parseJsonNull(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -605,6 +640,14 @@ function parseJsonValue(state: State): unknown {
 
 const __defaultTarget: string | undefined = "ast";
 
+function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
+  return null;
+}
+
+function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
+  return String((__renderSlot_source(captures.text, __indentCol) ?? ""));
+}
+
 function __build_JsonNull_0_ast(captures: any, __indentCol: number = 0): any {
   return null;
 }
@@ -692,6 +735,7 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     throw new Error("render: captures must be an object (target 'ast')");
   }
   switch (captures.__production) {
+    case "Comment#0": return __build_Comment_0_ast(captures, __indentCol);
     case "JsonNull#0": return __build_JsonNull_0_ast(captures, __indentCol);
     case "JsonTrue#0": return __build_JsonTrue_0_ast(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_ast(captures, __indentCol);
@@ -710,6 +754,7 @@ function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
     throw new Error("render: captures must be an object (target 'source')");
   }
   switch (captures.__production) {
+    case "Comment#0": return __build_Comment_0_source(captures, __indentCol);
     case "JsonNull#0": return __build_JsonNull_0_source(captures, __indentCol);
     case "JsonTrue#0": return __build_JsonTrue_0_source(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_source(captures, __indentCol);
@@ -791,6 +836,10 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
   return String(v);
 }
 
+function __rebuild_Comment_0(captures: any): string {
+  return String(__rebuildSlot(captures.text));
+}
+
 function __rebuild_JsonNull_0(captures: any): string {
   return "null";
 }
@@ -825,6 +874,13 @@ function __rebuild_JsonObject_0(captures: any): string {
 
 function __rebuild_JsonValue_0(captures: any): string {
   return String(__rebuildSlot(captures.node));
+}
+
+function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
+  if (!Object.is(value, null)) {
+    throw new Error("stringify: expected scalar null, got " + JSON.stringify(value));
+  }
+  return "/* hello */";
 }
 
 function __invert_JsonNull_0_ast(value: any, __indentCol: number = 0): string {
@@ -907,6 +963,21 @@ function __invert_JsonValue_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   captures.node = __invertSlotMulti_JsonObject_JsonArray_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
+}
+
+function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
+  __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  return __rebuild_Comment_0(captures, __indentCol);
 }
 
 function __invert_JsonNull_0_source(value: any, __indentCol: number = 0): string {
@@ -1021,6 +1092,10 @@ function __invert_JsonValue_0_source(value: any, __indentCol: number = 0): strin
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
+function __dispatchInverse_Comment_ast(value: any, __indentCol: number = 0): string {
+  throw new Error("stringify: no productions declared for node 'Comment' target 'ast'");
+}
+
 function __dispatchInverse_JsonNull_ast(value: any, __indentCol: number = 0): string {
   if (Object.is(value, null)) return __invert_JsonNull_0_ast(value, __indentCol);
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
@@ -1086,6 +1161,13 @@ function __dispatchInverse_ast(value: any): string {
   return __dispatchInverse_JsonValue_ast(value, 0);
 }
 
+function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
+  if (typeof value === "string") {
+    return __invert_Comment_0_source(value, __indentCol);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
 function __dispatchInverse_JsonNull_source(value: any, __indentCol: number = 0): string {
   if (Object.is(value, "null")) return __invert_JsonNull_0_source(value, __indentCol);
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
@@ -1145,6 +1227,39 @@ function __dispatchInverse_JsonValue_source(value: any, __indentCol: number = 0)
 
 function __dispatchInverse_source(value: any): string {
   return __dispatchInverse_JsonValue_source(value, 0);
+}
+
+function __invertSlotFor_Comment_ast(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Comment_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_Comment_ast(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Comment_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_JsonNull_ast(v: any, __indentCol: number = 0): any {
@@ -1522,6 +1637,39 @@ function __invertSlotLeaf_ast(v: any): any {
     return out;
   }
   return String(v);
+}
+
+function __invertSlotFor_Comment_source(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_Comment_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_Comment_source(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_Comment_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_JsonNull_source(v: any, __indentCol: number = 0): any {
@@ -1914,10 +2062,49 @@ export function stringify(value: unknown, options?: { target?: string }): string
   return fn(value);
 }
 
+function __fusedRender_Comment_0_source(state: State, out: string[]): boolean {
+  const __ok = ((): unknown => {
+    const input = state.input;
+    const len = state.len;
+    let off = state.pos;
+    const entryOff = off;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __text_start = off;
+    off += 2;
+    while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+    if (off < len) off += 2;
+    const __text_end = off;
+    let __text_ts = __text_start + 2;
+    let __text_te = __text_end - 2;
+    while (__text_ts < __text_te) {
+      const __lc = input.charCodeAt(__text_ts);
+      if (__lc !== 0x20 && __lc !== 0x09 && __lc !== 0x0a && __lc !== 0x0d) break;
+      __text_ts++;
+    }
+    while (__text_te > __text_ts) {
+      const __tc = input.charCodeAt(__text_te - 1);
+      if (__tc !== 0x20 && __tc !== 0x09 && __tc !== 0x0a && __tc !== 0x0d) break;
+      __text_te--;
+    }
+    const text = input.slice(__text_ts, __text_te);
+    state.pos = off;
+    if (off > state.maxOff) state.maxOff = off;
+    out.push(String(text ?? ""));
+    return true;
+  })();
+  return __ok === true;
+}
+
+const __fusedRenderDispatch_source: Record<string, (state: State, out: string[]) => boolean> = {
+  "Comment#0": __fusedRender_Comment_0_source,
+};
+
 const __rootProductionKey: string = "JsonValue#0";
 
 function __fusedRenderDispatchLookup(target: string): Record<string, (state: State, out: string[]) => boolean> | null {
   switch (target) {
+    case "source": return __fusedRenderDispatch_source;
     default: return null;
   }
 }
@@ -1991,6 +2178,17 @@ function __parse(input: string, options?: ParseOptions): unknown {
     indentStackTop: 0,
   };
   const result = parseJsonValue(state);
+  while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    if (__c === 0x2f && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < state.len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    break;
+  }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
   }

@@ -4,11 +4,14 @@ export { relation, parse, span, literal, withInverse } from './relation.ts';
 export type { Literal, Span, ParseProgram, RelationBody, InvertibleEncoding } from './relation.ts';
 export { $, isStructureRef } from './ref.ts';
 export { tpl, isTemplate } from './template.ts';
+export { dynKey, merge, isDynKey, isMerge } from './body-builders.ts';
 export { assertRoundTrip, type RoundTripModule } from './test-harness/round-trip.ts';
 export type {
   BomPolicy,
+  DynKeyBody,
   ExampleDef,
   ExampleStatus,
+  MergeBody,
   NewlinePolicy,
   OperatorLayers,
   PunctuatorDecl,

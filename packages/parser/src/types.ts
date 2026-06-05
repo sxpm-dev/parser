@@ -266,6 +266,32 @@ export type Template = {
 // object → object allocation, array → array allocation, scalar → literal,
 // StructureRef → capture read.
 
+/**
+ * Dynamic-key body: at render time produces `{ [captures[key.name]]: <value> }`.
+ * Used by flat-object target shapes where the JSON key is a captured value
+ * rather than a fixed schema literal (e.g. CSS `{ '.foo': { 'color': 'red' } }`).
+ * Inverse direction reads the single-entry object's key into captures and
+ * recurses on the value.
+ */
+export interface DynKeyBody {
+  readonly __dynKey: true;
+  readonly key: StructureRef;
+  readonly value: RenderBody;
+}
+
+/**
+ * Merge body: at render time produces `Object.assign({}, ...captures[array].filter(o => o && typeof o === 'object'))`.
+ * Filters non-object children (e.g. those whose own body returned null).
+ * Inverse direction iterates the object's entries and dispatches each through
+ * the recursive role's per-production inverse — value-type discrimination
+ * (string → declaration-shape, object → rule-shape) picks the matching
+ * production.
+ */
+export interface MergeBody {
+  readonly __merge: true;
+  readonly array: StructureRef;
+}
+
 export type RenderBody =
   | string
   | number
@@ -273,6 +299,8 @@ export type RenderBody =
   | null
   | StructureRef
   | Template
+  | DynKeyBody
+  | MergeBody
   | ReadonlyArray<RenderBody>
   | { readonly [key: string]: RenderBody };
 

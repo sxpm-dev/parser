@@ -3,7 +3,7 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Bench } from 'tinybench';
 
-type PackageName = 'cron' | 'css' | 'html' | 'markdown';
+type PackageName = 'cron' | 'css' | 'html' | 'json' | 'markdown';
 
 type PerfCase = {
   readonly name: string;
@@ -20,7 +20,7 @@ type BaselineEntry = {
 
 type Baseline = Record<string, BaselineEntry>;
 
-const packageNames = new Set<PackageName>(['cron', 'css', 'html', 'markdown']);
+const packageNames = new Set<PackageName>(['cron', 'css', 'html', 'json', 'markdown']);
 const args = process.argv.slice(2);
 const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
@@ -146,6 +146,15 @@ function createCases(name: PackageName): PerfCase[] {
     }));
   }
 
+  if (name === 'json') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateJson(kb * 1024),
+      run: (api, json) => (api.render as (input: string, opts: { target: string }) => unknown)(json, { target: 'ast' }),
+    }));
+  }
+
   // markdown
   return sizes.flatMap((kb) => {
     const input = generateMarkdown(kb * 1024);
@@ -264,6 +273,31 @@ function readTolerance(name: string, fallback: number): number {
     throw new Error(`${name} must be a number from 0 to 0.99`);
   }
   return parsed;
+}
+
+function generateJson(targetBytes: number): string {
+  const seed = JSON.stringify({
+    name: 'my-project',
+    version: '1.0.0',
+    tags: ['alpha', 'beta', 'gamma'],
+    settings: {
+      strict: true,
+      timeout: 30,
+      retries: 3,
+      targets: ['node', 'browser', 'deno'],
+      flags: { verbose: false, color: true, exitOnError: true },
+    },
+    dependencies: Object.fromEntries(
+      Array.from({ length: 16 }, (_, i) => [`pkg-${i}`, `^${i}.0.${i}`]),
+    ),
+  });
+  const items: string[] = [];
+  let total = 2;
+  while (total < targetBytes) {
+    items.push(seed);
+    total += seed.length + 1;
+  }
+  return `[${items.join(',')}]`;
 }
 
 function repeat(seed: string, targetBytes: number): string {

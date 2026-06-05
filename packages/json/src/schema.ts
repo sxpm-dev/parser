@@ -88,12 +88,14 @@ export default defineSchema({
     }),
 
     // --- JsonArray ------------------------------------------------------
+    // `trailing: 'allowed'` accepts JSON5 trailing commas on input; the
+    // inverse rebuild emits no trailing comma (canonical strict JSON).
     relation('JsonArray', {
       input: '[1,2]',
       encodings: {
         parse: parse([
           literal('['),
-          span('items', '1,2').of('JsonValue').repeats({ sep: ',', min: 0 }),
+          span('items', '1,2').of('JsonValue').repeats({ sep: ',', min: 0, trailing: 'allowed' }),
           literal(']'),
         ]),
         ast: $.items,
@@ -101,7 +103,7 @@ export default defineSchema({
       },
     }),
 
-    // --- JsonMember -----------------------------------------------------
+    // --- JsonMember: quoted key -----------------------------------------
     relation('JsonMember', {
       input: '"a":1',
       encodings: {
@@ -116,12 +118,14 @@ export default defineSchema({
     }),
 
     // --- JsonObject -----------------------------------------------------
+    // `trailing: 'allowed'` accepts JSON5 trailing commas; canonical
+    // stringify output drops them.
     relation('JsonObject', {
       input: '{"a":1,"b":2}',
       encodings: {
         parse: parse([
           literal('{'),
-          span('entries', '"a":1,"b":2').of('JsonMember').repeats({ sep: ',', min: 0 }),
+          span('entries', '"a":1,"b":2').of('JsonMember').repeats({ sep: ',', min: 0, trailing: 'allowed' }),
           literal('}'),
         ]),
         ast: merge($.entries),

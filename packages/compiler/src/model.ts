@@ -56,6 +56,26 @@ export type InverseIR =
       readonly kind: 'template';
       readonly segments: ReadonlyArray<string>;
       readonly captures: ReadonlyArray<string>;
+    }
+  // Flat-object dynamic-key body inverse: input is a single-entry object;
+  // the key string is read into captures[keyCapture]; the entry value is
+  // recursed via `value`. Used to invert bodies declared with the parser's
+  // `dynKey(...)` builder.
+  | {
+      readonly kind: 'dynKey';
+      readonly keyCapture: string;
+      readonly value: InverseIR;
+    }
+  // Flat-object merge body inverse: input is an object; each entry is
+  // dispatched through the recursive role's per-production inverter, with
+  // value-type discrimination naturally selecting the right production
+  // (string entry value → leaf-ref-shaped production, object entry value
+  // → dynKey/merge-shaped production). Used to invert bodies declared
+  // with the parser's `merge(...)` builder.
+  | {
+      readonly kind: 'merge';
+      readonly arrayCapture: string;
+      readonly roles: ReadonlyArray<string>;
     };
 
 // One named field in an object-body inverse. Literal fields assert equality

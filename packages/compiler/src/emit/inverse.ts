@@ -166,7 +166,88 @@ function emitInverseBody(
       return `captures${memberAccess(ir.capture)} = ${slotHelperCall(ir.capture, production, target, valueExpr)};`;
     case 'template':
       return emitTemplateBody(ir.segments, ir.captures, valueExpr, target, production);
+    case 'dynKey':
+      return emitDynKeyBody(ir.keyCapture, ir.value, valueExpr, target, production);
+    case 'merge':
+      return emitMergeBody(ir.arrayCapture, valueExpr, target, production);
   }
+}
+
+/**
+ * Emit the inverse for `dynKey($.<keyCapture>, value)`: assert the input is
+ * a single-entry object, bind the key string into captures[keyCapture], then
+ * recurse on the entry value via the value sub-IR.
+ *
+ * Throws on shape mismatch — that's what makes multi-role dispatch work: a
+ * dynKey-bodied production whose value-IR expects a string will throw when
+ * given an object entry value, letting the next role's dispatcher try.
+ */
+function emitDynKeyBody(
+  keyCapture: string,
+  valueIR: InverseIR,
+  valueExpr: string,
+  target: string,
+  production: Production,
+): string {
+  // Recurse on a fresh local — the value sub-IR operates on the entry's value,
+  // not on the wrapping object.
+  const inner = emitInverseBody(valueIR, '__dkVal', target, production);
+  return [
+    `if (${valueExpr} === null || typeof ${valueExpr} !== "object" || Array.isArray(${valueExpr})) {`,
+    `  throw new Error("stringify: expected single-entry object for dynKey '${keyCapture}', got " + typeof ${valueExpr});`,
+    `}`,
+    `{`,
+    `  const __dkKeys = Object.keys(${valueExpr});`,
+    `  if (__dkKeys.length !== 1) {`,
+    `    throw new Error("stringify: expected single-entry object for dynKey '${keyCapture}', got " + __dkKeys.length + " keys");`,
+    `  }`,
+    `  const __dkKey = __dkKeys[0]!;`,
+    `  const __dkVal = (${valueExpr} as Record<string, unknown>)[__dkKey];`,
+    `  captures${memberAccess(keyCapture)} = __dkKey;`,
+    inner,
+    `}`,
+  ].join('\n');
+}
+
+/**
+ * Emit the inverse for `merge($.<arrayCapture>)`: iterate the input
+ * object's entries, wrap each as `{[k]: v}`, and dispatch through the
+ * recursive role's per-node inverter (or multi-role helper for unions).
+ * Each call returns a source string; collect them into the captures
+ * array. The receiving span's rebuild walks this array.
+ */
+function emitMergeBody(
+  arrayCapture: string,
+  valueExpr: string,
+  target: string,
+  production: Production,
+): string {
+  const span = production.spans.find((s) => s.name === arrayCapture);
+  if (!span || span.recursiveRoles.length === 0) {
+    throw new Error(
+      `inverse: merge('${arrayCapture}') on '${production.nodeType}' must reference a recursive repeats span (got ${span ? 'non-recursive' : 'unknown span'})`,
+    );
+  }
+  const roles = span.recursiveRoles;
+  const helper = roles.length === 1
+    ? `${nodeSlotHelperName(roles[0]!, target)}`
+    : `${multiRoleSlotHelperName(roles, target)}`;
+  return [
+    `if (${valueExpr} === null || typeof ${valueExpr} !== "object" || Array.isArray(${valueExpr})) {`,
+    `  throw new Error("stringify: expected object for merge '${arrayCapture}', got " + typeof ${valueExpr});`,
+    `}`,
+    `{`,
+    `  const __mEntries = Object.entries(${valueExpr} as Record<string, unknown>);`,
+    `  const __mArr: any[] = [];`,
+    `  for (let __mI = 0; __mI < __mEntries.length; __mI++) {`,
+    `    const __mK = __mEntries[__mI]![0];`,
+    `    const __mV = __mEntries[__mI]![1];`,
+    `    const __mWrapped: any = { [__mK]: __mV };`,
+    `    __mArr.push(${helper}(__mWrapped, __indentCol));`,
+    `  }`,
+    `  captures${memberAccess(arrayCapture)} = __mArr;`,
+    `}`,
+  ].join('\n');
 }
 
 function emitObjectBody(
@@ -472,6 +553,12 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
   for (let i = 0; i < info.productions.length; i++) {
     const entry = info.productions[i]!.renders.get(target);
     if (!entry || !entry.inverseDerived) continue;
+    // `body: null` opts a production out of this target — no value ever
+    // round-trips through it (forward returns null, merge filters it out,
+    // public stringify never enters it). Skip so the dispatcher doesn't
+    // emit a dead `if (value === null) return ...` branch that would
+    // accidentally shadow a real production for null inputs.
+    if (entry.inverseDerived.kind === 'scalar' && entry.inverseDerived.value === null) continue;
     branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
   }
   if (branches.length === 0) {
@@ -485,6 +572,8 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
   const scalars = branches.filter((b) => b.ir.kind === 'scalar');
   const refs = branches.filter((b) => b.ir.kind === 'ref');
   const arrays = branches.filter((b) => b.ir.kind === 'array');
+  const dynKeys = branches.filter((b) => b.ir.kind === 'dynKey');
+  const merges = branches.filter((b) => b.ir.kind === 'merge');
 
   const lines: string[] = [];
 
@@ -668,6 +757,39 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
       lines.push(`if (Object.is(value, ${lit})) return ${call};`);
     }
   }
+  if (dynKeys.length > 0) {
+    // Single-entry object shape. Discriminate productions by the runtime
+    // type of the entry value, which is statically determined by the
+    // production's value-IR kind (ref → string-leaf, merge/dynKey/object
+    // → object). The matching production handles the actual capture
+    // extraction in its body inverter.
+    lines.push('if (value !== null && typeof value === "object" && !Array.isArray(value)) {');
+    lines.push('  const __dkKeys = Object.keys(value);');
+    lines.push('  if (__dkKeys.length === 1) {');
+    lines.push('    const __dkV = (value as Record<string, unknown>)[__dkKeys[0]!];');
+    for (const b of dynKeys) {
+      const valueIR = (b.ir as Extract<InverseIR, { kind: 'dynKey' }>).value;
+      const cond = dynKeyEntryTypeCondition(valueIR);
+      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      if (cond === 'true') lines.push(`    return ${call};`);
+      else lines.push(`    if (${cond}) return ${call};`);
+    }
+    lines.push('  }');
+    lines.push('}');
+  }
+  if (merges.length > 0) {
+    // A merge body at the root of a node accepts any non-null, non-array
+    // object — the body inverter iterates entries itself. Single production
+    // expected per role at this layer (multiple merge-only productions for
+    // one node type would be ambiguous; today only Stylesheet has this
+    // shape).
+    lines.push('if (value !== null && typeof value === "object" && !Array.isArray(value)) {');
+    for (const b of merges) {
+      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      lines.push(`  return ${call};`);
+    }
+    lines.push('}');
+  }
 
   lines.push(`throw new Error("stringify: no production matches for target '${target}' (value: " + JSON.stringify(value) + ")");`);
 
@@ -683,6 +805,32 @@ ${indent(lines.join('\n'), 1)}
 // comment in emitNodeDispatcher).
 function templateShapeKey(ir: Extract<InverseIR, { kind: 'template' }>): string {
   return JSON.stringify({ s: ir.segments, c: ir.captures });
+}
+
+/** JS condition expression on `__dkV` that's true when the entry value's
+ *  runtime type matches the dynKey production's expected value-IR shape.
+ *  Used by the per-node dispatcher to discriminate dynKey-bodied productions
+ *  in the same role (e.g. CSS Declaration vs Rule when both have flat-shape
+ *  `{ [key]: ... }` bodies — Decl expects string, Rule expects object). */
+function dynKeyEntryTypeCondition(valueIR: InverseIR): string {
+  switch (valueIR.kind) {
+    case 'ref':
+      // Leaf — the entry value is captured directly by a single
+      // non-recursive span. In flat-json shapes that's a string.
+      return 'typeof __dkV === "string"';
+    case 'merge':
+    case 'dynKey':
+    case 'object':
+      return '__dkV !== null && typeof __dkV === "object" && !Array.isArray(__dkV)';
+    case 'array':
+      return 'Array.isArray(__dkV)';
+    case 'scalar':
+    case 'template':
+      // Falls through to "any" — uncommon in flat-shape bodies. If two
+      // dynKey productions in the same role both reach this branch the
+      // discrimination is undefined; declaration order wins.
+      return 'true';
+  }
 }
 
 function literalFieldsCondition(ir: Extract<InverseIR, { kind: 'object' }>): string {

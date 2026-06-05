@@ -1175,6 +1175,12 @@ function canEncodeInverse(ir: InverseIR): boolean {
       // INVERSE_TEMPLATE macro opcode. The runtime handler implements
       // walkInverseTemplate against frame.captures.
       return true;
+    case 'dynKey':
+    case 'merge':
+      // Flat-object inverse IR kinds (added by the json-target work) are
+      // not yet supported by the bytecode encoder. The captures-path
+      // inverse emitter handles them; the bytecode path falls back.
+      return false;
   }
 }
 

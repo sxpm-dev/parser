@@ -95,6 +95,52 @@ test('flat-json forward: merge on Rule.nodes merges Decl outputs into one object
   );
 });
 
+test('flat-json round-trip: Rule + Decl bidirectional', async () => {
+  const { defineSchema, relation, parse, span, literal, dynKey, merge, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Rule',
+    examples: [
+      relation('Decl', {
+        input: 'color: red',
+        encodings: {
+          parse: parse([
+            span('prop', 'color').until([':']),
+            literal(':'),
+            span('value', 'red').until([';', '}']),
+          ]),
+          source: tpl`${$.prop}: ${$.value}`,
+          json: dynKey($.prop, $.value),
+        },
+      }),
+      relation('Rule', {
+        input: '.foo { color: red }',
+        encodings: {
+          parse: parse([
+            span('selector', '.foo').until(['{']),
+            literal('{'),
+            span('decls', 'color: red').of('Decl').repeats({ min: 0, sep: ';', trailing: 'allowed' }),
+            literal('}'),
+          ]),
+          source: tpl`${$.selector} {${$.decls}}`,
+          json: dynKey($.selector, merge($.decls)),
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  const { render, stringify } = await loadParser(code);
+  assert.ok(stringify, 'generated parser must export stringify');
+
+  const input = '.foo { color: red }';
+  const flat = render(input, { target: 'json' });
+  assert.deepEqual(flat, { '.foo': { color: 'red' } });
+
+  const source = stringify!(flat, { target: 'json' });
+  // Whitespace may differ from input — what matters is that source
+  // reparses to the same flat value (value-stable round-trip).
+  assert.deepEqual(render(source, { target: 'json' }), flat);
+});
+
 test('flat-json forward: merge filters null-bodied children', async () => {
   // A child production declares `json: null` — its captures-path render
   // produces null, and merge's filter drops it from the flat output.

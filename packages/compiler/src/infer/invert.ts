@@ -40,6 +40,8 @@
 // match, string-target unique prefix). Otherwise a named CompilerError.
 
 import {
+  isDynKey,
+  isMerge,
   isStructureRef,
   isTemplate,
   type RenderBody,
@@ -95,6 +97,37 @@ function deriveFromBody(
   }
   if (isTemplate(body)) {
     return deriveFromTemplate(body, nodeName, target, input);
+  }
+  if (isDynKey(body)) {
+    // Single-entry object: key is bound to keyCapture; value recurses.
+    if (body.key.__ref !== 'span-value') {
+      throw new CompilerError(
+        `inverse: in node '${nodeName}' (target '${target}'): dynKey() key must be a span-value $.ref, got $.${body.key.__ref}`,
+      );
+    }
+    return {
+      kind: 'dynKey',
+      keyCapture: body.key.name,
+      value: deriveFromBody(body.value, nodeName, target, input),
+    };
+  }
+  if (isMerge(body)) {
+    // The array ref must point at a recursive repeats span. We capture the
+    // role list here so the inverse-emit can dispatch each object entry
+    // through the per-role multi-helper.
+    if (body.array.__ref !== 'span-value') {
+      throw new CompilerError(
+        `inverse: in node '${nodeName}' (target '${target}'): merge() array must be a span-value $.ref, got $.${body.array.__ref}`,
+      );
+    }
+    return {
+      kind: 'merge',
+      arrayCapture: body.array.name,
+      // Roles resolved at emit time from the production's spans — see
+      // emit/inverse.ts. Carrying an empty list here keeps derive
+      // schema-only; the emit knows the production it's serving.
+      roles: [],
+    };
   }
   if (Array.isArray(body)) {
     return {
@@ -176,6 +209,11 @@ function checkTargetDiscrimination(info: NodeTypeInfo, target: string): void {
       const ia = a.renders.get(target)?.inverseDerived;
       const ib = b.renders.get(target)?.inverseDerived;
       if (!ia || !ib) continue;
+      // Productions whose body is `null` opt-out of this target entirely
+      // (they render to null, get filtered by merge(), and never need an
+      // inverse path). Treat them as ineligible for collision against any
+      // other production — including another null-bodied one.
+      if (isNullBody(ia) || isNullBody(ib)) continue;
       const reason = collisionReason(ia, ib);
       if (reason !== null) {
         throw new CompilerError(
@@ -267,6 +305,38 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
       if (a.elements.length !== ba.elements.length) return null;
       return 'array bodies of equal length with no literal discriminator';
     }
+    case 'dynKey': {
+      // Two dynKey bodies collide when their value sub-IRs are the same
+      // runtime-type bucket — see emit/inverse.ts dynKeyEntryTypeCondition.
+      // Different buckets discriminate (string vs object vs array).
+      const bd = b as Extract<InverseIR, { kind: 'dynKey' }>;
+      const ka = dynKeyValueKindBucket(a.value);
+      const kb = dynKeyValueKindBucket(bd.value);
+      if (ka !== kb) return null;
+      return `two dynKey bodies whose entry values are both ${ka}-shaped — cannot discriminate from a value alone`;
+    }
+    case 'merge':
+      // Two merge bodies are indistinguishable from a value alone (both
+      // accept any object). Schemas should declare at most one merge body
+      // per node type; today only Stylesheet has this shape, so the
+      // collision never fires in practice.
+      return 'two merge bodies cannot be discriminated from a value alone';
+  }
+}
+
+function isNullBody(ir: InverseIR): boolean {
+  return ir.kind === 'scalar' && ir.value === null;
+}
+
+function dynKeyValueKindBucket(value: InverseIR): 'string' | 'object' | 'array' | 'any' {
+  switch (value.kind) {
+    case 'ref': return 'string';
+    case 'merge':
+    case 'dynKey':
+    case 'object': return 'object';
+    case 'array': return 'array';
+    case 'scalar':
+    case 'template': return 'any';
   }
 }
 

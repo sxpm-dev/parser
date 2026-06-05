@@ -54,6 +54,12 @@ export function emitInverse(schema: InferredSchema): string {
   // by the joined role names — so two schemas with the same role tuple
   // share the helper.
   const multiRoleCombos = collectMultiRoleCombos(schema, targets);
+  // Same shape but for merge bodies — each merge IR needs a specialized
+  // entry-dispatch helper that switches on the entry value's runtime type
+  // (string → leaf-ref-shape role, object → dynKey/merge-shape role) and
+  // calls one per-node dispatcher directly, avoiding the per-entry
+  // try/catch chain the multi-role helper uses.
+  const mergeCombos = collectMergeCombos(schema, targets);
 
   for (const target of targets) {
     for (const info of schema.nodeTypes.values()) {
@@ -83,6 +89,9 @@ export function emitInverse(schema: InferredSchema): string {
     // `emitMultiRoleSlotHelper` for the routing logic.
     for (const roles of multiRoleCombos.get(target) ?? []) {
       slotHelpers.push(emitMultiRoleSlotHelper(roles, target));
+    }
+    for (const roles of mergeCombos.get(target) ?? []) {
+      slotHelpers.push(emitMergeSlotHelper(roles, target, schema));
     }
     // Generic leaf slot helper (per target) for non-recursive captures.
     // Non-recursive captures are primitives or arrays of primitives — no
@@ -229,9 +238,14 @@ function emitMergeBody(
     );
   }
   const roles = span.recursiveRoles;
-  const helper = roles.length === 1
-    ? `${nodeSlotHelperName(roles[0]!, target)}`
-    : `${multiRoleSlotHelperName(roles, target)}`;
+  // For the merge case we always go through the specialized merge slot
+  // helper (emitted by emitMergeSlotHelper). It pre-classifies each role's
+  // productions by entry-value-type bucket and dispatches directly without
+  // the per-entry try/catch the generic multi-role helper uses. For huge
+  // inputs the saving is on the order of 5×: a 1000-row CSS file with
+  // ~9000 entries × 4 roles in the multi-role helper costs ~36K thrown
+  // exceptions; the specialized helper makes one direct call per entry.
+  const helper = mergeSlotHelperName(roles, target);
   return [
     `if (${valueExpr} === null || typeof ${valueExpr} !== "object" || Array.isArray(${valueExpr})) {`,
     `  throw new Error("stringify: expected object for merge '${arrayCapture}', got " + typeof ${valueExpr});`,
@@ -243,11 +257,119 @@ function emitMergeBody(
     `    const __mK = __mEntries[__mI]![0];`,
     `    const __mV = __mEntries[__mI]![1];`,
     `    const __mWrapped: any = { [__mK]: __mV };`,
-    `    __mArr.push(${helper}(__mWrapped, __indentCol));`,
+    `    __mArr.push(${helper}(__mWrapped, __mV, __indentCol));`,
     `  }`,
     `  captures${memberAccess(arrayCapture)} = __mArr;`,
     `}`,
   ].join('\n');
+}
+
+function mergeSlotHelperName(roles: ReadonlyArray<string>, target: string): string {
+  return `__invertMergeEntry_${roles.map(jsIdent).join('_')}_${jsIdent(target)}`;
+}
+
+/**
+ * Emit a merge slot helper for a given (roles, target). The helper takes a
+ * single wrapped entry (`{[k]: v}`) AND a hoisted reference to the entry
+ * value (`v`) so it can switch directly on `typeof v` without re-indexing,
+ * then dispatches to whichever role's per-node dispatcher handles that
+ * value-type bucket.
+ *
+ * Bucket assignment is by inspecting each role's productions' inverse-IR:
+ *   - dynKey body with `value.kind === 'ref'` → string bucket (entry value
+ *     is the leaf-captured string)
+ *   - dynKey body with `value.kind ∈ {merge, dynKey, object}` → object
+ *     bucket
+ *   - dynKey body with `value.kind === 'array'` → array bucket
+ *   - non-dynKey productions (template, plain object, etc.) → "any" bucket;
+ *     we still try them, but they're after the type-matched ones
+ *   - scalar-null bodies → skipped (production opted out of this target)
+ */
+function emitMergeSlotHelper(
+  roles: ReadonlyArray<string>,
+  target: string,
+  schema: InferredSchema,
+): string {
+  const helperName = mergeSlotHelperName(roles, target);
+  // Buckets keyed by entry-value type → ordered list of (role, prodIdx)
+  // entries. Order within a bucket follows role-declaration order + then
+  // production index, matching the existing multi-role helper convention.
+  const stringBucket: string[] = [];
+  const objectBucket: string[] = [];
+  const arrayBucket: string[] = [];
+  const anyBucket: string[] = [];
+  for (const role of roles) {
+    const info = schema.nodeTypes.get(role);
+    if (!info) continue;
+    for (let i = 0; i < info.productions.length; i++) {
+      const entry = info.productions[i]!.renders.get(target);
+      const ir = entry?.inverseDerived;
+      if (!ir) continue;
+      if (ir.kind === 'scalar' && ir.value === null) continue;
+      const bucket = bucketForIR(ir);
+      const call = `${nodeDispatcherName(role, target)}(__mWrapped, __indentCol)`;
+      switch (bucket) {
+        case 'string': stringBucket.push(call); break;
+        case 'object': objectBucket.push(call); break;
+        case 'array': arrayBucket.push(call); break;
+        case 'any': anyBucket.push(call); break;
+      }
+    }
+  }
+  // Each bucket emits a sequence of probes. If only one production is in a
+  // bucket we call it directly; multiple productions in the same bucket
+  // fall back to a small try/catch chain (still much smaller than the
+  // generic 1-of-N multi-role chain).
+  const branchFor = (calls: ReadonlyArray<string>): string => {
+    if (calls.length === 0) {
+      return `  throw new Error("stringify: no production matches merge entry");`;
+    }
+    if (calls.length === 1) return `  return ${calls[0]};`;
+    const lines: string[] = [];
+    for (let i = 0; i < calls.length - 1; i++) {
+      lines.push(`  try { return ${calls[i]}; } catch (_e) { /* try next */ }`);
+    }
+    lines.push(`  return ${calls[calls.length - 1]};`);
+    return lines.join('\n');
+  };
+  const lines: string[] = [];
+  lines.push(`function ${helperName}(__mWrapped: any, __mV: any, __indentCol: number = 0): string {`);
+  if (stringBucket.length > 0) {
+    lines.push(`  if (typeof __mV === "string") {`);
+    lines.push(branchFor(stringBucket));
+    lines.push(`  }`);
+  }
+  if (objectBucket.length > 0) {
+    lines.push(`  if (__mV !== null && typeof __mV === "object" && !Array.isArray(__mV)) {`);
+    lines.push(branchFor(objectBucket));
+    lines.push(`  }`);
+  }
+  if (arrayBucket.length > 0) {
+    lines.push(`  if (Array.isArray(__mV)) {`);
+    lines.push(branchFor(arrayBucket));
+    lines.push(`  }`);
+  }
+  if (anyBucket.length > 0) {
+    // Wildcard productions — try after specific buckets.
+    lines.push(branchFor(anyBucket));
+  } else {
+    lines.push(`  throw new Error("stringify: merge entry value type not handled by any production (${roles.join(', ')}; entry value type: " + typeof __mV + ")");`);
+  }
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+function bucketForIR(ir: InverseIR): 'string' | 'object' | 'array' | 'any' {
+  if (ir.kind !== 'dynKey') return 'any';
+  switch (ir.value.kind) {
+    case 'ref': return 'string';
+    case 'merge':
+    case 'dynKey':
+    case 'object': return 'object';
+    case 'array': return 'array';
+    case 'scalar':
+    case 'template': return 'any';
+  }
 }
 
 function emitObjectBody(
@@ -1035,6 +1157,65 @@ function collectMultiRoleCombos(
     out.set(target, [...seen.values()]);
   }
   return out;
+}
+
+/**
+ * Collect (roles, target) pairs needed by merge-IR inverses. Each merge
+ * body references a recursive repeats span — its `recursiveRoles` is the
+ * combination we emit a specialized entry-dispatch helper for. Same
+ * dedup convention as collectMultiRoleCombos.
+ */
+function collectMergeCombos(
+  schema: InferredSchema,
+  targets: ReadonlyArray<string>,
+): ReadonlyMap<string, ReadonlyArray<ReadonlyArray<string>>> {
+  const out = new Map<string, ReadonlyArray<string>[]>();
+  for (const target of targets) {
+    const seen = new Map<string, ReadonlyArray<string>>();
+    for (const info of schema.nodeTypes.values()) {
+      for (const production of info.productions) {
+        const entry = production.renders.get(target);
+        const ir = entry?.inverseDerived;
+        if (!ir) continue;
+        walkForMerge(ir, production, seen);
+      }
+    }
+    out.set(target, [...seen.values()]);
+  }
+  return out;
+}
+
+/** Walk an InverseIR, registering every merge IR's role tuple into `seen`. */
+function walkForMerge(
+  ir: InverseIR,
+  production: Production,
+  seen: Map<string, ReadonlyArray<string>>,
+): void {
+  switch (ir.kind) {
+    case 'merge': {
+      const span = production.spans.find((s) => s.name === ir.arrayCapture);
+      if (!span || span.recursiveRoles.length === 0) return;
+      const roles = [...span.recursiveRoles];
+      const key = roles.join('|');
+      if (!seen.has(key)) seen.set(key, roles);
+      return;
+    }
+    case 'dynKey':
+      walkForMerge(ir.value, production, seen);
+      return;
+    case 'object':
+      for (const f of ir.fields) {
+        if (f.kind === 'inverse') walkForMerge(f.inverse, production, seen);
+      }
+      return;
+    case 'array':
+      for (const el of ir.elements) walkForMerge(el, production, seen);
+      return;
+    case 'scalar':
+    case 'ref':
+    case 'template':
+      return;
+  }
 }
 
 // ---------------------------------------------------------------------------

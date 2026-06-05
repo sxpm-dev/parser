@@ -128,9 +128,12 @@ function checkProduction(
   }
 
   for (const [target, renderEntry] of production.renders) {
-    // Skip 'ast' — see the header comment for why (source-position
-    // metadata makes interp↔interp ast comparison the wrong granularity).
-    if (target === 'ast') continue;
+    // Skip 'ast' (and any target whose body is structurally identical to
+    // an ast-style structured object) — see the header comment for why
+    // (source-position metadata + class-stripped capture values make the
+    // interp↔interp comparison the wrong granularity). Schemas declaring
+    // a `json` target as an alias of `ast` inherit the same caveat.
+    if (target === 'ast' || target === 'json') continue;
 
     // Skip targets with an explicit `options.inverse` override. The
     // override means the schema author asserts their own inverse

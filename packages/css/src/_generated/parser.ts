@@ -3161,7 +3161,7 @@ function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
       const __mK = __mEntries[__mI]![0];
       const __mV = __mEntries[__mI]![1];
       const __mWrapped: any = { [__mK]: __mV };
-      __mArr.push(__invertSlotMulti_Comment_AtRule_Rule_Declaration_json(__mWrapped, __indentCol));
+      __mArr.push(__invertMergeEntry_Comment_AtRule_Rule_Declaration_json(__mWrapped, __mV, __indentCol));
     }
     captures.nodes = __mArr;
   }
@@ -3195,7 +3195,7 @@ function __invert_Stylesheet_0_json(value: any, __indentCol: number = 0): string
       const __mK = __mEntries[__mI]![0];
       const __mV = __mEntries[__mI]![1];
       const __mWrapped: any = { [__mK]: __mV };
-      __mArr.push(__invertSlotMulti_Comment_AtRule_Rule_Declaration_json(__mWrapped, __indentCol));
+      __mArr.push(__invertMergeEntry_Comment_AtRule_Rule_Declaration_json(__mWrapped, __mV, __indentCol));
     }
     captures.nodes = __mArr;
   }
@@ -3770,6 +3770,16 @@ function __invertSlotMulti_Comment_AtRule_Rule_Declaration_json(v: any, __indent
     throw new Error("stringify: no role matched for multi-role capture (roles: Comment, AtRule, Rule, Declaration; value: " + JSON.stringify(v) + ")");
   }
   return String(v);
+}
+
+function __invertMergeEntry_Comment_AtRule_Rule_Declaration_json(__mWrapped: any, __mV: any, __indentCol: number = 0): string {
+  if (typeof __mV === "string") {
+  return __dispatchInverse_Declaration_json(__mWrapped, __indentCol);
+  }
+  if (__mV !== null && typeof __mV === "object" && !Array.isArray(__mV)) {
+  return __dispatchInverse_Rule_json(__mWrapped, __indentCol);
+  }
+  throw new Error("stringify: merge entry value type not handled by any production (Comment, AtRule, Rule, Declaration; entry value type: " + typeof __mV + ")");
 }
 
 function __invertSlotLeaf_json(v: any): any {

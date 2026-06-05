@@ -1,0 +1,26 @@
+{
+  "name": "@parser2/json",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && npm run generate:ts",
+    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run generate && npm run bench:parse",
+    "bench:parse": "tsx bench/parse.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts json",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts json --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts json",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts json --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts json",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0"
+  }
+}

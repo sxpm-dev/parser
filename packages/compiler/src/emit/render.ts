@@ -27,7 +27,7 @@
 //   - object                             → object literal of recursive body
 //                                          exprs
 
-import { isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
+import { isDynKey, isMerge, isStructureRef, isTemplate, type RenderBody, type StructureRef, type Template } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production } from '../model.ts';
 import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../span-helpers.ts';
 import { syntheticKey } from './captures.ts';
@@ -120,6 +120,37 @@ function emitBodyExpr(body: RenderBody, target: string, production: Production):
   if (typeof body === 'boolean') return body ? 'true' : 'false';
   if (isStructureRef(body)) return emitRefExpr(body, target);
   if (isTemplate(body)) return emitTemplateExpr(body, target, production);
+  if (isDynKey(body)) {
+    // Dynamic-key flat-object body. Wraps the value expr in a one-entry
+    // object whose key is read from captures via the same emitRefExpr path
+    // used for ordinary span-value refs. Computed-key syntax `{[K]: V}` is
+    // the natural JS shape; no string-coercion is required because the
+    // captured value at this site is always a string (an ident or .until()
+    // capture used as a key).
+    const keyExpr = emitRefExpr(body.key, target);
+    const valExpr = emitBodyExpr(body.value, target, production);
+    return `({ [${keyExpr}]: ${valExpr} })`;
+  }
+  if (isMerge(body)) {
+    // Merge an array of children's flat-object renderings into one object.
+    // `Object.assign({}, ...filteredArr)` is the canonical shape; we filter
+    // entries that aren't objects so a child whose render body returned
+    // null (e.g. a comment dropped from the flat shape) contributes
+    // nothing. Wrapped in an IIFE so we can short-circuit when the captured
+    // value isn't an array — defensive against schema-author error.
+    const arrExpr = emitRefExpr(body.array, target);
+    return `((): any => {
+  const __m: Record<string, unknown> = {};
+  const __a = ${arrExpr};
+  if (Array.isArray(__a)) {
+    for (let __i = 0; __i < __a.length; __i++) {
+      const __it = __a[__i];
+      if (__it && typeof __it === "object") Object.assign(__m, __it);
+    }
+  }
+  return __m;
+})()`;
+  }
   if (Array.isArray(body)) {
     const items = body.map((child) => emitBodyExpr(child, target, production));
     return `[${items.join(', ')}]`;

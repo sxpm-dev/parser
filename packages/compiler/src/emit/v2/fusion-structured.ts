@@ -18,7 +18,7 @@
 //   - emitFusedRenderStructured: emits the structured-fused fn source (added
 //     in a follow-up task).
 
-import { isStructureRef, isTemplate } from '@parser2/parser';
+import { isDynKey, isMerge, isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
@@ -462,6 +462,11 @@ function bodyIsStaticOrResolved(body: RenderBody, spanNames: ReadonlySet<string>
   // the first cut — those fields would need their own emission logic and
   // pull in slot semantics. Caller falls back to captures path.
   if (isTemplate(body)) return false;
+  // dynKey / merge bodies have shape semantics the structured-fused
+  // walker doesn't know about (computed-key allocation, Object.assign
+  // accumulation). Fall back to the captures path — emit/render.ts
+  // handles them there.
+  if (isDynKey(body) || isMerge(body)) return false;
   if (isStructureRef(body)) {
     const ref = body as { readonly name?: string };
     return typeof ref.name === 'string' && spanNames.has(ref.name);

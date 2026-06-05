@@ -60,12 +60,25 @@ export default defineSchema({
       },
     }),
 
+    // --- JsonString: double-quoted --------------------------------------
+    // `.coerce()` makes the captured value the parsed JS string (escape
+    // sequences processed, surrounding quotes stripped) so `ast: $.value`
+    // matches JSON.parse output.
+    relation('JsonString', {
+      input: '"hello"',
+      encodings: {
+        parse: parse([span('value', '"hello"').string().doubleQuoted().coerce()]),
+        ast: $.value,
+        source: $.value,
+      },
+    }),
+
     // --- JsonValue: dispatcher (grows as productions are added) ----------
     relation('JsonValue', {
       input: 'true',
       encodings: {
         parse: parse([
-          span('node', 'true').of('JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
+          span('node', 'true').of('JsonString', 'JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
         ]),
         ast: $.node,
         source: $.node,

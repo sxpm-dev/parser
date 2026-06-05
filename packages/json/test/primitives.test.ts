@@ -54,3 +54,31 @@ test('JsonNumber: zero', () => {
   assert.equal(render('0', { target: 'ast' }), 0);
   assert.equal(stringify(0, { target: 'ast' }), '0');
 });
+
+test('JsonString: plain', () => {
+  assert.equal(render('"hello"', { target: 'ast' }), 'hello');
+  assert.equal(stringify('hello', { target: 'ast' }), '"hello"');
+});
+
+test('JsonString: empty', () => {
+  assert.equal(render('""', { target: 'ast' }), '');
+  assert.equal(stringify('', { target: 'ast' }), '""');
+});
+
+test('JsonString: escape sequences', () => {
+  assert.equal(render('"a\\nb"', { target: 'ast' }), 'a\nb');
+  assert.equal(render('"tab\\there"', { target: 'ast' }), 'tab\there');
+  assert.equal(render('"quote\\"inside"', { target: 'ast' }), 'quote"inside');
+  assert.equal(render('"back\\\\slash"', { target: 'ast' }), 'back\\slash');
+});
+
+test('JsonString: unicode escapes', () => {
+  assert.equal(render('"\\u0041"', { target: 'ast' }), 'A');
+  assert.equal(render('"\\u00e9"', { target: 'ast' }), 'é');
+});
+
+test('JsonString: stringify escapes special chars', () => {
+  assert.equal(stringify('a\nb', { target: 'ast' }), JSON.stringify('a\nb'));
+  assert.equal(stringify('"', { target: 'ast' }), JSON.stringify('"'));
+  assert.equal(stringify('\\', { target: 'ast' }), JSON.stringify('\\'));
+});

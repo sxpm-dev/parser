@@ -825,6 +825,9 @@ function emitClassSpanValueExpr(
   if (span.class === 'number' && refSet.has('coerce')) {
     return `const ${captureVar} = Number(input.slice(${startVar}, ${endVar}));`;
   }
+  if (span.class === 'string' && refSet.has('coerce')) {
+    return `const ${captureVar} = decodeJsonString(input.slice(${startVar}, ${endVar}));`;
+  }
   if (span.class === 'comment') {
     // .comment() refinement is implicit for comment-class spans (the
     // schema's .span(...).comment() call sets class='comment' AND

@@ -76,6 +76,79 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+// JSON-style escape decoder for `.string().coerce()` captures. The input
+// slice INCLUDES the surrounding quote chars; this strips them, processes
+// the standard escape set, and returns the parsed JS string. Schema-
+// agnostic — used only when a string-class span explicitly opts in via
+// `.coerce()`. String.fromCharCode is used for emitted escapes so the
+// preamble template literal doesn't need backslash gymnastics.
+function decodeJsonString(slice: string): string {
+  const len = slice.length;
+  if (len < 2) return slice;
+  const out: string[] = [];
+  let i = 1;
+  const end = len - 1;
+  while (i < end) {
+    const c = slice.charCodeAt(i);
+    if (c !== 0x5c) { out.push(slice[i]!); i++; continue; }
+    if (i + 1 >= end) break;
+    const esc = slice.charCodeAt(i + 1);
+    switch (esc) {
+      case 0x22: out.push(String.fromCharCode(0x22)); i += 2; break; // "
+      case 0x27: out.push(String.fromCharCode(0x27)); i += 2; break; // '
+      case 0x5c: out.push(String.fromCharCode(0x5c)); i += 2; break; // backslash
+      case 0x2f: out.push(String.fromCharCode(0x2f)); i += 2; break; // /
+      case 0x62: out.push(String.fromCharCode(0x08)); i += 2; break; // \b → 0x08
+      case 0x66: out.push(String.fromCharCode(0x0c)); i += 2; break; // \f → 0x0c
+      case 0x6e: out.push(String.fromCharCode(0x0a)); i += 2; break; // \n → 0x0a
+      case 0x72: out.push(String.fromCharCode(0x0d)); i += 2; break; // \r → 0x0d
+      case 0x74: out.push(String.fromCharCode(0x09)); i += 2; break; // \t → 0x09
+      case 0x75: {
+        // \uXXXX hex code unit.
+        const hex = slice.slice(i + 2, i + 6);
+        out.push(String.fromCharCode(parseInt(hex, 16)));
+        i += 6;
+        break;
+      }
+      default:
+        out.push(slice[i + 1]!);
+        i += 2;
+    }
+  }
+  return out.join('');
+}
+
+// JSON-style escape encoder for the inverse of `.string().coerce()`. Given
+// a JS string value, produces a double-quoted, escape-encoded source
+// representation that matches `JSON.stringify(value)` for the basic set.
+function encodeJsonString(value: string): string {
+  let out = String.fromCharCode(0x22); // opening "
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c === 0x22) {
+      out += String.fromCharCode(0x5c) + String.fromCharCode(0x22); // \"
+    } else if (c === 0x5c) {
+      out += String.fromCharCode(0x5c) + String.fromCharCode(0x5c); // \\
+    } else if (c === 0x08) {
+      out += String.fromCharCode(0x5c) + 'b';
+    } else if (c === 0x09) {
+      out += String.fromCharCode(0x5c) + 't';
+    } else if (c === 0x0a) {
+      out += String.fromCharCode(0x5c) + 'n';
+    } else if (c === 0x0c) {
+      out += String.fromCharCode(0x5c) + 'f';
+    } else if (c === 0x0d) {
+      out += String.fromCharCode(0x5c) + 'r';
+    } else if (c < 0x20) {
+      out += String.fromCharCode(0x5c) + 'u' + c.toString(16).padStart(4, '0');
+    } else {
+      out += value[i];
+    }
+  }
+  out += String.fromCharCode(0x22); // closing "
+  return out;
+}
+
 function columnAt(state: State, off: number): number {
   // Column (0-indexed) of byte at off within its line — measured as a raw
   // byte offset from the start of the current line. Tabs are NOT supported

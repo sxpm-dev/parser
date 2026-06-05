@@ -76,6 +76,13 @@ export type SlotJoin =
   | { readonly kind: 'indent' }
   | { readonly kind: 'sep'; readonly sep: string };
 
+// Optional encoding hook applied to a slot's captured value before it
+// contributes to the source string. Set when the slot's span declares an
+// inverse coercion (e.g. `.string().coerce()` → JSON-style re-encode with
+// surrounding quotes and escape processing). 'none' is the default: the
+// captured value is read as-is and routed through __rebuildSlot.
+export type SlotEncode = 'none' | 'jsonString';
+
 export type Piece =
   | { readonly kind: 'literal'; readonly text: string }
   | {
@@ -83,6 +90,7 @@ export type Piece =
       readonly ref: string;
       readonly optional: boolean;
       readonly join: SlotJoin;
+      readonly encode: SlotEncode;
     };
 
 function emitOne(nodeName: string, prodIdx: number, production: Production): string {
@@ -144,22 +152,32 @@ function contributionOf(span: ResolvedSpan): Piece {
   const join = joinOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('rebuild: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new CompilerError('rebuild: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new CompilerError(`rebuild: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, join };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   if (!span.text) throw new CompilerError('rebuild: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
+}
+
+// Determine whether a slot's captured value needs an inverse encoder when
+// reconstructing source. Today: `.string().coerce()` → JSON-style re-encode.
+// Default: 'none' (slot value passes through __rebuildSlot unchanged).
+export function encodeOf(span: ResolvedSpan): SlotEncode {
+  if (span.class === 'string' && span.refinements.some((r) => r.name === 'coerce')) {
+    return 'jsonString';
+  }
+  return 'none';
 }
 
 // Fix 3: determine the runtime join shape for a span captured as an array.
@@ -190,7 +208,14 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       parts.push(jsString(p.text));
       continue;
     }
-    const slotAccess = `captures${memberAccess(p.ref)}`;
+    // Apply the slot's inverse encoder (e.g. encodeJsonString for
+    // `.string().coerce()`) BEFORE routing through __rebuildSlot. This
+    // wraps the raw captured value so its source-string form is the
+    // re-encoded version (with quotes and escape sequences for strings).
+    const rawSlotAccess = `captures${memberAccess(p.ref)}`;
+    const slotAccess = p.encode === 'jsonString'
+      ? `(typeof ${rawSlotAccess} === "string" ? encodeJsonString(${rawSlotAccess}) : ${rawSlotAccess})`
+      : rawSlotAccess;
     // Indent-modified slots use a dynamic join separator and, when
     // __indentCol > 0, a leading prefix before the first child so the
     // whole block appears on a new indented line. The `__indentCol`

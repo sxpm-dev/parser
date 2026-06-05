@@ -36,6 +36,7 @@ import type {
 } from '../model.ts';
 import {
   INDENT_STEP_SPACES,
+  encodeOf,
   isRequiredRecursiveRepeats,
   joinOf,
   type Piece,
@@ -136,9 +137,14 @@ function dispatchNode(
         return invertProduction(schema, p.branch.production, p.branch.ir, target, value, indentCol);
       }
     }
-    // Bare-ref bodies accept any string.
+    // Bare-ref bodies normally accept any string. For source-target refs
+    // whose capture span is `.string().coerce()`, narrow to quote-prefixed
+    // strings so a bare keyword like "null" doesn't dispatch into a
+    // string-shape production via a multi-role slot helper.
     for (const b of refs) {
-      return invertProduction(schema, b.production, b.ir, target, value, indentCol);
+      if (refBranchAcceptsString(b.production, b.ir as Extract<InverseIR, { kind: 'ref' }>, target, value)) {
+        return invertProduction(schema, b.production, b.ir, target, value, indentCol);
+      }
     }
     // Scalar string
     for (const b of scalars) {
@@ -393,9 +399,25 @@ function walkInverse(
         );
       }
       return;
-    case 'ref':
-      captures[ir.capture] = invertSlot(schema, ir.capture, production, target, value, indentCol);
+    case 'ref': {
+      // Mirror emit/inverse.ts: for source-target ref bodies whose capture
+      // span is `.string().coerce()`, the inbound value IS an encoded
+      // source slice — decode here so the shared rebuild's encoder
+      // round-trips cleanly.
+      const refSpan = production.spans.find((s) => s.name === ir.capture);
+      if (
+        refSpan &&
+        target === 'source' &&
+        refSpan.class === 'string' &&
+        refSpan.refinements.some((r) => r.name === 'coerce') &&
+        typeof value === 'string'
+      ) {
+        captures[ir.capture] = decodeJsonStringInterp(value);
+      } else {
+        captures[ir.capture] = invertSlot(schema, ir.capture, production, target, value, indentCol);
+      }
       return;
+    }
     case 'template':
       walkInverseTemplate(schema, ir.segments, ir.captures, value, target, production, captures, indentCol);
       return;
@@ -713,7 +735,13 @@ function rebuildSource(
       built.push(p.text);
       continue;
     }
-    const raw = captures[p.ref];
+    let raw = captures[p.ref];
+    // Apply the slot's inverse encoder so the captured value is in source-
+    // string shape (e.g. encodeJsonString re-quotes and escapes a coerced
+    // string capture). Mirrors emit/rebuild.ts piecesToConcat.
+    if (p.encode === 'jsonString' && typeof raw === 'string') {
+      raw = encodeJsonStringInterp(raw);
+    }
     if (p.optional && (raw === null || raw === undefined)) {
       // Drop the preceding literal too (if any).
       if (built.length > 0 && pieces[i - 1] && pieces[i - 1]!.kind === 'literal') {
@@ -744,25 +772,103 @@ function rebuildSource(
   return result;
 }
 
+// Decide whether a bare-ref branch accepts the given string at this
+// target. Defaults to "yes" (compatible with pre-coerce behavior); for a
+// `.string().coerce()` span at the source target, narrows to quote-
+// prefixed strings.
+function refBranchAcceptsString(
+  production: Production,
+  ir: Extract<InverseIR, { kind: 'ref' }>,
+  target: string,
+  value: string,
+): boolean {
+  const span = production.spans.find((s) => s.name === ir.capture);
+  if (!span) return true;
+  if (span.class !== 'string') return true;
+  const hasCoerce = span.refinements.some((r) => r.name === 'coerce');
+  if (!hasCoerce) return true;
+  if (target !== 'source') return true;
+  if (value.length < 2) return false;
+  const c0 = value.charCodeAt(0);
+  return c0 === 0x22 || c0 === 0x27;
+}
+
+// JSON-style escape decoder for interp's stringify path. Mirrors the
+// runtime `decodeJsonString` helper that emit/v2/runtime.ts ships.
+function decodeJsonStringInterp(slice: string): string {
+  const len = slice.length;
+  if (len < 2) return slice;
+  const out: string[] = [];
+  let i = 1;
+  const end = len - 1;
+  while (i < end) {
+    const c = slice.charCodeAt(i);
+    if (c !== 0x5c) { out.push(slice[i]!); i++; continue; }
+    if (i + 1 >= end) break;
+    const esc = slice.charCodeAt(i + 1);
+    switch (esc) {
+      case 0x22: out.push('"'); i += 2; break;
+      case 0x27: out.push("'"); i += 2; break;
+      case 0x5c: out.push('\\'); i += 2; break;
+      case 0x2f: out.push('/'); i += 2; break;
+      case 0x62: out.push('\b'); i += 2; break;
+      case 0x66: out.push('\f'); i += 2; break;
+      case 0x6e: out.push('\n'); i += 2; break;
+      case 0x72: out.push('\r'); i += 2; break;
+      case 0x74: out.push('\t'); i += 2; break;
+      case 0x75: {
+        const hex = slice.slice(i + 2, i + 6);
+        out.push(String.fromCharCode(parseInt(hex, 16)));
+        i += 6;
+        break;
+      }
+      default:
+        out.push(slice[i + 1]!);
+        i += 2;
+    }
+  }
+  return out.join('');
+}
+
+// JSON-style escape encoder for interp's stringify path. Mirrors the
+// runtime `encodeJsonString` helper that emit/v2/runtime.ts ships.
+function encodeJsonStringInterp(value: string): string {
+  let out = '"';
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c === 0x22) out += '\\"';
+    else if (c === 0x5c) out += '\\\\';
+    else if (c === 0x08) out += '\\b';
+    else if (c === 0x09) out += '\\t';
+    else if (c === 0x0a) out += '\\n';
+    else if (c === 0x0c) out += '\\f';
+    else if (c === 0x0d) out += '\\r';
+    else if (c < 0x20) out += '\\u' + c.toString(16).padStart(4, '0');
+    else out += value[i];
+  }
+  out += '"';
+  return out;
+}
+
 function contributionOf(span: ResolvedSpan): Piece {
   const optional = isAbsentAllowedSpan(span);
   const join = joinOf(span);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new Error('stringify: recursive span without name');
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
   const isUntil = span.modifiers.some((m) => m.kind === 'until' || m.kind === 'rawUntil');
   if (isUntil) {
     if (!span.name) throw new Error('stringify: until-span without name');
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
   if (span.class !== 'literal') {
     if (!span.name) {
       throw new Error(`stringify: classed span without name (class '${span.class}')`);
     }
-    return { kind: 'slot', ref: span.name, optional, join };
+    return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   }
-  if (span.name) return { kind: 'slot', ref: span.name, optional, join };
+  if (span.name) return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
   if (!span.text) throw new Error('stringify: unnamed literal span without text');
   return { kind: 'literal', text: span.text };
 }

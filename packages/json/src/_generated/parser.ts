@@ -76,6 +76,79 @@ function isJsIdentPart(c: number): boolean {
   return isJsIdentStart(c) || (c >= 48 && c <= 57);
 }
 
+// JSON-style escape decoder for `.string().coerce()` captures. The input
+// slice INCLUDES the surrounding quote chars; this strips them, processes
+// the standard escape set, and returns the parsed JS string. Schema-
+// agnostic — used only when a string-class span explicitly opts in via
+// `.coerce()`. String.fromCharCode is used for emitted escapes so the
+// preamble template literal doesn't need backslash gymnastics.
+function decodeJsonString(slice: string): string {
+  const len = slice.length;
+  if (len < 2) return slice;
+  const out: string[] = [];
+  let i = 1;
+  const end = len - 1;
+  while (i < end) {
+    const c = slice.charCodeAt(i);
+    if (c !== 0x5c) { out.push(slice[i]!); i++; continue; }
+    if (i + 1 >= end) break;
+    const esc = slice.charCodeAt(i + 1);
+    switch (esc) {
+      case 0x22: out.push(String.fromCharCode(0x22)); i += 2; break; // "
+      case 0x27: out.push(String.fromCharCode(0x27)); i += 2; break; // '
+      case 0x5c: out.push(String.fromCharCode(0x5c)); i += 2; break; // backslash
+      case 0x2f: out.push(String.fromCharCode(0x2f)); i += 2; break; // /
+      case 0x62: out.push(String.fromCharCode(0x08)); i += 2; break; // \b → 0x08
+      case 0x66: out.push(String.fromCharCode(0x0c)); i += 2; break; // \f → 0x0c
+      case 0x6e: out.push(String.fromCharCode(0x0a)); i += 2; break; // \n → 0x0a
+      case 0x72: out.push(String.fromCharCode(0x0d)); i += 2; break; // \r → 0x0d
+      case 0x74: out.push(String.fromCharCode(0x09)); i += 2; break; // \t → 0x09
+      case 0x75: {
+        // \uXXXX hex code unit.
+        const hex = slice.slice(i + 2, i + 6);
+        out.push(String.fromCharCode(parseInt(hex, 16)));
+        i += 6;
+        break;
+      }
+      default:
+        out.push(slice[i + 1]!);
+        i += 2;
+    }
+  }
+  return out.join('');
+}
+
+// JSON-style escape encoder for the inverse of `.string().coerce()`. Given
+// a JS string value, produces a double-quoted, escape-encoded source
+// representation that matches `JSON.stringify(value)` for the basic set.
+function encodeJsonString(value: string): string {
+  let out = String.fromCharCode(0x22); // opening "
+  for (let i = 0; i < value.length; i++) {
+    const c = value.charCodeAt(i);
+    if (c === 0x22) {
+      out += String.fromCharCode(0x5c) + String.fromCharCode(0x22); // \"
+    } else if (c === 0x5c) {
+      out += String.fromCharCode(0x5c) + String.fromCharCode(0x5c); // \\
+    } else if (c === 0x08) {
+      out += String.fromCharCode(0x5c) + 'b';
+    } else if (c === 0x09) {
+      out += String.fromCharCode(0x5c) + 't';
+    } else if (c === 0x0a) {
+      out += String.fromCharCode(0x5c) + 'n';
+    } else if (c === 0x0c) {
+      out += String.fromCharCode(0x5c) + 'f';
+    } else if (c === 0x0d) {
+      out += String.fromCharCode(0x5c) + 'r';
+    } else if (c < 0x20) {
+      out += String.fromCharCode(0x5c) + 'u' + c.toString(16).padStart(4, '0');
+    } else {
+      out += value[i];
+    }
+  }
+  out += String.fromCharCode(0x22); // closing "
+  return out;
+}
+
 function columnAt(state: State, off: number): number {
   // Column (0-indexed) of byte at off within its line — measured as a raw
   // byte offset from the start of the current line. Tabs are NOT supported
@@ -246,6 +319,37 @@ function parseJsonNumber(state: State): unknown {
   return { __production: "JsonNumber#0", value: value };
 }
 
+function parseJsonString(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  {
+    const __q = input.charCodeAt(off);
+    off++;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+      if (__c === __q) { off++; break; }
+      if (__c === 0x0a || __c === 0x0d) break;
+      off++;
+    }
+  }
+  const __value_end = off;
+  const value = decodeJsonString(input.slice(__value_start, __value_end));
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "JsonString#0", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "JsonString#0", value: value };
+}
+
 function parseJsonValue(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -268,6 +372,9 @@ function parseJsonValue(state: State): unknown {
       switch (__c0) {
         case 43: case 45: case 48: case 49: case 50: case 51: case 52: case 53: case 54: case 55: case 56: case 57:
           __r = parseJsonNumber(state);
+          break;
+        case 34: case 39:
+          __r = parseJsonString(state);
           break;
         case 116:
           __r = parseJsonTrue(state);
@@ -329,6 +436,14 @@ function __build_JsonNumber_0_source(captures: any, __indentCol: number = 0): an
   return __renderSlot_source(captures.value, __indentCol);
 }
 
+function __build_JsonString_0_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.value, __indentCol);
+}
+
+function __build_JsonString_0_source(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_source(captures.value, __indentCol);
+}
+
 function __build_JsonValue_0_ast(captures: any, __indentCol: number = 0): any {
   return __renderSlot_ast(captures.node, __indentCol);
 }
@@ -346,6 +461,7 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     case "JsonTrue#0": return __build_JsonTrue_0_ast(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_ast(captures, __indentCol);
     case "JsonNumber#0": return __build_JsonNumber_0_ast(captures, __indentCol);
+    case "JsonString#0": return __build_JsonString_0_ast(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
@@ -360,6 +476,7 @@ function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
     case "JsonTrue#0": return __build_JsonTrue_0_source(captures, __indentCol);
     case "JsonFalse#0": return __build_JsonFalse_0_source(captures, __indentCol);
     case "JsonNumber#0": return __build_JsonNumber_0_source(captures, __indentCol);
+    case "JsonString#0": return __build_JsonString_0_source(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_source(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'source'");
@@ -449,6 +566,10 @@ function __rebuild_JsonNumber_0(captures: any): string {
   return String(__rebuildSlot(captures.value));
 }
 
+function __rebuild_JsonString_0(captures: any): string {
+  return String(__rebuildSlot((typeof captures.value === "string" ? encodeJsonString(captures.value) : captures.value)));
+}
+
 function __rebuild_JsonValue_0(captures: any): string {
   return String(__rebuildSlot(captures.node));
 }
@@ -480,9 +601,15 @@ function __invert_JsonNumber_0_ast(value: any, __indentCol: number = 0): string 
   return __rebuild_JsonNumber_0(captures, __indentCol);
 }
 
+function __invert_JsonString_0_ast(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  captures.value = __invertSlotLeaf_ast(value);
+  return __rebuild_JsonString_0(captures, __indentCol);
+}
+
 function __invert_JsonValue_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.node = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
+  captures.node = __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
@@ -513,9 +640,15 @@ function __invert_JsonNumber_0_source(value: any, __indentCol: number = 0): stri
   return __rebuild_JsonNumber_0(captures, __indentCol);
 }
 
+function __invert_JsonString_0_source(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  captures.value = decodeJsonString(value);
+  return __rebuild_JsonString_0(captures, __indentCol);
+}
+
 function __invert_JsonValue_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.node = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(value, __indentCol);
+  captures.node = __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
@@ -537,6 +670,13 @@ function __dispatchInverse_JsonFalse_ast(value: any, __indentCol: number = 0): s
 function __dispatchInverse_JsonNumber_ast(value: any, __indentCol: number = 0): string {
   if (typeof value === "number") {
     return __invert_JsonNumber_0_ast(value, __indentCol);
+  }
+  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_JsonString_ast(value: any, __indentCol: number = 0): string {
+  if (typeof value === "string") {
+    return __invert_JsonString_0_ast(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
@@ -568,8 +708,15 @@ function __dispatchInverse_JsonFalse_source(value: any, __indentCol: number = 0)
 }
 
 function __dispatchInverse_JsonNumber_source(value: any, __indentCol: number = 0): string {
-  if (typeof value === "number") {
+  if (typeof value === "string") {
     return __invert_JsonNumber_0_source(value, __indentCol);
+  }
+  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_JsonString_source(value: any, __indentCol: number = 0): string {
+  if ((typeof value === "string" && value.length >= 2 && (value.charCodeAt(0) === 0x22 || value.charCodeAt(0) === 0x27))) {
+    return __invert_JsonString_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -717,6 +864,39 @@ function __invertSlotFor_JsonNumber_ast(v: any, __indentCol: number = 0): any {
   try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
+function __invertSlotFor_JsonString_ast(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_JsonString_ast(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_JsonString_ast(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { return String(v); }
+}
+
 function __invertSlotFor_JsonValue_ast(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays are ambiguous between "list of values to recurse" (.repeats()
@@ -750,18 +930,19 @@ function __invertSlotFor_JsonValue_ast(v: any, __indentCol: number = 0): any {
   try { return __dispatchInverse_JsonValue_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
-function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __indentCol: number = 0): any {
+function __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays: try each role first (some roles like JsonArray accept arrays as
   // whole values); if all reject, recurse element-wise for .repeats() uses.
   if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v[i], __indentCol);
+      const r = __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -769,6 +950,7 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __
   // null: try roles for intentional-null productions (e.g. JsonNull); else
   // treat as absent for optional-slot semantics.
   if (v === null) {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -776,6 +958,7 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __
     return null;
   }
   if (typeof v === "string") {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -783,13 +966,15 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(v: any, __
     return v;
   }
   if (typeof v === "object") {
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_ast(v, __indentCol); } catch (_e) { /* try next role */ }
-    throw new Error("stringify: no role matched for multi-role capture (roles: JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
+    throw new Error("stringify: no role matched for multi-role capture (roles: JsonString, JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
   }
   // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_JsonString_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_ast(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_ast(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -943,6 +1128,39 @@ function __invertSlotFor_JsonNumber_source(v: any, __indentCol: number = 0): any
   try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
+function __invertSlotFor_JsonString_source(v: any, __indentCol: number = 0): any {
+  if (v === undefined) return null;
+  // Arrays are ambiguous between "list of values to recurse" (.repeats()
+  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
+  // child dispatcher first; if it accepts arrays (its accept-condition
+  // includes Array.isArray) the dispatch returns a source string for the
+  // array as a whole. Otherwise fall back to element-wise recursion so
+  // the rebuild can join with the per-repeats separator.
+  if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) {
+      const out: any[] = [];
+      for (let i = 0; i < v.length; i++) {
+        const r = __invertSlotFor_JsonString_source(v[i], __indentCol);
+        if (r != null) out.push(r);
+      }
+      return out;
+    }
+  }
+  // null can be either an absent optional capture or an intentional null
+  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
+  // absent (preserves optional-slot semantics for callers like rebuild's
+  // optional-slot ternary).
+  if (v === null) {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { return null; }
+  }
+  if (typeof v === "string") {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (typeof v === "object") return __dispatchInverse_JsonString_source(v, __indentCol);
+  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
+  try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { return String(v); }
+}
+
 function __invertSlotFor_JsonValue_source(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays are ambiguous between "list of values to recurse" (.repeats()
@@ -976,18 +1194,19 @@ function __invertSlotFor_JsonValue_source(v: any, __indentCol: number = 0): any 
   try { return __dispatchInverse_JsonValue_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
-function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any, __indentCol: number = 0): any {
+function __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any, __indentCol: number = 0): any {
   if (v === undefined) return null;
   // Arrays: try each role first (some roles like JsonArray accept arrays as
   // whole values); if all reject, recurse element-wise for .repeats() uses.
   if (Array.isArray(v)) {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
-      const r = __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v[i], __indentCol);
+      const r = __invertSlotMulti_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v[i], __indentCol);
       if (r != null) out.push(r);
     }
     return out;
@@ -995,6 +1214,7 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any,
   // null: try roles for intentional-null productions (e.g. JsonNull); else
   // treat as absent for optional-slot semantics.
   if (v === null) {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -1002,6 +1222,7 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any,
     return null;
   }
   if (typeof v === "string") {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
@@ -1009,13 +1230,15 @@ function __invertSlotMulti_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(v: any,
     return v;
   }
   if (typeof v === "object") {
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNull_source(v, __indentCol); } catch (_e) { /* try next role */ }
-    throw new Error("stringify: no role matched for multi-role capture (roles: JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
+    throw new Error("stringify: no role matched for multi-role capture (roles: JsonString, JsonNumber, JsonTrue, JsonFalse, JsonNull; value: " + JSON.stringify(v) + ")");
   }
   // Other primitives (number, boolean) — try roles; fall back to String(v).
+    try { return __dispatchInverse_JsonString_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonNumber_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonTrue_source(v, __indentCol); } catch (_e) { /* try next role */ }
     try { return __dispatchInverse_JsonFalse_source(v, __indentCol); } catch (_e) { /* try next role */ }

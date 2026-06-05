@@ -171,8 +171,23 @@ function emitInverseBody(
       return emitArrayBody(ir.elements, valueExpr, target, production);
     case 'scalar':
       return emitScalarAssertion(ir.value, valueExpr);
-    case 'ref':
+    case 'ref': {
+      // For source-target ref bodies whose capture span is .string().coerce(),
+      // the inbound value IS the encoded source slice (e.g. `"hello"`); we
+      // decode here so the shared rebuild's encoder round-trips cleanly
+      // (encode(decode(x)) === x for valid encodings). For all other cases
+      // the slot helper handles dispatch and pass-through.
+      const refSpan = production.spans.find((s) => s.name === ir.capture);
+      if (
+        refSpan &&
+        target === 'source' &&
+        refSpan.class === 'string' &&
+        refSpan.refinements.some((r) => r.name === 'coerce')
+      ) {
+        return `captures${memberAccess(ir.capture)} = decodeJsonString(${valueExpr});`;
+      }
       return `captures${memberAccess(ir.capture)} = ${slotHelperCall(ir.capture, production, target, valueExpr)};`;
+    }
     case 'template':
       return emitTemplateBody(ir.segments, ir.captures, valueExpr, target, production);
     case 'dynKey':
@@ -365,7 +380,7 @@ function emitMergeSlotHelper(
 // acceptance (emitter then drops the guard entirely).
 function refsAcceptCondition(
   productions: ReadonlyArray<Production>,
-  refs: ReadonlyArray<{ readonly prodIdx: number; readonly ir: InverseIR }>,
+  refs: ReadonlyArray<{ readonly prodIdx: number; readonly ir: InverseIR; readonly target: string }>,
 ): string {
   // Track which JS shapes are admissible across all ref branches in this
   // dispatcher. Defaulting to 'no shape allowed' and unioning each branch's
@@ -376,6 +391,10 @@ function refsAcceptCondition(
   let acceptsBoolean = false;
   let acceptsArray = false;
   let acceptsObject = false;
+  // True iff every string-accepting branch requires a JSON-quote prefix
+  // (`"` or `'`). Set when a `.string().coerce()` span owns the source
+  // target — a bare keyword like `null` shouldn't dispatch to it.
+  let stringNeedsJsonQuotePrefix = true;
   for (const b of refs) {
     if (b.ir.kind !== 'ref') continue;
     const refIR = b.ir;
@@ -396,9 +415,13 @@ function refsAcceptCondition(
       return 'value !== undefined';
     } else {
       // Classed scalar capture (.string(), .number(), .until(), .ident(), …).
-      // Use the class to narrow further.
+      // Use the class to narrow further. For .number()/.string() with
+      // .coerce(), the AST target receives the coerced JS value (number /
+      // decoded string) while the source target receives the source slice
+      // (still a string for both, but quote-prefixed when string-coerce
+      // is used).
+      const hasCoerce = span.refinements.some((r) => r.name === 'coerce');
       switch (span.class) {
-        case 'string':
         case 'ident':
         case 'literal':
         case 'hex':
@@ -406,9 +429,26 @@ function refsAcceptCondition(
         case 'keyword':
         case 'operator':
           acceptsString = true;
+          stringNeedsJsonQuotePrefix = false;
+          break;
+        case 'string':
+          acceptsString = true;
+          // Only retain the quote-prefix tightening if EVERY string-
+          // accepting branch is a string-coerce-source case. A single
+          // non-coerce ref clears it.
+          if (!(hasCoerce && b.target === 'source')) {
+            stringNeedsJsonQuotePrefix = false;
+          }
           break;
         case 'number':
-          acceptsNumber = true;
+          if (hasCoerce && b.target === 'ast') {
+            acceptsNumber = true;
+          } else {
+            // .number() with no coerce, or source target: captured value
+            // is a string slice.
+            acceptsString = true;
+            stringNeedsJsonQuotePrefix = false;
+          }
           break;
         default:
           // Unknown class — be conservative.
@@ -419,7 +459,13 @@ function refsAcceptCondition(
   }
   const parts: string[] = [];
   if (acceptsNull) parts.push('value === null');
-  if (acceptsString) parts.push('typeof value === "string"');
+  if (acceptsString) {
+    if (stringNeedsJsonQuotePrefix) {
+      parts.push('(typeof value === "string" && value.length >= 2 && (value.charCodeAt(0) === 0x22 || value.charCodeAt(0) === 0x27))');
+    } else {
+      parts.push('typeof value === "string"');
+    }
+  }
   if (acceptsNumber) parts.push('typeof value === "number"');
   if (acceptsBoolean) parts.push('typeof value === "boolean"');
   if (acceptsArray) parts.push('Array.isArray(value)');

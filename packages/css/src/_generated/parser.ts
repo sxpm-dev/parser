@@ -2754,12 +2754,20 @@ function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "comment", text: __renderSlot_ast(captures.text, __indentCol) };
 }
 
+function __build_Comment_0_json(captures: any, __indentCol: number = 0): any {
+  return null;
+}
+
 function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
   return String((__renderSlot_source(captures.text, __indentCol) ?? ""));
 }
 
 function __build_Declaration_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol), important: true, _important: __renderSlot_ast(captures.important, __indentCol) };
+}
+
+function __build_Declaration_0_json(captures: any, __indentCol: number = 0): any {
+  return null;
 }
 
 function __build_Declaration_0_source(captures: any, __indentCol: number = 0): any {
@@ -2770,12 +2778,30 @@ function __build_Declaration_1_ast(captures: any, __indentCol: number = 0): any 
   return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
 }
 
+function __build_Declaration_1_json(captures: any, __indentCol: number = 0): any {
+  return ({ [__renderSlot_json(captures.prop, __indentCol)]: __renderSlot_json(captures.value, __indentCol) });
+}
+
 function __build_Declaration_1_source(captures: any, __indentCol: number = 0): any {
   return (__renderSlot_source(captures.prop, __indentCol) ?? "") + ": " + (__renderSlot_source(captures.value, __indentCol) ?? "") + ";";
 }
 
 function __build_Rule_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "rule", selector: __renderSlot_ast(captures.selector, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
+}
+
+function __build_Rule_0_json(captures: any, __indentCol: number = 0): any {
+  return ({ [__renderSlot_json(captures.selector, __indentCol)]: ((): any => {
+  const __m: Record<string, unknown> = {};
+  const __a = __renderSlot_json(captures.nodes, __indentCol);
+  if (Array.isArray(__a)) {
+    for (let __i = 0; __i < __a.length; __i++) {
+      const __it = __a[__i];
+      if (__it && typeof __it === "object") Object.assign(__m, __it);
+    }
+  }
+  return __m;
+})() });
 }
 
 function __build_Rule_0_source(captures: any, __indentCol: number = 0): any {
@@ -2786,6 +2812,10 @@ function __build_AtRule_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
 }
 
+function __build_AtRule_0_json(captures: any, __indentCol: number = 0): any {
+  return null;
+}
+
 function __build_AtRule_0_source(captures: any, __indentCol: number = 0): any {
   return "@" + (__renderSlot_source(captures.name, __indentCol) ?? "") + " " + (__renderSlot_source(captures.params, __indentCol) ?? "") + " {" + (captures.nodes == null ? "" : (Array.isArray(captures.nodes) ? captures.nodes.map((c: any) => __renderSlot_source(c, __indentCol)).join(";") : (__renderSlot_source(captures.nodes, __indentCol) ?? ""))) + "}";
 }
@@ -2794,12 +2824,30 @@ function __build_AtRule_1_ast(captures: any, __indentCol: number = 0): any {
   return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol) };
 }
 
+function __build_AtRule_1_json(captures: any, __indentCol: number = 0): any {
+  return null;
+}
+
 function __build_AtRule_1_source(captures: any, __indentCol: number = 0): any {
   return "@" + (__renderSlot_source(captures.name, __indentCol) ?? "") + " " + (__renderSlot_source(captures.params, __indentCol) ?? "") + ";";
 }
 
 function __build_Stylesheet_0_ast(captures: any, __indentCol: number = 0): any {
   return { type: "root", nodes: __renderSlot_ast(captures.nodes, __indentCol) };
+}
+
+function __build_Stylesheet_0_json(captures: any, __indentCol: number = 0): any {
+  return ((): any => {
+  const __m: Record<string, unknown> = {};
+  const __a = __renderSlot_json(captures.nodes, __indentCol);
+  if (Array.isArray(__a)) {
+    for (let __i = 0; __i < __a.length; __i++) {
+      const __it = __a[__i];
+      if (__it && typeof __it === "object") Object.assign(__m, __it);
+    }
+  }
+  return __m;
+})();
 }
 
 function __build_Stylesheet_0_source(captures: any, __indentCol: number = 0): any {
@@ -2820,6 +2868,22 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     case "Stylesheet#0": return __build_Stylesheet_0_ast(captures, __indentCol);
   }
   throw new Error("render: unknown production '" + captures.__production + "' for target 'ast'");
+}
+
+function __dispatchRender_json(captures: any, __indentCol: number = 0): any {
+  if (captures === null || typeof captures !== "object") {
+    throw new Error("render: captures must be an object (target 'json')");
+  }
+  switch (captures.__production) {
+    case "Comment#0": return __build_Comment_0_json(captures, __indentCol);
+    case "Declaration#0": return __build_Declaration_0_json(captures, __indentCol);
+    case "Declaration#1": return __build_Declaration_1_json(captures, __indentCol);
+    case "Rule#0": return __build_Rule_0_json(captures, __indentCol);
+    case "AtRule#0": return __build_AtRule_0_json(captures, __indentCol);
+    case "AtRule#1": return __build_AtRule_1_json(captures, __indentCol);
+    case "Stylesheet#0": return __build_Stylesheet_0_json(captures, __indentCol);
+  }
+  throw new Error("render: unknown production '" + captures.__production + "' for target 'json'");
 }
 
 function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
@@ -2851,6 +2915,19 @@ function __renderSlot_ast(v: any, __indentCol: number = 0): any {
   return v;
 }
 
+function __renderSlot_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) out.push(__renderSlot_json(v[i], __indentCol));
+    return out;
+  }
+  if (typeof v === "object" && typeof v.__production === "string") {
+    return __dispatchRender_json(v, __indentCol);
+  }
+  return v;
+}
+
 function __renderSlot_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return v;
   if (Array.isArray(v)) {
@@ -2866,6 +2943,7 @@ function __renderSlot_source(v: any, __indentCol: number = 0): any {
 
 const __renderDispatch: Record<string, (captures: any) => any> = {
   "ast": (captures: any) => __dispatchRender_ast(captures),
+  "json": (captures: any) => __dispatchRender_json(captures),
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
@@ -3025,6 +3103,102 @@ function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string 
     throw new Error("stringify: field \"type\" expected \"root\", got " + JSON.stringify(value.type));
   }
   captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  return __rebuild_Stylesheet_0(captures, __indentCol);
+}
+
+function __invert_Comment_0_json(value: any, __indentCol: number = 0): string {
+  if (!Object.is(value, null)) {
+    throw new Error("stringify: expected scalar null, got " + JSON.stringify(value));
+  }
+  return "/* foo */";
+}
+
+function __invert_Declaration_0_json(value: any, __indentCol: number = 0): string {
+  if (!Object.is(value, null)) {
+    throw new Error("stringify: expected scalar null, got " + JSON.stringify(value));
+  }
+  return "color: red !important;";
+}
+
+function __invert_Declaration_1_json(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected single-entry object for dynKey 'prop', got " + typeof value);
+  }
+  {
+    const __dkKeys = Object.keys(value);
+    if (__dkKeys.length !== 1) {
+      throw new Error("stringify: expected single-entry object for dynKey 'prop', got " + __dkKeys.length + " keys");
+    }
+    const __dkKey = __dkKeys[0]!;
+    const __dkVal = (value as Record<string, unknown>)[__dkKey];
+    captures.prop = __dkKey;
+  captures.value = __invertSlotLeaf_json(__dkVal);
+  }
+  return __rebuild_Declaration_1(captures, __indentCol);
+}
+
+function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected single-entry object for dynKey 'selector', got " + typeof value);
+  }
+  {
+    const __dkKeys = Object.keys(value);
+    if (__dkKeys.length !== 1) {
+      throw new Error("stringify: expected single-entry object for dynKey 'selector', got " + __dkKeys.length + " keys");
+    }
+    const __dkKey = __dkKeys[0]!;
+    const __dkVal = (value as Record<string, unknown>)[__dkKey];
+    captures.selector = __dkKey;
+  if (__dkVal === null || typeof __dkVal !== "object" || Array.isArray(__dkVal)) {
+    throw new Error("stringify: expected object for merge 'nodes', got " + typeof __dkVal);
+  }
+  {
+    const __mEntries = Object.entries(__dkVal as Record<string, unknown>);
+    const __mArr: any[] = [];
+    for (let __mI = 0; __mI < __mEntries.length; __mI++) {
+      const __mK = __mEntries[__mI]![0];
+      const __mV = __mEntries[__mI]![1];
+      const __mWrapped: any = { [__mK]: __mV };
+      __mArr.push(__invertSlotMulti_Comment_AtRule_Rule_Declaration_json(__mWrapped, __indentCol));
+    }
+    captures.nodes = __mArr;
+  }
+  }
+  return __rebuild_Rule_0(captures, __indentCol);
+}
+
+function __invert_AtRule_0_json(value: any, __indentCol: number = 0): string {
+  if (!Object.is(value, null)) {
+    throw new Error("stringify: expected scalar null, got " + JSON.stringify(value));
+  }
+  return "@media screen { color: red }";
+}
+
+function __invert_AtRule_1_json(value: any, __indentCol: number = 0): string {
+  if (!Object.is(value, null)) {
+    throw new Error("stringify: expected scalar null, got " + JSON.stringify(value));
+  }
+  return "@charset \"UTF-8\";";
+}
+
+function __invert_Stylesheet_0_json(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("stringify: expected object for merge 'nodes', got " + typeof value);
+  }
+  {
+    const __mEntries = Object.entries(value as Record<string, unknown>);
+    const __mArr: any[] = [];
+    for (let __mI = 0; __mI < __mEntries.length; __mI++) {
+      const __mK = __mEntries[__mI]![0];
+      const __mV = __mEntries[__mI]![1];
+      const __mWrapped: any = { [__mK]: __mV };
+      __mArr.push(__invertSlotMulti_Comment_AtRule_Rule_Declaration_json(__mWrapped, __indentCol));
+    }
+    captures.nodes = __mArr;
+  }
   return __rebuild_Stylesheet_0(captures, __indentCol);
 }
 
@@ -3278,6 +3452,47 @@ function __dispatchInverse_ast(value: any): string {
   return __dispatchInverse_Stylesheet_ast(value, 0);
 }
 
+function __dispatchInverse_Comment_json(value: any, __indentCol: number = 0): string {
+  throw new Error("stringify: no productions declared for node 'Comment' target 'json'");
+}
+
+function __dispatchInverse_Declaration_json(value: any, __indentCol: number = 0): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const __dkKeys = Object.keys(value);
+    if (__dkKeys.length === 1) {
+      const __dkV = (value as Record<string, unknown>)[__dkKeys[0]!];
+      if (typeof __dkV === "string") return __invert_Declaration_1_json(value, __indentCol);
+    }
+  }
+  throw new Error("stringify: no production matches for target 'json' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_Rule_json(value: any, __indentCol: number = 0): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const __dkKeys = Object.keys(value);
+    if (__dkKeys.length === 1) {
+      const __dkV = (value as Record<string, unknown>)[__dkKeys[0]!];
+      if (__dkV !== null && typeof __dkV === "object" && !Array.isArray(__dkV)) return __invert_Rule_0_json(value, __indentCol);
+    }
+  }
+  throw new Error("stringify: no production matches for target 'json' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_AtRule_json(value: any, __indentCol: number = 0): string {
+  throw new Error("stringify: no productions declared for node 'AtRule' target 'json'");
+}
+
+function __dispatchInverse_Stylesheet_json(value: any, __indentCol: number = 0): string {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return __invert_Stylesheet_0_json(value, __indentCol);
+  }
+  throw new Error("stringify: no production matches for target 'json' (value: " + JSON.stringify(value) + ")");
+}
+
+function __dispatchInverse_json(value: any): string {
+  return __dispatchInverse_Stylesheet_json(value, 0);
+}
+
 function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
     return __invert_Comment_0_source(value, __indentCol);
@@ -3445,6 +3660,132 @@ function __invertSlotLeaf_ast(v: any): any {
   return String(v);
 }
 
+function __invertSlotFor_Comment_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_json(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Comment_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Comment_json(v, __indentCol);
+  return String(v);
+}
+
+function __invertSlotFor_Declaration_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Declaration_json(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Declaration_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Declaration_json(v, __indentCol);
+  return String(v);
+}
+
+function __invertSlotFor_Rule_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Rule_json(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Rule_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Rule_json(v, __indentCol);
+  return String(v);
+}
+
+function __invertSlotFor_AtRule_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_AtRule_json(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_AtRule_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_AtRule_json(v, __indentCol);
+  return String(v);
+}
+
+function __invertSlotFor_Stylesheet_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Stylesheet_json(v, __indentCol); } catch (_e) { return v; }
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotFor_Stylesheet_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") return __dispatchInverse_Stylesheet_json(v, __indentCol);
+  return String(v);
+}
+
+function __invertSlotMulti_Comment_AtRule_Rule_Declaration_json(v: any, __indentCol: number = 0): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") {
+    try { return __dispatchInverse_Comment_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    return v;
+  }
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotMulti_Comment_AtRule_Rule_Declaration_json(v[i], __indentCol);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  if (typeof v === "object") {
+    try { return __dispatchInverse_Comment_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_AtRule_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Rule_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    try { return __dispatchInverse_Declaration_json(v, __indentCol); } catch (_e) { /* try next role */ }
+    throw new Error("stringify: no role matched for multi-role capture (roles: Comment, AtRule, Rule, Declaration; value: " + JSON.stringify(v) + ")");
+  }
+  return String(v);
+}
+
+function __invertSlotLeaf_json(v: any): any {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v)) {
+    const out: any[] = [];
+    for (let i = 0; i < v.length; i++) {
+      const r = __invertSlotLeaf_json(v[i]);
+      if (r != null) out.push(r);
+    }
+    return out;
+  }
+  return String(v);
+}
+
 function __invertSlotFor_Comment_source(v: any, __indentCol: number = 0): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") {
@@ -3573,6 +3914,7 @@ function __invertSlotLeaf_source(v: any): any {
 
 const __inverseDispatch: Record<string, (value: any) => string> = {
   "ast": __dispatchInverse_ast,
+  "json": __dispatchInverse_json,
   "source": __dispatchInverse_source,
 };
 

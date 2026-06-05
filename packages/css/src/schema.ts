@@ -1,4 +1,4 @@
-import { $, defineSchema, defineValidation, literal, parse, relation, span, tpl } from "@parser2/parser";
+import { $, defineSchema, defineValidation, dynKey, literal, merge, parse, relation, span, tpl } from "@parser2/parser";
 import type { ValidationDef } from "@parser2/parser";
 import colorSchema from "./validators/color.ts";
 import lengthPercentageSchema from "./validators/length-percentage.ts";
@@ -189,6 +189,11 @@ const cssSchema = defineSchema({
           type: "comment",
           text: $.text,
         },
+        // Flat-shape json target opts comments OUT — they have no place in
+        // the `{ selector: { prop: value } }` shape. merge() filters null
+        // entries so a comment between rules disappears from json output
+        // (its source still round-trips through the `source` target).
+        json: null,
         source: tpl`${$.text}`,
       },
     }),
@@ -230,6 +235,10 @@ const cssSchema = defineSchema({
           important: true,
           _important: $.important,
         },
+        // !important is dropped from flat-shape json — there's no obvious
+        // sibling slot for the discriminator in `{ prop: value }`. Round-
+        // trip an !important declaration through 'source' to preserve it.
+        json: null,
         source: tpl`${$.prop}: ${$.value} !${$.important};`,
       },
     }),
@@ -251,6 +260,11 @@ const cssSchema = defineSchema({
           prop: $.prop,
           value: $.value,
         },
+        // Flat-shape: a declaration becomes a single-entry object whose
+        // key is the property name and whose value is the declaration's
+        // value string. Combined with Rule's `merge(...)` over its
+        // children, this yields { selector: { prop: value, ... } }.
+        json: dynKey($.prop, $.value),
         source: tpl`${$.prop}: ${$.value};`,
       },
     }),
@@ -291,6 +305,10 @@ const cssSchema = defineSchema({
           selector: $.selector,
           nodes: $.nodes,
         },
+        // Flat-shape: { [selector]: <merged-children> }. The per-node
+        // inverse dispatcher discriminates this from Declaration by entry
+        // value type: Decl's value is a string, Rule's value is an object.
+        json: dynKey($.selector, merge($.nodes)),
         source: tpl`${$.selector} {${$.nodes}}`,
       },
     }),
@@ -321,6 +339,10 @@ const cssSchema = defineSchema({
           params: $.params,
           nodes: $.nodes,
         },
+        // At-rules drop out of flat-shape json — the inverse dispatcher
+        // can't unambiguously recover an `@name params` key without
+        // template-key support (deferred).
+        json: null,
         source: tpl`@${$.name} ${$.params} {${$.nodes}}`,
       },
     }),
@@ -347,6 +369,7 @@ const cssSchema = defineSchema({
           name: $.name,
           params: $.params,
         },
+        json: null,
         // Statement at-rules always re-emit `;` because the optional `;`
         // span is absent in the rebuild's example baseline (`@charset
         // "UTF-8";` has it) — value-stable (the trailing `;` round-trips
@@ -371,6 +394,11 @@ const cssSchema = defineSchema({
           type: "root",
           nodes: $.nodes,
         },
+        // Flat-shape root: { ".selector": { ... }, ".other": { ... } }.
+        // Top-level entries are dispatched into Rule (object value) or
+        // Declaration (string value); Comments + AtRules are filtered by
+        // merge()'s null-entry rule.
+        json: merge($.nodes),
         source: tpl`${$.nodes}`,
       },
     }),

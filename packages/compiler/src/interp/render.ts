@@ -37,6 +37,8 @@
 // can iterate targets without re-reading schema state.
 
 import {
+  isDynKey,
+  isMerge,
   isStructureRef,
   isTemplate,
   type RenderBody,
@@ -151,6 +153,33 @@ function walkBody(
   if (t === 'boolean') return body;
   if (isStructureRef(body)) return readRef(schema, body, captures, target, indentCol);
   if (isTemplate(body)) return walkTemplate(schema, body, captures, target, production, indentCol);
+  if (isDynKey(body)) {
+    // { [captures[keyRef.name]]: <recursed-value> } — mirrors the
+    // emit/render.ts forward branch. dynKey requires a span-value ref
+    // (the only StructureRef variant with a single `name` field); other
+    // synthetic refs are rejected at derive time.
+    if (body.key.__ref !== 'span-value') {
+      throw new Error(`interp: dynKey key must be a span-value ref, got '${body.key.__ref}'`);
+    }
+    const keyName = body.key.name;
+    const keyVal = readRef(schema, body.key, captures, target, indentCol);
+    if (typeof keyVal !== 'string') {
+      throw new Error(`interp: dynKey key '${keyName}' resolved to non-string ${typeof keyVal}`);
+    }
+    return { [keyVal]: walkBody(schema, body.value, captures, target, production, indentCol) };
+  }
+  if (isMerge(body)) {
+    // Object.assign over array entries, filtering non-objects. Matches the
+    // emit/render.ts merge branch.
+    const arr = readRef(schema, body.array, captures, target, indentCol);
+    const out: Record<string, unknown> = {};
+    if (Array.isArray(arr)) {
+      for (const it of arr) {
+        if (it && typeof it === 'object' && !Array.isArray(it)) Object.assign(out, it);
+      }
+    }
+    return out;
+  }
   if (Array.isArray(body)) {
     return body.map((child) => walkBody(schema, child, captures, target, production, indentCol));
   }

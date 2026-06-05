@@ -9,6 +9,7 @@
     "test:unit": "tsx --test test/smoke.test.ts",
     "bench": "npm run generate && npm run bench:ast",
     "bench:ast": "tsx bench/ast.ts",
+    "bench:json": "tsx bench/json.ts",
     "bench:focused": "tsx bench/focused.ts",
     "bench:direct-profile": "tsx bench/direct-profile.ts",
     "bench:lazy-materialization": "tsx bench/lazy-materialization.ts",

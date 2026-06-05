@@ -17,16 +17,17 @@
     "test:conformance": "PARSER2_CONFORMANCE=1 npm test",
     "test:css:conformance": "npm run generate && npm run test:conformance -w @parser2/css",
     "audit:parser-contract": "tsx scripts/parser-contract-audit.ts",
-    "bench": "npm run bench -w @parser2/cron && npm run bench -w @parser2/css && npm run bench -w @parser2/html && npm run bench -w @parser2/markdown",
+    "bench": "npm run bench -w @parser2/cron && npm run bench -w @parser2/css && npm run bench -w @parser2/html && npm run bench -w @parser2/json && npm run bench -w @parser2/markdown",
     "bench:focused": "npm run generate && npm run bench:focused -w @parser2/html && npm run bench:focused -w @parser2/css && npm run bench:focused -w @parser2/markdown",
     "bench:cron:parse": "npm run generate -w @parser2/cron && tsx packages/cron/bench/parse.ts",
     "bench:css:ast": "npm run generate && tsx packages/css/bench/ast.ts",
     "bench:css:focused": "npm run generate && tsx packages/css/bench/focused.ts",
     "bench:css:round-trip": "npm run generate && tsx packages/css/bench/round-trip.ts",
     "bench:html:parse": "npm run generate -w @parser2/html && tsx packages/html/bench/parse.ts",
+    "bench:json:parse": "npm run generate -w @parser2/json && tsx packages/json/bench/parse.ts",
     "bench:markdown:ast": "npm run generate -w @parser2/markdown && tsx packages/markdown/bench/ast.ts",
-    "baseline": "npm run baseline -w @parser2/cron && npm run baseline -w @parser2/css && npm run baseline -w @parser2/html && npm run baseline -w @parser2/markdown",
-    "gate": "npm run gate -w @parser2/cron && npm run gate -w @parser2/css && npm run gate -w @parser2/html && npm run gate -w @parser2/markdown"
+    "baseline": "npm run baseline -w @parser2/cron && npm run baseline -w @parser2/css && npm run baseline -w @parser2/html && npm run baseline -w @parser2/json && npm run baseline -w @parser2/markdown",
+    "gate": "npm run gate -w @parser2/cron && npm run gate -w @parser2/css && npm run gate -w @parser2/html && npm run gate -w @parser2/json && npm run gate -w @parser2/markdown"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

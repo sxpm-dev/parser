@@ -3148,7 +3148,7 @@ function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"rule\", got " + JSON.stringify(value.type));
   }
   captures.selector = __invertSlotLeaf_ast(value.selector);
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
   return __rebuild_Rule_0(captures, __indentCol);
 }
 
@@ -3162,7 +3162,7 @@ function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
   return __rebuild_AtRule_0(captures, __indentCol);
 }
 
@@ -3187,7 +3187,7 @@ function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string 
   if (!Object.is(value.type, "root")) {
     throw new Error("stringify: field \"type\" expected \"root\", got " + JSON.stringify(value.type));
   }
-  captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(value.nodes, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
   return __rebuild_Stylesheet_0(captures, __indentCol);
 }
 
@@ -3391,7 +3391,7 @@ function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end), __indentCol);
+    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
@@ -3435,7 +3435,7 @@ function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos, __end), __indentCol);
+    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
@@ -3487,7 +3487,7 @@ function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): stri
   if (__pos >= __s.length) {
     captures.nodes = null;
   } else {
-    captures.nodes = __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__s.slice(__pos), __indentCol);
+    captures.nodes = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __s.length;
   }
   if (__pos !== __s.length) {

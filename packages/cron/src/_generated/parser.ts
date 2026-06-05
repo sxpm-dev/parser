@@ -709,7 +709,7 @@ function __invert_Command_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.type, "command")) {
     throw new Error("stringify: field \"type\" expected \"command\", got " + JSON.stringify(value.type));
   }
-  captures.words = __invertSlotFor_CommandWord_ast(value.words, __indentCol);
+  captures.words = ((Array.isArray(value.words) ? value.words : [value.words]).map((__e: any) => __dispatchInverse_CommandWord_ast(__e, __indentCol)));
   return __rebuild_Command_0(captures, __indentCol);
 }
 
@@ -826,7 +826,7 @@ function __invert_Command_0_source(value: any, __indentCol: number = 0): string 
   }
   const __s: string = value;
   let __pos = 0;
-  captures.words = __invertSlotFor_CommandWord_source(__s.slice(__pos), __indentCol);
+  captures.words = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __dispatchInverse_CommandWord_source(__e, __indentCol)));
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");

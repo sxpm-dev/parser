@@ -785,7 +785,7 @@ function __invert_YamlMapping_0_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.type, "mapping")) {
     throw new Error("stringify: field \"type\" expected \"mapping\", got " + JSON.stringify(value.type));
   }
-  captures.entries = __invertSlotFor_YamlMappingEntry_ast(value.entries, __indentCol + 2);
+  captures.entries = ((Array.isArray(value.entries) ? value.entries : [value.entries]).map((__e: any) => __dispatchInverse_YamlMappingEntry_ast(__e, __indentCol + 2)));
   return __rebuild_YamlMapping_0(captures, __indentCol);
 }
 
@@ -809,7 +809,7 @@ function __invert_YamlSequence_0_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.type, "sequence")) {
     throw new Error("stringify: field \"type\" expected \"sequence\", got " + JSON.stringify(value.type));
   }
-  captures.items = __invertSlotFor_YamlSequenceItem_ast(value.items, __indentCol + 2);
+  captures.items = ((Array.isArray(value.items) ? value.items : [value.items]).map((__e: any) => __dispatchInverse_YamlSequenceItem_ast(__e, __indentCol + 2)));
   return __rebuild_YamlSequence_0(captures, __indentCol);
 }
 
@@ -870,7 +870,7 @@ function __invert_YamlMapping_0_source(value: any, __indentCol: number = 0): str
   }
   const __s: string = value;
   let __pos = 0;
-  captures.entries = __invertSlotFor_YamlMappingEntry_source(__s.slice(__pos), __indentCol + 2);
+  captures.entries = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __dispatchInverse_YamlMappingEntry_source(__e, __indentCol + 2)));
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
@@ -904,7 +904,7 @@ function __invert_YamlSequence_0_source(value: any, __indentCol: number = 0): st
   }
   const __s: string = value;
   let __pos = 0;
-  captures.items = __invertSlotFor_YamlSequenceItem_source(__s.slice(__pos), __indentCol + 2);
+  captures.items = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __dispatchInverse_YamlSequenceItem_source(__e, __indentCol + 2)));
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");

@@ -2380,7 +2380,7 @@ function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.mode, "no-quirks")) {
     throw new Error("stringify: field \"mode\" expected \"no-quirks\", got " + JSON.stringify(value.mode));
   }
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2466,7 +2466,7 @@ function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 1) {
     throw new Error("stringify: expected array of length 1, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
@@ -2499,7 +2499,7 @@ function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
@@ -2522,7 +2522,7 @@ function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
@@ -2545,7 +2545,7 @@ function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
   if (!Array.isArray(value.childNodes) || value.childNodes.length !== 0) {
     throw new Error("stringify: expected array of length 0, got " + (Array.isArray(value.childNodes) ? ("length " + value.childNodes.length) : typeof value.childNodes));
   }
@@ -2568,8 +2568,8 @@ function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2589,8 +2589,8 @@ function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2610,8 +2610,8 @@ function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2631,8 +2631,8 @@ function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2652,8 +2652,8 @@ function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2673,8 +2673,8 @@ function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2694,8 +2694,8 @@ function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2715,8 +2715,8 @@ function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2736,8 +2736,8 @@ function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2757,8 +2757,8 @@ function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2778,8 +2778,8 @@ function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2799,8 +2799,8 @@ function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2821,8 +2821,8 @@ function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.namespaceURI, "http://www.w3.org/1999/xhtml")) {
     throw new Error("stringify: field \"namespaceURI\" expected \"http://www.w3.org/1999/xhtml\", got " + JSON.stringify(value.namespaceURI));
   }
-  captures.attrs = __invertSlotFor_Attribute_ast(value.attrs, __indentCol);
-  captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(value.childNodes, __indentCol);
+  captures.attrs = ((Array.isArray(value.attrs) ? value.attrs : [value.attrs]).map((__e: any) => __dispatchInverse_Attribute_ast(__e, __indentCol)));
+  captures.children = ((Array.isArray(value.childNodes) ? value.childNodes : [value.childNodes]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(__e, __indentCol)));
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
@@ -2905,7 +2905,7 @@ function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): st
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
@@ -3142,7 +3142,7 @@ function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</li>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
@@ -3178,7 +3178,7 @@ function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</dt>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
@@ -3214,7 +3214,7 @@ function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tr>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
@@ -3250,7 +3250,7 @@ function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</td>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 5;
   }
   if (__pos !== __s.length) {
@@ -3286,7 +3286,7 @@ function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</p>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 4;
   }
   if (__pos !== __s.length) {
@@ -3322,7 +3322,7 @@ function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): str
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</option>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 9;
   }
   if (__pos !== __s.length) {
@@ -3358,7 +3358,7 @@ function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</html>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
@@ -3394,7 +3394,7 @@ function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</head>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
@@ -3430,7 +3430,7 @@ function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tbody>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
@@ -3466,7 +3466,7 @@ function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</thead>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
@@ -3502,7 +3502,7 @@ function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</tfoot>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 8;
   }
   if (__pos !== __s.length) {
@@ -3538,7 +3538,7 @@ function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</body>\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 7;
   }
   if (__pos !== __s.length) {
@@ -3571,7 +3571,7 @@ function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): st
     if (__end < 0) {
       throw new Error("stringify: expected separator \"</\" after capture children");
     }
-    captures.children = __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__s.slice(__pos, __end), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(__e, __indentCol)));
     __pos = __end + 2;
   }
   {

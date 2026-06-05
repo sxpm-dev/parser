@@ -584,6 +584,22 @@ function slotHelperCall(
     const childColExpr = hasIndent
       ? `${indentColExpr} + ${CODEGEN_INDENT_STEP}`
       : indentColExpr;
+    const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+    // For `.repeats()` captures the inbound value IS an array of child
+    // values (each element a single value to be dispatched). Map over
+    // the array and call the per-element dispatcher — the slot helper's
+    // array-handling code path would either infinite-loop (if the role
+    // also accepts arrays as a whole, e.g. JSON's JsonArray) or pick the
+    // wrong shape. For non-repeats captures the inbound value IS a
+    // single value (which itself may be an array — e.g. JsonObject's
+    // value field for a JsonArray AST) and goes straight through the
+    // slot helper / dispatcher.
+    if (isRepeats) {
+      if (roles.length === 1) {
+        return `((Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}]).map((__e: any) => ${nodeDispatcherName(roles[0]!, target)}(__e, ${childColExpr})))`;
+      }
+      return `((Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}]).map((__e: any) => ${multiRoleSlotHelperName(roles, target)}(__e, ${childColExpr})))`;
+    }
     if (roles.length === 1) {
       return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr}, ${childColExpr})`;
     }

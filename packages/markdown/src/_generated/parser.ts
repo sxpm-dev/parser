@@ -3370,7 +3370,7 @@ function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): s
   if (!Object.is(value.type, "document")) {
     throw new Error("stringify: field \"type\" expected \"document\", got " + JSON.stringify(value.type));
   }
-  captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(value.children, __indentCol);
+  captures.children = ((Array.isArray(value.children) ? value.children : [value.children]).map((__e: any) => __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(__e, __indentCol)));
   return __rebuild_MarkdownDocument_0(captures, __indentCol);
 }
 
@@ -3936,7 +3936,7 @@ function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): 
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(__s.slice(__pos), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(__e, __indentCol)));
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
@@ -4933,7 +4933,7 @@ function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0)
   if (__pos >= __s.length) {
     captures.children = null;
   } else {
-    captures.children = __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(__s.slice(__pos), __indentCol);
+    captures.children = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(__e, __indentCol)));
     __pos = __s.length;
   }
   if (__pos !== __s.length) {

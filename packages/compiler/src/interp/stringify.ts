@@ -585,6 +585,19 @@ function invertSlot(
   // indent children. Non-indent spans pass indentCol through unchanged.
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   const childIndentCol = hasIndent ? indentCol + INDENT_STEP_SPACES : indentCol;
+  const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+  if (isRepeats) {
+    // .repeats() capture: inbound value is the array of child values.
+    // Map over the array and dispatch each element. The single-value
+    // path below would either pick the wrong production (a role that
+    // accepts the whole array, e.g. JSON's JsonArray) or infinite-loop
+    // through recursive dispatchers.
+    const arr = Array.isArray(value) ? value : [value];
+    if (roles.length === 1) {
+      return arr.map((e) => invertNodeSlot(schema, roles[0]!, target, e, childIndentCol));
+    }
+    return arr.map((e) => invertMultiRoleSlot(schema, roles, target, e, childIndentCol));
+  }
   if (roles.length === 1) {
     return invertNodeSlot(schema, roles[0]!, target, value, childIndentCol);
   }

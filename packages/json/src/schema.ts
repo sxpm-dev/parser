@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 
 // JSON parser schema. Root is JsonValue, which dispatches to the
 // JSON value type productions. Strict-JSON-only at this stage;
@@ -73,12 +73,26 @@ export default defineSchema({
       },
     }),
 
+    // --- JsonArray ------------------------------------------------------
+    relation('JsonArray', {
+      input: '[1,2]',
+      encodings: {
+        parse: parse([
+          literal('['),
+          span('items', '1,2').of('JsonValue').repeats({ sep: ',', min: 0 }),
+          literal(']'),
+        ]),
+        ast: $.items,
+        source: tpl`[${$.items}]`,
+      },
+    }),
+
     // --- JsonValue: dispatcher (grows as productions are added) ----------
     relation('JsonValue', {
       input: 'true',
       encodings: {
         parse: parse([
-          span('node', 'true').of('JsonString', 'JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
+          span('node', 'true').of('JsonArray', 'JsonString', 'JsonNumber', 'JsonTrue', 'JsonFalse', 'JsonNull'),
         ]),
         ast: $.node,
         source: $.node,

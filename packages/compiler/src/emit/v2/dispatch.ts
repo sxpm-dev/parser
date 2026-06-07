@@ -119,6 +119,25 @@ state.pos = off;`;
 }
 
 function emitGroupSpeculation(prodIdxs: ReadonlyArray<number>, fnName: string, prods: ReadonlyArray<Production>): string {
+  // Phase 5 (perf): when every alt in this same-first-byte group has a
+  // pure-literal first span (no modifiers, no recursive role), try to
+  // find a single second discriminator byte position that partitions
+  // the group into singletons. When found, emit a switch on that byte
+  // and route each alt directly with zero speculation. Saves the cost
+  // of every losing alt re-matching its full literal prefix.
+  //
+  // Concrete wins:
+  //   rrule.FreqValue group "M" → byte[1] discriminates: I→MINUTELY, O→MONTHLY
+  //   rrule.Weekday group "S"   → byte[1] discriminates: U→SU, A→SA
+  //   rrule.Weekday group "T"   → byte[1] discriminates: U→TU, H→TH
+  //   pg-select.Operator group "<" → byte[1] discriminates: = → "<=" else "<"
+  //   pg-select.Operator group ">" → byte[1] discriminates: = → ">=" else ">"
+  //   css.AtRule group "@"          → byte[1] discriminates: charset / media markers
+  //
+  // Fall back to the legacy ordered speculation when no single position
+  // discriminates (e.g. a group of 5+ overlapping prefixes).
+  const trieDispatch = tryEmitTrieDispatch(prodIdxs, fnName, prods);
+  if (trieDispatch !== null) return trieDispatch;
   // For each candidate, call its alt; if null, try the next. State.pos is
   // already rewound by the alt's own failure path, so this composes.
   //
@@ -287,6 +306,96 @@ function firstTokenOf(prod: Production): FirstToken | null {
     ? (oneOf as readonly string[]).map((v) => v.toLowerCase())
     : undefined;
   return { kind: 'class', cls: s0.class, refKey, oneOfValues };
+}
+
+// Phase 5 (perf): trie-based byte discrimination within a same-first-byte
+// group. Each alt must have a pure-literal first span (no modifiers, no
+// recursion, text non-empty); otherwise we fall back to speculation.
+//
+// The trie's branching point is the earliest byte position where the alts'
+// literal first-span texts differ. If a single position cleanly partitions
+// the group into singletons, emit a flat switch on input[off + P]. If
+// two-level discrimination is needed (two alts agree on byte P but
+// differ later), recurse into nested switches. Cap recursion at 3 levels
+// to keep the emitted code compact; larger groups fall back to speculation
+// (which is fine — they don't appear in practice).
+function tryEmitTrieDispatch(
+  prodIdxs: ReadonlyArray<number>,
+  fnName: string,
+  prods: ReadonlyArray<Production>,
+): string | null {
+  // Eligibility: every alt has a pure-literal first span.
+  type Cand = { idx: number; text: string };
+  const cands: Cand[] = [];
+  for (const idx of prodIdxs) {
+    const s0 = prods[idx]!.spans[0];
+    if (!s0 || s0.class !== 'literal' || typeof s0.text !== 'string' || s0.text.length === 0) return null;
+    if (hasModifier(s0, 'optional') || findModifier(s0, 'until') || findModifier(s0, 'rawUntil') || findModifier(s0, 'repeats')) return null;
+    if (s0.recursiveRoles.length > 0) return null;
+    cands.push({ idx, text: s0.text });
+  }
+  // Need >1 alt to be worth a switch.
+  if (cands.length <= 1) return null;
+  // Two alts with identical first-span text: byte discrimination can't help.
+  // Keep the longest-first ordering by falling back to speculation.
+  const texts = new Set(cands.map((c) => c.text));
+  if (texts.size < cands.length) return null;
+  const body = buildTrieBody(cands, fnName, /*offByte*/ 1, /*depth*/ 0);
+  if (body === null) return null;
+  return body;
+}
+
+function buildTrieBody(
+  cands: ReadonlyArray<{ idx: number; text: string }>,
+  fnName: string,
+  bytePos: number,
+  depth: number,
+): string | null {
+  // Cap nesting depth — beyond 3 levels the emitted switch nest becomes
+  // hard to read and the speculation fallback is competitive (very few
+  // overlapping prefixes go that deep in practice).
+  if (depth > 3) return null;
+  // If only one candidate remains, route to it directly.
+  if (cands.length === 1) {
+    return `return ${fnName}__alt${cands[0]!.idx}(state);`;
+  }
+  // Group candidates by their byte at `bytePos`. Short literals (text.length <=
+  // bytePos) are EOF-equivalent at this position — they get their own group.
+  type Branch = { byte: number | null; members: Array<{ idx: number; text: string }> };
+  const branches = new Map<number | null, Branch>();
+  for (const c of cands) {
+    const key = c.text.length > bytePos ? c.text.charCodeAt(bytePos) : null;
+    let b = branches.get(key);
+    if (!b) { b = { byte: key, members: [] }; branches.set(key, b); }
+    b.members.push(c);
+  }
+  // If everything collapses into one byte-key, the bytePos doesn't
+  // discriminate — try the next position.
+  if (branches.size === 1) {
+    return buildTrieBody(cands, fnName, bytePos + 1, depth);
+  }
+  // Each branch: recurse. For a singleton, route directly; for >1 members,
+  // they still agree at bytePos but differ later — recurse with bytePos+1.
+  const lines: string[] = [];
+  for (const b of branches.values()) {
+    if (b.byte === null) {
+      // EOF-equivalent at bytePos. There can only be one short literal
+      // sharing all prior bytes — by the dedup check above, every alt's
+      // text is unique. Route directly.
+      const m = b.members[0]!;
+      lines.push(`if (off + ${m.text.length} <= len) { return ${fnName}__alt${m.idx}(state); }`);
+      continue;
+    }
+    const inner = buildTrieBody(b.members, fnName, bytePos + 1, depth + 1);
+    if (inner === null) {
+      // Couldn't discriminate further within this sub-group — fall back
+      // entirely. Caller will use speculation.
+      return null;
+    }
+    lines.push(`if (off + ${bytePos} < len && input.charCodeAt(off + ${bytePos}) === ${b.byte}) {\n${indent(inner, 1)}\n}`);
+  }
+  lines.push(`return null;`);
+  return lines.join('\n');
 }
 
 function classStartPredicate(cls: string, refKey: string, offExpr: string, byteVar?: string): string {

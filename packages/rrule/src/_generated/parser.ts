@@ -400,8 +400,13 @@ state.pos = off;
   return parseFreqValue__alt0(state);
 }
   if (input.charCodeAt(off) === 77) {
-  { const r = parseFreqValue__alt1(state); if (r !== null) return r; }
-  return parseFreqValue__alt5(state);
+  if (off + 1 < len && input.charCodeAt(off + 1) === 73) {
+    return parseFreqValue__alt1(state);
+  }
+  if (off + 1 < len && input.charCodeAt(off + 1) === 79) {
+    return parseFreqValue__alt5(state);
+  }
+  return null;
 }
   if (input.charCodeAt(off) === 72) {
   return parseFreqValue__alt2(state);
@@ -552,15 +557,25 @@ function parseWeekday(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 83) {
-  { const r = parseWeekday__alt0(state); if (r !== null) return r; }
-  return parseWeekday__alt6(state);
+  if (off + 1 < len && input.charCodeAt(off + 1) === 85) {
+    return parseWeekday__alt0(state);
+  }
+  if (off + 1 < len && input.charCodeAt(off + 1) === 65) {
+    return parseWeekday__alt6(state);
+  }
+  return null;
 }
   if (input.charCodeAt(off) === 77) {
   return parseWeekday__alt1(state);
 }
   if (input.charCodeAt(off) === 84) {
-  { const r = parseWeekday__alt2(state); if (r !== null) return r; }
-  return parseWeekday__alt4(state);
+  if (off + 1 < len && input.charCodeAt(off + 1) === 85) {
+    return parseWeekday__alt2(state);
+  }
+  if (off + 1 < len && input.charCodeAt(off + 1) === 72) {
+    return parseWeekday__alt4(state);
+  }
+  return null;
 }
   if (input.charCodeAt(off) === 87) {
   return parseWeekday__alt3(state);
@@ -985,11 +1000,26 @@ function parsePart(state: State): unknown {
 state.pos = off;
   if (off >= len) return null;
   if (input.charCodeAt(off) === 66) {
-  { const r = parsePart__alt0(state); if (r !== null) return r; }
-  { const r = parsePart__alt2(state); if (r !== null) return r; }
-  { const r = parsePart__alt1(state); if (r !== null) return r; }
-  { const r = parsePart__alt3(state); if (r !== null) return r; }
-  return parsePart__alt4(state);
+  if (off + 2 < len && input.charCodeAt(off + 2) === 77) {
+    if (off + 3 < len && input.charCodeAt(off + 3) === 79) {
+      if (off + 7 < len && input.charCodeAt(off + 7) === 68) {
+        return parsePart__alt0(state);
+      }
+      if (off + 7 <= len) { return parsePart__alt1(state); }
+      return null;
+    }
+    if (off + 3 < len && input.charCodeAt(off + 3) === 73) {
+      return parsePart__alt2(state);
+    }
+    return null;
+  }
+  if (off + 2 < len && input.charCodeAt(off + 2) === 72) {
+    return parsePart__alt3(state);
+  }
+  if (off + 2 < len && input.charCodeAt(off + 2) === 68) {
+    return parsePart__alt4(state);
+  }
+  return null;
 }
   if (input.charCodeAt(off) === 70) {
   return parsePart__alt5(state);

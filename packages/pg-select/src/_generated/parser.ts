@@ -508,12 +508,18 @@ state.pos = off;
   return parseOperator__alt0(state);
 }
   if (input.charCodeAt(off) === 60) {
-  { const r = parseOperator__alt1(state); if (r !== null) return r; }
-  return parseOperator__alt4(state);
+  if (off + 1 < len && input.charCodeAt(off + 1) === 61) {
+    return parseOperator__alt1(state);
+  }
+  if (off + 1 <= len) { return parseOperator__alt4(state); }
+  return null;
 }
   if (input.charCodeAt(off) === 62) {
-  { const r = parseOperator__alt2(state); if (r !== null) return r; }
-  return parseOperator__alt5(state);
+  if (off + 1 < len && input.charCodeAt(off + 1) === 61) {
+    return parseOperator__alt2(state);
+  }
+  if (off + 1 <= len) { return parseOperator__alt5(state); }
+  return null;
 }
   if (input.charCodeAt(off) === 61) {
   return parseOperator__alt3(state);

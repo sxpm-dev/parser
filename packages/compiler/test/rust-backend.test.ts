@@ -134,14 +134,73 @@ test('rust backend: render entry calls into the root and rejects trailing input'
   assert.match(code, /if state\.pos != state\.input\.len\(\) \{/);
 });
 
-test('rust backend: rejects unsupported modifiers with Phase-6.0 error', () => {
+test('rust backend (6.2): .optional() on a named ident span emits an Option<String>', () => {
+  const schema = defineSchema({
+    rootType: 'X',
+    examples: [
+      relation('X', {
+        input: 'foo bar',
+        encodings: {
+          src: parse([
+            span('a', 'foo').ident(),
+            span('b', 'bar').ident().optional(),
+          ]),
+          ast: { type: 'pair', a: $.a, b: $.b },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /let b: Option<String> = 'opt: loop \{/);
+  assert.match(code, /break 'opt None;/);
+  assert.match(code, /break 'opt Some\(state\.src\[__opt_start\.\.state\.pos\]\.to_string\(\)\);/);
+  assert.match(code, /if b\.is_none\(\) \{ state\.pos = __b_snapshot; \}/);
+  // Render-body: $.b resolves to opt_str(&b).
+  assert.match(code, /opt_str\(&b\)/);
+  // Non-optional spans stay String-shaped.
+  assert.match(code, /let a: String =/);
+  // The opt_str helper is in the preamble.
+  assert.match(code, /fn opt_str\(s: &Option<String>\) -> Value \{/);
+});
+
+test('rust backend (6.2): unnamed optional literal compiles to a tolerance match', () => {
+  const schema = defineSchema({
+    rootType: 'X',
+    examples: [
+      relation('X', {
+        input: 'foo;',
+        encodings: {
+          src: parse([
+            span('name', 'foo').ident(),
+            literal(';').optional(),
+          ]),
+          ast: { type: 'x', name: $.name },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // Unnamed optional literal → single discarded match_literal call.
+  assert.match(code, /let _ = match_literal\(state, ";"\);/);
+});
+
+// Note on $.name.present: the TS-side inverse derivation rejects span-
+// presence refs in any render body (see feature-parity.test.ts row
+// `structureRef:span-presence` — deliberate gap pending Phase 4
+// formatter/preservation work). The Rust backend nevertheless emits the
+// right shape on the forward path (`Value::Bool(name.is_some())` for
+// optional spans, hard error for non-optional spans). A future session
+// closing the global span-presence gap will also unlock end-to-end
+// schema tests here.
+
+test('rust backend: rejects unsupported modifiers with Phase-6.2 error', () => {
   const schema = defineSchema({
     rootType: 'X',
     examples: [
       relation('X', {
         input: 'a',
         encodings: {
-          src: parse([span('x', 'a').ident().optional()]),
+          src: parse([span('x', 'a').ident().until(';')]),
           ast: { type: 'x' },
         },
       }),
@@ -149,11 +208,11 @@ test('rust backend: rejects unsupported modifiers with Phase-6.0 error', () => {
   });
   assert.throws(
     () => generateParser(schema, undefined, { backend: RUST_BACKEND }),
-    /Phase 6\.0.*modifiers not yet supported/,
+    /Phase 6\.2.*modifiers not yet supported/,
   );
 });
 
-test('rust backend: rejects recursive spans with Phase-6.0 error', () => {
+test('rust backend: rejects recursive spans with Phase-6.3 error', () => {
   const schema = defineSchema({
     rootType: 'List',
     examples: [
@@ -175,7 +234,7 @@ test('rust backend: rejects recursive spans with Phase-6.0 error', () => {
   });
   assert.throws(
     () => generateParser(schema, undefined, { backend: RUST_BACKEND }),
-    /Phase 6\.0.*recursive spans not yet supported/,
+    /Phase 6\.3.*recursive spans not yet supported/,
   );
 });
 

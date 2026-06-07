@@ -166,6 +166,13 @@ fn is_digit(b: u8) -> bool {
     b >= b'0' && b <= b'9'
 }
 
+fn opt_str(s: &Option<String>) -> Value {
+    match s {
+        Some(v) => Value::String(v.clone()),
+        None => Value::Null,
+    }
+}
+
 fn match_literal(state: &mut State, lit: &str) -> bool {
     let bytes = lit.as_bytes();
     let end = state.pos + bytes.len();
@@ -212,13 +219,22 @@ function emitProductionFn(schema: InferredSchema, production: Production, altIdx
 }
 
 function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): void {
-  if (span.modifiers.length > 0) {
+  // Phase 6.2: .optional() is supported on literal + class spans. Other
+  // modifiers (.repeats, .until, ws / line-terminator policies) are still
+  // out of scope.
+  const unsupportedMods = span.modifiers.filter((m) => m.kind !== 'optional');
+  if (unsupportedMods.length > 0) {
     throw new CompilerError(
-      `rust backend (Phase 6.0): span modifiers not yet supported (got [${span.modifiers.map((m) => m.kind).join(', ')}])`,
+      `rust backend (Phase 6.2): span modifiers not yet supported (got [${unsupportedMods.map((m) => m.kind).join(', ')}])`,
     );
   }
   if (span.recursiveRoles.length > 0) {
-    throw new CompilerError(`rust backend (Phase 6.0): recursive spans not yet supported`);
+    throw new CompilerError(`rust backend (Phase 6.3): recursive spans not yet supported`);
+  }
+  const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  if (isOptional) {
+    emitOptionalSpan(lines, span);
+    return;
   }
   if (span.class === 'literal') {
     if (span.text === undefined) {
@@ -333,6 +349,99 @@ function emitQuotedStringSpan(lines: string[], span: ResolvedSpan, quote: string
   }
 }
 
+// Phase 6.2: .optional() — emit a once-around labeled loop whose value is
+// `Option<String>`. Inside, we run the same scan body as the non-optional
+// case but `break 'opt None` on any failure path and `break 'opt Some(...)`
+// at the end. The outer body then rolls back state.pos on None and binds
+// the named capture for the render-body emit.
+function emitOptionalSpan(lines: string[], span: ResolvedSpan): void {
+  // Fast path for the most common case — unnamed optional literal spans
+  // (pure tolerance, no capture, no render-body reference). One-liner:
+  // `let _ = match_literal(state, "text");` — match_literal already
+  // leaves state.pos unchanged on miss.
+  if (span.name === undefined && span.class === 'literal') {
+    if (span.text === undefined) throw new CompilerError(`rust backend: literal span missing text`);
+    lines.push(`    let _ = match_literal(state, ${rustString(span.text)});`);
+    return;
+  }
+  const snapVar = `__${rustIdent(span.name ?? 'anon')}_snapshot`;
+  const captureName = span.name ? rustIdent(span.name) : `__anon_${anonCounter()}`;
+  const inner: string[] = [];
+  inner.push(`        let __entry_opt = state.pos;`);
+  if (span.class === 'literal') {
+    if (span.text === undefined) throw new CompilerError(`rust backend: literal span missing text`);
+    inner.push(`        let __opt_start = state.pos;`);
+    inner.push(`        if !match_literal(state, ${rustString(span.text)}) {`);
+    inner.push(`            state.pos = __entry_opt;`);
+    inner.push(`            break 'opt None;`);
+    inner.push(`        }`);
+    inner.push(`        break 'opt Some(${rustString(span.text)}.to_string());`);
+  } else if (span.class === 'ident') {
+    inner.push(`        if state.pos >= state.input.len() || !is_ident_start(state.input[state.pos]) {`);
+    inner.push(`            state.pos = __entry_opt;`);
+    inner.push(`            break 'opt None;`);
+    inner.push(`        }`);
+    inner.push(`        let __opt_start = state.pos;`);
+    inner.push(`        state.pos += 1;`);
+    inner.push(`        while state.pos < state.input.len() && is_ident_cont(state.input[state.pos]) {`);
+    inner.push(`            state.pos += 1;`);
+    inner.push(`        }`);
+    inner.push(`        break 'opt Some(state.src[__opt_start..state.pos].to_string());`);
+  } else if (span.class === 'number') {
+    const isInt = span.refinements.some((r) => r.name === 'int');
+    inner.push(`        if state.pos >= state.input.len() || !is_digit(state.input[state.pos]) {`);
+    inner.push(`            state.pos = __entry_opt;`);
+    inner.push(`            break 'opt None;`);
+    inner.push(`        }`);
+    inner.push(`        let __opt_start = state.pos;`);
+    inner.push(`        state.pos += 1;`);
+    inner.push(`        while state.pos < state.input.len() && is_digit(state.input[state.pos]) {`);
+    inner.push(`            state.pos += 1;`);
+    inner.push(`        }`);
+    if (!isInt) {
+      inner.push(NUMBER_FRACTION_EXPONENT_SCAN.replace(/^    /gm, '        '));
+    }
+    inner.push(`        break 'opt Some(state.src[__opt_start..state.pos].to_string());`);
+  } else if (span.class === 'string') {
+    const quote = stringQuoteChar(span);
+    const quoteByte = `b${rustChar(quote)}`;
+    inner.push(`        if state.pos >= state.input.len() || state.input[state.pos] != ${quoteByte} {`);
+    inner.push(`            state.pos = __entry_opt;`);
+    inner.push(`            break 'opt None;`);
+    inner.push(`        }`);
+    inner.push(`        let __opt_start = state.pos;`);
+    inner.push(`        state.pos += 1;`);
+    inner.push(`        while state.pos < state.input.len() {`);
+    inner.push(`            let b = state.input[state.pos];`);
+    inner.push(`            if b == b'\\\\' && state.pos + 1 < state.input.len() {`);
+    inner.push(`                state.pos += 2;`);
+    inner.push(`                continue;`);
+    inner.push(`            }`);
+    inner.push(`            if b == ${quoteByte} {`);
+    inner.push(`                state.pos += 1;`);
+    inner.push(`                break;`);
+    inner.push(`            }`);
+    inner.push(`            state.pos += 1;`);
+    inner.push(`        }`);
+    inner.push(`        break 'opt Some(state.src[__opt_start..state.pos].to_string());`);
+  } else {
+    throw new CompilerError(
+      `rust backend (Phase 6.2): optional span class '${span.class}' not yet supported`,
+    );
+  }
+  const block = `    let ${snapVar} = state.pos;\n` +
+    `    let ${captureName}: Option<String> = 'opt: loop {\n` +
+    inner.join('\n') + `\n` +
+    `    };\n` +
+    `    if ${captureName}.is_none() { state.pos = ${snapVar}; }`;
+  lines.push(block);
+}
+
+let __anonSpanCounter = 0;
+function anonCounter(): number {
+  return __anonSpanCounter++;
+}
+
 function stringQuoteChar(span: ResolvedSpan): string {
   for (const ref of span.refinements) {
     if (ref.name === 'doubleQuoted') return '"';
@@ -379,13 +488,24 @@ function emitRenderBody(body: RenderBody, production: Production): string {
   if (typeof body === 'string') return `Value::String(${rustString(body)}.to_string())`;
   if (isStructureRef(body)) {
     if (body.__ref === 'span-value') {
-      assertNamedSpanExists(production, body.name);
-      return `Value::String(${rustIdent(body.name)}.clone())`;
+      const sourceSpan = lookupNamedSpan(production, body.name);
+      const ident = rustIdent(body.name);
+      // Phase 6.2: optional spans carry Option<String>; render them as
+      // null when absent, String otherwise. Non-optional spans stay
+      // String-shaped (the Phase 6.0/6.1 path).
+      if (sourceSpan.modifiers.some((m) => m.kind === 'optional')) {
+        return `opt_str(&${ident})`;
+      }
+      return `Value::String(${ident}.clone())`;
     }
     if (body.__ref === 'span-presence') {
-      throw new CompilerError(
-        `rust backend (Phase 6.0): $.name.present not yet supported`,
-      );
+      const sourceSpan = lookupNamedSpan(production, body.name);
+      if (!sourceSpan.modifiers.some((m) => m.kind === 'optional')) {
+        throw new CompilerError(
+          `rust backend: $.${body.name}.present requires .optional() on the span`,
+        );
+      }
+      return `Value::Bool(${rustIdent(body.name)}.is_some())`;
     }
     throw new CompilerError(
       `rust backend (Phase 6.0): structure ref '${body.__ref}' not yet supported`,
@@ -409,9 +529,9 @@ function emitRenderBody(body: RenderBody, production: Production): string {
   throw new CompilerError(`rust backend: unsupported render body shape: ${typeof body}`);
 }
 
-function assertNamedSpanExists(production: Production, name: string): void {
+function lookupNamedSpan(production: Production, name: string): ResolvedSpan {
   for (const span of production.spans) {
-    if (span.name === name) return;
+    if (span.name === name) return span;
   }
   throw new CompilerError(
     `rust backend: render body references $.${name} but no span with that name in production for ${production.nodeType}`,

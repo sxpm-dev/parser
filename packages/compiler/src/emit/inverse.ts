@@ -840,11 +840,27 @@ function emitObjectBody(
         `  throw new Error("stringify: field ${escapeForError(JSON.stringify(field.name))} expected ${escapeForError(litJs)}, got " + JSON.stringify(${access}));`,
         `}`,
       );
+      // Hardcoded-literal-in-AST round-trip: when the field name matches
+      // a named span in the production AND the literal value is a string,
+      // also populate captures[name] so the shared rebuild can emit the
+      // span's text. Without this, schemas that hardcode a literal in
+      // the AST instead of routing it through $.name lose the value on
+      // stringify (rebuild reads undefined → empty slot).
+      if (typeof field.value === 'string' && productionHasNamedSpan(production, field.name)) {
+        lines.push(`captures${memberAccess(field.name)} = ${litJs};`);
+      }
     } else {
       lines.push(...emitInverseBody(field.inverse, access, target, production).split('\n'));
     }
   }
   return lines.join('\n');
+}
+
+function productionHasNamedSpan(production: Production, name: string): boolean {
+  for (const span of production.spans) {
+    if (span.name === name) return true;
+  }
+  return false;
 }
 
 function emitArrayBody(

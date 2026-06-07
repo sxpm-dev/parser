@@ -598,6 +598,17 @@ function walkInverseObject(
           `stringify: field '${field.name}' expected ${safeStringify(field.value)}, got ${safeStringify(v)}`,
         );
       }
+      // Hardcoded-literal-in-AST round-trip: if a named span shares this
+      // field's name and the literal is a string, populate captures so
+      // the rebuild can emit the span's text. Mirrors emit/inverse.ts.
+      if (typeof field.value === 'string') {
+        for (const span of production.spans) {
+          if (span.name === field.name) {
+            captures[field.name] = field.value;
+            break;
+          }
+        }
+      }
       continue;
     }
     walkInverse(schema, field.inverse, v, target, production, captures, indentCol);

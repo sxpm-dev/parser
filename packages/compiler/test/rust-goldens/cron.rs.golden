@@ -1,0 +1,466 @@
+// Auto-generated from packages/cron/src/schema.ts
+// Do not edit by hand. Re-run `npm run generate` to refresh.
+// (rust backend — see packages/compiler/src/emit/rust/)
+#![allow(dead_code, unused_variables, non_snake_case, clippy::all)]
+
+use std::fmt;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Value {
+    Null,
+    Bool(bool),
+    Number(f64),
+    String(String),
+    Array(Vec<Value>),
+    Object(Vec<(String, Value)>),
+}
+
+impl Value {
+    pub fn obj_get(&self, key: &str) -> Option<&Value> {
+        if let Value::Object(fields) = self {
+            for (k, v) in fields {
+                if k == key {
+                    return Some(v);
+                }
+            }
+        }
+        None
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Null => write!(f, "null"),
+            Value::Bool(b) => write!(f, "{}", b),
+            Value::Number(n) => write!(f, "{}", n),
+            Value::String(s) => write!(f, "\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\"")),
+            Value::Array(items) => {
+                write!(f, "[")?;
+                for (i, item) in items.iter().enumerate() {
+                    if i > 0 { write!(f, ",")?; }
+                    write!(f, "{}", item)?;
+                }
+                write!(f, "]")
+            }
+            Value::Object(fields) => {
+                write!(f, "{{")?;
+                for (i, (k, v)) in fields.iter().enumerate() {
+                    if i > 0 { write!(f, ",")?; }
+                    write!(f, "\"{}\":{}", k, v)?;
+                }
+                write!(f, "}}")
+            }
+        }
+    }
+}
+
+struct State<'a> {
+    input: &'a [u8],
+    src: &'a str,
+    pos: usize,
+    max_pos: usize,
+}
+
+impl<'a> State<'a> {
+    fn new(src: &'a str) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+        }
+    }
+}
+
+fn skip_ws(state: &mut State) {
+    while state.pos < state.input.len() {
+        let b = state.input[state.pos];
+        if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+            state.pos += 1;
+        } else {
+            break;
+        }
+    }
+}
+
+fn is_ident_start(b: u8) -> bool {
+    (b >= b'a' && b <= b'z') || (b >= b'A' && b <= b'Z') || b == b'_'
+}
+
+fn is_ident_cont(b: u8) -> bool {
+    is_ident_start(b) || (b >= b'0' && b <= b'9') || b == b'-'
+}
+
+fn is_digit(b: u8) -> bool {
+    b >= b'0' && b <= b'9'
+}
+
+fn opt_str(s: &Option<String>) -> Value {
+    match s {
+        Some(v) => Value::String(v.clone()),
+        None => Value::Null,
+    }
+}
+
+fn opt_value(v: &Option<Value>) -> Value {
+    match v {
+        Some(v) => v.clone(),
+        None => Value::Null,
+    }
+}
+
+fn match_literal(state: &mut State, lit: &str) -> bool {
+    let bytes = lit.as_bytes();
+    let end = state.pos + bytes.len();
+    if end > state.input.len() {
+        return false;
+    }
+    if &state.input[state.pos..end] != bytes {
+        return false;
+    }
+    state.pos = end;
+    true
+}
+
+fn syntax_error(state: &State) -> String {
+    let pos = state.max_pos.max(state.pos);
+    format!("parse error at byte offset {}", pos)
+}
+
+fn parse_CronField__alt0(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    if !match_literal(state, "*") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    Some(Value::Object(vec![("type".to_string(), Value::String("wildcard".to_string()))]))
+}
+
+fn parse_CronField__alt1(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    if !match_literal(state, "*") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    skip_ws(state);
+    if !match_literal(state, "/") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    skip_ws(state);
+    let __step_start = state.pos;
+    if state.pos >= state.input.len() || !(is_digit(state.input[state.pos])) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    state.pos += 1;
+    while state.pos < state.input.len() && (is_digit(state.input[state.pos])) {
+        state.pos += 1;
+    }
+    let __step_end = state.pos;
+    let step: String = state.src[__step_start..__step_end].to_string();
+    Some(Value::Object(vec![("type".to_string(), Value::String("step".to_string())), ("step".to_string(), Value::String(step.clone()))]))
+}
+
+fn parse_CronField__alt2(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    let __value_start = state.pos;
+    if state.pos >= state.input.len() || !(is_digit(state.input[state.pos])) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    state.pos += 1;
+    while state.pos < state.input.len() && (is_digit(state.input[state.pos])) {
+        state.pos += 1;
+    }
+    let __value_end = state.pos;
+    let value: String = state.src[__value_start..__value_end].to_string();
+    Some(Value::Object(vec![("type".to_string(), Value::String("value".to_string())), ("value".to_string(), Value::String(value.clone()))]))
+}
+
+fn parse_CronField__alt3(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    let __start_start = state.pos;
+    if state.pos >= state.input.len() || !(is_digit(state.input[state.pos])) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    state.pos += 1;
+    while state.pos < state.input.len() && (is_digit(state.input[state.pos])) {
+        state.pos += 1;
+    }
+    let __start_end = state.pos;
+    let start: String = state.src[__start_start..__start_end].to_string();
+    skip_ws(state);
+    if !match_literal(state, "-") {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    skip_ws(state);
+    let __end_start = state.pos;
+    if state.pos >= state.input.len() || !(is_digit(state.input[state.pos])) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    state.pos += 1;
+    while state.pos < state.input.len() && (is_digit(state.input[state.pos])) {
+        state.pos += 1;
+    }
+    let __end_end = state.pos;
+    let end: String = state.src[__end_start..__end_end].to_string();
+    Some(Value::Object(vec![("type".to_string(), Value::String("range".to_string())), ("start".to_string(), Value::String(start.clone())), ("end".to_string(), Value::String(end.clone()))]))
+}
+
+fn parse_CronField(state: &mut State) -> Option<Value> {
+    let snapshot = state.pos;
+    if let Some(v) = parse_CronField__alt0(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    let snapshot = state.pos;
+    if let Some(v) = parse_CronField__alt1(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    let snapshot = state.pos;
+    if let Some(v) = parse_CronField__alt2(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    let snapshot = state.pos;
+    if let Some(v) = parse_CronField__alt3(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    None
+}
+
+fn stringify_CronField__alt0(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "wildcard" { return None; } } else { return None; }
+    let mut __out = String::new();
+    __out.push_str("*");
+    Some(__out)
+}
+
+fn stringify_CronField__alt1(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "step" { return None; } } else { return None; }
+    let step = value.obj_get("step");
+    let mut __out = String::new();
+    __out.push_str("*");
+    __out.push_str("/");
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(Value::String(s)) = step { __out.push_str(s); }
+    Some(__out)
+}
+
+fn stringify_CronField__alt2(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "value" { return None; } } else { return None; }
+    let value = value.obj_get("value");
+    let mut __out = String::new();
+    if let Some(Value::String(s)) = value { __out.push_str(s); }
+    Some(__out)
+}
+
+fn stringify_CronField__alt3(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "range" { return None; } } else { return None; }
+    let start = value.obj_get("start");
+    let end = value.obj_get("end");
+    let mut __out = String::new();
+    if let Some(Value::String(s)) = start { __out.push_str(s); }
+    __out.push_str("-");
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(Value::String(s)) = end { __out.push_str(s); }
+    Some(__out)
+}
+
+fn stringify_CronField(value: &Value) -> String {
+    if let Some(out) = stringify_CronField__alt0(value) { return out; }
+    if let Some(out) = stringify_CronField__alt1(value) { return out; }
+    if let Some(out) = stringify_CronField__alt2(value) { return out; }
+    if let Some(out) = stringify_CronField__alt3(value) { return out; }
+    String::new()
+}
+
+fn parse_CommandWord__alt0(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    let __value_start = state.pos;
+    if state.pos >= state.input.len() || !(is_ident_start(state.input[state.pos])) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    state.pos += 1;
+    while state.pos < state.input.len() && (is_ident_cont(state.input[state.pos])) {
+        state.pos += 1;
+    }
+    let __value_end = state.pos;
+    let value: String = state.src[__value_start..__value_end].to_string();
+    Some(Value::String(value.clone()))
+}
+
+fn parse_CommandWord(state: &mut State) -> Option<Value> {
+    let snapshot = state.pos;
+    if let Some(v) = parse_CommandWord__alt0(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    None
+}
+
+fn stringify_CommandWord(value: &Value) -> String {
+    if let Some(out) = stringify_CommandWord__alt0(value) { return out; }
+    String::new()
+}
+
+fn parse_Command__alt0(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    let mut words: Vec<Value> = Vec::new();
+    loop {
+        let __iter_snapshot = state.pos;
+        skip_ws(state);
+        let __item = parse_CommandWord(state);
+        match __item {
+            Some(v) => words.push(v),
+            None => { state.pos = __iter_snapshot; break; }
+        }
+    }
+    if words.len() < 1 {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+    Some(Value::Object(vec![("type".to_string(), Value::String("command".to_string())), ("words".to_string(), Value::Array(words.clone()))]))
+}
+
+fn parse_Command(state: &mut State) -> Option<Value> {
+    let snapshot = state.pos;
+    if let Some(v) = parse_Command__alt0(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    None
+}
+
+fn stringify_Command__alt0(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "command" { return None; } } else { return None; }
+    let words = value.obj_get("words");
+    let mut __out = String::new();
+    if let Some(Value::Array(items)) = words {
+        for (i, item) in items.iter().enumerate() {
+            if i > 0 { __out.push_str(" "); }
+            __out.push_str(&stringify_CommandWord(item));
+        }
+    }
+    Some(__out)
+}
+
+fn stringify_Command(value: &Value) -> String {
+    if let Some(out) = stringify_Command__alt0(value) { return out; }
+    String::new()
+}
+
+fn parse_Cron__alt0(state: &mut State) -> Option<Value> {
+    let entry_pos = state.pos;
+    let minute: Value = match parse_CronField(state) {
+        Some(v) => v,
+        None => { state.pos = entry_pos; return None; }
+    };
+    skip_ws(state);
+    let hour: Value = match parse_CronField(state) {
+        Some(v) => v,
+        None => { state.pos = entry_pos; return None; }
+    };
+    skip_ws(state);
+    let dayOfMonth: Value = match parse_CronField(state) {
+        Some(v) => v,
+        None => { state.pos = entry_pos; return None; }
+    };
+    skip_ws(state);
+    let month: Value = match parse_CronField(state) {
+        Some(v) => v,
+        None => { state.pos = entry_pos; return None; }
+    };
+    skip_ws(state);
+    let dayOfWeek: Value = match parse_CronField(state) {
+        Some(v) => v,
+        None => { state.pos = entry_pos; return None; }
+    };
+    skip_ws(state);
+    let __command_snapshot = state.pos;
+    let command: Option<Value> = 'opt: loop {
+        state.pos = __command_snapshot;
+        if let Some(v) = parse_Command(state) { break 'opt Some(v); }
+        state.pos = __command_snapshot;
+        break 'opt None;
+    };
+    Some(Value::Object(vec![("type".to_string(), Value::String("cron".to_string())), ("minute".to_string(), minute.clone()), ("hour".to_string(), hour.clone()), ("dayOfMonth".to_string(), dayOfMonth.clone()), ("month".to_string(), month.clone()), ("dayOfWeek".to_string(), dayOfWeek.clone()), ("command".to_string(), opt_value(&command))]))
+}
+
+fn parse_Cron(state: &mut State) -> Option<Value> {
+    let snapshot = state.pos;
+    if let Some(v) = parse_Cron__alt0(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    None
+}
+
+fn stringify_Cron__alt0(value: &Value) -> Option<String> {
+    let ty = value.obj_get("type")?;
+    if let Value::String(s) = ty { if s != "cron" { return None; } } else { return None; }
+    let minute = value.obj_get("minute");
+    let hour = value.obj_get("hour");
+    let dayOfMonth = value.obj_get("dayOfMonth");
+    let month = value.obj_get("month");
+    let dayOfWeek = value.obj_get("dayOfWeek");
+    let command = value.obj_get("command");
+    let mut __out = String::new();
+    if let Some(inner) = minute { __out.push_str(&stringify_CronField(inner)); }
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(inner) = hour { __out.push_str(&stringify_CronField(inner)); }
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(inner) = dayOfMonth { __out.push_str(&stringify_CronField(inner)); }
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(inner) = month { __out.push_str(&stringify_CronField(inner)); }
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(inner) = dayOfWeek { __out.push_str(&stringify_CronField(inner)); }
+    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    if let Some(inner) = command {
+        if !matches!(inner, Value::Null) { __out.push_str(&stringify_Command(inner)); }
+    }
+    Some(__out)
+}
+
+fn stringify_Cron(value: &Value) -> String {
+    if let Some(out) = stringify_Cron__alt0(value) { return out; }
+    String::new()
+}
+
+pub fn render(input: &str) -> Result<Value, String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Cron(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}
+
+pub fn stringify(value: &Value) -> String {
+    stringify_Cron(value)
+}

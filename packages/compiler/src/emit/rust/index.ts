@@ -47,6 +47,7 @@ export const RUST_BACKEND: Backend = {
 // ---------------------------------------------------------------------------
 
 function emitRustParser(schema: InferredSchema): string {
+  __anonSpanCounter = 0;
   const parts: string[] = [];
   parts.push(emitHeader(schema));
   parts.push(RUST_PREAMBLE);
@@ -173,6 +174,13 @@ fn opt_str(s: &Option<String>) -> Value {
     }
 }
 
+fn opt_value(v: &Option<Value>) -> Value {
+    match v {
+        Some(v) => v.clone(),
+        None => Value::Null,
+    }
+}
+
 fn match_literal(state: &mut State, lit: &str) -> bool {
     let bytes = lit.as_bytes();
     let end = state.pos + bytes.len();
@@ -219,20 +227,49 @@ function emitProductionFn(schema: InferredSchema, production: Production, altIdx
 }
 
 function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): void {
-  // Phase 6.2: .optional() + .until() supported on leaf spans. Other
-  // modifiers (.repeats, ws / line-terminator policies) still out of scope.
-  const supported = new Set(['optional', 'until']);
+  // Phase 6.2/6.3: optional/until/repeats supported on leaf + recursive
+  // spans. Other modifiers (ws / line-terminator policies, indent) still
+  // out of scope.
+  const supported = new Set(['optional', 'until', 'repeats']);
   const unsupportedMods = span.modifiers.filter((m) => !supported.has(m.kind));
   if (unsupportedMods.length > 0) {
     throw new CompilerError(
       `rust backend (Phase 6.2): span modifiers not yet supported (got [${unsupportedMods.map((m) => m.kind).join(', ')}])`,
     );
   }
-  if (span.recursiveRoles.length > 0) {
-    throw new CompilerError(`rust backend (Phase 6.3): recursive spans not yet supported`);
-  }
+  const isRecursive = span.recursiveRoles.length > 0;
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
   const untilMod = span.modifiers.find((m) => m.kind === 'until');
+  // Phase 6.3 — repeats on a recursive span: collect a Vec<Value>.
+  if (repeatsMod !== undefined) {
+    if (!isRecursive) {
+      throw new CompilerError(
+        `rust backend: .repeats() requires a recursive role (got class '${span.class}')`,
+      );
+    }
+    if (isOptional || untilMod !== undefined) {
+      throw new CompilerError(
+        `rust backend (Phase 6.3): .repeats() combined with other modifiers not yet supported`,
+      );
+    }
+    emitRepeatsRecursiveSpan(lines, span, repeatsMod as RepeatsModifier);
+    return;
+  }
+  // Phase 6.3 — plain recursive span (single or multi role).
+  if (isRecursive) {
+    if (untilMod !== undefined) {
+      throw new CompilerError(
+        `rust backend: recursive span cannot also be .until()`,
+      );
+    }
+    if (isOptional) {
+      emitOptionalRecursiveSpan(lines, span);
+      return;
+    }
+    emitRecursiveSpan(lines, span);
+    return;
+  }
   if (untilMod !== undefined) {
     if (isOptional) {
       throw new CompilerError(
@@ -452,6 +489,156 @@ function anonCounter(): number {
   return __anonSpanCounter++;
 }
 
+type RepeatsModifier = {
+  readonly kind: 'repeats';
+  readonly sep?: string;
+  readonly trailing?: 'allowed' | 'required' | 'forbidden';
+  readonly min?: number;
+  readonly max?: number;
+};
+
+// Phase 6.3 — plain recursive span: call into the role's parser. For
+// multi-role spans, try each role in declaration order, rolling back
+// state.pos on miss; the first hit wins. On total failure, propagate
+// None to the caller (which rolls back the whole production).
+function emitRecursiveSpan(lines: string[], span: ResolvedSpan): void {
+  const captureName = span.name ? rustIdent(span.name) : '_';
+  const bind = span.name !== undefined ? `let ${captureName}: Value = ` : `let _ = `;
+  if (span.recursiveRoles.length === 1) {
+    const role = rustIdent(span.recursiveRoles[0]!);
+    lines.push(
+      `    ${bind}match parse_${role}(state) {\n` +
+        `        Some(v) => v,\n` +
+        `        None => { state.pos = entry_pos; return None; }\n` +
+        `    };`,
+    );
+    return;
+  }
+  // Multi-role: try each in order.
+  const branches: string[] = [];
+  branches.push(`    let __rec_snapshot = state.pos;`);
+  branches.push(`    ${bind}'rec: loop {`);
+  for (const role of span.recursiveRoles) {
+    const r = rustIdent(role);
+    branches.push(`        state.pos = __rec_snapshot;`);
+    branches.push(`        if let Some(v) = parse_${r}(state) { break 'rec v; }`);
+  }
+  branches.push(`        state.pos = entry_pos;`);
+  branches.push(`        return None;`);
+  branches.push(`    };`);
+  lines.push(branches.join('\n'));
+}
+
+// Phase 6.3 — optional recursive span: same dispatch as non-optional,
+// but yields Option<Value> with rollback on miss instead of producing
+// a hard failure.
+function emitOptionalRecursiveSpan(lines: string[], span: ResolvedSpan): void {
+  const captureName = span.name ? rustIdent(span.name) : `__anon_${anonCounter()}`;
+  const snapVar = `__${captureName}_snapshot`;
+  const branches: string[] = [];
+  branches.push(`    let ${snapVar} = state.pos;`);
+  branches.push(`    let ${captureName}: Option<Value> = 'opt: loop {`);
+  for (const role of span.recursiveRoles) {
+    const r = rustIdent(role);
+    branches.push(`        state.pos = ${snapVar};`);
+    branches.push(`        if let Some(v) = parse_${r}(state) { break 'opt Some(v); }`);
+  }
+  branches.push(`        state.pos = ${snapVar};`);
+  branches.push(`        break 'opt None;`);
+  branches.push(`    };`);
+  lines.push(branches.join('\n'));
+}
+
+// Phase 6.3 — recursive span with .repeats({sep?, min?, max?, trailing?}).
+// Emits a loop that calls the recursive parser, optionally consumes a
+// separator literal between iterations, and collects into Vec<Value>.
+// `min` enforces a floor on iterations; `max` (if set) caps the count.
+// `trailing: 'allowed' | 'required' | 'forbidden'` (default 'forbidden')
+// constrains the sep after the last item.
+function emitRepeatsRecursiveSpan(
+  lines: string[],
+  span: ResolvedSpan,
+  modifier: RepeatsModifier,
+): void {
+  const captureName = span.name ? rustIdent(span.name) : `__anon_${anonCounter()}`;
+  const min = modifier.min ?? 0;
+  const max = modifier.max ?? null;
+  const sep = modifier.sep;
+  const trailing = modifier.trailing ?? 'forbidden';
+  const body: string[] = [];
+  body.push(`    let mut ${captureName}: Vec<Value> = Vec::new();`);
+  body.push(`    loop {`);
+  if (max !== null) {
+    body.push(`        if ${captureName}.len() >= ${max} { break; }`);
+  }
+  body.push(`        let __iter_snapshot = state.pos;`);
+  body.push(`        skip_ws(state);`);
+  // Try one of the recursive roles.
+  if (span.recursiveRoles.length === 1) {
+    const role = rustIdent(span.recursiveRoles[0]!);
+    body.push(`        let __item = parse_${role}(state);`);
+  } else {
+    body.push(`        let __item: Option<Value> = 'role: loop {`);
+    for (const role of span.recursiveRoles) {
+      const r = rustIdent(role);
+      body.push(`            state.pos = __iter_snapshot;`);
+      body.push(`            skip_ws(state);`);
+      body.push(`            if let Some(v) = parse_${r}(state) { break 'role Some(v); }`);
+    }
+    body.push(`            state.pos = __iter_snapshot;`);
+    body.push(`            break 'role None;`);
+    body.push(`        };`);
+  }
+  body.push(`        match __item {`);
+  body.push(`            Some(v) => ${captureName}.push(v),`);
+  body.push(`            None => { state.pos = __iter_snapshot; break; }`);
+  body.push(`        }`);
+  // Separator handling. Without a sep, iterations are space-separated.
+  if (sep !== undefined && sep !== '') {
+    body.push(`        let __sep_snapshot = state.pos;`);
+    body.push(`        skip_ws(state);`);
+    body.push(`        if !match_literal(state, ${rustString(sep)}) {`);
+    body.push(`            state.pos = __sep_snapshot;`);
+    body.push(`            break;`);
+    body.push(`        }`);
+    if (trailing === 'forbidden') {
+      // Trailing-sep forbidden: peek for another item; if none, roll back
+      // the sep we just consumed and exit the loop.
+      body.push(`        let __peek_snapshot = state.pos;`);
+      body.push(`        skip_ws(state);`);
+      const probe = span.recursiveRoles
+        .map((r) => `parse_${rustIdent(r)}(state).is_some()`)
+        .join(' || ');
+      body.push(`        let __can_continue = ${probe};`);
+      body.push(`        state.pos = __peek_snapshot;`);
+      body.push(`        if !__can_continue {`);
+      body.push(`            state.pos = __sep_snapshot;`);
+      body.push(`            break;`);
+      body.push(`        }`);
+    }
+    // 'allowed' / 'required' — keep the consumed sep; loop continues.
+  }
+  body.push(`    }`);
+  if (min > 0) {
+    body.push(`    if ${captureName}.len() < ${min} {`);
+    body.push(`        if state.pos > state.max_pos { state.max_pos = state.pos; }`);
+    body.push(`        state.pos = entry_pos;`);
+    body.push(`        return None;`);
+    body.push(`    }`);
+  }
+  if (modifier.trailing === 'required') {
+    // The loop only exits when no sep was found; if 'required', that
+    // exit path is wrong. Emit a guard: the post-loop state.pos must
+    // sit just past a sep. Simplest implementation: re-check that the
+    // previous-iteration sep was actually consumed by tracking a flag.
+    // Deferred to a follow-up — neither cron nor iso-duration uses it.
+    throw new CompilerError(
+      `rust backend (Phase 6.3): trailing: 'required' not yet supported on .repeats()`,
+    );
+  }
+  lines.push(body.join('\n'));
+}
+
 // Phase 6.2: .until([stops...]) — opaque source-slice capture. Walks the
 // input char-by-char tracking `() [] {}` depth (when `balanced` is true,
 // the default). At depth 0, if the input at the current position starts
@@ -565,12 +752,21 @@ function emitRenderBody(body: RenderBody, production: Production): string {
     if (body.__ref === 'span-value') {
       const sourceSpan = lookupNamedSpan(production, body.name);
       const ident = rustIdent(body.name);
-      // Phase 6.2: optional spans carry Option<String>; render them as
-      // null when absent, String otherwise. Non-optional spans stay
-      // String-shaped (the Phase 6.0/6.1 path).
-      if (sourceSpan.modifiers.some((m) => m.kind === 'optional')) {
-        return `opt_str(&${ident})`;
+      const isOptional = sourceSpan.modifiers.some((m) => m.kind === 'optional');
+      const isRepeats = sourceSpan.modifiers.some((m) => m.kind === 'repeats');
+      const isRecursive = sourceSpan.recursiveRoles.length > 0;
+      // Phase 6.3: capture types differ by span shape.
+      //   - .repeats(...) recursive → Vec<Value>           → Value::Array
+      //   - .of(...) recursive optional → Option<Value>    → opt_value
+      //   - .of(...) recursive          → Value (already)  → bare ident
+      //   - class optional              → Option<String>   → opt_str
+      //   - class                       → String           → Value::String
+      if (isRepeats) return `Value::Array(${ident}.clone())`;
+      if (isRecursive) {
+        if (isOptional) return `opt_value(&${ident})`;
+        return `${ident}.clone()`;
       }
+      if (isOptional) return `opt_str(&${ident})`;
       return `Value::String(${ident}.clone())`;
     }
     if (body.__ref === 'span-presence') {

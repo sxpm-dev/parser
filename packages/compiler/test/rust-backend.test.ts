@@ -295,7 +295,125 @@ test('rust backend: rejects unsupported modifiers with Phase-6.2 error', () => {
   );
 });
 
-test('rust backend: rejects recursive spans with Phase-6.3 error', () => {
+test('rust backend (6.3): single-role recursive span calls parse_<Role> and captures Value', () => {
+  const schema = defineSchema({
+    rootType: 'Pair',
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('Pair', {
+        input: 'x',
+        encodings: {
+          src: parse([span('item', 'x').of('Item')]),
+          ast: { type: 'pair', item: $.item },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /let item: Value = match parse_Item\(state\) \{/);
+  assert.match(code, /Some\(v\) => v,/);
+  assert.match(code, /None => \{ state\.pos = entry_pos; return None; \}/);
+  // Render body references `item` directly (no Value::String wrap).
+  assert.match(code, /\("item"\.to_string\(\), item\.clone\(\)\)/);
+});
+
+test('rust backend (6.3): multi-role recursive span tries each role in order', () => {
+  const schema = defineSchema({
+    rootType: 'Node',
+    examples: [
+      relation('A', {
+        input: 'a',
+        encodings: { src: parse([literal('a')]), ast: { type: 'a' } },
+      }),
+      relation('B', {
+        input: 'b',
+        encodings: { src: parse([literal('b')]), ast: { type: 'b' } },
+      }),
+      relation('Node', {
+        input: 'a',
+        encodings: {
+          src: parse([span('child', 'a').of('A', 'B')]),
+          ast: { type: 'node', child: $.child },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /'rec: loop \{/);
+  assert.match(code, /if let Some\(v\) = parse_A\(state\) \{ break 'rec v; \}/);
+  assert.match(code, /if let Some\(v\) = parse_B\(state\) \{ break 'rec v; \}/);
+});
+
+test('rust backend (6.3): optional recursive span captures Option<Value>', () => {
+  const schema = defineSchema({
+    rootType: 'X',
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('X', {
+        input: 'x',
+        encodings: {
+          src: parse([span('child', 'x').of('Item').optional()]),
+          ast: { type: 'x', child: $.child },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /let child: Option<Value> = 'opt: loop \{/);
+  assert.match(code, /if let Some\(v\) = parse_Item\(state\) \{ break 'opt Some\(v\); \}/);
+  assert.match(code, /break 'opt None;/);
+  // opt_value helper preamble.
+  assert.match(code, /fn opt_value\(v: &Option<Value>\) -> Value/);
+  // Render reference uses opt_value.
+  assert.match(code, /opt_value\(&child\)/);
+});
+
+test('rust backend (6.3): .repeats({sep}) collects Vec<Value>', () => {
+  const schema = defineSchema({
+    rootType: 'List',
+    punctuators: { comma: ',' },
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('List', {
+        input: 'x,y',
+        encodings: {
+          src: parse([
+            span('items', 'x').of('Item').repeats({ sep: ',' }),
+          ]),
+          ast: { type: 'list', items: $.items },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /let mut items: Vec<Value> = Vec::new\(\);/);
+  assert.match(code, /let __item = parse_Item\(state\);/);
+  assert.match(code, /match __item \{/);
+  assert.match(code, /Some\(v\) => items\.push\(v\),/);
+  assert.match(code, /if !match_literal\(state, ","\) \{/);
+  // Render body: Value::Array(items.clone()).
+  assert.match(code, /Value::Array\(items\.clone\(\)\)/);
+});
+
+test('rust backend (6.3): .repeats({min: 1}) enforces a minimum count', () => {
   const schema = defineSchema({
     rootType: 'List',
     examples: [
@@ -303,22 +421,44 @@ test('rust backend: rejects recursive spans with Phase-6.3 error', () => {
         input: 'x',
         encodings: {
           src: parse([span('n', 'x').ident()]),
-          ast: { type: 'item' },
+          ast: { type: 'item', n: $.n },
         },
       }),
       relation('List', {
         input: 'x',
         encodings: {
-          src: parse([span('item', 'x').of('Item')]),
-          ast: { type: 'list' },
+          src: parse([
+            span('items', 'x').of('Item').repeats({ min: 1 }),
+          ]),
+          ast: { type: 'list', items: $.items },
         },
       }),
     ],
   });
-  assert.throws(
-    () => generateParser(schema, undefined, { backend: RUST_BACKEND }),
-    /Phase 6\.3.*recursive spans not yet supported/,
-  );
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /if items\.len\(\) < 1 \{/);
+  assert.match(code, /state\.pos = entry_pos;/);
+  assert.match(code, /return None;/);
+});
+
+test('rust backend (6.3): cron schema compiles end-to-end (no CompilerError)', async () => {
+  // The smallest non-trivial schema in the repo: covers literal, ident,
+  // number.int(), optional, single-role recursion (.of('CronField')),
+  // and recursive repeats (.of('CommandWord').repeats({min: 1})).
+  const { default: schema } = await import('../../cron/src/schema.ts');
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND, packageName: 'cron' });
+  // Sanity check: the public render entry references the root.
+  assert.match(code, /pub fn render\(input: &str\) -> Result<Value, String>/);
+  assert.match(code, /parse_Cron\(&mut state\)/);
+  // Each NodeType produces at least one alt fn + a dispatcher.
+  assert.match(code, /fn parse_Cron__alt0\(state: &mut State\) -> Option<Value>/);
+  assert.match(code, /fn parse_CronField__alt0\(state: &mut State\) -> Option<Value>/);
+  assert.match(code, /fn parse_Command__alt0\(state: &mut State\) -> Option<Value>/);
+  assert.match(code, /fn parse_CommandWord__alt0\(state: &mut State\) -> Option<Value>/);
+  // Recursive call to CronField is in place.
+  assert.match(code, /parse_CronField\(state\)/);
+  // The optional command capture path is emitted.
+  assert.match(code, /Option<Value>/);
 });
 
 test('rust backend (6.1): number().int() scans digits and captures the slice', () => {

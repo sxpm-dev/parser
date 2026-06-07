@@ -315,7 +315,40 @@ function parseHtmlDocument(state: State): unknown {
   return { __production: "HtmlDocument#0", children: children };
 }
 
-function parseDoctype__alt0(state: State): unknown {
+function parseDoctype__alt0(state: State, entryOff: number, keyword: string, name: string, keyword__start: number, name__start: number, keyword__end: number, name__end: number): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Doctype#0", keyword: keyword, name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "Doctype#0", keyword: keyword, name: name };
+}
+
+function parseDoctype__alt1(state: State, entryOff: number, keyword: string, name: string, keyword__start: number, name__start: number, keyword__end: number, name__end: number): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const __diagSnap = state.diagnostics.length;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  state.diagnostics.push({ code: 'recovered', drop: "incomplete-doctype", start: entryOff, end: off });
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "Doctype#1", keyword: keyword, name: name };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "Doctype#1", keyword: keyword, name: name };
+}
+
+function parseDoctype(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -338,66 +371,20 @@ function parseDoctype__alt0(state: State): unknown {
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Doctype#0", keyword: keyword, name: name };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
+  const __postPos = off;
+  let __peekOff = off;
+  while (__peekOff < len) {
+    const c = input.charCodeAt(__peekOff);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { __peekOff++; continue; }
+    break;
   }
-  return { __production: "Doctype#0", keyword: keyword, name: name };
-}
-
-function parseDoctype__alt1(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __diagSnap = state.diagnostics.length;
-  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
-  off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
-  const __keyword_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __keyword_end = off;
-  const keyword = input.slice(__keyword_start, __keyword_end);
-  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
-  const __name_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __name_end = off;
-  const name = input.slice(__name_start, __name_end);
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  state.diagnostics.push({ code: 'recovered', drop: "incomplete-doctype", start: entryOff, end: off });
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Doctype#1", keyword: keyword, name: name };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
+  if (input.startsWith(">", __peekOff)) {
+    state.pos = __postPos; { const r = parseDoctype__alt0(state, entryOff, keyword, name, __keyword_start, __name_start, __keyword_end, __name_end); if (r !== null) return r; }
   }
-  return { __production: "Doctype#1", keyword: keyword, name: name };
-}
-
-function parseDoctype(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-state.pos = off;
-  if (off >= len) return null;
-  if (input.charCodeAt(off) === 60) {
-  { const r = parseDoctype__alt0(state); if (r !== null) return r; }
-  return parseDoctype__alt1(state);
-}
-  return null;
+  state.pos = __postPos;
+  return parseDoctype__alt1(state, entryOff, keyword, name, __keyword_start, __name_start, __keyword_end, __name_end);
 }
 
 function parseComment(state: State): unknown {

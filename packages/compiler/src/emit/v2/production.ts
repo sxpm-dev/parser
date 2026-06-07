@@ -377,6 +377,13 @@ function toCapturesBindings(b: SpanBindings): CapturesBindings {
 }
 
 function skipWsBlock(): string {
+  return _skipWsBlock();
+}
+
+/** Inline ws-skip block. Exported so the generic prefix-share dispatcher
+ *  (prefix-share-dispatch.ts) can emit the same inter-span and leading
+ *  ws-skip the production body uses. */
+export function _skipWsBlock(): string {
   return `while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }`;
 }
 
@@ -387,7 +394,7 @@ function skipWsBlock(): string {
 // Used by the inter-span gap to decide whether to skip comments before this
 // span. v1 mirrors the same idea by not emitting a comment-skip before a
 // repeats body when one of its roles is a Comment-producing production.
-function spanConsumesComments(span: ResolvedSpan, schema: InferredSchema): boolean {
+export function spanConsumesComments(span: ResolvedSpan, schema: InferredSchema): boolean {
   if (span.class === 'comment') return true;
   if (span.recursiveRoles.length === 0) return false;
   for (const roleName of span.recursiveRoles) {
@@ -401,7 +408,7 @@ function spanConsumesComments(span: ResolvedSpan, schema: InferredSchema): boole
   return false;
 }
 
-function skipWsAndCommentsBlock(lineCommentMarkers: ReadonlyArray<string> = []): string {
+export function skipWsAndCommentsBlock(lineCommentMarkers: ReadonlyArray<string> = []): string {
   // ws OR `/* ... */` block comment OR (when declared via `tokens` with a
   // `line` refinement) `<marker>...\n` line comment — repeats. Matches
   // the v1 inter-span gap when the schema's token-set includes `comment`.

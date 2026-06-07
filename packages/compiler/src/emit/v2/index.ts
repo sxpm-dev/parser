@@ -18,6 +18,7 @@ import { jsIdent, jsString } from '../strings.ts';
 import { productionKey } from '../render.ts';
 import { emitDispatcher } from './dispatch.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
+import { buildPrefixShareOption, detectPrefixShare } from './prefix-share-dispatch.ts';
 import {
   canFuseStructured,
   emitFusedRenderStructured,
@@ -422,9 +423,20 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
   // __primary skips it — Pratt synthesizes the binary captures directly.
   const binaryInfo = schema.binaryProductions.get(info.name);
   const shared = binaryInfo === undefined ? detectSharedDispatch(info) : null;
+  // Generic shared-prefix factoring — only considered when shared-dispatch
+  // didn't already claim this node (the two strategies own disjoint shapes;
+  // see prefix-share-dispatch.ts header for the split).
+  const prefixShare = binaryInfo === undefined && shared === null
+    ? detectPrefixShare(info)
+    : null;
   const altFns: string[] = [];
   for (let i = 0; i < info.productions.length; i++) {
-    const prefixOpt = shared !== null ? buildPrefixOption(info.productions[i]!, shared) : undefined;
+    let prefixOpt: ReturnType<typeof buildPrefixOption> | ReturnType<typeof buildPrefixShareOption> | undefined;
+    if (shared !== null) {
+      prefixOpt = buildPrefixOption(info.productions[i]!, shared);
+    } else if (prefixShare !== null) {
+      prefixOpt = buildPrefixShareOption(info.productions[i]!, prefixShare.prefixLen);
+    }
     altFns.push(emitProduction(info.name, info.productions[i]!, schema, {
       fnName: `${parseFnName(schema, info.name)}__alt${i}`,
       prodIdx: i,

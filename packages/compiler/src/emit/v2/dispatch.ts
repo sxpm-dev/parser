@@ -14,6 +14,7 @@ import type { ResolvedSpan } from '../../model.ts';
 import type { InferredSchema, NodeTypeInfo, Production } from '../../model.ts';
 import { jsString } from '../strings.ts';
 import { detectSharedDispatch, emitSharedDispatcher } from './shared-dispatch.ts';
+import { detectPrefixShare, emitPrefixShareDispatcher } from './prefix-share-dispatch.ts';
 import { findModifier, hasModifier } from './span.ts';
 
 type FirstToken =
@@ -22,7 +23,7 @@ type FirstToken =
 
 export function emitDispatcher(
   info: NodeTypeInfo,
-  _schema: InferredSchema,
+  schema: InferredSchema,
   parseFnName: (n: string) => string,
 ): string {
   const fnName = parseFnName(info.name);
@@ -41,6 +42,18 @@ export function emitDispatcher(
     const leadingLiteral = prods[0]!.spans[0]!.text!;
     const discriminatorSpan = prods[0]!.spans[shared.discriminatorIdx]!;
     return emitSharedDispatcher(fnName, altFnNames, shared, leadingLiteral, discriminatorSpan);
+  }
+
+  // Generic shared-prefix factoring — K>=2 alts share a byte-identical
+  // prefix and split on a literal token after it. pg-select.Select is the
+  // motivating case: four alts share `SELECT cols FROM table` and split on
+  // ` WHERE …` / ` LIMIT …` presence. Tried after detectSharedDispatch
+  // because the K=1-with-oneOf shape is more specific (the shared dispatcher
+  // can switch on the tag value directly).
+  const prefixShare = detectPrefixShare(info);
+  if (prefixShare !== null) {
+    const altFnNames = prods.map((_p, idx) => `${fnName}__alt${idx}`);
+    return emitPrefixShareDispatcher(info, schema, fnName, altFnNames, prefixShare);
   }
 
   // Try byte-prefix dispatch first.

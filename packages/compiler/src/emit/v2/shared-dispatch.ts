@@ -92,8 +92,9 @@ export function detectSharedDispatch(info: NodeTypeInfo): SharedDispatch | null 
 
 /** Spans are byte-identical — used to walk the strict-shared prefix before
  *  the discriminator. Like `spansMatchIgnoringOneOf` but DOES compare the
- *  oneOf refinement (no exception). */
-function spansMatchExactly(a: ResolvedSpan, b: ResolvedSpan): boolean {
+ *  oneOf refinement (no exception). Exported so the generic prefix-share
+ *  detector (prefix-share-dispatch.ts) can reuse the same equality. */
+export function spansMatchExactly(a: ResolvedSpan, b: ResolvedSpan): boolean {
   if (a.class !== b.class) return false;
   if (a.class === 'literal' && a.text !== b.text) return false;
   if (!arraysEqual(a.modifiers, b.modifiers, sameJson)) return false;

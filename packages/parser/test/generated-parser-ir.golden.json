@@ -8,7 +8,7 @@
     },
     "html": {
       "path": "packages/html/src/_generated/parser.ts",
-      "sha256": "8d4e32aa0f1da3ee065cc10f088da778cef2cfbe4395975286857cf36fec33d9"
+      "sha256": "a3b6dea9cef01cccd148d95493f4efb76aa77e3893182560815b2ea796475feb"
     },
     "markdown": {
       "path": "packages/markdown/src/_generated/parser.ts",

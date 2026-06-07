@@ -563,55 +563,10 @@ function parsePredicate(state: State): unknown {
   return { __production: "Predicate#0", col: col, op: op, val: val };
 }
 
-function parseSelect__alt0(state: State): unknown {
+function parseSelect__alt0(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __columns_start = off;
-  const columns: unknown[] = [];
-  let __sepConsumed = false;
-  let __preSweep = off;
-  while (true) {
-    const __loopStart = off;
-    __preSweep = off;
-    __sepConsumed = false;
-    // Skip ws (and comments when declared) before the separator.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    while (input.charCodeAt(off) === 44) {
-      __sepConsumed = true;
-      off += 1;
-      // Skip ws (and comments) after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    }
-    if (off < len) {
-      const __sb = input.charCodeAt(off);
-      if (__sb === 70 && (input.startsWith("FROM", off))) break;
-    }
-    let __cand: unknown = null;
-    state.pos = off;
-    __cand = parseColumnRef(state);
-    if (__cand !== null) { off = state.pos; }
-    if (__cand === null) break;
-    columns.push(__cand);
-    if (off === __loopStart) break;
-  }
-  if (columns.length < 1) { state.pos = entryOff; return null; }
-  const __columns_end = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __table_start = off;
-  off++;
-  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
-  const __table_end = off;
-  const table = input.slice(__table_start, __table_end);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
@@ -622,55 +577,10 @@ function parseSelect__alt0(state: State): unknown {
   return { __production: "Select#0", columns: columns, table: table };
 }
 
-function parseSelect__alt1(state: State): unknown {
+function parseSelect__alt1(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __columns_start = off;
-  const columns: unknown[] = [];
-  let __sepConsumed = false;
-  let __preSweep = off;
-  while (true) {
-    const __loopStart = off;
-    __preSweep = off;
-    __sepConsumed = false;
-    // Skip ws (and comments when declared) before the separator.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    while (input.charCodeAt(off) === 44) {
-      __sepConsumed = true;
-      off += 1;
-      // Skip ws (and comments) after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    }
-    if (off < len) {
-      const __sb = input.charCodeAt(off);
-      if (__sb === 70 && (input.startsWith("FROM", off))) break;
-    }
-    let __cand: unknown = null;
-    state.pos = off;
-    __cand = parseColumnRef(state);
-    if (__cand !== null) { off = state.pos; }
-    if (__cand === null) break;
-    columns.push(__cand);
-    if (off === __loopStart) break;
-  }
-  if (columns.length < 1) { state.pos = entryOff; return null; }
-  const __columns_end = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __table_start = off;
-  off++;
-  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
-  const __table_end = off;
-  const table = input.slice(__table_start, __table_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
@@ -691,55 +601,10 @@ function parseSelect__alt1(state: State): unknown {
   return { __production: "Select#1", columns: columns, table: table, where: where };
 }
 
-function parseSelect__alt2(state: State): unknown {
+function parseSelect__alt2(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __columns_start = off;
-  const columns: unknown[] = [];
-  let __sepConsumed = false;
-  let __preSweep = off;
-  while (true) {
-    const __loopStart = off;
-    __preSweep = off;
-    __sepConsumed = false;
-    // Skip ws (and comments when declared) before the separator.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    while (input.charCodeAt(off) === 44) {
-      __sepConsumed = true;
-      off += 1;
-      // Skip ws (and comments) after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    }
-    if (off < len) {
-      const __sb = input.charCodeAt(off);
-      if (__sb === 70 && (input.startsWith("FROM", off))) break;
-    }
-    let __cand: unknown = null;
-    state.pos = off;
-    __cand = parseColumnRef(state);
-    if (__cand !== null) { off = state.pos; }
-    if (__cand === null) break;
-    columns.push(__cand);
-    if (off === __loopStart) break;
-  }
-  if (columns.length < 1) { state.pos = entryOff; return null; }
-  const __columns_end = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __table_start = off;
-  off++;
-  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
-  const __table_end = off;
-  const table = input.slice(__table_start, __table_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
@@ -761,55 +626,10 @@ function parseSelect__alt2(state: State): unknown {
   return { __production: "Select#2", columns: columns, table: table, limit: limit };
 }
 
-function parseSelect__alt3(state: State): unknown {
+function parseSelect__alt3(state: State, entryOff: number, columns: string, table: string, columns__start: number, table__start: number, columns__end: number, table__end: number): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 6;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __columns_start = off;
-  const columns: unknown[] = [];
-  let __sepConsumed = false;
-  let __preSweep = off;
-  while (true) {
-    const __loopStart = off;
-    __preSweep = off;
-    __sepConsumed = false;
-    // Skip ws (and comments when declared) before the separator.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    while (input.charCodeAt(off) === 44) {
-      __sepConsumed = true;
-      off += 1;
-      // Skip ws (and comments) after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
-    }
-    if (off < len) {
-      const __sb = input.charCodeAt(off);
-      if (__sb === 70 && (input.startsWith("FROM", off))) break;
-    }
-    let __cand: unknown = null;
-    state.pos = off;
-    __cand = parseColumnRef(state);
-    if (__cand !== null) { off = state.pos; }
-    if (__cand === null) break;
-    columns.push(__cand);
-    if (off === __loopStart) break;
-  }
-  if (columns.length < 1) { state.pos = entryOff; return null; }
-  const __columns_end = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 4;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __table_start = off;
-  off++;
-  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
-  const __table_end = off;
-  const table = input.slice(__table_start, __table_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
@@ -845,16 +665,69 @@ function parseSelect(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
+  const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-state.pos = off;
-  if (off >= len) return null;
-  if (input.charCodeAt(off) === 83) {
-  { const r = parseSelect__alt3(state); if (r !== null) return r; }
-  { const r = parseSelect__alt1(state); if (r !== null) return r; }
-  { const r = parseSelect__alt2(state); if (r !== null) return r; }
-  return parseSelect__alt0(state);
-}
-  return null;
+  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 6;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __columns_start = off;
+  const columns: unknown[] = [];
+  let __sepConsumed = false;
+  let __preSweep = off;
+  while (true) {
+    const __loopStart = off;
+    __preSweep = off;
+    __sepConsumed = false;
+    // Skip ws (and comments when declared) before the separator.
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 44) {
+      __sepConsumed = true;
+      off += 1;
+      // Skip ws (and comments) after the separator.
+      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 70 && (input.startsWith("FROM", off))) break;
+    }
+    let __cand: unknown = null;
+    state.pos = off;
+    __cand = parseColumnRef(state);
+    if (__cand !== null) { off = state.pos; }
+    if (__cand === null) break;
+    columns.push(__cand);
+    if (off === __loopStart) break;
+  }
+  if (columns.length < 1) { state.pos = entryOff; return null; }
+  const __columns_end = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __table_start = off;
+  off++;
+  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
+  const __table_end = off;
+  const table = input.slice(__table_start, __table_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  const __postPos = off;
+  let __peekOff = off;
+  while (__peekOff < len) {
+    const c = input.charCodeAt(__peekOff);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { __peekOff++; continue; }
+    break;
+  }
+  if (input.startsWith("WHERE", __peekOff)) {
+    state.pos = __postPos; { const r = parseSelect__alt3(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end); if (r !== null) return r; }
+    state.pos = __postPos; { const r = parseSelect__alt1(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end); if (r !== null) return r; }
+  }
+  if (input.startsWith("LIMIT", __peekOff)) {
+    state.pos = __postPos; { const r = parseSelect__alt2(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end); if (r !== null) return r; }
+  }
+  state.pos = __postPos;
+  return parseSelect__alt0(state, entryOff, columns, table, __columns_start, __table_start, __columns_end, __table_end);
 }
 
 const __defaultTarget: string | undefined = "ast";

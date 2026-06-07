@@ -57,8 +57,15 @@ function emitRustParser(schema: InferredSchema): string {
       parts.push(emitProductionFn(schema, info.productions[i]!, i));
     }
     parts.push(emitNodeTypeDispatcher(info.name, info.productions.length));
+    // Phase 6.4 — per-production inverse + per-node dispatcher.
+    for (let i = 0; i < info.productions.length; i++) {
+      const fn = emitStringifyAltFn(schema, info.productions[i]!, i);
+      if (fn !== null) parts.push(fn);
+    }
+    parts.push(emitStringifyDispatcher(info.name, info.productions.length));
   }
   parts.push(emitRenderEntry(schema));
+  parts.push(emitStringifyEntry(schema));
   return parts.join('\n\n') + '\n';
 }
 
@@ -827,6 +834,195 @@ function emitNodeTypeDispatcher(nodeType: string, altCount: number): string {
   lines.push(`    None`);
   lines.push(`}`);
   return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6.4 — stringify (inverse path).
+//
+// For each production we emit a `stringify_<NodeType>__alt<idx>(value) ->
+// Option<String>` function. It:
+//   1. Discriminates against the render body's shape (literal `type:`
+//      field is the common discriminator).
+//   2. Walks the spans in declaration order, emitting each:
+//        - literal span        → its constant text
+//        - named class span    → captured String from the value's
+//                                 corresponding field
+//        - recursive span      → stringify_<Role>(value's field)
+//        - .repeats recursive  → join children with the declared sep
+//        - .optional           → omit when null/missing
+//   3. Inserts a single space between spans (whitespace: 'standard'). The
+//      contract is value-stable, not byte-stable — same guarantee as the
+//      TS backend's stringify.
+//
+// Productions whose render body can't be discriminated structurally (e.g.
+// transparent passthroughs, dynKey, merge) return null from this function
+// and are skipped by the dispatcher — the outer dispatcher then tries
+// the next alt.
+// ---------------------------------------------------------------------------
+
+function emitStringifyAltFn(
+  schema: InferredSchema,
+  production: Production,
+  altIdx: number,
+): string | null {
+  const renderBody = pickRenderBody(production);
+  if (renderBody === null || renderBody === undefined) return null;
+  if (typeof renderBody !== 'object') return null;
+  if (Array.isArray(renderBody)) return null;
+  if (isTemplate(renderBody) || isStructureRef(renderBody)) {
+    // Template / bare-ref bodies: out of scope for Phase 6.4 minimum.
+    return null;
+  }
+  const obj = renderBody as Record<string, RenderBody>;
+  // Find the type-literal discriminator (any string-valued top-level
+  // field qualifies; pick the first one). Most ASTs in this repo use
+  // `type:` by convention.
+  const discrim = pickDiscriminator(obj);
+  const fnName = `stringify_${rustIdent(production.nodeType)}__alt${altIdx}`;
+  const lines: string[] = [];
+  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  if (discrim !== null) {
+    lines.push(`    let ty = value.obj_get(${rustString(discrim.field)})?;`);
+    lines.push(`    if let Value::String(s) = ty { if s != ${rustString(discrim.value)} { return None; } } else { return None; }`);
+  }
+  // Extract each named-span capture as a local binding.
+  const extracted = new Set<string>();
+  for (const span of production.spans) {
+    if (!span.name) continue;
+    if (extracted.has(span.name)) continue;
+    extracted.add(span.name);
+    const fieldKey = findFieldForCapture(obj, span.name);
+    if (fieldKey === null) continue;
+    const v = rustIdent(span.name);
+    lines.push(`    let ${v} = value.obj_get(${rustString(fieldKey)});`);
+  }
+  lines.push(`    let mut __out = String::new();`);
+  let firstEmit = true;
+  for (const span of production.spans) {
+    const piece = emitStringifyForSpan(span);
+    if (piece === null) {
+      // Optional unnamed span with no presence info — skip emission
+      // entirely so we don't insert spurious text.
+      continue;
+    }
+    if (!firstEmit && piece.needsSpaceBefore) {
+      lines.push(`    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }`);
+    }
+    for (const line of piece.lines) lines.push(`    ${line}`);
+    firstEmit = false;
+  }
+  lines.push(`    Some(__out)`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+type StringifyPiece = { readonly lines: ReadonlyArray<string>; readonly needsSpaceBefore: boolean };
+
+function emitStringifyForSpan(span: ResolvedSpan): StringifyPiece | null {
+  const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+  const isRecursive = span.recursiveRoles.length > 0;
+  const v = span.name ? rustIdent(span.name) : null;
+  // Unnamed literal: emit verbatim.
+  if (!span.name && span.class === 'literal') {
+    if (span.text === undefined) return { lines: [], needsSpaceBefore: false };
+    return {
+      lines: [`__out.push_str(${rustString(span.text)});`],
+      needsSpaceBefore: false,
+    };
+  }
+  if (repeatsMod !== undefined && v !== null) {
+    const sep = (repeatsMod as RepeatsModifier).sep ?? ' ';
+    const roles = span.recursiveRoles;
+    if (roles.length === 0) {
+      return { lines: [`/* unsupported: repeats on non-recursive */`], needsSpaceBefore: false };
+    }
+    const dispatcher = roles.length === 1
+      ? `stringify_${rustIdent(roles[0]!)}(item)`
+      : `(${roles.map((r) => `stringify_${rustIdent(r)}__alt0(item).unwrap_or_default()`).join(' + &')})`;
+    const lines = [
+      `if let Some(Value::Array(items)) = ${v} {`,
+      `    for (i, item) in items.iter().enumerate() {`,
+      `        if i > 0 { __out.push_str(${rustString(sep)}); }`,
+      `        __out.push_str(&${dispatcher});`,
+      `    }`,
+      `}`,
+    ];
+    return { lines, needsSpaceBefore: true };
+  }
+  if (isRecursive && v !== null) {
+    const role = span.recursiveRoles[0]!;
+    const stringifier = `stringify_${rustIdent(role)}`;
+    if (isOptional) {
+      return {
+        lines: [
+          `if let Some(inner) = ${v} {`,
+          `    if !matches!(inner, Value::Null) { __out.push_str(&${stringifier}(inner)); }`,
+          `}`,
+        ],
+        needsSpaceBefore: true,
+      };
+    }
+    return {
+      lines: [`if let Some(inner) = ${v} { __out.push_str(&${stringifier}(inner)); }`],
+      needsSpaceBefore: true,
+    };
+  }
+  // Class span (string-valued capture).
+  if (span.class !== 'literal' && v !== null) {
+    if (isOptional) {
+      return {
+        lines: [
+          `if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`,
+        ],
+        needsSpaceBefore: true,
+      };
+    }
+    return {
+      lines: [`if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`],
+      needsSpaceBefore: true,
+    };
+  }
+  // Named literal: same as unnamed literal — emit its text.
+  if (span.class === 'literal' && span.text !== undefined) {
+    return { lines: [`__out.push_str(${rustString(span.text)});`], needsSpaceBefore: false };
+  }
+  return null;
+}
+
+function pickDiscriminator(obj: Record<string, RenderBody>): { field: string; value: string } | null {
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v === 'string') return { field: k, value: v };
+  }
+  return null;
+}
+
+function findFieldForCapture(obj: Record<string, RenderBody>, captureName: string): string | null {
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== null && typeof v === 'object' && isStructureRef(v) && v.__ref === 'span-value' && v.name === captureName) {
+      return k;
+    }
+  }
+  return null;
+}
+
+function emitStringifyDispatcher(nodeType: string, altCount: number): string {
+  const fn = `stringify_${rustIdent(nodeType)}`;
+  const lines: string[] = [];
+  lines.push(`fn ${fn}(value: &Value) -> String {`);
+  for (let i = 0; i < altCount; i++) {
+    lines.push(`    if let Some(out) = stringify_${rustIdent(nodeType)}__alt${i}(value) { return out; }`);
+  }
+  lines.push(`    String::new()`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+function emitStringifyEntry(schema: InferredSchema): string {
+  const root = rustIdent(schema.rootType);
+  return `pub fn stringify(value: &Value) -> String {
+    stringify_${root}(value)
+}`;
 }
 
 // ---------------------------------------------------------------------------

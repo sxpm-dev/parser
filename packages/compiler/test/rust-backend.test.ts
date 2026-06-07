@@ -441,6 +441,108 @@ test('rust backend (6.3): .repeats({min: 1}) enforces a minimum count', () => {
   assert.match(code, /return None;/);
 });
 
+test('rust backend (6.4): per-production stringify fn + dispatcher + public entry', () => {
+  const schema = defineSchema({
+    rootType: 'X',
+    examples: [
+      relation('X', {
+        input: 'foo',
+        encodings: {
+          src: parse([span('name', 'foo').ident()]),
+          ast: { type: 'x', name: $.name },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /fn stringify_X__alt0\(value: &Value\) -> Option<String> \{/);
+  assert.match(code, /fn stringify_X\(value: &Value\) -> String \{/);
+  assert.match(code, /pub fn stringify\(value: &Value\) -> String \{/);
+  // Type discriminator check.
+  assert.match(code, /let ty = value\.obj_get\("type"\)\?;/);
+  assert.match(code, /if s != "x" \{ return None; \}/);
+  // Capture extraction.
+  assert.match(code, /let name = value\.obj_get\("name"\);/);
+  // String emission.
+  assert.match(code, /if let Some\(Value::String\(s\)\) = name \{ __out\.push_str\(s\); \}/);
+});
+
+test('rust backend (6.4): literal spans appear verbatim in stringify output', () => {
+  const schema = defineSchema({
+    rootType: 'Decl',
+    punctuators: { colon: ':' },
+    examples: [
+      relation('Decl', {
+        input: 'a:b',
+        encodings: {
+          src: parse([
+            span('prop', 'a').ident(),
+            literal(':'),
+            span('value', 'b').ident(),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // The literal `:` between prop and value is pushed verbatim.
+  assert.match(code, /__out\.push_str\(":"\);/);
+});
+
+test('rust backend (6.4): recursive span calls stringify_<Role> on the inner value', () => {
+  const schema = defineSchema({
+    rootType: 'Pair',
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('Pair', {
+        input: 'x',
+        encodings: {
+          src: parse([span('item', 'x').of('Item')]),
+          ast: { type: 'pair', item: $.item },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /if let Some\(inner\) = item \{ __out\.push_str\(&stringify_Item\(inner\)\); \}/);
+});
+
+test('rust backend (6.4): .repeats stringifies with declared separator', () => {
+  const schema = defineSchema({
+    rootType: 'List',
+    punctuators: { comma: ',' },
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('List', {
+        input: 'x',
+        encodings: {
+          src: parse([
+            span('items', 'x').of('Item').repeats({ sep: ',' }),
+          ]),
+          ast: { type: 'list', items: $.items },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /if let Some\(Value::Array\(items\)\) = items \{/);
+  assert.match(code, /if i > 0 \{ __out\.push_str\(","\); \}/);
+  assert.match(code, /__out\.push_str\(&stringify_Item\(item\)\);/);
+});
+
 test('rust backend (6.3): cron schema compiles end-to-end (no CompilerError)', async () => {
   // The smallest non-trivial schema in the repo: covers literal, ident,
   // number.int(), optional, single-role recursion (.of('CronField')),

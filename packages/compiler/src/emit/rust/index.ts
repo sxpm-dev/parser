@@ -219,10 +219,10 @@ function emitProductionFn(schema: InferredSchema, production: Production, altIdx
 }
 
 function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): void {
-  // Phase 6.2: .optional() is supported on literal + class spans. Other
-  // modifiers (.repeats, .until, ws / line-terminator policies) are still
-  // out of scope.
-  const unsupportedMods = span.modifiers.filter((m) => m.kind !== 'optional');
+  // Phase 6.2: .optional() + .until() supported on leaf spans. Other
+  // modifiers (.repeats, ws / line-terminator policies) still out of scope.
+  const supported = new Set(['optional', 'until']);
+  const unsupportedMods = span.modifiers.filter((m) => !supported.has(m.kind));
   if (unsupportedMods.length > 0) {
     throw new CompilerError(
       `rust backend (Phase 6.2): span modifiers not yet supported (got [${unsupportedMods.map((m) => m.kind).join(', ')}])`,
@@ -232,6 +232,16 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
     throw new CompilerError(`rust backend (Phase 6.3): recursive spans not yet supported`);
   }
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const untilMod = span.modifiers.find((m) => m.kind === 'until');
+  if (untilMod !== undefined) {
+    if (isOptional) {
+      throw new CompilerError(
+        `rust backend (Phase 6.2): .until() + .optional() combo not yet supported`,
+      );
+    }
+    emitUntilSpan(lines, span, untilMod as { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean });
+    return;
+  }
   if (isOptional) {
     emitOptionalSpan(lines, span);
     return;
@@ -440,6 +450,71 @@ function emitOptionalSpan(lines: string[], span: ResolvedSpan): void {
 let __anonSpanCounter = 0;
 function anonCounter(): number {
   return __anonSpanCounter++;
+}
+
+// Phase 6.2: .until([stops...]) — opaque source-slice capture. Walks the
+// input char-by-char tracking `() [] {}` depth (when `balanced` is true,
+// the default). At depth 0, if the input at the current position starts
+// with any of the stop literals, the scan stops WITHOUT consuming the
+// stop (the next span does that). On depth-0 closing-bracket, the scan
+// stops too (the closing bracket belongs to an enclosing block).
+// When `trim` is true (default) the captured slice is trim'd before
+// being bound.
+function emitUntilSpan(
+  lines: string[],
+  span: ResolvedSpan,
+  modifier: { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean },
+): void {
+  const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
+  const endVar = `__${rustIdent(span.name ?? 'anon')}_end`;
+  const stopArrayItems = modifier.stops.map((s) => rustString(s)).join(', ');
+  const stopArray = `[${stopArrayItems}]`;
+  const balanced = modifier.balanced;
+  const body: string[] = [];
+  body.push(`    let ${startVar} = state.pos;`);
+  if (balanced) body.push(`    let mut __depth: i32 = 0;`);
+  body.push(`    let __stops: &[&[u8]] = &${stopArray.replace(/"([^"]*)"/g, '$1.as_bytes()').replace(/\[/, '[&').replace(/, /g, ', ')};`);
+  // The replace above is fragile; build the literal explicitly instead.
+  body.pop();
+  body.push(`    let __stops: &[&[u8]] = &[${modifier.stops.map((s) => `${rustString(s)}.as_bytes()`).join(', ')}];`);
+  body.push(`    while state.pos < state.input.len() {`);
+  body.push(`        let c = state.input[state.pos];`);
+  if (balanced) {
+    body.push(`        if __depth == 0 {`);
+    body.push(`            let mut __stopped = false;`);
+    body.push(`            for s in __stops.iter() {`);
+    body.push(`                if state.pos + s.len() <= state.input.len() && &state.input[state.pos..state.pos + s.len()] == *s {`);
+    body.push(`                    __stopped = true;`);
+    body.push(`                    break;`);
+    body.push(`                }`);
+    body.push(`            }`);
+    body.push(`            if __stopped { break; }`);
+    body.push(`            if c == b')' || c == b']' || c == b'}' { break; }`);
+    body.push(`        }`);
+    body.push(`        if c == b'(' || c == b'[' || c == b'{' { __depth += 1; }`);
+    body.push(`        else if c == b')' || c == b']' || c == b'}' { __depth -= 1; }`);
+  } else {
+    body.push(`        let mut __stopped = false;`);
+    body.push(`        for s in __stops.iter() {`);
+    body.push(`            if state.pos + s.len() <= state.input.len() && &state.input[state.pos..state.pos + s.len()] == *s {`);
+    body.push(`                __stopped = true;`);
+    body.push(`                break;`);
+    body.push(`            }`);
+    body.push(`        }`);
+    body.push(`        if __stopped { break; }`);
+  }
+  body.push(`        state.pos += 1;`);
+  body.push(`    }`);
+  body.push(`    let ${endVar} = state.pos;`);
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    if (modifier.trim) {
+      body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].trim().to_string();`);
+    } else {
+      body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+    }
+  }
+  lines.push(body.join('\n'));
 }
 
 function stringQuoteChar(span: ResolvedSpan): string {

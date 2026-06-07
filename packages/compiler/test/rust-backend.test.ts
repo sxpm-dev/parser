@@ -193,21 +193,104 @@ test('rust backend (6.2): unnamed optional literal compiles to a tolerance match
 // closing the global span-presence gap will also unlock end-to-end
 // schema tests here.
 
-test('rust backend: rejects unsupported modifiers with Phase-6.2 error', () => {
+test('rust backend (6.2): .until() emits a balanced-bracket scan + trim capture', () => {
   const schema = defineSchema({
-    rootType: 'X',
+    rootType: 'Decl',
     examples: [
-      relation('X', {
-        input: 'a',
+      relation('Decl', {
+        input: 'color: red',
         encodings: {
-          src: parse([span('x', 'a').ident().until(';')]),
-          ast: { type: 'x' },
+          src: parse([
+            span('prop', 'color').until(':'),
+            literal(':'),
+            span('value', 'red').until(';'),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value },
         },
       }),
     ],
   });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // Stops literal array baked into the scan body.
+  assert.match(code, /let __stops: &\[&\[u8\]\] = &\[":"\.as_bytes\(\)\];/);
+  assert.match(code, /let __stops: &\[&\[u8\]\] = &\[";"\.as_bytes\(\)\];/);
+  // Depth tracking on by default (balanced=true).
+  assert.match(code, /let mut __depth: i32 = 0;/);
+  assert.match(code, /__depth \+= 1;/);
+  assert.match(code, /__depth -= 1;/);
+  // Trim'd capture binding.
+  assert.match(code, /let prop: String = state\.src\[__prop_start\.\.__prop_end\]\.trim\(\)\.to_string\(\);/);
+});
+
+test('rust backend (6.2): .until() with multi-stop array', () => {
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      relation('Decl', {
+        input: 'foo:bar',
+        encodings: {
+          src: parse([
+            span('value', 'foo').until([':', ';', '}']),
+            literal(':'),
+            span('rest', 'bar').ident(),
+          ]),
+          ast: { type: 'decl', value: $.value, rest: $.rest },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // All three stop literals appear in the scan body's __stops array.
+  assert.match(
+    code,
+    /let __stops: &\[&\[u8\]\] = &\[":"\.as_bytes\(\), ";"\.as_bytes\(\), "\}"\.as_bytes\(\)\];/,
+  );
+});
+
+test('rust backend: rejects unsupported modifiers with Phase-6.2 error', () => {
+  const schema = defineSchema({
+    rootType: 'List',
+    examples: [
+      relation('Item', {
+        input: 'x',
+        encodings: {
+          src: parse([span('n', 'x').ident()]),
+          ast: { type: 'item', n: $.n },
+        },
+      }),
+      relation('List', {
+        input: 'x',
+        encodings: {
+          src: parse([
+            span('items', 'x').of('Item').repeats({ sep: ',' }),
+          ]),
+          ast: { type: 'list', items: $.items },
+        },
+      }),
+    ],
+  });
+  // .repeats triggers recursive-roles first (Phase 6.3). Test the
+  // modifier-only path with a hypothetical noWhitespaceAfter.
   assert.throws(
-    () => generateParser(schema, undefined, { backend: RUST_BACKEND }),
+    () => generateParser(
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'a b',
+            encodings: {
+              src: parse([
+                span('x', 'a').ident().noWhitespaceAfter(),
+                span('y', 'b').ident(),
+              ]),
+              ast: { type: 'x', x: $.x, y: $.y },
+            },
+          }),
+        ],
+      }),
+      undefined,
+      { backend: RUST_BACKEND },
+    ),
     /Phase 6\.2.*modifiers not yet supported/,
   );
 });

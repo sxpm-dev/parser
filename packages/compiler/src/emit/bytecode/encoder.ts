@@ -1181,6 +1181,11 @@ function canEncodeInverse(ir: InverseIR): boolean {
       // not yet supported by the bytecode encoder. The captures-path
       // inverse emitter handles them; the bytecode path falls back.
       return false;
+    case 'presence':
+      // Span-presence inverse: not yet wired into the bytecode encoder.
+      // The captures-path inverse emitter handles it; the bytecode path
+      // falls back when a production's inverse uses this kind.
+      return false;
   }
 }
 

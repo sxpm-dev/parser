@@ -76,7 +76,7 @@ export function deriveInverses(
       for (const entry of production.renders.values()) {
         let derived = entry.inverse
           ? deriveFromTemplate(entry.inverse, info.name, entry.target, production.source.input)
-          : deriveFromBody(entry.body, info.name, entry.target, production.source.input);
+          : deriveFromBody(entry.body, info.name, entry.target, production.source.input, production);
         // Phase 4c v1 — match the render-side auto-attach in
         // emit/render.ts:emitBuilder. When the schema is preserve AND
         // the target is 'ast' AND the derived inverse is an object
@@ -198,6 +198,7 @@ function deriveFromBody(
   nodeName: string,
   target: string,
   input: string,
+  production?: Production,
 ): InverseIR {
   if (
     body === null
@@ -208,19 +209,23 @@ function deriveFromBody(
     return { kind: 'scalar', value: body };
   }
   if (isStructureRef(body)) {
+    if (body.__ref === 'span-presence') {
+      // The body field holds a boolean derived from captures[name] != null.
+      // Inverse: on stringify, set captures[name] from the boolean — known
+      // literal text on true (for literal-only optional spans), null
+      // otherwise. For class-typed optional spans (ident/number/string)
+      // the source text isn't recoverable from a bare boolean; the
+      // optional span's emit becomes a no-op on that branch (value-stable
+      // contract — see the docs/superpowers/plans/2026-06-06-9-10-roadmap.md
+      // span-presence matrix row for the documented limitation).
+      const litText = production ? lookupLiteralOptionalText(production, body.name) : undefined;
+      return { kind: 'presence', capture: body.name, literalText: litText };
+    }
     if (body.__ref !== 'span-value') {
-      // Non-span-value refs (span-presence, synthetic gap/raw/tail/...) are
-      // not invertible from a rendered value alone — a `present: true`
-      // boolean doesn't carry the source text needed to reconstruct the
-      // span, and synthetic refs are derived spans of the source rather
-      // than user-visible captures. Stringify only knows how to walk
-      // `span-value` references back to their capture sites.
-      //
-      // Full span-presence inverse support is tracked under Phase 4
-      // (formatter / preservation modes); see
-      // docs/superpowers/plans/2026-06-06-9-10-roadmap.md.
+      // Synthetic refs (gap/raw/tail/...) are derived from the source
+      // rather than user-visible captures and aren't invertible.
       throw new CompilerError(
-        `inverse: in node '${nodeName}' (target '${target}'): $.${body.__ref} refs are not invertible; only $.span-value refs can drive stringify`,
+        `inverse: in node '${nodeName}' (target '${target}'): $.${body.__ref} refs are not invertible; only $.span-value and $.span-presence refs can drive stringify`,
       );
     }
     return { kind: 'ref', capture: body.name };
@@ -238,7 +243,7 @@ function deriveFromBody(
     return {
       kind: 'dynKey',
       keyCapture: body.key.name,
-      value: deriveFromBody(body.value, nodeName, target, input),
+      value: deriveFromBody(body.value, nodeName, target, input, production),
     };
   }
   if (isMerge(body)) {
@@ -262,7 +267,7 @@ function deriveFromBody(
   if (Array.isArray(body)) {
     return {
       kind: 'array',
-      elements: body.map((child) => deriveFromBody(child, nodeName, target, input)),
+      elements: body.map((child) => deriveFromBody(child, nodeName, target, input, production)),
     };
   }
   const fields: InverseField[] = [];
@@ -278,11 +283,26 @@ function deriveFromBody(
       fields.push({
         kind: 'inverse',
         name,
-        inverse: deriveFromBody(child, nodeName, target, input),
+        inverse: deriveFromBody(child, nodeName, target, input, production),
       });
     }
   }
   return { kind: 'object', fields };
+}
+
+// Look up the source span by name and return its literal text when the
+// span is an optional literal-only span (no class, .optional() in modifiers,
+// `text` defined). Returns undefined when the span is a class span, isn't
+// optional, isn't found, or has no fixed text — stringify in those cases
+// produces a value-stable no-op for the presence-only field.
+function lookupLiteralOptionalText(production: Production, capture: string): string | undefined {
+  for (const span of production.spans) {
+    if (span.name !== capture) continue;
+    if (span.class !== 'literal') return undefined;
+    if (!span.modifiers.some((m) => m.kind === 'optional')) return undefined;
+    return span.text;
+  }
+  return undefined;
 }
 
 function deriveFromTemplate(
@@ -451,6 +471,13 @@ function collisionReason(a: InverseIR, b: InverseIR): string | null {
       // per node type; today only Stylesheet has this shape, so the
       // collision never fires in practice.
       return 'two merge bodies cannot be discriminated from a value alone';
+    case 'presence':
+      // Two bare span-presence bodies (`{ present: $.x.present }`) are
+      // indistinguishable from a value alone — both accept booleans. In
+      // practice schemas wrap presence in an object body with other
+      // discriminating fields; a node-type with two pure-presence bodies
+      // is a schema-authoring error.
+      return 'two bare span-presence bodies cannot be discriminated from a value alone';
   }
 }
 
@@ -466,7 +493,9 @@ function dynKeyValueKindBucket(value: InverseIR): 'string' | 'object' | 'array' 
     case 'object': return 'object';
     case 'array': return 'array';
     case 'scalar':
-    case 'template': return 'any';
+    case 'template':
+    case 'presence':
+      return 'any';
   }
 }
 

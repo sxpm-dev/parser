@@ -480,7 +480,25 @@ function emitStructuredBody(body: RenderBody, bindings: SpanBindings): string {
     throw new Error('emitStructuredBody: embedded Template should have been rejected by canFuseStructured');
   }
   if (isStructureRef(body)) {
-    const ref = body as { readonly name: string };
+    const ref = body as { readonly name: string; readonly __ref: string };
+    // Phase 9.5 (close span-presence matrix gap): structured-fusion fast
+    // path must honour the .present accessor — emit a `value != null`
+    // check instead of the captured value itself. Mirrors the captures-
+    // path's emitRefExpr in emit/render.ts.
+    if (ref.__ref === 'span-presence') {
+      // presenceExpr (when set by emitSpan for optional spans) is already
+      // a boolean — use it verbatim. Wrapping it in `!= null` would
+      // always evaluate true (booleans aren't null). Fall back to a
+      // `value != null` check against valueExpr for spans that bind a
+      // value local without a separate presence local.
+      const presExpr = bindings.presenceExpr.get(ref.name);
+      if (presExpr) return presExpr;
+      const valExpr = bindings.valueExpr.get(ref.name);
+      if (!valExpr) {
+        throw new Error(`emitStructuredBody: span ref "${ref.name}" has no binding (for span-presence)`);
+      }
+      return `(${valExpr} != null)`;
+    }
     const expr = bindings.valueExpr.get(ref.name);
     if (!expr) {
       // Same — eligibility guards against this. Defensive throw so codegen

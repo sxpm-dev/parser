@@ -503,6 +503,16 @@ function emitInverseBody(
       return emitDynKeyBody(ir.keyCapture, ir.value, valueExpr, target, production);
     case 'merge':
       return emitMergeBody(ir.arrayCapture, valueExpr, target, production);
+    case 'presence': {
+      // Span-presence inverse: `valueExpr` is a boolean. Set
+      // captures[name] to the literal text on true (for literal-only
+      // optional spans whose text we baked in at derivation time), or
+      // null on false / non-literal optionals. The rebuild's optional-
+      // slot emit consults captures[name] to decide whether to emit;
+      // null means absent — matching the value-stable contract.
+      const lit = ir.literalText !== undefined ? JSON.stringify(ir.literalText) : 'null';
+      return `captures${memberAccess(ir.capture)} = (${valueExpr}) ? ${lit} : null;`;
+    }
   }
 }
 
@@ -803,7 +813,9 @@ function bucketForIR(ir: InverseIR): 'string' | 'object' | 'array' | 'any' {
     case 'object': return 'object';
     case 'array': return 'array';
     case 'scalar':
-    case 'template': return 'any';
+    case 'template':
+    case 'presence':
+      return 'any';
   }
 }
 
@@ -1515,6 +1527,7 @@ function dynKeyEntryTypeCondition(valueIR: InverseIR, production?: Production): 
       return 'Array.isArray(__dkV)';
     case 'scalar':
     case 'template':
+    case 'presence':
       // Falls through to "any" — uncommon in flat-shape bodies. If two
       // dynKey productions in the same role both reach this branch the
       // discrimination is undefined; declaration order wins.
@@ -1819,6 +1832,7 @@ function walkForMerge(
     case 'scalar':
     case 'ref':
     case 'template':
+    case 'presence':
       return;
   }
 }

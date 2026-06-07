@@ -76,6 +76,21 @@ export type InverseIR =
       readonly kind: 'merge';
       readonly arrayCapture: string;
       readonly roles: ReadonlyArray<string>;
+    }
+  // Span-presence inverse: the body field holds a boolean derived from
+  // captures[capture] != null. On stringify we set captures[capture] from
+  // the boolean: true → the literal text (known only for optional literal
+  // spans whose text is fixed); false → null. For non-literal optional
+  // spans we set captures[capture] to null on either branch (the source
+  // text is irretrievable from a bare boolean) — the optional span's emit
+  // then becomes a no-op, matching the documented value-stable contract.
+  | {
+      readonly kind: 'presence';
+      readonly capture: string;
+      // The literal text of the optional span when it's a literal-only
+      // span with fixed text; undefined for class spans (ident, number,
+      // string, ...).
+      readonly literalText?: string;
     };
 
 // One named field in an object-body inverse. Literal fields assert equality

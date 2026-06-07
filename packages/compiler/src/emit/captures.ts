@@ -161,6 +161,14 @@ function walkInverseForValues(ir: InverseIR, set: Set<string>): void {
       return;
     case 'scalar':
       return;
+    case 'presence':
+      // Span-presence inverse writes captures[name] from a bool but
+      // doesn't READ captures[name] on the forward path — the bool is
+      // computed at render time from the source span's presence. So
+      // the forward emit does NOT need to keep the value slice alive
+      // for this capture (Phase 5a's lazy-capture optimization still
+      // applies).
+      return;
   }
 }
 

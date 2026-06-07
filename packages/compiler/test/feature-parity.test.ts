@@ -472,15 +472,15 @@ const rows: ReadonlyArray<ParityRow> = [
       }),
     input: 'x',
     expectedAst: { type: 'pair', present: false },
-    // Deliberate restriction (matrix-surfaced; misleading error message
-    // corrected in Phase 1): the inverter rejects `$.x.present` at any
-    // position because a bare boolean doesn't carry the source text needed
-    // to reconstruct the optional span on stringify. Full support would let
-    // `present: true` re-emit the literal text of an optional literal-only
-    // span; that's Phase 4 (formatter / preservation modes) work, not Phase
-    // 1. Until then schemas should expose `$.x` (the captured value) and
-    // derive presence from it on the consumer side.
-    expected: { interp: 'gap', v2: 'gap' },
+    // Closed 2026-06-07: span-presence is now invertible. The new
+    // InverseIR kind 'presence' lets stringify set captures[name] from
+    // the boolean — literal text on true (for literal-only optional
+    // spans, baked in at derivation time) or null otherwise. Value-
+    // stable (not byte-stable) on class-typed optional spans: stringify
+    // can't reconstruct the source text from a bare bool, so the
+    // optional emit becomes a no-op on that branch. Documented in
+    // packages/compiler/src/model.ts (InverseIR doc).
+    expected: { interp: 'impl', v2: 'impl' },
   },
 ];
 

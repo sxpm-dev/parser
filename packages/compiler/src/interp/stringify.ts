@@ -565,6 +565,15 @@ function walkInverse(
     case 'template':
       walkInverseTemplate(schema, ir.segments, ir.captures, value, target, production, captures, indentCol);
       return;
+    case 'presence': {
+      // Span-presence inverse: read the bool from value; set captures
+      // to the literal text on true (for literal-only optional spans)
+      // or null otherwise. Mirrors the emit-side branch in
+      // emit/inverse.ts: a no-op for class-typed optional spans
+      // (value-stable contract — see model.ts InverseIR doc).
+      captures[ir.capture] = value === true && ir.literalText !== undefined ? ir.literalText : null;
+      return;
+    }
   }
 }
 

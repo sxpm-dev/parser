@@ -25,6 +25,7 @@
 
 import { isTemplate, type Template } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
+import { computeReferencedSpanValues } from '../captures.ts';
 import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../../span-helpers.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { classFirstBytes } from './role-ladder.ts';
@@ -252,7 +253,7 @@ function emitFusedBody(
     endOffExpr: new Map(),
     iwsExpr: new Map(),
   };
-  const ctx = buildSpanContext(schema);
+  const ctx = buildSpanContext(schema, production);
 
   const inner: string[] = [];
   inner.push(`const input = state.input;`);
@@ -930,7 +931,7 @@ function emitTemplatePushes(
 // premature factoring would obscure the parallel structure. See plan note
 // from controller: "Do NOT factor out a shared helper unless the
 // duplication is trivial".
-function buildSpanContext(schema: InferredSchema): SpanContext {
+function buildSpanContext(schema: InferredSchema, production: Production): SpanContext {
   const tokenClasses = new Set<string>();
   let cssIdent = false;
   for (const usage of schema.classes) {
@@ -963,6 +964,11 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
+    // Phase 5a — lazy capture on the Template-fused fast path. The
+    // template emit's slot interleaver reads bindings.valueExpr; spans
+    // not referenced by any (production, target) render body have the
+    // value slice dropped.
+    referencedValueSpans: computeReferencedSpanValues(production),
   };
 }
 

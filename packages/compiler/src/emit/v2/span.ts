@@ -122,6 +122,19 @@ export type SpanContext = {
   // trailing skip also consume `<marker>...\n` regions alongside block
   // comments. Empty for schemas that don't opt in (default).
   readonly lineCommentMarkers: ReadonlyArray<string>;
+  // Phase 5a — lazy span value capture. The set of span names whose
+  // VALUE is referenced by some render body or inverseDerived in this
+  // production (computed by computeReferencedSpanValues). When a named
+  // class or literal span is absent from this set AND has no
+  // value-dependent refinement (`oneOf` / `lengths`), its `const <name>
+  // = input.slice(...)` line is elided and bindings.valueExpr is not
+  // populated — emit/captures.ts then drops the field from the captures
+  // payload. Start/end offset locals are still emitted whenever a
+  // synthetic ref needs them (see collectOffsetRefs). Undefined means
+  // "treat every named span as referenced" — the conservative legacy
+  // behavior, kept as the default for callers (e.g. shared-dispatch
+  // prefix bodies) that haven't been threaded.
+  readonly referencedValueSpans?: ReadonlySet<string>;
 };
 
 export type SpanBindings = {
@@ -213,15 +226,30 @@ if (${matchExpr}) {
   // Required literal
   if (span.name) {
     const v = jsIdent(span.name);
-    bindings.valueExpr.set(span.name, v);
     const startVar = `__${v}_start`, endVar = `__${v}_end`;
     bindings.startOffExpr.set(span.name, startVar);
     bindings.endOffExpr.set(span.name, endVar);
-    return `if (!(${matchExpr})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
+    // Phase 5a — lazy capture. A literal span's value is the known
+    // constant `text`; emit the `const ${v} = "<text>"` line and bind
+    // it into the captures payload only when some render body or
+    // inverseDerived references the name. When unreferenced, the
+    // start/end offset locals are still emitted (synthetic refs may
+    // need them) but the constant-string allocation and the captures
+    // field are skipped.
+    const isReferenced =
+      ctx.referencedValueSpans === undefined || ctx.referencedValueSpans.has(span.name);
+    if (isReferenced) {
+      bindings.valueExpr.set(span.name, v);
+      return `if (!(${matchExpr})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 const ${startVar} = off;
 off += ${len};
 const ${endVar} = off;
 const ${v} = ${jsString(text)};`;
+    }
+    return `if (!(${matchExpr})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
+const ${startVar} = off;
+off += ${len};
+const ${endVar} = off;`;
   }
   return `if (!(${matchExpr})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 off += ${len};`;
@@ -256,17 +284,44 @@ if (${startPredicate}) {
   }
 
   if (span.name) {
-    bindings.valueExpr.set(span.name, v);
     bindings.startOffExpr.set(span.name, startVar);
     bindings.endOffExpr.set(span.name, endVar);
-    return `if (!(${startPredicate})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
+    // Phase 5a — lazy capture. The captured slice is needed when:
+    //   (a) some render body or inverseDerived references the name, OR
+    //   (b) a post-scan refinement check (`oneOf` / `lengths`) reads
+    //       the value to gate acceptance.
+    // When neither holds, skip both the slice extraction and the
+    // captures-payload field. Start/end offset locals are kept so
+    // downstream synthetic refs (gap/raw/tail/etc.) still resolve.
+    const isReferenced =
+      ctx.referencedValueSpans === undefined || ctx.referencedValueSpans.has(span.name);
+    const needsValueForRefinement = hasValueDependentRefinement(span);
+    if (isReferenced || needsValueForRefinement) {
+      if (isReferenced) bindings.valueExpr.set(span.name, v);
+      return `if (!(${startPredicate})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 const ${startVar} = off;
 ${scanBody}
 const ${endVar} = off;
 ${emitClassSpanValueExpr(span, v, startVar, endVar)}${emitRefinementChecks(span, v, ctx.entryOffVar)}`;
+    }
+    return `if (!(${startPredicate})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
+const ${startVar} = off;
+${scanBody}
+const ${endVar} = off;`;
   }
   return `if (!(${startPredicate})) { if (off > state.maxOff) state.maxOff = off; state.pos = ${ctx.entryOffVar}; return null; }
 ${scanBody}`;
+}
+
+// Returns true when the span has a post-scan refinement whose check reads
+// the captured value (`oneOf`, `lengths`). Scan-time refinements like
+// `.int()` / `.float()` / `.binary()` etc. shape the scanner predicate
+// itself and do not require the captured value at runtime.
+function hasValueDependentRefinement(span: ResolvedSpan): boolean {
+  for (const ref of span.refinements) {
+    if (ref.name === 'oneOf' || ref.name === 'lengths') return true;
+  }
+  return false;
 }
 
 function emitRecursiveSpan(

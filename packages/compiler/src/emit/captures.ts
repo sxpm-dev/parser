@@ -21,8 +21,8 @@
 // Span values land at captures.<spanName> as-is; span-presence reads
 // captures.<spanName> != null.
 
-import { isStructureRef, isTemplate, type RenderBody, type StructureRef } from '@parser2/parser';
-import type { Production } from '../model.ts';
+import { isDynKey, isMerge, isStructureRef, isTemplate, type RenderBody, type StructureRef } from '@parser2/parser';
+import type { InverseIR, Production } from '../model.ts';
 import { jsString } from './strings.ts';
 
 export type CapturesBindings = {
@@ -71,6 +71,97 @@ export function emitCapturesExpr(
     fields.push(`${jsObjectKey(key)}: ${expr}`);
   }
   return `{ ${fields.join(', ')} }`;
+}
+
+// Phase 5a — lazy span value capture.
+//
+// Returns the set of span names whose VALUE must be captured into the
+// captures payload. A span's value is "referenced" when any (forward) render
+// body or any derived inverse IR reads it back:
+//   - $.name           (span-value)    →  captures.<name>
+//   - $.name.present   (span-presence) →  captures.<name> != null check
+//   - dynKey({key: $.k})              →  key string read from captures.k
+//   - merge($.arr)                    →  array read from captures.arr
+//   - Template slot for name           →  captures.<name>
+//   - inverseDerived references        →  rebuild reads captures.<name>
+//
+// Synthetic refs (span-gap / span-raw / span-tail / span-ends-with /
+// span-comment-left / span-comment-right) DO NOT pull a span's value —
+// they derive a slice from the source-offset locals via collectOffsetRefs.
+// A span whose name appears ONLY behind a synthetic ref can safely skip
+// the value slice while keeping its start/end offset locals alive.
+//
+// The forward emitter uses this set to decide whether to materialise
+// `const <name> = input.slice(...)` for class spans and
+// `const <name> = "<literal>"` for literal spans. When the name is absent
+// from this set, the captures-payload emit also drops the field
+// (bindings.valueExpr is never set for it).
+export function computeReferencedSpanValues(production: Production): ReadonlySet<string> {
+  const set = new Set<string>();
+  for (const entry of production.renders.values()) {
+    walkBodyForValues(entry.body, set);
+    if (entry.inverseDerived !== undefined) walkInverseForValues(entry.inverseDerived, set);
+  }
+  return set;
+}
+
+function walkBodyForValues(body: RenderBody, set: Set<string>): void {
+  if (body === null) return;
+  if (typeof body !== 'object') return;
+  if (isStructureRef(body)) {
+    if (body.__ref === 'span-value' || body.__ref === 'span-presence') {
+      set.add(body.name);
+    }
+    return;
+  }
+  if (isTemplate(body)) {
+    for (const slot of body.slots) set.add(slot.ref);
+    return;
+  }
+  if (isDynKey(body)) {
+    if (body.key.__ref === 'span-value') set.add(body.key.name);
+    walkBodyForValues(body.value, set);
+    return;
+  }
+  if (isMerge(body)) {
+    if (body.array.__ref === 'span-value') set.add(body.array.name);
+    return;
+  }
+  if (Array.isArray(body)) {
+    for (const item of body) walkBodyForValues(item, set);
+    return;
+  }
+  for (const child of Object.values(body as Record<string, RenderBody>)) {
+    walkBodyForValues(child, set);
+  }
+}
+
+function walkInverseForValues(ir: InverseIR, set: Set<string>): void {
+  switch (ir.kind) {
+    case 'ref':
+      set.add(ir.capture);
+      return;
+    case 'dynKey':
+      set.add(ir.keyCapture);
+      walkInverseForValues(ir.value, set);
+      return;
+    case 'merge':
+      set.add(ir.arrayCapture);
+      return;
+    case 'template':
+      for (const c of ir.captures) set.add(c);
+      return;
+    case 'object':
+      for (const f of ir.fields) {
+        if (f.kind === 'inverse') walkInverseForValues(f.inverse, set);
+      }
+      return;
+    case 'array':
+      for (const e of ir.elements) walkInverseForValues(e, set);
+      return;
+    case 'scalar':
+      return;
+  }
 }
 
 // Returns the set of span-offset names the parser must materialise for the

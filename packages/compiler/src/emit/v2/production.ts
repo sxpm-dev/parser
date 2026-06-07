@@ -17,7 +17,7 @@
 // update state.maxOff so the top-level error reports the deepest position.
 
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
-import { emitCapturesExpr, type CapturesBindings } from '../captures.ts';
+import { computeReferencedSpanValues, emitCapturesExpr, type CapturesBindings } from '../captures.ts';
 import { productionRoutingKey } from '../render.ts';
 import { indent, jsString } from '../strings.ts';
 import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
@@ -107,6 +107,14 @@ export function emitProduction(
   // CONTENT_CLASSES constant for the rationale.
   const hasContentClass = schema.classes.some((cls) => CONTENT_CLASSES.has(cls.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
+  // Phase 5a — lazy span value capture. Compute the set of span names
+  // whose value lands in some render body / inverseDerived; emit/v2/span.ts
+  // uses this to elide unreferenced class-span slices and literal-span
+  // constants. Shared-dispatch prefix bodies pass the same set so the
+  // tail bodies (which see the prefix spans as parameters, not captures)
+  // stay consistent — even though the prefix captures already supply
+  // valueExpr for those names, the lookup is harmless when present.
+  const referencedValueSpans = computeReferencedSpanValues(production);
   const ctx: SpanContext = {
     entryOffVar: 'entryOff',
     raws: false /* per-call-site */,
@@ -119,6 +127,7 @@ export function emitProduction(
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
+    referencedValueSpans,
   };
 
   const lines: string[] = [];

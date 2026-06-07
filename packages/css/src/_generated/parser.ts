@@ -911,7 +911,6 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
   }
   const __value_end = off;
-  const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __unit_start = off;
@@ -923,11 +922,11 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#1", value: value, unit: unit };
+    const __captures: any = { __production: "LengthPercentageItem#1", unit: unit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
-  return { __production: "LengthPercentageItem#1", value: value, unit: unit };
+  return { __production: "LengthPercentageItem#1", unit: unit };
 }
 
 function __v1_parseLengthPercentageItem__alt2(state: State): unknown {
@@ -979,18 +978,17 @@ function __v1_parseLengthPercentageItem__alt3(state: State): unknown {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
   }
   const __value_end = off;
-  const value = input.slice(__value_start, __value_end);
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#3", value: value };
+    const __captures: any = { __production: "LengthPercentageItem#3" };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
-  return { __production: "LengthPercentageItem#3", value: value };
+  return { __production: "LengthPercentageItem#3" };
 }
 
 function __v1_parseLengthPercentageItem__alt4(state: State): unknown {

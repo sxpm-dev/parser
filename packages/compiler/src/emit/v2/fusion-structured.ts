@@ -21,6 +21,7 @@
 import { isDynKey, isMerge, isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
+import { computeReferencedSpanValues } from '../captures.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
@@ -120,7 +121,7 @@ export function emitFusedRenderStructured(
   }
   const entry = production.renders.get(opts.target)!;
 
-  const ctx = buildSpanContext(schema);
+  const ctx = buildSpanContext(schema, production);
   const bindings: SpanBindings = {
     valueExpr: new Map(),
     presenceExpr: new Map(),
@@ -427,7 +428,7 @@ function literalMatchExpr(text: string, offVar: string): string {
 
 // --- internal helpers ------------------------------------------------------
 
-function buildSpanContext(schema: InferredSchema): SpanContext {
+function buildSpanContext(schema: InferredSchema, production: Production): SpanContext {
   const tokenClasses = new Set<string>();
   let cssIdent = false;
   for (const usage of schema.classes) {
@@ -461,6 +462,11 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
+    // Phase 5a — lazy capture also applies on the structured-fused fast
+    // path. The body walker in `emitStructuredBody` consults
+    // bindings.valueExpr directly; spans not referenced by the body have
+    // their value slice + captures field elided.
+    referencedValueSpans: computeReferencedSpanValues(production),
   };
 }
 

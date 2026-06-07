@@ -230,6 +230,28 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// --- Inferred types ---
+export type Comment_ast = null;
+export type Comment_source = string;
+export type JsonNull_ast = null;
+export type JsonNull_source = "null";
+export type JsonTrue_ast = true;
+export type JsonTrue_source = "true";
+export type JsonFalse_ast = false;
+export type JsonFalse_source = "false";
+export type JsonNumber_ast = number;
+export type JsonNumber_source = number;
+export type JsonString_ast = string;
+export type JsonString_source = string;
+export type JsonArray_ast = JsonValue_ast[];
+export type JsonArray_source = string;
+export type JsonMember_ast = Record<string, JsonValue_ast>;
+export type JsonMember_source = string;
+export type JsonObject_ast = Record<string, unknown>;
+export type JsonObject_source = string;
+export type JsonValue_ast = JsonObject_ast | JsonArray_ast | JsonString_ast | JsonNumber_ast | JsonTrue_ast | JsonFalse_ast | JsonNull_ast;
+export type JsonValue_source = JsonObject_source | JsonArray_source | JsonString_source | JsonNumber_source | JsonTrue_source | JsonFalse_source | JsonNull_source;
+
 function parseComment(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -799,6 +821,9 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
+export function render(input: string, options: { target: "ast"; mode?: ParseMode }): JsonValue_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode }): JsonValue_source;
+export function render(input: string, options?: { target?: undefined; mode?: ParseMode }): JsonValue_ast;
 export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -918,8 +943,8 @@ function __invert_JsonString_0_ast(value: any, __indentCol: number = 0): string 
 
 function __invert_JsonArray_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
-  captures.items = ((Array.isArray(value) ? value : [value]).map((__e: any) => __dispatchInverse_JsonValue_ast(__e, __indentCol)));
-  return __rebuild_JsonArray_0(captures, __indentCol);
+  captures.items = ((Array.isArray(value) ? value : value.split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_JsonValue_ast(__e, __indentCol)));
+  return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
 }
 
 function __invert_JsonMember_0_ast(value: any, __indentCol: number = 0): string {
@@ -937,7 +962,7 @@ function __invert_JsonMember_0_ast(value: any, __indentCol: number = 0): string 
     captures.key = __dkKey;
   captures.value = __invertSlotFor_JsonValue_ast(__dkVal, __indentCol);
   }
-  return __rebuild_JsonMember_0(captures, __indentCol);
+  return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonObject_0_ast(value: any, __indentCol: number = 0): string {
@@ -956,7 +981,7 @@ function __invert_JsonObject_0_ast(value: any, __indentCol: number = 0): string 
     }
     captures.entries = __mArr;
   }
-  return __rebuild_JsonObject_0(captures, __indentCol);
+  return (captures.entries == null ? "" : "{" + __rebuildSlot(captures.entries, ",")) + "}";
 }
 
 function __invert_JsonValue_0_ast(value: any, __indentCol: number = 0): string {
@@ -977,7 +1002,7 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Comment_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.text));
 }
 
 function __invert_JsonNull_0_source(value: any, __indentCol: number = 0): string {
@@ -1029,13 +1054,13 @@ function __invert_JsonArray_0_source(value: any, __indentCol: number = 0): strin
     if (__end < 0) {
       throw new Error("stringify: expected separator \"]\" after capture items");
     }
-    captures.items = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __dispatchInverse_JsonValue_source(__e, __indentCol)));
+    captures.items = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : __s.slice(__pos, __end).split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_JsonValue_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_JsonArray_0(captures, __indentCol);
+  return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
 }
 
 function __invert_JsonMember_0_source(value: any, __indentCol: number = 0): string {
@@ -1058,7 +1083,7 @@ function __invert_JsonMember_0_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_JsonMember_0(captures, __indentCol);
+  return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonObject_0_source(value: any, __indentCol: number = 0): string {
@@ -1077,13 +1102,13 @@ function __invert_JsonObject_0_source(value: any, __indentCol: number = 0): stri
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture entries");
     }
-    captures.entries = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __dispatchInverse_JsonMember_source(__e, __indentCol)));
+    captures.entries = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : __s.slice(__pos, __end).split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_JsonMember_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_JsonObject_0(captures, __indentCol);
+  return (captures.entries == null ? "" : "{" + __rebuildSlot(captures.entries, ",")) + "}";
 }
 
 function __invert_JsonValue_0_source(value: any, __indentCol: number = 0): string {
@@ -1163,7 +1188,7 @@ function __dispatchInverse_ast(value: any): string {
 
 function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_Comment_0_source(value, __indentCol);
+    try { return __invert_Comment_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -1206,7 +1231,7 @@ function __dispatchInverse_JsonArray_source(value: any, __indentCol: number = 0)
 
 function __dispatchInverse_JsonMember_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(":") >= 0) return __invert_JsonMember_0_source(value, __indentCol);
+    if (value.indexOf(":") >= 0) { try { return __invert_JsonMember_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -2050,6 +2075,9 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
+export function stringify(value: JsonValue_ast, options: { target: "ast" }): string;
+export function stringify(value: JsonValue_source, options: { target: "source" }): string;
+export function stringify(value: JsonValue_ast, options?: { target?: undefined }): string;
 export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {

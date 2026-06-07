@@ -40,6 +40,20 @@ export function canFuseStructured(
   // shared-dispatch, so structural fusion is a net win there.
   const info = schema.nodeTypes.get(production.nodeType);
   if (info && detectSharedDispatch(info) !== null) return false;
+  // Phase 5f: a unary-prefix or binary-operator production's first span
+  // is a class='operator' or recursive(self) which the structured-fusion
+  // role-ladder analyzer can't handle. The Pratt path emits these
+  // productions explicitly — fusion would only ever be a deopt anyway.
+  if (info && schema.unaryProductions.has(production.nodeType)) {
+    const unaryIdx = schema.unaryProductions.get(production.nodeType)!.prodIdx;
+    const prodIdx = info.productions.indexOf(production);
+    if (prodIdx === unaryIdx) return false;
+  }
+  if (info && schema.binaryProductions.has(production.nodeType)) {
+    const binaryIdx = schema.binaryProductions.get(production.nodeType)!.prodIdx;
+    const prodIdx = info.productions.indexOf(production);
+    if (prodIdx === binaryIdx) return false;
+  }
 
   const entry = production.renders.get(target);
   if (!entry) return false;
@@ -403,7 +417,7 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     if (usage.class === 'ident' && usage.refinements.some((r) => r.name === 'css')) cssIdent = true;
   }
   const contentClasses = new Set<string>([
-    'ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+    'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
   ]);
   const hasContentClass = schema.classes.some((c) => contentClasses.has(c.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
@@ -416,6 +430,7 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     emitUnknownCharsGuard,
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
+    operatorLiterals: schema.operatorLiterals,
   };
 }
 

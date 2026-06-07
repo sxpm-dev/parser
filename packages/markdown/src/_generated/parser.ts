@@ -230,6 +230,17 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// --- Inferred types ---
+export type MarkdownDocument_ast = { type: "document"; children: (MarkdownLeaf_ast | MarkdownParagraph_ast)[] };
+export type MarkdownDocument_html = string;
+export type MarkdownDocument_source = string;
+export type MarkdownLeaf_ast = { type: "heading"; depth: 6; text: string } | { type: "heading"; depth: 5; text: string } | { type: "heading"; depth: 4; text: string } | { type: "heading"; depth: 3; text: string } | { type: "heading"; depth: 2; text: string } | { type: "heading"; depth: 1; text: string } | { type: "heading"; depth: 1; text: string; style: "setext" } | { type: "heading"; depth: 2; text: string; style: "setext" } | { type: "thematic-break"; marker: "*" } | { type: "thematic-break"; marker: "_" } | { type: "thematic-break" } | { type: "task-list-item"; checked: true; marker: "x"; text: string } | { type: "task-list-item"; checked: false; text: string } | { type: "list-item"; ordered: false; marker: "+"; text: string } | { type: "list-item"; ordered: false; marker: "*"; text: string } | { type: "list-item"; ordered: false; text: string } | { type: "list-item"; ordered: true; index: string; text: string } | { type: "blockquote"; text: string } | { type: "code-block"; lang: string; text: string } | { type: "code-block"; text: string } | { type: "bold"; text: string } | { type: "italic"; text: string } | { type: "strikethrough"; text: string } | { type: "inline-code"; text: string } | { type: "link"; label: string; url: string } | { type: "reference-link"; label: string; id: string } | { type: "image"; alt: string; url: string } | { type: "reference-image"; alt: string; id: string } | { type: "entity"; name: string } | { type: "table-delimiter"; variant: "plain"; align: ["default", "default"] } | { type: "table-delimiter"; variant: "aligned"; align: ["left", "right"] } | { type: "table-row"; cells: [string, string] } | { type: "definition"; id: string; url: string } | { type: "footnote-definition"; id: string; text: string } | { type: "footnote-reference"; id: string } | { type: "html"; tag: string; text: string; closingTag: string } | { type: "autolink"; url: string };
+export type MarkdownLeaf_html = string;
+export type MarkdownLeaf_source = string;
+export type MarkdownParagraph_ast = { type: "paragraph"; text: string };
+export type MarkdownParagraph_html = string;
+export type MarkdownParagraph_source = string;
+
 function parseMarkdownDocument(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -3169,6 +3180,9 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
+export function render(input: string, options: { target: "ast"; mode?: ParseMode }): MarkdownDocument_ast;
+export function render(input: string, options: { target: "html"; mode?: ParseMode }): MarkdownDocument_html;
+export function render(input: string, options: { target: "source"; mode?: ParseMode }): MarkdownDocument_source;
 export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -3371,7 +3385,7 @@ function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): s
     throw new Error("stringify: field \"type\" expected \"document\", got " + JSON.stringify(value.type));
   }
   captures.children = ((Array.isArray(value.children) ? value.children : [value.children]).map((__e: any) => __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(__e, __indentCol)));
-  return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): string {
@@ -3386,7 +3400,7 @@ function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 6, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_ast(value: any, __indentCol: number = 0): string {
@@ -3401,7 +3415,7 @@ function __invert_MarkdownLeaf_1_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 5, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_ast(value: any, __indentCol: number = 0): string {
@@ -3416,7 +3430,7 @@ function __invert_MarkdownLeaf_2_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 4, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_ast(value: any, __indentCol: number = 0): string {
@@ -3431,7 +3445,7 @@ function __invert_MarkdownLeaf_3_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 3, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_ast(value: any, __indentCol: number = 0): string {
@@ -3446,7 +3460,7 @@ function __invert_MarkdownLeaf_4_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 2, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
+  return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_ast(value: any, __indentCol: number = 0): string {
@@ -3461,7 +3475,7 @@ function __invert_MarkdownLeaf_5_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 1, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
+  return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_ast(value: any, __indentCol: number = 0): string {
@@ -3479,7 +3493,7 @@ function __invert_MarkdownLeaf_6_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
   }
-  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_ast(value: any, __indentCol: number = 0): string {
@@ -3497,7 +3511,7 @@ function __invert_MarkdownLeaf_7_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
   }
-  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_ast(value: any, __indentCol: number = 0): string {
@@ -3511,7 +3525,7 @@ function __invert_MarkdownLeaf_8_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.marker, "*")) {
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
-  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
+  return "***";
 }
 
 function __invert_MarkdownLeaf_9_ast(value: any, __indentCol: number = 0): string {
@@ -3525,7 +3539,7 @@ function __invert_MarkdownLeaf_9_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.marker, "_")) {
     throw new Error("stringify: field \"marker\" expected \"_\", got " + JSON.stringify(value.marker));
   }
-  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
+  return "___";
 }
 
 function __invert_MarkdownLeaf_10_ast(value: any, __indentCol: number = 0): string {
@@ -3536,7 +3550,7 @@ function __invert_MarkdownLeaf_10_ast(value: any, __indentCol: number = 0): stri
   if (!Object.is(value.type, "thematic-break")) {
     throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
   }
-  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  return "---";
 }
 
 function __invert_MarkdownLeaf_11_ast(value: any, __indentCol: number = 0): string {
@@ -3554,7 +3568,7 @@ function __invert_MarkdownLeaf_11_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"x\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_ast(value: any, __indentCol: number = 0): string {
@@ -3569,7 +3583,7 @@ function __invert_MarkdownLeaf_12_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"checked\" expected false, got " + JSON.stringify(value.checked));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_ast(value: any, __indentCol: number = 0): string {
@@ -3587,7 +3601,7 @@ function __invert_MarkdownLeaf_13_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"+\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
+  return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_ast(value: any, __indentCol: number = 0): string {
@@ -3605,7 +3619,7 @@ function __invert_MarkdownLeaf_14_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
+  return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_ast(value: any, __indentCol: number = 0): string {
@@ -3620,7 +3634,7 @@ function __invert_MarkdownLeaf_15_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
+  return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_ast(value: any, __indentCol: number = 0): string {
@@ -3636,7 +3650,7 @@ function __invert_MarkdownLeaf_16_ast(value: any, __indentCol: number = 0): stri
   }
   captures.index = __invertSlotLeaf_ast(value.index);
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_ast(value: any, __indentCol: number = 0): string {
@@ -3648,7 +3662,7 @@ function __invert_MarkdownLeaf_17_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"blockquote\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_ast(value: any, __indentCol: number = 0): string {
@@ -3661,7 +3675,7 @@ function __invert_MarkdownLeaf_18_ast(value: any, __indentCol: number = 0): stri
   }
   captures.lang = __invertSlotLeaf_ast(value.lang);
   captures.body = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_ast(value: any, __indentCol: number = 0): string {
@@ -3673,7 +3687,7 @@ function __invert_MarkdownLeaf_19_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"code-block\", got " + JSON.stringify(value.type));
   }
   captures.body = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_ast(value: any, __indentCol: number = 0): string {
@@ -3685,7 +3699,7 @@ function __invert_MarkdownLeaf_20_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"bold\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_ast(value: any, __indentCol: number = 0): string {
@@ -3697,7 +3711,7 @@ function __invert_MarkdownLeaf_21_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"italic\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_ast(value: any, __indentCol: number = 0): string {
@@ -3709,7 +3723,7 @@ function __invert_MarkdownLeaf_22_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"strikethrough\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_ast(value: any, __indentCol: number = 0): string {
@@ -3721,7 +3735,7 @@ function __invert_MarkdownLeaf_23_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"inline-code\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_ast(value: any, __indentCol: number = 0): string {
@@ -3734,7 +3748,7 @@ function __invert_MarkdownLeaf_24_ast(value: any, __indentCol: number = 0): stri
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_ast(value: any, __indentCol: number = 0): string {
@@ -3747,7 +3761,7 @@ function __invert_MarkdownLeaf_25_ast(value: any, __indentCol: number = 0): stri
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_ast(value: any, __indentCol: number = 0): string {
@@ -3760,7 +3774,7 @@ function __invert_MarkdownLeaf_26_ast(value: any, __indentCol: number = 0): stri
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_ast(value: any, __indentCol: number = 0): string {
@@ -3773,7 +3787,7 @@ function __invert_MarkdownLeaf_27_ast(value: any, __indentCol: number = 0): stri
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_ast(value: any, __indentCol: number = 0): string {
@@ -3785,7 +3799,7 @@ function __invert_MarkdownLeaf_28_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"entity\", got " + JSON.stringify(value.type));
   }
   captures.name = __invertSlotLeaf_ast(value.name);
-  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_ast(value: any, __indentCol: number = 0): string {
@@ -3808,7 +3822,7 @@ function __invert_MarkdownLeaf_29_ast(value: any, __indentCol: number = 0): stri
   if (!Object.is(value.align[1], "default")) {
     throw new Error("stringify: expected scalar \"default\", got " + JSON.stringify(value.align[1]));
   }
-  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
+  return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_ast(value: any, __indentCol: number = 0): string {
@@ -3831,7 +3845,7 @@ function __invert_MarkdownLeaf_30_ast(value: any, __indentCol: number = 0): stri
   if (!Object.is(value.align[1], "right")) {
     throw new Error("stringify: expected scalar \"right\", got " + JSON.stringify(value.align[1]));
   }
-  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_ast(value: any, __indentCol: number = 0): string {
@@ -3847,7 +3861,7 @@ function __invert_MarkdownLeaf_31_ast(value: any, __indentCol: number = 0): stri
   }
   captures.first = __invertSlotLeaf_ast(value.cells[0]);
   captures.second = __invertSlotLeaf_ast(value.cells[1]);
-  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_ast(value: any, __indentCol: number = 0): string {
@@ -3860,7 +3874,7 @@ function __invert_MarkdownLeaf_32_ast(value: any, __indentCol: number = 0): stri
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_ast(value: any, __indentCol: number = 0): string {
@@ -3873,7 +3887,7 @@ function __invert_MarkdownLeaf_33_ast(value: any, __indentCol: number = 0): stri
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_ast(value: any, __indentCol: number = 0): string {
@@ -3885,7 +3899,7 @@ function __invert_MarkdownLeaf_34_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"footnote-reference\", got " + JSON.stringify(value.type));
   }
   captures.id = __invertSlotLeaf_ast(value.id);
-  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_ast(value: any, __indentCol: number = 0): string {
@@ -3899,7 +3913,7 @@ function __invert_MarkdownLeaf_35_ast(value: any, __indentCol: number = 0): stri
   captures.tag = __invertSlotLeaf_ast(value.tag);
   captures.body = __invertSlotLeaf_ast(value.text);
   captures.closingTag = __invertSlotLeaf_ast(value.closingTag);
-  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_ast(value: any, __indentCol: number = 0): string {
@@ -3911,7 +3925,7 @@ function __invert_MarkdownLeaf_36_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"autolink\", got " + JSON.stringify(value.type));
   }
   captures.url = __invertSlotLeaf_ast(value.url);
-  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_ast(value: any, __indentCol: number = 0): string {
@@ -3923,7 +3937,7 @@ function __invert_MarkdownParagraph_0_ast(value: any, __indentCol: number = 0): 
     throw new Error("stringify: field \"type\" expected \"paragraph\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.text));
 }
 
 function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): string {
@@ -3942,7 +3956,7 @@ function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): string {
@@ -3967,7 +3981,7 @@ function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_html(value: any, __indentCol: number = 0): string {
@@ -3992,7 +4006,7 @@ function __invert_MarkdownLeaf_1_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_html(value: any, __indentCol: number = 0): string {
@@ -4017,7 +4031,7 @@ function __invert_MarkdownLeaf_2_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_html(value: any, __indentCol: number = 0): string {
@@ -4042,7 +4056,7 @@ function __invert_MarkdownLeaf_3_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_html(value: any, __indentCol: number = 0): string {
@@ -4067,7 +4081,7 @@ function __invert_MarkdownLeaf_4_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
+  return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_html(value: any, __indentCol: number = 0): string {
@@ -4092,7 +4106,7 @@ function __invert_MarkdownLeaf_5_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
+  return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_html(value: any, __indentCol: number = 0): string {
@@ -4117,7 +4131,7 @@ function __invert_MarkdownLeaf_6_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_html(value: any, __indentCol: number = 0): string {
@@ -4142,7 +4156,7 @@ function __invert_MarkdownLeaf_7_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_html(value: any, __indentCol: number = 0): string {
@@ -4159,7 +4173,7 @@ function __invert_MarkdownLeaf_8_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
+  return "***";
 }
 
 function __invert_MarkdownLeaf_9_html(value: any, __indentCol: number = 0): string {
@@ -4176,7 +4190,7 @@ function __invert_MarkdownLeaf_9_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
+  return "___";
 }
 
 function __invert_MarkdownLeaf_10_html(value: any, __indentCol: number = 0): string {
@@ -4193,7 +4207,7 @@ function __invert_MarkdownLeaf_10_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  return "---";
 }
 
 function __invert_MarkdownLeaf_11_html(value: any, __indentCol: number = 0): string {
@@ -4218,7 +4232,7 @@ function __invert_MarkdownLeaf_11_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_html(value: any, __indentCol: number = 0): string {
@@ -4243,7 +4257,7 @@ function __invert_MarkdownLeaf_12_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_html(value: any, __indentCol: number = 0): string {
@@ -4268,7 +4282,7 @@ function __invert_MarkdownLeaf_13_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
+  return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_html(value: any, __indentCol: number = 0): string {
@@ -4293,7 +4307,7 @@ function __invert_MarkdownLeaf_14_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
+  return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_html(value: any, __indentCol: number = 0): string {
@@ -4318,7 +4332,7 @@ function __invert_MarkdownLeaf_15_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
+  return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_html(value: any, __indentCol: number = 0): string {
@@ -4343,7 +4357,7 @@ function __invert_MarkdownLeaf_16_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_html(value: any, __indentCol: number = 0): string {
@@ -4368,7 +4382,7 @@ function __invert_MarkdownLeaf_17_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_html(value: any, __indentCol: number = 0): string {
@@ -4401,7 +4415,7 @@ function __invert_MarkdownLeaf_18_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_html(value: any, __indentCol: number = 0): string {
@@ -4426,7 +4440,7 @@ function __invert_MarkdownLeaf_19_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_html(value: any, __indentCol: number = 0): string {
@@ -4451,7 +4465,7 @@ function __invert_MarkdownLeaf_20_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_html(value: any, __indentCol: number = 0): string {
@@ -4476,7 +4490,7 @@ function __invert_MarkdownLeaf_21_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_html(value: any, __indentCol: number = 0): string {
@@ -4501,7 +4515,7 @@ function __invert_MarkdownLeaf_22_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_html(value: any, __indentCol: number = 0): string {
@@ -4526,7 +4540,7 @@ function __invert_MarkdownLeaf_23_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_html(value: any, __indentCol: number = 0): string {
@@ -4559,7 +4573,7 @@ function __invert_MarkdownLeaf_24_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_html(value: any, __indentCol: number = 0): string {
@@ -4592,7 +4606,7 @@ function __invert_MarkdownLeaf_25_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_html(value: any, __indentCol: number = 0): string {
@@ -4625,7 +4639,7 @@ function __invert_MarkdownLeaf_26_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_html(value: any, __indentCol: number = 0): string {
@@ -4658,7 +4672,7 @@ function __invert_MarkdownLeaf_27_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_html(value: any, __indentCol: number = 0): string {
@@ -4683,7 +4697,7 @@ function __invert_MarkdownLeaf_28_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_html(value: any, __indentCol: number = 0): string {
@@ -4696,7 +4710,7 @@ function __invert_MarkdownLeaf_29_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
+  return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_html(value: any, __indentCol: number = 0): string {
@@ -4709,7 +4723,7 @@ function __invert_MarkdownLeaf_30_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_html(value: any, __indentCol: number = 0): string {
@@ -4742,7 +4756,7 @@ function __invert_MarkdownLeaf_31_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_html(value: any, __indentCol: number = 0): string {
@@ -4755,7 +4769,7 @@ function __invert_MarkdownLeaf_32_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_html(value: any, __indentCol: number = 0): string {
@@ -4788,7 +4802,7 @@ function __invert_MarkdownLeaf_33_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_html(value: any, __indentCol: number = 0): string {
@@ -4821,7 +4835,7 @@ function __invert_MarkdownLeaf_34_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_html(value: any, __indentCol: number = 0): string {
@@ -4862,7 +4876,7 @@ function __invert_MarkdownLeaf_35_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_html(value: any, __indentCol: number = 0): string {
@@ -4895,7 +4909,7 @@ function __invert_MarkdownLeaf_36_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_html(value: any, __indentCol: number = 0): string {
@@ -4920,7 +4934,7 @@ function __invert_MarkdownParagraph_0_html(value: any, __indentCol: number = 0):
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.text));
 }
 
 function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0): string {
@@ -4939,7 +4953,7 @@ function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0)
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): string {
@@ -4958,7 +4972,7 @@ function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_source(value: any, __indentCol: number = 0): string {
@@ -4977,7 +4991,7 @@ function __invert_MarkdownLeaf_1_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_source(value: any, __indentCol: number = 0): string {
@@ -4996,7 +5010,7 @@ function __invert_MarkdownLeaf_2_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_source(value: any, __indentCol: number = 0): string {
@@ -5015,7 +5029,7 @@ function __invert_MarkdownLeaf_3_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_source(value: any, __indentCol: number = 0): string {
@@ -5034,7 +5048,7 @@ function __invert_MarkdownLeaf_4_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_4(captures, __indentCol);
+  return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_source(value: any, __indentCol: number = 0): string {
@@ -5053,7 +5067,7 @@ function __invert_MarkdownLeaf_5_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_5(captures, __indentCol);
+  return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_source(value: any, __indentCol: number = 0): string {
@@ -5074,7 +5088,7 @@ function __invert_MarkdownLeaf_6_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_6(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_source(value: any, __indentCol: number = 0): string {
@@ -5095,7 +5109,7 @@ function __invert_MarkdownLeaf_7_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_source(value: any, __indentCol: number = 0): string {
@@ -5112,7 +5126,7 @@ function __invert_MarkdownLeaf_8_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_8(captures, __indentCol);
+  return "***";
 }
 
 function __invert_MarkdownLeaf_9_source(value: any, __indentCol: number = 0): string {
@@ -5129,7 +5143,7 @@ function __invert_MarkdownLeaf_9_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_9(captures, __indentCol);
+  return "___";
 }
 
 function __invert_MarkdownLeaf_10_source(value: any, __indentCol: number = 0): string {
@@ -5146,7 +5160,7 @@ function __invert_MarkdownLeaf_10_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  return "---";
 }
 
 function __invert_MarkdownLeaf_11_source(value: any, __indentCol: number = 0): string {
@@ -5165,7 +5179,7 @@ function __invert_MarkdownLeaf_11_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_source(value: any, __indentCol: number = 0): string {
@@ -5184,7 +5198,7 @@ function __invert_MarkdownLeaf_12_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_source(value: any, __indentCol: number = 0): string {
@@ -5203,7 +5217,7 @@ function __invert_MarkdownLeaf_13_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_13(captures, __indentCol);
+  return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_source(value: any, __indentCol: number = 0): string {
@@ -5222,7 +5236,7 @@ function __invert_MarkdownLeaf_14_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_14(captures, __indentCol);
+  return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_source(value: any, __indentCol: number = 0): string {
@@ -5241,7 +5255,7 @@ function __invert_MarkdownLeaf_15_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_15(captures, __indentCol);
+  return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_source(value: any, __indentCol: number = 0): string {
@@ -5264,7 +5278,7 @@ function __invert_MarkdownLeaf_16_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_source(value: any, __indentCol: number = 0): string {
@@ -5283,7 +5297,7 @@ function __invert_MarkdownLeaf_17_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_source(value: any, __indentCol: number = 0): string {
@@ -5316,7 +5330,7 @@ function __invert_MarkdownLeaf_18_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_source(value: any, __indentCol: number = 0): string {
@@ -5341,7 +5355,7 @@ function __invert_MarkdownLeaf_19_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_source(value: any, __indentCol: number = 0): string {
@@ -5366,7 +5380,7 @@ function __invert_MarkdownLeaf_20_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_source(value: any, __indentCol: number = 0): string {
@@ -5391,7 +5405,7 @@ function __invert_MarkdownLeaf_21_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_source(value: any, __indentCol: number = 0): string {
@@ -5416,7 +5430,7 @@ function __invert_MarkdownLeaf_22_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_source(value: any, __indentCol: number = 0): string {
@@ -5441,7 +5455,7 @@ function __invert_MarkdownLeaf_23_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_source(value: any, __indentCol: number = 0): string {
@@ -5474,7 +5488,7 @@ function __invert_MarkdownLeaf_24_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_source(value: any, __indentCol: number = 0): string {
@@ -5507,7 +5521,7 @@ function __invert_MarkdownLeaf_25_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_source(value: any, __indentCol: number = 0): string {
@@ -5540,7 +5554,7 @@ function __invert_MarkdownLeaf_26_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_source(value: any, __indentCol: number = 0): string {
@@ -5573,7 +5587,7 @@ function __invert_MarkdownLeaf_27_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_source(value: any, __indentCol: number = 0): string {
@@ -5598,7 +5612,7 @@ function __invert_MarkdownLeaf_28_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_source(value: any, __indentCol: number = 0): string {
@@ -5615,7 +5629,7 @@ function __invert_MarkdownLeaf_29_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_29(captures, __indentCol);
+  return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_source(value: any, __indentCol: number = 0): string {
@@ -5632,7 +5646,7 @@ function __invert_MarkdownLeaf_30_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_source(value: any, __indentCol: number = 0): string {
@@ -5665,7 +5679,7 @@ function __invert_MarkdownLeaf_31_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_source(value: any, __indentCol: number = 0): string {
@@ -5692,7 +5706,7 @@ function __invert_MarkdownLeaf_32_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_source(value: any, __indentCol: number = 0): string {
@@ -5719,7 +5733,7 @@ function __invert_MarkdownLeaf_33_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_source(value: any, __indentCol: number = 0): string {
@@ -5744,7 +5758,7 @@ function __invert_MarkdownLeaf_34_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_source(value: any, __indentCol: number = 0): string {
@@ -5785,7 +5799,7 @@ function __invert_MarkdownLeaf_35_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_source(value: any, __indentCol: number = 0): string {
@@ -5810,7 +5824,7 @@ function __invert_MarkdownLeaf_36_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_source(value: any, __indentCol: number = 0): string {
@@ -5825,7 +5839,7 @@ function __invert_MarkdownParagraph_0_source(value: any, __indentCol: number = 0
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_MarkdownParagraph_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.text));
 }
 
 function __dispatchInverse_MarkdownDocument_ast(value: any, __indentCol: number = 0): string {
@@ -5891,7 +5905,7 @@ function __dispatchInverse_ast(value: any): string {
 
 function __dispatchInverse_MarkdownDocument_html(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownDocument_0_html(value, __indentCol);
+    try { return __invert_MarkdownDocument_0_html(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
 }
@@ -5925,7 +5939,7 @@ function __dispatchInverse_MarkdownLeaf_html(value: any, __indentCol: number = 0
     if (value.startsWith("<s>")) return __invert_MarkdownLeaf_22_html(value, __indentCol);
     if (value.startsWith("&")) return __invert_MarkdownLeaf_28_html(value, __indentCol);
     if (value.startsWith("<")) return __invert_MarkdownLeaf_35_html(value, __indentCol);
-    return __invert_MarkdownLeaf_29_html(value, __indentCol);
+    try { return __invert_MarkdownLeaf_29_html(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'html' (value: " + JSON.stringify(value) + ")");
 }
@@ -5943,7 +5957,7 @@ function __dispatchInverse_html(value: any): string {
 
 function __dispatchInverse_MarkdownDocument_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownDocument_0_source(value, __indentCol);
+    try { return __invert_MarkdownDocument_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -5958,8 +5972,8 @@ function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number =
     if (value.startsWith("- [ ] ")) return __invert_MarkdownLeaf_12_source(value, __indentCol);
     if (value.startsWith("#### ")) return __invert_MarkdownLeaf_2_source(value, __indentCol);
     if (value.startsWith("### ")) return __invert_MarkdownLeaf_3_source(value, __indentCol);
-    if (value.indexOf(" ===") >= 0) return __invert_MarkdownLeaf_6_source(value, __indentCol);
-    if (value.indexOf(" ---") >= 0) return __invert_MarkdownLeaf_7_source(value, __indentCol);
+    if (value.indexOf(" ===") >= 0) { try { return __invert_MarkdownLeaf_6_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf(" ---") >= 0) { try { return __invert_MarkdownLeaf_7_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.startsWith("```\n")) return __invert_MarkdownLeaf_19_source(value, __indentCol);
     if (value.startsWith("## ")) return __invert_MarkdownLeaf_4_source(value, __indentCol);
     if (value.startsWith("***")) return __invert_MarkdownLeaf_8_source(value, __indentCol);
@@ -5970,7 +5984,7 @@ function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number =
     if (value.startsWith("+ ")) return __invert_MarkdownLeaf_13_source(value, __indentCol);
     if (value.startsWith("* ")) return __invert_MarkdownLeaf_14_source(value, __indentCol);
     if (value.startsWith("- ")) return __invert_MarkdownLeaf_15_source(value, __indentCol);
-    if (value.indexOf(". ") >= 0) return __invert_MarkdownLeaf_16_source(value, __indentCol);
+    if (value.indexOf(". ") >= 0) { try { return __invert_MarkdownLeaf_16_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.startsWith("> ")) return __invert_MarkdownLeaf_17_source(value, __indentCol);
     if (value.startsWith("**")) return __invert_MarkdownLeaf_20_source(value, __indentCol);
     if (value.startsWith("~~")) return __invert_MarkdownLeaf_22_source(value, __indentCol);
@@ -5993,7 +6007,7 @@ function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number =
 
 function __dispatchInverse_MarkdownParagraph_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_MarkdownParagraph_0_source(value, __indentCol);
+    try { return __invert_MarkdownParagraph_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -6458,6 +6472,9 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
+export function stringify(value: MarkdownDocument_ast, options: { target: "ast" }): string;
+export function stringify(value: MarkdownDocument_html, options: { target: "html" }): string;
+export function stringify(value: MarkdownDocument_source, options: { target: "source" }): string;
 export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {

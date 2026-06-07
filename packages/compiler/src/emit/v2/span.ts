@@ -36,7 +36,7 @@ export function computeKnownLeadingBytes(schema: InferredSchema): Uint8Array {
   // Class-scanner first-byte ranges. Note: TokenClassUsage uses `.class` (a
   // SpanClass string), not `.kind`. Refinements live in `.refinements`.
   for (const cls of schema.classes) {
-    if (cls.class === 'ident' || cls.class === 'keyword') {
+    if (cls.class === 'ident') {
       // ident-start: A-Z, a-z, _; also - for css-ident, $ for js-ident.
       for (let c = 0x41; c <= 0x5a; c++) bits[c] = 1; // A-Z
       for (let c = 0x61; c <= 0x7a; c++) bits[c] = 1; // a-z
@@ -101,6 +101,12 @@ export type SpanContext = {
   // __fusedRender_<Role>_<idx>_<target>, etc.). Default '' produces byte-identical
   // output to the prior code path. See InferredSchema.symbolPrefix.
   readonly symbolPrefix: string;
+  // Schema's declared operator literals, longest-first. Consumed by the
+  // .operator() class scanner to emit a longest-match dispatch over the
+  // declared set. Empty when the schema declares no `operators:` layers
+  // (in which case any .operator() span would already have failed the
+  // tokenizer pass earlier).
+  readonly operatorLiterals: ReadonlyArray<string>;
 };
 
 export type SpanBindings = {
@@ -209,7 +215,7 @@ function emitClassSpan(
   isOptional: boolean,
 ): string {
   const v = span.name ? jsIdent(span.name) : '__unnamed';
-  const { startPredicate, scanBody } = classScanCode(span);
+  const { startPredicate, scanBody } = classScanCode(span, ctx);
   const startVar = `__${v}_start`, endVar = `__${v}_end`;
 
   if (isOptional) {
@@ -750,7 +756,10 @@ while (off < len && ((input.charCodeAt(off) >= 0x30 && input.charCodeAt(off) <= 
   };
 }
 
-function classScanCode(span: ResolvedSpan): { startPredicate: string; scanBody: string } {
+function classScanCode(
+  span: ResolvedSpan,
+  ctx: SpanContext,
+): { startPredicate: string; scanBody: string } {
   const cls = span.class;
   const refSet = new Set(span.refinements.map((r) => r.name));
   const isJs = refSet.has('js');
@@ -801,6 +810,31 @@ function classScanCode(span: ResolvedSpan): { startPredicate: string; scanBody: 
       scanBody: `off += 2;
 while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
 if (off < len) off += 2;`,
+    };
+  }
+  if (cls === 'operator') {
+    const ops = ctx.operatorLiterals;
+    if (ops.length === 0) {
+      throw new Error(
+        `v2: .operator() span '${span.name ?? '<unnamed>'}' has no operators declared on the schema; add an \`operators:\` map to defineSchema(...)`,
+      );
+    }
+    // Longest-match: ops is pre-sorted longest-first. Predicate: any one of
+    // them matches at off. Scan body: try each in order, advance off by the
+    // matched literal's length. The match expression is a short-circuit `||`
+    // chain so the JIT can fold single-byte ops to charCodeAt compares.
+    const predicate = ops
+      .map((op) => `(${literalMatchExpr(op, 'off')})`)
+      .join(' || ');
+    const scanLines = ops
+      .map(
+        (op) =>
+          `if (${literalMatchExpr(op, 'off')}) { off += ${op.length}; }`,
+      )
+      .join(' else ');
+    return {
+      startPredicate: `off < len && (${predicate})`,
+      scanBody: scanLines,
     };
   }
   throw new Error(`v2: class '${cls}' not yet supported`);

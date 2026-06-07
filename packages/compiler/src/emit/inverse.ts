@@ -34,7 +34,15 @@ import type {
   Production,
   RenderTargetIR,
 } from '../model.ts';
-import { INDENT_STEP_SPACES, rebuildFnName } from './rebuild.ts';
+import {
+  INDENT_STEP_SPACES,
+  isAbsentAllowed,
+  joinOf,
+  encodeOf,
+  piecesToConcat,
+  rebuildFnName,
+  type Piece,
+} from './rebuild.ts';
 import { jsString } from './strings.ts';
 
 // The indent step in spaces — kept in sync with emit/rebuild.ts.
@@ -42,7 +50,14 @@ import { jsString } from './strings.ts';
 // for indent-modified spans.
 const CODEGEN_INDENT_STEP = INDENT_STEP_SPACES;
 
-export function emitInverse(schema: InferredSchema): string {
+// Phase 3 — when the caller supplies stringifyOverloads, they are emitted
+// immediately before the public stringify implementation. Consumers see
+// per-target value typing via TS overload resolution.
+export type EmitInverseOptions = {
+  readonly stringifyOverloads?: string;
+};
+
+export function emitInverse(schema: InferredSchema, options: EmitInverseOptions = {}): string {
   const targets = collectTargets(schema);
   const inverters: string[] = [];
   const dispatchers: string[] = [];
@@ -63,13 +78,39 @@ export function emitInverse(schema: InferredSchema): string {
 
   for (const target of targets) {
     for (const info of schema.nodeTypes.values()) {
+      const binaryInfo = schema.binaryProductions.get(info.name);
+      const unaryInfo = schema.unaryProductions.get(info.name);
+      const passthroughIdxs = new Set(
+        (schema.transparentPassthroughs.get(info.name) ?? []).map((p) => p.prodIdx),
+      );
       for (let i = 0; i < info.productions.length; i++) {
+        // Phase 5g: skip transparent-passthrough productions entirely.
+        // Their AST body is a recursive ref to the same node type; the
+        // inverse direction is handled by whichever inner production's
+        // dispatcher actually claims the value, so no inverter is
+        // needed for this wrapper.
+        if (passthroughIdxs.has(i)) continue;
         const production = info.productions[i]!;
         const entry = production.renders.get(target);
         if (!entry) {
           throw new Error(`inverse: production '${info.name}#${i}' missing target '${target}'`);
         }
-        inverters.push(emitInverter(info.name, i, target, entry, production));
+        // Phase 5c: when this is the binary production of a Pratt-detected
+        // node type AND we're emitting the 'ast' target's inverter, emit
+        // a paren-aware variant that wraps the rebuilt source when the
+        // node's precedence is looser than the calling context expects.
+        // Other targets and other productions use the standard inverter.
+        if (binaryInfo !== undefined && i === binaryInfo.prodIdx && target === 'ast') {
+          inverters.push(emitPrattBinaryInverter(info.name, i, target, production, binaryInfo, schema));
+        } else if (unaryInfo !== undefined && i === unaryInfo.prodIdx && target === 'ast') {
+          // Phase 5g: unary's operand needs paren wrapping when it's a
+          // binary node — unary binds tighter than any binary op, so the
+          // operand minPrec is effectively "highest" (one past the
+          // tightest declared layer).
+          inverters.push(emitPrattUnaryInverter(info.name, i, target, production, unaryInfo, schema));
+        } else {
+          inverters.push(emitInverter(info.name, i, target, entry, production));
+        }
       }
     }
     // Gap C: per-(NodeType, target) dispatchers. The PUBLIC stringify routes
@@ -78,9 +119,18 @@ export function emitInverse(schema: InferredSchema): string {
     // the statically-known child node type. This prevents a sub-production's
     // template prefix (e.g. `*` for a CronField wildcard) from accidentally
     // matching a root-level rendered value that starts the same way.
+    //
+    // Phase 5c: when a node type has a Pratt-detected binary production AND
+    // we're emitting the 'ast' target dispatcher, the dispatcher accepts an
+    // additional `__minPrec` parameter and forwards it to the binary
+    // inverter. Other inverters ignore it. The slot helper for the same
+    // node type also accepts the parameter and forwards it to the
+    // dispatcher.
     for (const info of schema.nodeTypes.values()) {
-      dispatchers.push(emitNodeDispatcher(info, target));
-      slotHelpers.push(emitNodeSlotHelper(info.name, target));
+      const binaryInfo = schema.binaryProductions.get(info.name);
+      const isPrattAst = binaryInfo !== undefined && target === 'ast';
+      dispatchers.push(emitNodeDispatcher(info, target, isPrattAst ? binaryInfo : undefined));
+      slotHelpers.push(emitNodeSlotHelper(info.name, target, isPrattAst));
     }
     // Feature 2: per-target multi-role slot helpers. Each helper tries
     // every role's per-(NodeType, target) dispatcher in order, returning
@@ -102,7 +152,7 @@ export function emitInverse(schema: InferredSchema): string {
   }
 
   const dispatchTable = emitDispatchTable(targets);
-  const publicStringify = emitPublicStringify();
+  const publicStringify = emitPublicStringify(options.stringifyOverloads ?? '');
 
   return [
     inverters.join('\n\n'),
@@ -142,12 +192,266 @@ ${indent(assertion, 1)}
 }`;
   }
   const body = emitInverseBody(ir, 'value', target, production);
+  // Task #18: stringify always produces SOURCE, regardless of which target's
+  // value was passed in. The canonical source for a production is the
+  // production's source-target body. When that body is a Template the
+  // shared span-driven rebuild (`__rebuild_<Node>_<idx>`) can lose
+  // information — e.g. CSS Comment's `tpl`/* ${$.text} */`` body wraps the
+  // interior with `/* */` literals that `.comment()` already stripped at
+  // parse time, so the span-driven rebuild emits only `captures.text`
+  // ('foo'), not '/* foo */'. The template-driven rebuild interleaves the
+  // template's literal segments with the captures populated from THIS
+  // target's body, producing canonical source from any target's
+  // perspective.
+  //
+  // When the source target body is NOT a template (object/dynKey/merge/
+  // ref/scalar), or no source target exists, fall back to the shared
+  // span-driven rebuild — those bodies don't carry framing literals the
+  // spans don't already describe.
+  const sourceEntry = production.renders.get('source');
+  const sourceIr = sourceEntry?.inverseDerived;
+  if (sourceIr && sourceIr.kind === 'template') {
+    const expr = emitTemplateRebuildExpr(sourceIr, production);
+    return `function ${fnName}(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+${indent(body, 1)}
+  return ${expr};
+}`;
+  }
   const rebuild = rebuildFnName(nodeName, prodIdx);
   return `function ${fnName}(value: any, __indentCol: number = 0): string {
   const captures: any = {};
 ${indent(body, 1)}
   return ${rebuild}(captures, __indentCol);
 }`;
+}
+
+// Phase 5c — paren-aware inverter for the Pratt-detected binary production.
+// Replaces the standard captures-walk + rebuild path with a custom one that:
+//   1. Reads value.<leftCapture>, value.<opCapture>, value.<rightCapture>
+//      directly off the AST node — Pratt's forward emit guarantees these
+//      fields exist on every binary node.
+//   2. Looks up the parent op's precedence in __precTable (the same table
+//      emitted by Pratt forward) and uses it to recurse with the correct
+//      `__minPrec` on each child — own_prec for the left side, own_prec + 1
+//      for the right side (left-associative convention).
+//   3. Concatenates the rebuilt left + " " + op + " " + right.
+//   4. Wraps the result in parens when `myPrec < __minPrec` — i.e. when
+//      the caller's context requires a tighter binding than this node
+//      itself binds.
+//
+// The slot helper for this node type accepts `__minPrec` and forwards it
+// to the dispatcher; the dispatcher forwards it to THIS inverter only.
+// Other inverters in the same node type (the primaries) ignore the
+// parameter.
+//
+// Limitation: assumes left-associative operators. A future
+// right-associative annotation on `operators:` layers would swap the
+// rules (own_prec + 1 on the left, own_prec on the right).
+function emitPrattBinaryInverter(
+  nodeName: string,
+  prodIdx: number,
+  target: string,
+  production: Production,
+  binaryInfo: import('../infer/binary-operators.ts').BinaryProductionInfo,
+  schema: InferredSchema,
+): string {
+  const fnName = inverterName(nodeName, prodIdx, target);
+  const slotHelper = nodeSlotHelperName(nodeName, target);
+  // Build the per-op precedence table as a `const` map. Mirrors the table
+  // the Pratt forward emit bakes; computed afresh here so the inverse
+  // module stays self-contained.
+  // Pure-unary operators (declared only on a unary production via
+  // `.operator([...])`) carry no binary precedence. Inverse needs only
+  // the binary ones — the wrap rule uses precedence comparison.
+  const precEntries = schema.operatorLiterals
+    .filter((op) => schema.operatorPrecedence.has(op))
+    .map((op) => `    ${jsString(op)}: ${schema.operatorPrecedence.get(op)},`)
+    .join('\n');
+  // Phase 5e: right-assoc map. The paren rules swap when the OUTER op is
+  // right-associative: equal-precedence child on the LEFT side now gets
+  // parens (forced left-grouping), equal-precedence child on the RIGHT
+  // doesn't (natural right-grouping). Mirrors the forward Pratt's
+  // `nextMinPrec` swap.
+  const rightAssocEntries = schema.operatorLiterals
+    .filter((op) => schema.rightAssociativeOps.has(op))
+    .map((op) => `    ${jsString(op)}: true,`)
+    .join('\n');
+  const rightAssocBlock = rightAssocEntries.length === 0
+    ? '{}'
+    : `{\n${rightAssocEntries}\n  }`;
+  // Span literal joins between left/op and op/right come from the
+  // production's spans — for js-expr the schema example is `'a + b'`
+  // (single-space separators), so the rebuild uses ' ' on each side. We
+  // bake that join here by reading the production's source input directly:
+  // the separators are whatever literal substring sits between the
+  // captured operand text and the operator text. For the canonical
+  // `'<left> <op> <right>'` shape that's a single space on each side; a
+  // more general implementation would walk the production's spans and
+  // collect the literal gaps.
+  const { leftJoin, rightJoin } = computeBinarySeparators(production, binaryInfo);
+  const left = binaryInfo.leftCapture;
+  const op = binaryInfo.opCapture;
+  const right = binaryInfo.rightCapture;
+  return `function ${fnName}(value: any, __indentCol: number = 0, __minPrec: number = -1): string {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error("stringify: expected binary expression object for '${nodeName}', got " + typeof value);
+  }
+  const __op = value${memberAccess(op)};
+  if (typeof __op !== 'string') {
+    throw new Error("stringify: binary '${nodeName}' missing string op (got " + typeof __op + ")");
+  }
+  const __precTable: Record<string, number> = {
+${precEntries}
+  };
+  const __rightAssoc: Record<string, boolean> = ${rightAssocBlock};
+  const __myPrec = __precTable[__op];
+  if (__myPrec === undefined) {
+    throw new Error("stringify: binary '${nodeName}' op '" + __op + "' not declared in operators map");
+  }
+  // Left-assoc: left=myPrec, right=myPrec+1. Right-assoc: left=myPrec+1,
+  // right=myPrec. Wrap rule \`myPrec < minPrec\` stays the same; only
+  // what we PASS as minPrec to the children swaps.
+  const __leftMinPrec = __rightAssoc[__op] ? __myPrec + 1 : __myPrec;
+  const __rightMinPrec = __rightAssoc[__op] ? __myPrec : __myPrec + 1;
+  const __leftStr = ${slotHelper}(value${memberAccess(left)}, __indentCol, __leftMinPrec);
+  const __rightStr = ${slotHelper}(value${memberAccess(right)}, __indentCol, __rightMinPrec);
+  let __result = String(__leftStr) + ${jsString(leftJoin)} + __op + ${jsString(rightJoin)} + String(__rightStr);
+  if (__myPrec < __minPrec) __result = "(" + __result + ")";
+  return __result;
+}`;
+}
+
+// Phase 5g — paren-aware unary inverter. Unary binds tighter than any
+// declared binary precedence layer, so the operand is wrapped in parens
+// when it's a binary node at any layer. We achieve this by passing a
+// minPrec of `numLayers` (one past the tightest layer index) into the
+// operand slot helper — every binary op's myPrec is < numLayers, so the
+// binary wrap test fires.
+function emitPrattUnaryInverter(
+  nodeName: string,
+  prodIdx: number,
+  target: string,
+  production: Production,
+  unaryInfo: import('../infer/unary-operators.ts').UnaryProductionInfo,
+  schema: InferredSchema,
+): string {
+  const fnName = inverterName(nodeName, prodIdx, target);
+  const slotHelper = nodeSlotHelperName(nodeName, target);
+  // numLayers = max precedence index + 1. Any declared binary op has
+  // prec < numLayers, so passing numLayers as the operand minPrec
+  // triggers the wrap rule `myPrec < minPrec` for every binary node.
+  let numLayers = 0;
+  for (const p of schema.operatorPrecedence.values()) {
+    if (p + 1 > numLayers) numLayers = p + 1;
+  }
+  const op = unaryInfo.opCapture;
+  const operand = unaryInfo.operandCapture;
+  // Literal join between op and operand — derive the same way the
+  // binary helper does, then canonicalize whitespace runs to a single
+  // space (or empty for adjacent literals like `!a`).
+  const opJoin = computeUnarySeparator(production, unaryInfo);
+  return `function ${fnName}(value: any, __indentCol: number = 0): string {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error("stringify: expected unary expression object for '${nodeName}', got " + typeof value);
+  }
+  const __op = value${memberAccess(op)};
+  if (typeof __op !== 'string') {
+    throw new Error("stringify: unary '${nodeName}' missing string op (got " + typeof __op + ")");
+  }
+  const __operandStr = ${slotHelper}(value${memberAccess(operand)}, __indentCol, ${numLayers});
+  return __op + ${jsString(opJoin)} + String(__operandStr);
+}`;
+}
+
+function computeUnarySeparator(
+  production: Production,
+  unaryInfo: import('../infer/unary-operators.ts').UnaryProductionInfo,
+): string {
+  const src = production.source.input;
+  const opSpan = production.spans.find((s) => s.name === unaryInfo.opCapture);
+  const operandSpan = production.spans.find((s) => s.name === unaryInfo.operandCapture);
+  if (!opSpan || !operandSpan || opSpan.text === undefined || operandSpan.text === undefined) {
+    return '';
+  }
+  const opStart = src.indexOf(opSpan.text);
+  if (opStart < 0) return '';
+  const opEnd = opStart + opSpan.text.length;
+  const operandStart = src.indexOf(operandSpan.text, opEnd);
+  if (operandStart < 0) return '';
+  const between = src.slice(opEnd, operandStart);
+  return between.length === 0 ? '' : ' ';
+}
+
+// Derive the literal join strings between (left, op) and (op, right) for a
+// binary production. For the canonical `[left, op, right]` example with
+// standard whitespace policy, both joins are a single space — but the
+// example's input may use a different layout, and the inverse must reflect
+// what the rebuild would naturally produce. Strategy: slice the production's
+// source input between span text ranges.
+function computeBinarySeparators(
+  production: Production,
+  binaryInfo: import('../infer/binary-operators.ts').BinaryProductionInfo,
+): { readonly leftJoin: string; readonly rightJoin: string } {
+  const src = production.source.input;
+  const leftSpan = production.spans.find((s) => s.name === binaryInfo.leftCapture);
+  const opSpan = production.spans.find((s) => s.name === binaryInfo.opCapture);
+  const rightSpan = production.spans.find((s) => s.name === binaryInfo.rightCapture);
+  // Locate each span's text inside the input. The shape is fixed by
+  // detection: three spans in this order. Resolve left-to-right with a
+  // cursor.
+  let cursor = 0;
+  const findFrom = (text: string | undefined): { start: number; end: number } => {
+    if (text === undefined) return { start: cursor, end: cursor };
+    const start = src.indexOf(text, cursor);
+    if (start < 0) return { start: cursor, end: cursor };
+    cursor = start + text.length;
+    return { start, end: cursor };
+  };
+  const l = findFrom(leftSpan?.text);
+  const o = findFrom(opSpan?.text);
+  const r = findFrom(rightSpan?.text);
+  const leftJoin = src.slice(l.end, o.start);
+  const rightJoin = src.slice(o.end, r.start);
+  // Canonicalize: collapse any whitespace run to a single ' '. The forward
+  // Pratt loop skips whitespace on both sides of the operator scan, so the
+  // exact whitespace shape in the example doesn't survive parse — using
+  // the canonical single space keeps round-trip value-stable.
+  return {
+    leftJoin: leftJoin.length === 0 ? '' : ' ',
+    rightJoin: rightJoin.length === 0 ? '' : ' ',
+  };
+}
+
+// Build a JS expression that reconstructs the canonical source for a
+// template-bodied target by interleaving the IR's literal segments with
+// the captures populated by `emitTemplateBody`. Each capture's run-time
+// shape is determined by the corresponding span's modifiers/refinements
+// — we reuse `Piece` + `piecesToConcat` from rebuild.ts so optional
+// fusion, repeats joins, indent join, and JSON re-encoding all behave
+// identically to the span-driven rebuild path.
+function emitTemplateRebuildExpr(
+  ir: Extract<InverseIR, { kind: 'template' }>,
+  production: Production,
+): string {
+  const pieces: Piece[] = [];
+  for (let i = 0; i < ir.captures.length; i++) {
+    const seg = ir.segments[i] ?? '';
+    if (seg.length > 0) {
+      pieces.push({ kind: 'literal', text: seg });
+    }
+    const ref = ir.captures[i]!;
+    const span = production.spans.find((s) => s.name === ref);
+    const optional = span !== undefined && isAbsentAllowed(span);
+    const join = span !== undefined ? joinOf(span) : { kind: 'none' as const };
+    const encode = span !== undefined ? encodeOf(span) : ('none' as const);
+    pieces.push({ kind: 'slot', ref, optional, join, encode });
+  }
+  const lastSeg = ir.segments[ir.segments.length - 1] ?? '';
+  if (lastSeg.length > 0) {
+    pieces.push({ kind: 'literal', text: lastSeg });
+  }
+  return piecesToConcat(pieces);
 }
 
 // Returns JS statements (one per line, no leading indent) that read from the
@@ -438,7 +742,6 @@ function refsAcceptCondition(
         case 'literal':
         case 'hex':
         case 'comment':
-        case 'keyword':
         case 'operator':
           acceptsString = true;
           stringNeedsJsonQuotePrefix = false;
@@ -607,7 +910,8 @@ function slotHelperCall(
     const childColExpr = hasIndent
       ? `${indentColExpr} + ${CODEGEN_INDENT_STEP}`
       : indentColExpr;
-    const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+    const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+    const isRepeats = repeatsMod !== undefined;
     // For `.repeats()` captures the inbound value IS an array of child
     // values (each element a single value to be dispatched). Map over
     // the array and call the per-element dispatcher — the slot helper's
@@ -617,11 +921,26 @@ function slotHelperCall(
     // single value (which itself may be an array — e.g. JsonObject's
     // value field for a JsonArray AST) and goes straight through the
     // slot helper / dispatcher.
+    //
+    // When the inbound value is a STRING (the template-target inverse path —
+    // the template scanner just sliced out one chunk between two literal
+    // segments and the schema declared `.repeats({sep})`), split the chunk
+    // by `sep` first and trim each element. Without the split, the per-
+    // element dispatcher would receive the whole concatenated chunk (e.g.
+    // `'FREQ=DAILY;COUNT=10'`) and either fail or silently match only the
+    // first element, leaving the rest as "trailing content". When the slot
+    // is `.repeats()` with NO sep declared, fall back to single-element
+    // wrap — boundary detection for unseparated lists requires a deeper
+    // change tracked under Phase 2.1+ (see iso-duration's schema note).
     if (isRepeats) {
+      const sep = repeatsMod!.kind === 'repeats' ? repeatsMod!.sep : undefined;
+      const arrayExpr = sep !== undefined && sep.length > 0
+        ? `(Array.isArray(${valueExpr}) ? ${valueExpr} : ${valueExpr}.split(${jsString(sep)}).map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0))`
+        : `(Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}])`;
       if (roles.length === 1) {
-        return `((Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}]).map((__e: any) => ${nodeDispatcherName(roles[0]!, target)}(__e, ${childColExpr})))`;
+        return `(${arrayExpr}.map((__e: any) => ${nodeDispatcherName(roles[0]!, target)}(__e, ${childColExpr})))`;
       }
-      return `((Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}]).map((__e: any) => ${multiRoleSlotHelperName(roles, target)}(__e, ${childColExpr})))`;
+      return `(${arrayExpr}.map((__e: any) => ${multiRoleSlotHelperName(roles, target)}(__e, ${childColExpr})))`;
     }
     if (roles.length === 1) {
       return `${nodeSlotHelperName(roles[0]!, target)}(${valueExpr}, ${childColExpr})`;
@@ -812,8 +1131,18 @@ function emitTemplateBody(
 // child node type to invoke. validateInverseDiscrimination enforces
 // distinguishability WITHIN a node-type, so the cases here are mutually
 // exclusive for a well-formed schema.
-function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
+function emitNodeDispatcher(
+  info: NodeTypeInfo,
+  target: string,
+  prattBinary?: import('../infer/binary-operators.ts').BinaryProductionInfo,
+): string {
   const fnName = nodeDispatcherName(info.name, target);
+  // Phase 5c: when prattBinary is set, the dispatcher signature carries a
+  // `__minPrec` parameter that's forwarded ONLY to the binary inverter; all
+  // other inverters ignore it. The change is locally byte-stable for
+  // non-Pratt nodes (those still get the original signature).
+  const extraParam = prattBinary !== undefined ? ', __minPrec: number = -1' : '';
+  const extraArg = prattBinary !== undefined ? ', __minPrec' : '';
   // Classify by InverseIR kind shape:
   //  - object-target: switch on literal-field discriminators
   //  - template-target: switch on leading literal prefix (longest match)
@@ -824,6 +1153,9 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     readonly prodIdx: number;
     readonly ir: InverseIR;
     readonly target: string;
+    // Carrying the production lets the substring-dispatch safety check
+    // inspect span classes/modifiers to detect arbitrary-text captures.
+    readonly production: Production;
   };
   const branches: Branch[] = [];
   for (let i = 0; i < info.productions.length; i++) {
@@ -843,13 +1175,22 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
       const hasCaptures = production.spans.some((s) => s.name !== undefined);
       if (hasCaptures) continue;
     }
-    branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target });
+    branches.push({ nodeName: info.name, prodIdx: i, ir: entry.inverseDerived, target, production });
   }
   if (branches.length === 0) {
-    return `function ${fnName}(value: any, __indentCol: number = 0): string {
+    return `function ${fnName}(value: any, __indentCol: number = 0${extraParam}): string {
   throw new Error("stringify: no productions declared for node '${info.name}' target '${target}'");
 }`;
   }
+  // Phase 5c: when the dispatcher routes to a Pratt-detected binary
+  // inverter, that one specific call site appends `__minPrec`; other
+  // inverter calls stay unchanged. Helper below builds the correctly-
+  // argumented call expression per branch.
+  const inverterCall = (branch: Branch): string => {
+    const isBinary = prattBinary !== undefined && branch.prodIdx === prattBinary.prodIdx;
+    const extra = isBinary ? extraArg : '';
+    return `${inverterName(branch.nodeName, branch.prodIdx, branch.target)}(value, __indentCol${extra})`;
+  };
   // Group by kind for fast dispatch.
   const objects = branches.filter((b) => b.ir.kind === 'object');
   const templates = branches.filter((b) => b.ir.kind === 'template');
@@ -911,7 +1252,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // conditions.
     compiled.sort((x, y) => y.specificity - x.specificity);
     for (const c of compiled) {
-      const call = `${inverterName(c.branch.nodeName, c.branch.prodIdx, c.branch.target)}(value, __indentCol)`;
+      const call = inverterCall(c.branch);
       if (c.cond === 'true') {
         lines.push(`  return ${call};`);
       } else {
@@ -925,7 +1266,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // Discriminate by length (already validated as unique in invert.ts).
     for (const b of arrays) {
       const ir = b.ir as Extract<InverseIR, { kind: 'array' }>;
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      const call = inverterCall(b);
       lines.push(`  if (value.length === ${ir.elements.length}) return ${call};`);
     }
     lines.push('}');
@@ -959,20 +1300,44 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
       groupSeen.add(key);
       tpls.push(b);
     }
+    // Plan classification:
+    //  - 'safe-prefix': value.startsWith(non-empty literal). Routes correctly
+    //    by definition — no sibling shares this prefix.
+    //  - 'substring': value.indexOf(literal) >= 0. The literal is unique to
+    //    THIS branch's template segments vs siblings, but if any sibling
+    //    captures arbitrary text (.string()/.until()/.rawUntil()) the
+    //    sibling's runtime value could embed the literal and mis-route.
+    //    Treated as a tentative match: try the inverter, fall through to
+    //    the next plan on throw. The inverter is a position-anchored
+    //    template scanner — it succeeds only when value's actual structure
+    //    matches THIS template's literal segments at the expected offsets.
+    //  - 'fallback': no embedded-literal discriminator vs siblings. Try
+    //    the inverter blind; on throw fall through.
+    //
+    // Phase 2.2 (Roadmap): the previous algorithm emitted plain
+    // `value.indexOf(lit) >= 0` for the substring case with no fallback
+    // path, plus a console.warn at codegen — the dispatcher would mis-route
+    // and the inverter's failure would bubble up as the raw template-scan
+    // throw. The current algorithm wraps every non-safe-prefix branch in
+    // try/catch so dispatcher → inverter → next-branch chains cleanly. The
+    // safe-prefix branches still short-circuit (their inverters always
+    // succeed when the prefix matches, by construction).
+    type PlanKind = 'safe-prefix' | 'substring' | 'fallback';
     type Plan = {
       readonly branch: TplBranch;
-      readonly check: string | null; // null = fallback (`return <call>;`)
+      readonly check: string | null; // null only when kind === 'fallback'
       readonly priority: number;     // higher = tried earlier
+      readonly kind: PlanKind;
     };
     const plans: Plan[] = [];
     for (const b of tpls) {
       const prefix = b.ir.segments[0] ?? '';
       if (prefix.length > 0) {
-        // Prefix-based discriminator. Priority = prefix length.
         plans.push({
           branch: b,
           check: `value.startsWith(${jsString(prefix)})`,
           priority: prefix.length,
+          kind: 'safe-prefix',
         });
         continue;
       }
@@ -1002,21 +1367,32 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
           branch: b,
           check: `value.indexOf(${jsString(bestLit)}) >= 0`,
           priority: bestLit.length,
+          kind: 'substring',
         });
       } else {
-        // Fallback branch — no discriminator vs. its sibling(s).
-        plans.push({ branch: b, check: null, priority: -1 });
+        plans.push({ branch: b, check: null, priority: -1, kind: 'fallback' });
       }
     }
     // Order: discriminating branches first (longest discriminator first),
     // fallback branches last. Stable across schemas with the same shape.
     plans.sort((a, b) => b.priority - a.priority);
+    // Emit safe-prefix branches as plain `if (check) return call;` — when
+    // the prefix matches there is no possibility of mis-routing. Substring
+    // and fallback branches wrap the inverter in try/catch so the next
+    // plan in priority order gets a chance when this one's template scan
+    // throws. After the chain falls through, the dispatcher's tail throw
+    // ("no production matches") fires with the original value for triage.
     for (const p of plans) {
-      const call = `${inverterName(p.branch.nodeName, p.branch.prodIdx, p.branch.target)}(value, __indentCol)`;
-      if (p.check === null) {
-        lines.push(`  return ${call};`);
-      } else {
+      const call = inverterCall(p.branch);
+      if (p.kind === 'safe-prefix') {
         lines.push(`  if (${p.check}) return ${call};`);
+      } else if (p.kind === 'substring') {
+        // Guard the try with the substring check so we skip the throw cost
+        // for values that obviously don't contain our discriminator.
+        lines.push(`  if (${p.check}) { try { return ${call}; } catch (_e) { /* try next */ } }`);
+      } else {
+        // Fallback: no discriminator. Try unconditionally; fall through on throw.
+        lines.push(`  try { return ${call}; } catch (_e) { /* try next */ }`);
       }
     }
     lines.push('}');
@@ -1034,13 +1410,13 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     const cond = refsAcceptCondition(info.productions, refs);
     if (cond === 'always') {
       for (const b of refs) {
-        const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+        const call = inverterCall(b);
         lines.push(`return ${call};`);
       }
     } else {
       lines.push(`if (${cond}) {`);
       for (const b of refs) {
-        const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+        const call = inverterCall(b);
         lines.push(`  return ${call};`);
       }
       lines.push('}');
@@ -1050,7 +1426,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     for (const b of scalars) {
       const ir = b.ir as Extract<InverseIR, { kind: 'scalar' }>;
       const lit = jsLiteral(ir.value);
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      const call = inverterCall(b);
       lines.push(`if (Object.is(value, ${lit})) return ${call};`);
     }
   }
@@ -1067,7 +1443,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     for (const b of dynKeys) {
       const valueIR = (b.ir as Extract<InverseIR, { kind: 'dynKey' }>).value;
       const cond = dynKeyEntryTypeCondition(valueIR, info.productions[b.prodIdx]);
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      const call = inverterCall(b);
       if (cond === 'true') lines.push(`    return ${call};`);
       else lines.push(`    if (${cond}) return ${call};`);
     }
@@ -1082,7 +1458,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
     // shape).
     lines.push('if (value !== null && typeof value === "object" && !Array.isArray(value)) {');
     for (const b of merges) {
-      const call = `${inverterName(b.nodeName, b.prodIdx, b.target)}(value, __indentCol)`;
+      const call = inverterCall(b);
       lines.push(`  return ${call};`);
     }
     lines.push('}');
@@ -1090,7 +1466,7 @@ function emitNodeDispatcher(info: NodeTypeInfo, target: string): string {
 
   lines.push(`throw new Error("stringify: no production matches for target '${target}' (value: " + JSON.stringify(value) + ")");`);
 
-  return `function ${fnName}(value: any, __indentCol: number = 0): string {
+  return `function ${fnName}(value: any, __indentCol: number = 0${extraParam}): string {
 ${indent(lines.join('\n'), 1)}
 }`;
 }
@@ -1172,9 +1548,14 @@ function fieldNameSet(ir: Extract<InverseIR, { kind: 'object' }>): Set<string> {
 // dispatcher routed-into is restricted to the statically-known child node
 // type's productions — never the global production list. Behaviour for
 // primitive/array shapes is unchanged.
-function emitNodeSlotHelper(nodeName: string, target: string): string {
+function emitNodeSlotHelper(nodeName: string, target: string, isPrattAst: boolean = false): string {
   const helper = nodeSlotHelperName(nodeName, target);
   const childDispatch = nodeDispatcherName(nodeName, target);
+  // Phase 5c: when the slot helper services a Pratt-detected node's 'ast'
+  // target, plumb `__minPrec` through to the dispatcher. Non-Pratt slot
+  // helpers keep the original signature for byte-stability.
+  const extraParam = isPrattAst ? ', __minPrec: number = -1' : '';
+  const extraArg = isPrattAst ? ', __minPrec' : '';
   // Returns whatever shape the rebuild expects to read back from captures:
   //   null/undefined → null (rebuild's optional-slot ternary checks for null;
   //                          coercing to "" would mask absent state and
@@ -1193,7 +1574,7 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   //                    dispatcher to recursively rebuild the child into a
   //                    source string.
   //   other          → String(v).
-  return `function ${helper}(v: any, __indentCol: number = 0): any {
+  return `function ${helper}(v: any, __indentCol: number = 0${extraParam}): any {
   if (v === undefined) return null;
   // Arrays are ambiguous between "list of values to recurse" (.repeats()
   // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
@@ -1202,10 +1583,10 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   // array as a whole. Otherwise fall back to element-wise recursion so
   // the rebuild can join with the per-repeats separator.
   if (Array.isArray(v)) {
-    try { return ${childDispatch}(v, __indentCol); } catch (_e) {
+    try { return ${childDispatch}(v, __indentCol${extraArg}); } catch (_e) {
       const out: any[] = [];
       for (let i = 0; i < v.length; i++) {
-        const r = ${helper}(v[i], __indentCol);
+        const r = ${helper}(v[i], __indentCol${extraArg});
         if (r != null) out.push(r);
       }
       return out;
@@ -1216,14 +1597,14 @@ function emitNodeSlotHelper(nodeName: string, target: string): string {
   // absent (preserves optional-slot semantics for callers like rebuild's
   // optional-slot ternary).
   if (v === null) {
-    try { return ${childDispatch}(v, __indentCol); } catch (_e) { return null; }
+    try { return ${childDispatch}(v, __indentCol${extraArg}); } catch (_e) { return null; }
   }
   if (typeof v === "string") {
-    try { return ${childDispatch}(v, __indentCol); } catch (_e) { return v; }
+    try { return ${childDispatch}(v, __indentCol${extraArg}); } catch (_e) { return v; }
   }
-  if (typeof v === "object") return ${childDispatch}(v, __indentCol);
+  if (typeof v === "object") return ${childDispatch}(v, __indentCol${extraArg});
   // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
-  try { return ${childDispatch}(v, __indentCol); } catch (_e) { return String(v); }
+  try { return ${childDispatch}(v, __indentCol${extraArg}); } catch (_e) { return String(v); }
 }`;
 }
 
@@ -1442,8 +1823,9 @@ ${entries}
 };`;
 }
 
-function emitPublicStringify(): string {
-  return `export function stringify(value: unknown, options?: { target?: string }): string {
+function emitPublicStringify(overloads: string): string {
+  const overloadBlock = overloads ? `${overloads}\n` : '';
+  return `${overloadBlock}export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("stringify: missing target; pass options.target or set defaultTarget on the schema");

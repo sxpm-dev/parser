@@ -186,7 +186,6 @@ export enum ScanClassKind {
   HEX = 3,
   STRING = 4,
   COMMENT = 5,
-  KEYWORD = 6,
 }
 
 // Per-opcode operand-byte widths. Each entry is the list of operand sizes in

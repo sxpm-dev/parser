@@ -66,14 +66,7 @@ type Exclusion = {
   readonly reason: string;
 };
 
-const KNOWN_EXCLUSIONS: ReadonlyArray<Exclusion> = [
-  {
-    nodeType: 'Comment',
-    target: 'source',
-    input: '/* foo */',
-    reason: '.comment() strips delimiters on parse; the production-span rebuild produces only the interior. Phase 7 follow-up.',
-  },
-];
+const KNOWN_EXCLUSIONS: ReadonlyArray<Exclusion> = [];
 
 // Per-schema minimum comparison counts. Updates ratchet upward as
 // fusion eligibility expands. A drop below these floors signals a

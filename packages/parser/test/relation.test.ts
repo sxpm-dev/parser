@@ -180,31 +180,11 @@ test('relation: span.whitespace() sets class', () => {
   assert.equal(def.spans[0]!.class, 'whitespace');
 });
 
-test('relation: span.keyword(text) sets class and preserves span text', () => {
-  const def = relation('T', {
-    input: 'return',
-    encodings: {
-      src: parse([span('kw', 'return').keyword('return')]),
-      ast: {},
-    },
-  });
-  const s = def.spans[0]!;
-  assert.equal(s.class, 'keyword');
-  assert.equal(s.text, 'return');
-});
-
-test('relation: literal().keyword(text) uses the keyword text as text', () => {
-  const def = relation('T', {
-    input: 'return',
-    encodings: {
-      src: parse([span('kw').keyword('return')]),
-      ast: {},
-    },
-  });
-  const s = def.spans[0]!;
-  assert.equal(s.class, 'keyword');
-  assert.equal(s.text, 'return');
-});
+// Note: `.keyword(text)` was removed from the DSL surface during Phase 1
+// cleanup — no shipped schema used it and it didn't meet the admission
+// policy (functionally equivalent to `literal(text)` or `span('kw',
+// text)`). The two prior tests for it were removed alongside the method
+// itself.
 
 test('relation: span.operator() sets class', () => {
   const def = relation('T', {
@@ -623,4 +603,49 @@ test('relation: withInverse() body is preserved on RenderTargetDef', () => {
   const r = def.renders[0]!;
   assert.equal(r.body, body);
   assert.equal(r.inverse, inverse);
+});
+
+// ---- litEnum (Phase 7 sugar) -----------------------------------------------
+
+import { litEnum } from '../src/index.ts';
+
+test('litEnum: produces one relation per literal, with ast scalar + source tpl', () => {
+  const defs = litEnum('Color', ['red', 'green', 'blue']);
+  assert.equal(defs.length, 3);
+  for (let i = 0; i < defs.length; i++) {
+    const lit = ['red', 'green', 'blue'][i]!;
+    const def = defs[i]!;
+    assert.equal(def.input, lit);
+    assert.equal(def.nodeType, 'Color');
+    assert.equal(def.spans.length, 1);
+    assert.equal(def.spans[0]!.text, lit);
+    assert.equal(def.spans[0]!.class, 'literal');
+    assert.deepEqual(def.renders.map((r) => r.target), ['ast', 'source']);
+    assert.equal(def.renders[0]!.body, lit);
+    const sourceBody = def.renders[1]!.body as { __tpl: true; parts: string[]; slots: unknown[] };
+    assert.equal(sourceBody.__tpl, true);
+    assert.deepEqual(sourceBody.parts, [lit]);
+    assert.deepEqual(sourceBody.slots, []);
+  }
+});
+
+test('litEnum: byte-identical to a manual relation chain', () => {
+  // Pure-desugar contract: a hand-written `relation(...)` and the helper's
+  // ExampleDef must compare deep-equal for the same literal.
+  const manual = relation('Color', {
+    input: 'red',
+    encodings: { parse: parse([literal('red')]), ast: 'red', source: tpl`red` },
+  });
+  const sugared = litEnum('Color', ['red'])[0]!;
+  assert.deepEqual(sugared, manual);
+});
+
+test('litEnum: targets option lets caller override the default ast + source pair', () => {
+  const defs = litEnum('Color', ['red'], { targets: ['ast'] });
+  assert.equal(defs[0]!.renders.length, 1);
+  assert.equal(defs[0]!.renders[0]!.target, 'ast');
+});
+
+test('litEnum: empty input array returns empty array', () => {
+  assert.deepEqual(litEnum('X', []), []);
 });

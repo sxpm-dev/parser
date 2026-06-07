@@ -53,7 +53,6 @@ export type SpanClass =
   | 'template'
   | 'comment'
   | 'whitespace'
-  | 'keyword'
   | 'operator';
 
 export type Refinement = {
@@ -332,8 +331,23 @@ export type ExampleDef = {
 
 // --- Operators / Punctuators / Schema -------------------------------------
 
+// Per-layer operator declaration. The bare-array form (legacy) declares
+// left-associative operators at this precedence layer. The object form
+// allows opt-in to right-associativity (`exponential: { ops: ['**'],
+// assoc: 'right' }`). Default associativity is 'left'.
+//
+// Schemas authored before the object form was added continue to work
+// byte-identically — the inferrer treats `['||','&&']` as `{ops:
+// ['||','&&'], assoc: 'left'}`.
+export type OperatorLayer =
+  | ReadonlyArray<string>
+  | {
+      readonly ops: ReadonlyArray<string>;
+      readonly assoc?: 'left' | 'right';
+    };
+
 export type OperatorLayers = {
-  readonly [layerName: string]: ReadonlyArray<string>;
+  readonly [layerName: string]: OperatorLayer;
 };
 
 // A punctuator declaration assigns one or more literal texts to a token type

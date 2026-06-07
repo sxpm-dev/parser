@@ -214,7 +214,7 @@ operators: {
   comparison:     ['<', '>', '<=', '>='],
   additive:       ['+', '-'],
   multiplicative: ['*', '/', '%'],
-  exponential:    ['**'],                 // tightest (binds most tightly)
+  exponential:    { ops: ['**'], assoc: 'right' },  // tightest, right-assoc
 }
 ```
 
@@ -222,8 +222,74 @@ Top to bottom = loosest to tightest. The layer *order* carries precedence; no
 numeric levels. The compiler emits a single straight-line Pratt loop from this
 declaration. Layer names are author-chosen; only the order matters.
 
+Each layer is either a bare operator array (left-associative, the default) or
+an object `{ ops: [...], assoc: 'left' | 'right' }`. Right-associative layers
+parse as `a ** b ** c` → `a ** (b ** c)`; left-associative layers parse as
+`a + b + c` → `(a + b) + c`. The inverse stringify uses the same
+associativity to decide where to emit parens (left-assoc: same-precedence on
+the right side gets parens; right-assoc: same-precedence on the LEFT side
+gets parens).
+
 `.span('op', '+').operator()` then matches any declared operator. The captured
 `$.op` is typed as the union of all literal symbols.
+
+A node type with a `[recursive(self), operator, recursive(self)]` production
+opts into Pratt parsing: the compiler detects the shape, replaces the
+standard speculative dispatcher with a primary + climbing loop, and emits a
+paren-aware inverter that wraps children whose precedence makes the
+ambient layout ambiguous. The schema's other productions (identifiers,
+literals, etc.) serve as the Pratt primaries.
+
+**Unary prefix operators**. A production of shape
+`[operator(alts), recursive(self)]` opts into a Pratt unary path:
+
+```ts
+relation('Expr', {
+  input: '!a',
+  encodings: {
+    parse: parse([
+      span('op', '!').operator(['!', '~']),
+      span('operand', 'a').of('Expr'),
+    ]),
+    ast: { type: 'UnaryExpression', op: $.op, operand: $.operand },
+  },
+}),
+```
+
+The `.operator(['!', '~'])` alts list scopes which operators are valid in
+unary position — pure-binary operators like `*` or `&&` are NOT detected
+as unary even if you forget to list them, because they aren't in the
+alts. The Pratt primary first scans for a unary op; on hit, consumes it
+and recurses through the primary itself (so `!!a` parses as `!(!a)`,
+`!~a` as `!(~a)`, etc.). The operand always binds tightly — `!a + b`
+parses as `(!a) + b`. The paren-aware unary inverter wraps the operand
+in parens when it's a binary node at any precedence layer.
+
+**Parens-as-primary** (and other transparent wrappers). A production
+whose `ast` body is just `$.inner` where `inner` recurses into the same
+node type — and the operand carries no value-altering modifiers — is
+recognized as a *transparent passthrough*:
+
+```ts
+relation('Expr', {
+  input: '(a)',
+  encodings: {
+    parse: parse([
+      literal('('),
+      span('inner', 'a').of('Expr'),
+      literal(')'),
+    ]),
+    ast: $.inner,
+  },
+}),
+```
+
+The wrapping literals are erased at parse time — the inner's AST is
+returned verbatim. The inverse path skips the production entirely; the
+paren-aware stringify emits parens by precedence rules from the inner
+expression's binding, so author-built ASTs round-trip with the right
+grouping (`{*, left: {+, a, b}, right: c}` stringifies to `(a + b) * c`,
+which re-parses to the same AST).
 
 ### `punctuators` — named or anonymous
 
@@ -381,7 +447,6 @@ documented in `packages/compiler/README.md`.
 | `template` | structured | JS template literal. |
 | `comment` | string | Comment token; usually ignored. |
 | `whitespace` | (none) | Whitespace token; usually ignored. |
-| `keyword` | string | Fixed reserved word. |
 | `operator` | string (union of declared) | Matches any operator declared in `operators`. |
 
 ### Refinements (closed, scoped per class)
@@ -446,11 +511,13 @@ position. The full set:
 | Modifier | Meaning |
 |---|---|
 | `.optional()` | The span may be absent. For named spans, the captured value is `null` when absent. For unnamed literals, pure tolerance with no effect on structure. |
-| `.repeats({ sep?, trailing?, min?, max? })` | The span matches a list of values at this position. `sep` is the separator literal between children — when provided, it is consumed if present but not required (mixed-child bodies like CSS rule bodies can have separator-needing and separator-less children side by side). `trailing: 'allowed' \| 'required' \| 'forbidden'` (default `'forbidden'`). |
-| `.until(stops, { balanced?, trim? })` | Opaque-string capture. Consumes tokens from the current position until it sees a token whose value matches any element of `stops`. When `balanced` is true (default), bracket pairs `() [] {}` nest and the stop only fires at depth zero — and a closing bracket at depth zero means the boundary of an enclosing block, so the capture stops there without consuming it. When `trim` is true (default), leading/trailing whitespace is stripped from the captured slice. Captured value is the raw source slice. |
+| `.repeats({ sep?, trailing?, min?, max?, stopBefore? })` | The span matches a list of values at this position. `sep` is the separator literal between children — when provided, it is consumed if present but not required (mixed-child bodies like CSS rule bodies can have separator-needing and separator-less children side by side). `trailing: 'allowed' \| 'required' \| 'forbidden'` (default `'forbidden'`). `stopBefore` is a list of literal prefixes; if the upcoming source (at the current token's start) begins with any of them, the loop exits without consuming. Models keyword-terminated lists — e.g. SQL's column list ending at `FROM`, HTML's `<li>` closing on the next `<li>`. |
+| `.until(stops, { balanced?, trim?, rejectSuffix?, nonEmpty?, requireStop? })` | Opaque-string capture. Consumes tokens from the current position until it sees a token whose value matches any element of `stops`. When `balanced` is true (default), bracket pairs `() [] {}` nest and the stop only fires at depth zero — and a closing bracket at depth zero means the boundary of an enclosing block, so the capture stops there without consuming it. When `trim` is true (default), leading/trailing whitespace is stripped from the captured slice. `rejectSuffix` is a list of strings; the production fails when the captured value (after trimming) ends with any of them — used to disambiguate (e.g. a Rule's selector cannot end with `:` because that's a Declaration). `nonEmpty` rejects an empty captured value. `requireStop` rejects an EOF stop (default: EOF counts as a successful stop). Captured value is the raw source slice. |
+| `.rawUntil(stops, { caseInsensitive?, requireStop?, nonEmpty? })` | Variant of `.until()` for raw-text element bodies (`<script>`, `<style>`) and unquoted attribute values that may contain non-token characters. Stops when source contains any of `stops` at or after the current position; the stop literal is NOT consumed — the next span does that. `caseInsensitive` matches `</SCRIPT>` against `</script>`. `requireStop`/`nonEmpty` semantics mirror `.until()`. |
 | `.noLineTerminatorAfter()` | No line terminator allowed between this span and the next. |
 | `.noWhitespaceAfter()` | No whitespace at all between this span and the next. |
 | `.requireSpaceAfter()` | At least one whitespace character required between this span and the next. |
+| `.indent()` | Applied to a `.repeats(...)` span to mark the block as column-significant. On entry to the loop, the column where the FIRST child begins is captured and pushed onto an indent stack; each subsequent iteration must begin at that same column (after consuming blank or whitespace-only lines). The loop exits cleanly when the next non-blank line starts at a strictly smaller column (dedent). Models YAML block sequences, Python-style indented blocks. ASCII space (0x20) only; max stack depth 16. |
 
 **When to use `.until()`:** for opaque substrings that real CSS/JS parsers
 treat as raw text — CSS selectors, CSS at-rule preludes, CSS declaration

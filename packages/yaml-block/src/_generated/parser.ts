@@ -230,6 +230,22 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// --- Inferred types ---
+export type YamlScalar_ast = string;
+export type YamlScalar_source = string;
+export type YamlMappingEntry_ast = { type: "entry"; key: string; value: YamlMapping_ast | YamlSequence_ast | YamlScalar_ast };
+export type YamlMappingEntry_source = string;
+export type YamlMapping_ast = { type: "mapping"; entries: YamlMappingEntry_ast[] };
+export type YamlMapping_source = string;
+export type YamlSequenceItem_ast = { type: "item"; value: YamlMapping_ast | YamlSequence_ast | YamlScalar_ast };
+export type YamlSequenceItem_source = string;
+export type YamlSequence_ast = { type: "sequence"; items: YamlSequenceItem_ast[] };
+export type YamlSequence_source = string;
+export type YamlNode_ast = YamlMapping_ast | YamlSequence_ast | YamlScalar_ast;
+export type YamlNode_source = string;
+export type YamlBlock_ast = YamlNode_ast;
+export type YamlBlock_source = string;
+
 function parseYamlScalar(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -693,6 +709,8 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
+export function render(input: string, options: { target: "ast"; mode?: ParseMode }): YamlBlock_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode }): YamlBlock_source;
 export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -761,7 +779,7 @@ function __rebuild_YamlBlock_0(captures: any): string {
 function __invert_YamlScalar_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   captures.value = __invertSlotLeaf_ast(value);
-  return __rebuild_YamlScalar_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.value));
 }
 
 function __invert_YamlMappingEntry_0_ast(value: any, __indentCol: number = 0): string {
@@ -774,7 +792,7 @@ function __invert_YamlMappingEntry_0_ast(value: any, __indentCol: number = 0): s
   }
   captures.key = __invertSlotLeaf_ast(value.key);
   captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value, __indentCol);
-  return __rebuild_YamlMappingEntry_0(captures, __indentCol);
+  return __rebuildSlot(captures.key) + ": " + __rebuildSlot(captures.value);
 }
 
 function __invert_YamlMapping_0_ast(value: any, __indentCol: number = 0): string {
@@ -786,7 +804,7 @@ function __invert_YamlMapping_0_ast(value: any, __indentCol: number = 0): string
     throw new Error("stringify: field \"type\" expected \"mapping\", got " + JSON.stringify(value.type));
   }
   captures.entries = ((Array.isArray(value.entries) ? value.entries : [value.entries]).map((__e: any) => __dispatchInverse_YamlMappingEntry_ast(__e, __indentCol + 2)));
-  return __rebuild_YamlMapping_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.entries, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __invert_YamlSequenceItem_0_ast(value: any, __indentCol: number = 0): string {
@@ -798,7 +816,7 @@ function __invert_YamlSequenceItem_0_ast(value: any, __indentCol: number = 0): s
     throw new Error("stringify: field \"type\" expected \"item\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value.value, __indentCol);
-  return __rebuild_YamlSequenceItem_0(captures, __indentCol);
+  return "- " + __rebuildSlot(captures.value);
 }
 
 function __invert_YamlSequence_0_ast(value: any, __indentCol: number = 0): string {
@@ -810,19 +828,19 @@ function __invert_YamlSequence_0_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"type\" expected \"sequence\", got " + JSON.stringify(value.type));
   }
   captures.items = ((Array.isArray(value.items) ? value.items : [value.items]).map((__e: any) => __dispatchInverse_YamlSequenceItem_ast(__e, __indentCol + 2)));
-  return __rebuild_YamlSequence_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.items, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __invert_YamlNode_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   captures.node = __invertSlotMulti_YamlMapping_YamlSequence_YamlScalar_ast(value, __indentCol);
-  return __rebuild_YamlNode_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.node));
 }
 
 function __invert_YamlBlock_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   captures.root = __invertSlotFor_YamlNode_ast(value, __indentCol);
-  return __rebuild_YamlBlock_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.root));
 }
 
 function __invert_YamlScalar_0_source(value: any, __indentCol: number = 0): string {
@@ -837,7 +855,7 @@ function __invert_YamlScalar_0_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlScalar_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.value));
 }
 
 function __invert_YamlMappingEntry_0_source(value: any, __indentCol: number = 0): string {
@@ -860,7 +878,7 @@ function __invert_YamlMappingEntry_0_source(value: any, __indentCol: number = 0)
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlMappingEntry_0(captures, __indentCol);
+  return __rebuildSlot(captures.key) + ": " + __rebuildSlot(captures.value);
 }
 
 function __invert_YamlMapping_0_source(value: any, __indentCol: number = 0): string {
@@ -875,7 +893,7 @@ function __invert_YamlMapping_0_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlMapping_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.entries, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __invert_YamlSequenceItem_0_source(value: any, __indentCol: number = 0): string {
@@ -894,7 +912,7 @@ function __invert_YamlSequenceItem_0_source(value: any, __indentCol: number = 0)
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlSequenceItem_0(captures, __indentCol);
+  return "- " + __rebuildSlot(captures.value);
 }
 
 function __invert_YamlSequence_0_source(value: any, __indentCol: number = 0): string {
@@ -909,7 +927,7 @@ function __invert_YamlSequence_0_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlSequence_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.items, "\n" + " ".repeat(__indentCol), __indentCol > 0));
 }
 
 function __invert_YamlNode_0_source(value: any, __indentCol: number = 0): string {
@@ -924,7 +942,7 @@ function __invert_YamlNode_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlNode_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.node));
 }
 
 function __invert_YamlBlock_0_source(value: any, __indentCol: number = 0): string {
@@ -939,7 +957,7 @@ function __invert_YamlBlock_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_YamlBlock_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.root));
 }
 
 function __dispatchInverse_YamlScalar_ast(value: any, __indentCol: number = 0): string {
@@ -997,21 +1015,21 @@ function __dispatchInverse_ast(value: any): string {
 
 function __dispatchInverse_YamlScalar_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlScalar_0_source(value, __indentCol);
+    try { return __invert_YamlScalar_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_YamlMappingEntry_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(": ") >= 0) return __invert_YamlMappingEntry_0_source(value, __indentCol);
+    if (value.indexOf(": ") >= 0) { try { return __invert_YamlMappingEntry_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_YamlMapping_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlMapping_0_source(value, __indentCol);
+    try { return __invert_YamlMapping_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -1025,21 +1043,21 @@ function __dispatchInverse_YamlSequenceItem_source(value: any, __indentCol: numb
 
 function __dispatchInverse_YamlSequence_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlSequence_0_source(value, __indentCol);
+    try { return __invert_YamlSequence_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_YamlNode_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlNode_0_source(value, __indentCol);
+    try { return __invert_YamlNode_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_YamlBlock_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_YamlBlock_0_source(value, __indentCol);
+    try { return __invert_YamlBlock_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -1627,6 +1645,8 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
+export function stringify(value: YamlBlock_ast, options: { target: "ast" }): string;
+export function stringify(value: YamlBlock_source, options: { target: "source" }): string;
 export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {

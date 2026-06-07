@@ -230,6 +230,20 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// --- Inferred types ---
+export type HtmlDocument_ast = { nodeName: "#document"; mode: "no-quirks"; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null };
+export type HtmlDocument_source = string;
+export type Doctype_ast = { _kind: "doctype"; _keyword: string; nodeName: "#documentType"; name: string; publicId: ""; systemId: ""; parentNode: null } | { _kind: "doctype-incomplete"; _keyword: string; nodeName: "#documentType"; name: string; publicId: ""; systemId: ""; parentNode: null };
+export type Doctype_source = string;
+export type Comment_ast = { nodeName: "#comment"; data: string; parentNode: null };
+export type Comment_source = string;
+export type HtmlElement_ast = { _kind: "element-rawtext"; _closeTag: string; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: [{ nodeName: "#text"; value: string; parentNode: null }]; parentNode: null } | { _kind: "element-void"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: []; parentNode: null } | { _kind: "element-void-selfclose"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: []; parentNode: null } | { _kind: "element-selfclose-recovery"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: []; parentNode: null } | { _kind: "element-li"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-dt-dd"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-tr"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-td-th"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-p"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-option"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-html"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-head"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-tbody"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-thead"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-tfoot"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element-body"; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null } | { _kind: "element"; _closeTag: string; nodeName: string; tagName: string; namespaceURI: "http://www.w3.org/1999/xhtml"; attrs: Attribute_ast[]; childNodes: (Doctype_ast | Comment_ast | HtmlElement_ast | TextNode_ast)[]; parentNode: null };
+export type HtmlElement_source = string;
+export type TextNode_ast = { nodeName: "#text"; value: string; parentNode: null };
+export type TextNode_source = string;
+export type Attribute_ast = { _quote: "double"; name: string; value: string } | { _quote: "single"; name: string; value: string } | { _quote: "none"; name: string; value: string } | { name: string; value: "" };
+export type Attribute_source = string;
+
 function parseHtmlDocument(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -2228,6 +2242,8 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
+export function render(input: string, options: { target: "ast"; mode?: ParseMode }): HtmlDocument_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode }): HtmlDocument_source;
 export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -2384,7 +2400,7 @@ function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlDocument_0(captures, __indentCol);
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
@@ -2409,7 +2425,7 @@ function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Doctype_0(captures, __indentCol);
+  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name) + ">";
 }
 
 function __invert_Doctype_1_ast(value: any, __indentCol: number = 0): string {
@@ -2434,7 +2450,7 @@ function __invert_Doctype_1_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Doctype_1(captures, __indentCol);
+  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name);
 }
 
 function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
@@ -2449,7 +2465,7 @@ function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_Comment_0(captures, __indentCol);
+  return "<!--" + __rebuildSlot(captures.data) + "-->";
 }
 
 function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string {
@@ -2483,7 +2499,7 @@ function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_0(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string {
@@ -2506,7 +2522,7 @@ function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_1(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">";
 }
 
 function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string {
@@ -2529,7 +2545,7 @@ function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_2(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + " />";
 }
 
 function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string {
@@ -2552,7 +2568,7 @@ function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_3(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + "/>";
 }
 
 function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string {
@@ -2573,7 +2589,7 @@ function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_4(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string {
@@ -2594,7 +2610,7 @@ function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_5(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string {
@@ -2615,7 +2631,7 @@ function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_6(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string {
@@ -2636,7 +2652,7 @@ function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_7(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string {
@@ -2657,7 +2673,7 @@ function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_8(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string {
@@ -2678,7 +2694,7 @@ function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_9(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): string {
@@ -2699,7 +2715,7 @@ function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_10(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): string {
@@ -2720,7 +2736,7 @@ function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_11(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): string {
@@ -2741,7 +2757,7 @@ function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_12(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): string {
@@ -2762,7 +2778,7 @@ function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_13(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): string {
@@ -2783,7 +2799,7 @@ function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_14(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): string {
@@ -2804,7 +2820,7 @@ function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_15(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): string {
@@ -2826,7 +2842,7 @@ function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_HtmlElement_16(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
@@ -2841,7 +2857,7 @@ function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
-  return __rebuild_TextNode_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.value));
 }
 
 function __invert_Attribute_0_ast(value: any, __indentCol: number = 0): string {
@@ -2854,7 +2870,7 @@ function __invert_Attribute_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_0(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "=\"" + __rebuildSlot(captures.value) + "\"";
 }
 
 function __invert_Attribute_1_ast(value: any, __indentCol: number = 0): string {
@@ -2867,7 +2883,7 @@ function __invert_Attribute_1_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_1(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "='" + __rebuildSlot(captures.value) + "'";
 }
 
 function __invert_Attribute_2_ast(value: any, __indentCol: number = 0): string {
@@ -2880,7 +2896,7 @@ function __invert_Attribute_2_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Attribute_2(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "=" + __rebuildSlot(captures.value);
 }
 
 function __invert_Attribute_3_ast(value: any, __indentCol: number = 0): string {
@@ -2892,7 +2908,7 @@ function __invert_Attribute_3_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.value, "")) {
     throw new Error("stringify: field \"value\" expected \"\", got " + JSON.stringify(value.value));
   }
-  return __rebuild_Attribute_3(captures, __indentCol);
+  return String(__rebuildSlot(captures.name));
 }
 
 function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): string {
@@ -2911,7 +2927,7 @@ function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlDocument_0(captures, __indentCol);
+  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string {
@@ -2944,7 +2960,7 @@ function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Doctype_0(captures, __indentCol);
+  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name) + ">";
 }
 
 function __invert_Doctype_1_source(value: any, __indentCol: number = 0): string {
@@ -2971,7 +2987,7 @@ function __invert_Doctype_1_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Doctype_1(captures, __indentCol);
+  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name);
 }
 
 function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
@@ -2996,7 +3012,7 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Comment_0(captures, __indentCol);
+  return "<!--" + __rebuildSlot(captures.data) + "-->";
 }
 
 function __invert_HtmlElement_0_source(value: any, __indentCol: number = 0): string {
@@ -3037,7 +3053,7 @@ function __invert_HtmlElement_0_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_0(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_HtmlElement_1_source(value: any, __indentCol: number = 0): string {
@@ -3062,7 +3078,7 @@ function __invert_HtmlElement_1_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_1(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + ">";
 }
 
 function __invert_HtmlElement_2_source(value: any, __indentCol: number = 0): string {
@@ -3087,7 +3103,7 @@ function __invert_HtmlElement_2_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_2(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + " />";
 }
 
 function __invert_HtmlElement_3_source(value: any, __indentCol: number = 0): string {
@@ -3112,7 +3128,7 @@ function __invert_HtmlElement_3_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_3(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + "/>";
 }
 
 function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): string {
@@ -3148,7 +3164,7 @@ function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_4(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): string {
@@ -3184,7 +3200,7 @@ function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_5(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): string {
@@ -3220,7 +3236,7 @@ function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_6(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): string {
@@ -3256,7 +3272,7 @@ function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_7(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): string {
@@ -3292,7 +3308,7 @@ function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_8(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): string {
@@ -3328,7 +3344,7 @@ function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_9(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): string {
@@ -3364,7 +3380,7 @@ function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_10(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): string {
@@ -3400,7 +3416,7 @@ function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_11(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): string {
@@ -3436,7 +3452,7 @@ function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_12(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): string {
@@ -3472,7 +3488,7 @@ function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_13(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): string {
@@ -3508,7 +3524,7 @@ function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_14(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): string {
@@ -3544,7 +3560,7 @@ function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_15(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): string {
@@ -3585,7 +3601,7 @@ function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_HtmlElement_16(captures, __indentCol);
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string {
@@ -3600,7 +3616,7 @@ function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_TextNode_0(captures, __indentCol);
+  return String(__rebuildSlot(captures.value));
 }
 
 function __invert_Attribute_0_source(value: any, __indentCol: number = 0): string {
@@ -3629,7 +3645,7 @@ function __invert_Attribute_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_0(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "=\"" + __rebuildSlot(captures.value) + "\"";
 }
 
 function __invert_Attribute_1_source(value: any, __indentCol: number = 0): string {
@@ -3658,7 +3674,7 @@ function __invert_Attribute_1_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_1(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "='" + __rebuildSlot(captures.value) + "'";
 }
 
 function __invert_Attribute_2_source(value: any, __indentCol: number = 0): string {
@@ -3681,7 +3697,7 @@ function __invert_Attribute_2_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_2(captures, __indentCol);
+  return __rebuildSlot(captures.name) + "=" + __rebuildSlot(captures.value);
 }
 
 function __invert_Attribute_3_source(value: any, __indentCol: number = 0): string {
@@ -3696,7 +3712,7 @@ function __invert_Attribute_3_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Attribute_3(captures, __indentCol);
+  return String(__rebuildSlot(captures.name));
 }
 
 function __dispatchInverse_HtmlDocument_ast(value: any, __indentCol: number = 0): string {
@@ -3767,7 +3783,7 @@ function __dispatchInverse_ast(value: any): string {
 
 function __dispatchInverse_HtmlDocument_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_HtmlDocument_0_source(value, __indentCol);
+    try { return __invert_HtmlDocument_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -3811,17 +3827,17 @@ function __dispatchInverse_HtmlElement_source(value: any, __indentCol: number = 
 
 function __dispatchInverse_TextNode_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_TextNode_0_source(value, __indentCol);
+    try { return __invert_TextNode_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_Attribute_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf("=\"") >= 0) return __invert_Attribute_0_source(value, __indentCol);
-    if (value.indexOf("='") >= 0) return __invert_Attribute_1_source(value, __indentCol);
-    return __invert_Attribute_2_source(value, __indentCol);
-    return __invert_Attribute_3_source(value, __indentCol);
+    if (value.indexOf("=\"") >= 0) { try { return __invert_Attribute_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("='") >= 0) { try { return __invert_Attribute_1_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    try { return __invert_Attribute_2_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_Attribute_3_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -4353,6 +4369,8 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
+export function stringify(value: HtmlDocument_ast, options: { target: "ast" }): string;
+export function stringify(value: HtmlDocument_source, options: { target: "source" }): string;
 export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {

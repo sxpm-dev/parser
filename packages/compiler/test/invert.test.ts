@@ -763,6 +763,100 @@ test('generateParser emits public render and public stringify', async () => {
   assert.match(code, /__inverseDispatch/);
 });
 
+// Task #18: source-target template bodies are reconstructed from the
+// template's literal segments + captures, not from production spans. This
+// matters when a span's refinement strips part of the source slice into
+// the capture (e.g. `.comment()` removes `/* */` delimiters from a CSS
+// comment's text). The span-driven rebuild would emit only the stripped
+// interior; the template-driven path wraps it back with the delimiters
+// from the template's segments.
+test('inverse: source-target template rebuild restores stripped delimiters', async () => {
+  const { defineSchema, relation, parse, span, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Comment',
+    examples: [
+      relation('Comment', {
+        input: '/* hi */',
+        encodings: {
+          src: parse([span('text', '/* hi */').comment()]),
+          ast: { type: 'comment', text: $.text },
+          source: tpl`/* ${$.text} */`,
+        },
+      }),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'template-rebuild-comment');
+  // Forward: source template wraps the stripped interior with delimiters.
+  assert.equal(mod.render('/* hi */', { target: 'source' }), '/* hi */');
+  // Inverse from the AST: stringify routes through Comment_source dispatcher,
+  // template scanner extracts text='hi', template rebuild puts delimiters
+  // back via the segments.
+  assert.equal(mod.stringify({ type: 'comment', text: 'hi' }, { target: 'ast' }), '/* hi */');
+  // Inverse from source self-round-trip: stringify a source string through
+  // the source target — also routes through template rebuild.
+  assert.equal(mod.stringify('/* hi */', { target: 'source' }), '/* hi */');
+});
+
+// Phase 2.2 / Task #17: substring-based template dispatch is unsafe when
+// any sibling production has a span that captures arbitrary text (string /
+// .until() / .rawUntil()). A forward-rendered sibling value could embed
+// the would-be discriminator literal and mis-route to this branch. The
+// dispatcher now wraps every non-safe-prefix branch in try/catch so the
+// next plan in priority order gets a chance when this one's positional
+// template scan throws — the inverter IS the position-anchored validator.
+test('inverse: unsafe substring dispatch falls through to sibling on inverter throw', async () => {
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
+  // Mimics CSS Declaration#0 (!important) vs Declaration#1 (plain). Both
+  // share an empty leading prefix because they begin with a capture.
+  // Decl#0 has ` !` between value and important — a unique segment vs
+  // Decl#1 — so the old dispatcher emitted `value.indexOf(" !") >= 0`.
+  // A plain Decl whose value field legitimately contains ` !` would
+  // mis-route to Decl#0 before this fix; now the inverter's template
+  // scan throws on the missing `important` ident and the dispatcher
+  // falls through to Decl#1.
+  const schema = defineSchema({
+    rootType: 'Decl',
+    examples: [
+      relation('Decl', {
+        input: 'color: red !important;',
+        encodings: {
+          src: parse([
+            span('prop', 'color').until([':', ';']),
+            literal(':'),
+            literal(' '),
+            span('value', 'red').until([';', '!']),
+            literal('!'),
+            span('important', 'important').ident().css(),
+            literal(';'),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value, important: true },
+          source: tpl`${$.prop}: ${$.value} !${$.important};`,
+        },
+      }),
+      relation('Decl', {
+        input: 'color: red;',
+        encodings: {
+          src: parse([
+            span('prop', 'color').until([':', ';']),
+            literal(':'),
+            literal(' '),
+            span('value', 'red').until([';']),
+            literal(';'),
+          ]),
+          ast: { type: 'decl', prop: $.prop, value: $.value },
+          source: tpl`${$.prop}: ${$.value};`,
+        },
+      }),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'unsafe-dispatch-fallthrough');
+  // Decl#1 with value `red !` triggers indexOf(" !") on Decl#0; #0's
+  // scanner can't extract a valid `important` ident from `red !; ` so it
+  // throws, dispatcher falls through to #1, which scans cleanly.
+  const back = mod.stringify('x: red !foo;', { target: 'source' });
+  assert.equal(back, 'x: red !foo;');
+});
+
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {

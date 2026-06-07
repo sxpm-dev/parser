@@ -153,6 +153,53 @@ export type InferredSchema = {
   // Lookup from literal text to its assigned token type. The parser uses
   // this to translate `.span(text)` into expectLiteral(type, value).
   readonly literalTypeByText: ReadonlyMap<string, string>;
+  // Flat list of every operator literal declared by the schema's
+  // `operators: { layer: [...] }` map, sorted longest-first so the
+  // .operator() class scanner can do longest-match without re-sorting.
+  // Empty when no operators are declared.
+  readonly operatorLiterals: ReadonlyArray<string>;
+  // Per-operator precedence index, derived from the declaration order of
+  // `operators: { layer: [...] }`. Index 0 = loosest (binds least
+  // tightly); higher index = tighter. Empty when no operators are
+  // declared. The Phase 5 Pratt emit consumes this directly. Domainless:
+  // layer names are author-chosen and carry no parser meaning.
+  readonly operatorPrecedence: ReadonlyMap<string, number>;
+  // Set of operators declared right-associative (via `{ ops, assoc:
+  // 'right' }` form on an `operators:` layer). Default is left-assoc:
+  // the Pratt loop recurses at `prec + 1` for the right operand. For
+  // right-assoc ops it recurses at `prec` instead, so `a ** b ** c`
+  // parses as `a ** (b ** c)`. The paren-aware inverse swaps the equal-
+  // precedence rules: for right-assoc, equal-on-LEFT gets parens,
+  // equal-on-RIGHT doesn't.
+  readonly rightAssociativeOps: ReadonlySet<string>;
+  // Per-node-type binary-operator production info, derived from schema
+  // shape ([recursiveSelf, operator, recursiveSelf]). Empty when no
+  // schema declares a binary production. Phase 5 Pratt emit reads this
+  // to (a) replace the standard multi-prod dispatcher with a primary +
+  // climbing-loop pair, and (b) generate paren-aware stringify for
+  // round-trip. Detection logic lives in
+  // infer/binary-operators.ts.
+  readonly binaryProductions: ReadonlyMap<string, import('./infer/binary-operators.ts').BinaryProductionInfo>;
+  // Per-node-type unary-prefix production info. Shape:
+  // [operatorSpan(alts), recursiveSpan(roleSelf)]. The Pratt primary
+  // emit (forward path) consults this map: when set, the primary first
+  // tries to scan an operator from `info.operatorAlts` and, on hit,
+  // consumes it + recurses on the operand through the primary itself
+  // (so `!!a` parses as `!(!a)`). Inverse stringify uses the standard
+  // captures-walk inverter — unary is always tighter than any binary
+  // op so no paren-aware logic is needed.
+  readonly unaryProductions: ReadonlyMap<string, import('./infer/unary-operators.ts').UnaryProductionInfo>;
+  // Per-node-type list of "transparent passthrough" productions —
+  // wrappers like `(expr)` whose AST body is just `$.inner` recursing
+  // into the same node type. Forward path: the standard primary
+  // dispatcher includes them as normal alts. Inverse path: skipped
+  // entirely (an inverter would conflict with the inner production's,
+  // and the paren-aware stringify already emits parens by precedence).
+  // See infer/transparent-passthrough.ts.
+  readonly transparentPassthroughs: ReadonlyMap<
+    string,
+    ReadonlyArray<import('./infer/transparent-passthrough.ts').TransparentPassthroughInfo>
+  >;
   readonly classes: ReadonlyArray<TokenClassUsage>;
   // Closed set of distinct token type *names* the tokenizer can emit. Each
   // name gets a small integer ID; generated code compares `state.types[pos]

@@ -199,7 +199,7 @@ export function joinOf(span: ResolvedSpan): SlotJoin {
   return { kind: 'none' };
 }
 
-function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
+export function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
   if (pieces.length === 0) return '""';
   const parts: string[] = [];
   for (let i = 0; i < pieces.length; i++) {
@@ -262,7 +262,7 @@ function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
   return parts.join(' + ');
 }
 
-function isAbsentAllowed(span: ResolvedSpan): boolean {
+export function isAbsentAllowed(span: ResolvedSpan): boolean {
   for (const m of span.modifiers) {
     if (m.kind === 'optional') return true;
     if (m.kind === 'repeats' && (m.min === undefined || m.min === 0)) return true;

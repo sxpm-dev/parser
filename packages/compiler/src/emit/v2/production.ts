@@ -28,7 +28,7 @@ import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, typ
 // legitimately appear at depth 0, so the guard would over-reject; gate on
 // at least one of these.
 const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
-  'ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+  'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
 ]);
 
 export type EmitProductionOptions = {
@@ -104,6 +104,7 @@ export function emitProduction(
     emitUnknownCharsGuard,
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
+    operatorLiterals: schema.operatorLiterals,
   };
 
   const lines: string[] = [];

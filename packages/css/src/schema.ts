@@ -174,11 +174,12 @@ const cssSchema = defineSchema({
     // The single comment span captures the FULL `/* … */` source slice and
     // the `.comment()` refinement assigns the interior text to
     // `captures.text`. The AST surfaces the interior verbatim. The 'source'
-    // rebuild walks production spans and reads `captures.text` directly —
-    // which means the rebuild output is the interior (no delimiters). This
-    // gap is documented as a follow-up (Phase 7); the canonical-string
-    // round-trip for comments is excluded from the round-trip fixture
-    // set below.
+    // target template wraps the captured interior with the delimiter pair so
+    // forward render and inverse rebuild both produce `/* foo */`. The
+    // template-driven rebuild (Task #18) honors the segments — the shared
+    // span-driven rebuild would emit only the stripped interior because
+    // `.comment()` removed the delimiters at parse time and they live
+    // exclusively in the template now.
     relation('Comment', {
       input: '/* foo */',
       encodings: {
@@ -194,7 +195,7 @@ const cssSchema = defineSchema({
         // entries so a comment between rules disappears from json output
         // (its source still round-trips through the `source` target).
         json: null,
-        source: tpl`${$.text}`,
+        source: tpl`/* ${$.text} */`,
       },
     }),
 

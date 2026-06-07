@@ -201,7 +201,7 @@ construct.
 ### Closed lists currently supported
 
 - **Span classes**: `literal`, `ident`, `number`, `string`, `hex`, `regex`,
-  `template`, `comment`, `whitespace`, `keyword`, `operator`.
+  `template`, `comment`, `whitespace`, `operator`.
 - **Refinements**: scoped per class (e.g. `int`, `float`, `bigint`, `binary`,
   `octal`, `hex`, `scientific`, `separator` under `number`; `singleQuoted`,
   `doubleQuoted`, `backtick`, `hexString`, `urlString` under `string`; `css`,
@@ -228,13 +228,16 @@ Currently implemented vs in-progress:
 | Named punctuators, multi-char longest-match | implemented |
 | `tokens` declarations | implemented |
 | Multi-role spans | implemented |
-| Multi-production node types (speculative dispatch) | implemented (slow; no lookahead optimization yet) |
+| Multi-production node types (speculative dispatch) | implemented (byte-prefix + speculation chain; no global lookahead yet) |
 | Source positions auto-attach | implemented |
-| `whitespace: 'preserve'` policy | declared but not yet wired through codegen |
-| `raws` capture (PostCSS-style formatting) | not yet implemented |
-| `.recovers()` policy emission | implemented |
-| `render` / `stringify` per-target dispatch | implemented (unified `.render(target, body)` API) |
+| `whitespace: 'preserve'` policy | not yet implemented (Phase 4) |
+| `raws` capture (PostCSS-style formatting) | partial (per-node `source` field in raws mode; PostCSS-style sidecar with interleaved trivia for byte-exact round-trip on unmodified subtrees is Phase 4) |
+| `.recovers()` policy IR | inferred (production carries `recovery: RecoveryPolicy`); codegen + diagnostic API are Phase 4 |
+| `render` / `stringify` per-target dispatch | implemented (unified `.render(target, body)` API + per-target TS overloads) |
 | Inverse derivation per (production, target) | implemented |
+| Inferred TS types per (NodeType, target) | implemented (Phase 3; emitted as type aliases + `render`/`stringify` overloads) |
+| Pratt operator parsing | implemented (Phase 5b-5h): binary-operator detection, paren-aware inverse, interp parity, right-associativity per layer, unary prefix operators with scoped alts, parens-as-primary via transparent-passthrough detection |
+| DSL sugar (`litEnum`) | implemented (Phase 7) |
 
 These are detailed in the [DSL spec](../../docs/example-first-structure-dsl.md).
 
@@ -325,12 +328,42 @@ Each pass is generic and operates on inferred schema data only.
    (`emit/runtime.ts`), per-node parser functions (`emit/parse.ts`), and the
    `parse`/`tokenize`/`stringify` exports.
 
-Not yet implemented as named passes (planned):
+Implemented in 2026-06-06 (roadmap Phase 3):
 
-- **`inferStructureTypes`** — discriminated-union TypeScript types per node
-  type. Currently every parsed structure is `unknown` in TS terms.
-- **`buildOperatorTable`** — Pratt precedence layers. Not exercised yet
-  because the CSS schema doesn't use `operators`.
+- **`inferStructureTypes`** (`infer/structure-types.ts`) — derives a
+  TypeScript type per `(NodeType, target)` pair from the union of
+  `.render(target, body)` shapes across that node's productions. Capture
+  types follow the closed class+refinement+modifier vocabulary:
+  `.number()` → `string`, `.number().coerce()` → `number`, `.ident()` →
+  `string`, `.of('NodeType')` → that node's inferred type, `.of('A','B')`
+  → `A | B`, `.optional()` → `T | null`, `.repeats()` → `T[]`,
+  `.until([...])` → `string`. The result is emitted as `export type
+  <NodeType>_<target>` aliases at the top of every generated parser plus
+  per-target `render` / `stringify` function overloads.
+
+Phase 5 — Pratt operator parsing (`emit/v2/pratt.ts`, `interp/parse.ts`):
+
+- **`detectBinaryProductions`** (`infer/binary-operators.ts`) — recognizes
+  productions of shape `[recursive(self), operator, recursive(self)]`.
+- **`detectUnaryProductions`** (`infer/unary-operators.ts`) — recognizes
+  productions of shape `[operator(alts), recursive(self)]`; the `alts`
+  list scopes which operators are valid in unary position.
+- **`detectTransparentPassthroughs`** (`infer/transparent-passthrough.ts`)
+  — recognizes wrapper productions whose `ast` body is just `$.inner`
+  recursing into the same node type (e.g. `(expr)`). These are
+  forward-only — the inverse path skips them, and the paren-aware
+  stringify emits parens by precedence rules.
+- **Forward Pratt** emit: `parse<NodeType>__primary` (speculation over
+  non-binary, non-unary alts; leads with unary scan when applicable) +
+  `parse<NodeType>__pratt(state, minPrec)` (climbing loop with
+  per-operator precedence and per-layer associativity).
+- **Inverse Pratt** emit: paren-aware binary inverter (`__leftMinPrec` /
+  `__rightMinPrec` swap for right-assoc) + paren-aware unary inverter
+  (operand minPrec = `numLayers` so any binary child gets wrapped).
+
+The same logic mirrored in `interp/parse.ts` so `checkRoundTrip` +
+differential fuzz gate on `interp ≡ v2` parity (835+ random
+expressions verified in `test/pratt-fuzz.test.ts`).
 
 Every implemented pass is unit-testable in isolation and consumes only
 inferred schema data — never raw schema source.

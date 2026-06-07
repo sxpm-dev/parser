@@ -13,6 +13,7 @@ import { emitInverse } from '../inverse.ts';
 import { emitPreamble } from '../preamble.ts';
 import { emitRebuild, REBUILD_SLOT_RUNTIME } from '../rebuild.ts';
 import { emitRender } from '../render.ts';
+import { emitTypes } from '../types.ts';
 import { jsIdent, jsString } from '../strings.ts';
 import { productionKey } from '../render.ts';
 import { emitDispatcher } from './dispatch.ts';
@@ -26,6 +27,7 @@ import {
 } from './fusion-structured.ts';
 import { emitFusedRender, fusedRenderFnName } from './fusion.ts';
 import { emitProduction } from './production.ts';
+import { emitPrattNode } from './pratt.ts';
 import { V2_RUNTIME } from './runtime.ts';
 import { emitStateInit } from './state-init.ts';
 import { emitValidate } from './validate-emit.ts';
@@ -54,11 +56,16 @@ export function emitV2Parser(schema: InferredSchema): string {
   for (const info of schema.nodeTypes.values()) {
     nodeFns.push(emitNodeType(info, schema));
   }
+  // Phase 3 — inferred TS types + per-target render/stringify overloads.
+  // The alias block is emitted near the top of the file (next to ParseMode)
+  // so type references resolve when the overloads are inlined into
+  // emit/render.ts and emit/inverse.ts' outputs further down.
+  const typeEmission = emitTypes(schema);
   // Phase 4: forward render + inverse stringify, sharing the
   // target-independent `__rebuild_<NodeType>_<idx>` subroutines.
-  const render = emitRender(schema);
+  const render = emitRender(schema, { renderOverloads: typeEmission.renderOverloads });
   const rebuild = emitRebuild(schema);
-  const inverse = emitInverse(schema);
+  const inverse = emitInverse(schema, { stringifyOverloads: typeEmission.stringifyOverloads });
   // Phase 5 Task 5.1: per-(production, non-ast target) fused parse+render
   // functions for Template-bodied renders with non-recursive slots only.
   // Carries its own dispatch table keyed by `<NodeType>#<idx>`.
@@ -80,6 +87,10 @@ export function emitV2Parser(schema: InferredSchema): string {
   return [
     header,
     runtime,
+    // Phase 3 alias block. Goes after the runtime (so ParseMode et al. are
+    // already declared) and before everything that references the aliases
+    // via the render/stringify overloads.
+    typeEmission.aliasBlock,
     // Inline-validator composition pass — sub-schemas' internal parse
     // functions and the __validator_N aliases live AFTER the runtime
     // helpers (so they can reference State / syntaxErrorAt) but BEFORE
@@ -384,7 +395,14 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
   // prefix once and passes the discriminator value + entryOff to each tail
   // by parameter. The full-prologue form is dropped for those alts; nothing
   // else calls them.
-  const shared = detectSharedDispatch(info);
+  //
+  // Phase 5: when the node has a detected binary-operator production, the
+  // standard speculation dispatcher is replaced with a Pratt primary +
+  // climbing loop. The binary alt fn is still emitted (so its body has
+  // a place to live for rendering & raws-mode source tagging), but
+  // __primary skips it — Pratt synthesizes the binary captures directly.
+  const binaryInfo = schema.binaryProductions.get(info.name);
+  const shared = binaryInfo === undefined ? detectSharedDispatch(info) : null;
   const altFns: string[] = [];
   for (let i = 0; i < info.productions.length; i++) {
     const prefixOpt = shared !== null ? buildPrefixOption(info.productions[i]!, shared) : undefined;
@@ -393,6 +411,9 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
       prodIdx: i,
       prefix: prefixOpt,
     }));
+  }
+  if (binaryInfo !== undefined) {
+    return emitPrattNode(info, schema, binaryInfo, altFns);
   }
   const dispatcher = emitDispatcher(info, schema, (n) => parseFnName(schema, n));
   return [altFns.join('\n\n'), dispatcher].join('\n\n');

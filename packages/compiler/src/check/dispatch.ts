@@ -97,9 +97,26 @@ import { findModifier, hasModifier } from '../emit/v2/span.ts';
 export function checkDispatch(schema: InferredSchema): void {
   for (const info of schema.nodeTypes.values()) {
     if (info.productions.length <= 1) continue;
-    const sigs = info.productions.map((p) => firstByteSignature(p));
-    checkFirstByteConflicts(info, sigs);
-    checkTotalDispatch(schema, info, sigs);
+    // Phase 5: Pratt-driven nodes don't dispatch through the standard
+    // byte-prefix / speculation chain — the binary alt is invoked
+    // implicitly by the climbing loop, and the unary alt is invoked
+    // implicitly by the primary's leading unary-prefix check. Filter
+    // both out of the dispatch-conflict analysis so they don't trigger
+    // false positives (e.g. the unary production's first span is a
+    // class='operator' which `classFirstBytes` rejects by design).
+    const binaryIdx = schema.binaryProductions.get(info.name)?.prodIdx;
+    const unaryIdx = schema.unaryProductions.get(info.name)?.prodIdx;
+    const visibleProductions = info.productions.filter(
+      (_p, i) => i !== binaryIdx && i !== unaryIdx,
+    );
+    if (visibleProductions.length <= 1) continue;
+    const sigs = visibleProductions.map((p) => firstByteSignature(p));
+    // The infos passed downstream still need every production-index for
+    // error-message attribution. Rebuild a NodeTypeInfo view that
+    // exposes only the dispatched alts.
+    const filteredInfo = { ...info, productions: visibleProductions } as typeof info;
+    checkFirstByteConflicts(filteredInfo, sigs);
+    checkTotalDispatch(schema, filteredInfo, sigs);
   }
 }
 

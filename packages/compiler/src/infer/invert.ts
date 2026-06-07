@@ -56,9 +56,22 @@ import {
   type RenderTargetIR,
 } from '../model.ts';
 
-export function deriveInverses(nodeTypes: ReadonlyMap<string, NodeTypeInfo>): void {
+export function deriveInverses(
+  nodeTypes: ReadonlyMap<string, NodeTypeInfo>,
+  transparentPassthroughs: ReadonlyMap<
+    string,
+    ReadonlyArray<import('./transparent-passthrough.ts').TransparentPassthroughInfo>
+  > = new Map(),
+): void {
+  // Phase 5g: skip transparent-passthrough productions entirely. They have
+  // no usable inverse (their AST body is a recursive ref to the same node
+  // type), and including them in `validateInverseDiscrimination` would
+  // surface a false ambiguity vs. the inner production they wrap.
+  const isPassthrough = buildPassthroughLookup(transparentPassthroughs);
   for (const info of nodeTypes.values()) {
-    for (const production of info.productions) {
+    for (let i = 0; i < info.productions.length; i++) {
+      const production = info.productions[i]!;
+      if (isPassthrough(info.name, i)) continue;
       for (const entry of production.renders.values()) {
         const derived = entry.inverse
           ? deriveFromTemplate(entry.inverse, info.name, entry.target, production.source.input)
@@ -67,7 +80,23 @@ export function deriveInverses(nodeTypes: ReadonlyMap<string, NodeTypeInfo>): vo
       }
     }
   }
+  // validateInverseDiscrimination short-circuits per-pair when either
+  // production's `inverseDerived` is undefined, so transparent-passthrough
+  // productions (skipped above) are naturally excluded from the conflict
+  // search.
   validateInverseDiscrimination(nodeTypes);
+}
+
+function buildPassthroughLookup(
+  map: ReadonlyMap<string, ReadonlyArray<import('./transparent-passthrough.ts').TransparentPassthroughInfo>>,
+): (nodeName: string, prodIdx: number) => boolean {
+  const lookup = new Map<string, Set<number>>();
+  for (const [nodeName, infos] of map) {
+    const set = new Set<number>();
+    for (const info of infos) set.add(info.prodIdx);
+    lookup.set(nodeName, set);
+  }
+  return (nodeName, prodIdx) => lookup.get(nodeName)?.has(prodIdx) === true;
 }
 
 function deriveFromBody(
@@ -86,11 +115,18 @@ function deriveFromBody(
   }
   if (isStructureRef(body)) {
     if (body.__ref !== 'span-value') {
-      // Synthetic refs (gap/raw/tail/...) are not invertible at the body
-      // root — they're derived spans of the source, not user-visible
-      // captures. The author has to wrap them in an object/template.
+      // Non-span-value refs (span-presence, synthetic gap/raw/tail/...) are
+      // not invertible from a rendered value alone — a `present: true`
+      // boolean doesn't carry the source text needed to reconstruct the
+      // span, and synthetic refs are derived spans of the source rather
+      // than user-visible captures. Stringify only knows how to walk
+      // `span-value` references back to their capture sites.
+      //
+      // Full span-presence inverse support is tracked under Phase 4
+      // (formatter / preservation modes); see
+      // docs/superpowers/plans/2026-06-06-9-10-roadmap.md.
       throw new CompilerError(
-        `inverse: in node '${nodeName}' (target '${target}'): bare $.${body.__ref} refs are not invertible at the body root; wrap them in an object or template`,
+        `inverse: in node '${nodeName}' (target '${target}'): $.${body.__ref} refs are not invertible; only $.span-value refs can drive stringify`,
       );
     }
     return { kind: 'ref', capture: body.name };

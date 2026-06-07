@@ -43,12 +43,6 @@ export class SpanNode {
   template(): SpanNode { return this.setClass('template'); }
   comment(): SpanNode { return this.setClass('comment'); }
   whitespace(): SpanNode { return this.setClass('whitespace'); }
-  keyword(text: string): SpanNode {
-    return this.withData({
-      class: 'keyword',
-      text: this.data.text === undefined ? text : this.data.text,
-    });
-  }
   operator(alts?: ReadonlyArray<string>): SpanNode {
     const next = this.withData({ class: 'operator' });
     return alts ? next.refine('alts', [alts]) : next;
@@ -297,6 +291,42 @@ export function literal(text: string): Literal {
 
 export function parse(items: ReadonlyArray<Span | Literal>): ParseProgram {
   return { __parse: true, items };
+}
+
+// Phase 7 sugar: a multi-production node-type whose every production is just
+// a literal token. The common shape — `relation(NodeType, { input: 'X',
+// encodings: { parse: parse([literal('X')]), ast: 'X', source: tpl`X` } })`
+// repeated N times — collapses to one call:
+//
+//   ...litEnum('Weekday', ['SU','MO','TU','WE','TH','FR','SA'])
+//
+// Default targets are 'ast' (scalar literal) and 'source' (Template body).
+// Custom target sets are supplied via `options.targets`; bodies are derived
+// the same way (scalar for `'ast'`, Template for everything else). This is
+// pure desugaring — the returned array is byte-equivalent to writing each
+// `relation(...)` call by hand.
+export function litEnum(
+  nodeType: string,
+  literals: ReadonlyArray<string>,
+  options: { readonly targets?: ReadonlyArray<string> } = {},
+): ReadonlyArray<ExampleDef> {
+  const targets = options.targets ?? ['ast', 'source'];
+  return literals.map((lit) => {
+    const encodings: Record<string, unknown> = {
+      parse: parse([literal(lit)]),
+    };
+    for (const target of targets) {
+      encodings[target] = target === 'ast' ? lit : asTemplate(lit);
+    }
+    return relation(nodeType, { input: lit, encodings });
+  });
+}
+
+// Build a Template with no slots — equivalent to `tpl\`<text>\`` but
+// callable from non-template-literal contexts. Keeps the closed Template
+// shape (`__tpl: true`, `parts`, `slots`) the codegen walks.
+function asTemplate(text: string): Template {
+  return { __tpl: true, parts: [text], slots: [] };
 }
 
 export function relation(nodeType: string, body: RelationBody): ExampleDef {

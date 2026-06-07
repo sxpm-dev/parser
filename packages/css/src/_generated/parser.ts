@@ -230,6 +230,23 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
+// --- Inferred types ---
+export type Comment_ast = { type: "comment"; text: string };
+export type Comment_json = null;
+export type Comment_source = string;
+export type Declaration_ast = { type: "decl"; prop: string; value: string; important: true; _important: string } | { type: "decl"; prop: string; value: string };
+export type Declaration_json = null | Record<string, string>;
+export type Declaration_source = string;
+export type Rule_ast = { type: "rule"; selector: string; nodes: (Comment_ast | AtRule_ast | Rule_ast | Declaration_ast)[] };
+export type Rule_json = Record<string, Record<string, unknown>>;
+export type Rule_source = string;
+export type AtRule_ast = { type: "atrule"; name: string; params: string; nodes: (Comment_ast | AtRule_ast | Rule_ast | Declaration_ast)[] } | { type: "atrule"; name: string; params: string };
+export type AtRule_json = null;
+export type AtRule_source = string;
+export type Stylesheet_ast = { type: "root"; nodes: (Comment_ast | AtRule_ast | Rule_ast | Declaration_ast)[] };
+export type Stylesheet_json = Record<string, unknown>;
+export type Stylesheet_source = string;
+
 // ── Inlined validator: CssColor (prefix __v0_) ──
 
 function __v0_parseCssColorValue__alt0(state: State): unknown {
@@ -2844,7 +2861,7 @@ function __build_Comment_0_json(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
-  return String((__renderSlot_source(captures.text, __indentCol) ?? ""));
+  return "/* " + (__renderSlot_source(captures.text, __indentCol) ?? "") + " */";
 }
 
 function __build_Declaration_0_ast(captures: any, __indentCol: number = 0): any {
@@ -3032,6 +3049,9 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
+export function render(input: string, options: { target: "ast"; mode?: ParseMode }): Stylesheet_ast;
+export function render(input: string, options: { target: "json"; mode?: ParseMode }): Stylesheet_json;
+export function render(input: string, options: { target: "source"; mode?: ParseMode }): Stylesheet_source;
 export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -3106,7 +3126,7 @@ function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"comment\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
-  return __rebuild_Comment_0(captures, __indentCol);
+  return "/* " + __rebuildSlot(captures.text) + " */";
 }
 
 function __invert_Declaration_0_ast(value: any, __indentCol: number = 0): string {
@@ -3123,7 +3143,7 @@ function __invert_Declaration_0_ast(value: any, __indentCol: number = 0): string
     throw new Error("stringify: field \"important\" expected true, got " + JSON.stringify(value.important));
   }
   captures.important = __invertSlotLeaf_ast(value._important);
-  return __rebuild_Declaration_0(captures, __indentCol);
+  return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + " !" + __rebuildSlot(captures.important) + ";";
 }
 
 function __invert_Declaration_1_ast(value: any, __indentCol: number = 0): string {
@@ -3136,7 +3156,7 @@ function __invert_Declaration_1_ast(value: any, __indentCol: number = 0): string
   }
   captures.prop = __invertSlotLeaf_ast(value.prop);
   captures.value = __invertSlotLeaf_ast(value.value);
-  return __rebuild_Declaration_1(captures, __indentCol);
+  return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
@@ -3148,8 +3168,8 @@ function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"rule\", got " + JSON.stringify(value.type));
   }
   captures.selector = __invertSlotLeaf_ast(value.selector);
-  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return __rebuild_Rule_0(captures, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
 }
 
 function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
@@ -3162,8 +3182,8 @@ function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
-  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return __rebuild_AtRule_0(captures, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
 }
 
 function __invert_AtRule_1_ast(value: any, __indentCol: number = 0): string {
@@ -3176,7 +3196,7 @@ function __invert_AtRule_1_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
-  return __rebuild_AtRule_1(captures, __indentCol);
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + ";";
 }
 
 function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string {
@@ -3187,8 +3207,8 @@ function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string 
   if (!Object.is(value.type, "root")) {
     throw new Error("stringify: field \"type\" expected \"root\", got " + JSON.stringify(value.type));
   }
-  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : [value.nodes]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return __rebuild_Stylesheet_0(captures, __indentCol);
+  captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
+  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
 }
 
 function __invert_Comment_0_json(value: any, __indentCol: number = 0): string {
@@ -3220,7 +3240,7 @@ function __invert_Declaration_1_json(value: any, __indentCol: number = 0): strin
     captures.prop = __dkKey;
   captures.value = __invertSlotLeaf_json(__dkVal);
   }
-  return __rebuild_Declaration_1(captures, __indentCol);
+  return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
@@ -3251,7 +3271,7 @@ function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
     captures.nodes = __mArr;
   }
   }
-  return __rebuild_Rule_0(captures, __indentCol);
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
 }
 
 function __invert_AtRule_0_json(value: any, __indentCol: number = 0): string {
@@ -3284,7 +3304,7 @@ function __invert_Stylesheet_0_json(value: any, __indentCol: number = 0): string
     }
     captures.nodes = __mArr;
   }
-  return __rebuild_Stylesheet_0(captures, __indentCol);
+  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
 }
 
 function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
@@ -3294,12 +3314,22 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   }
   const __s: string = value;
   let __pos = 0;
-  captures.text = __invertSlotLeaf_source(__s.slice(__pos));
-  __pos = __s.length;
+  if (__s.indexOf("/* ", __pos) !== __pos) {
+    throw new Error("stringify: expected leading literal \"/* \" in template body");
+  }
+  __pos += 3;
+  {
+    const __end = __s.indexOf(" */", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \" */\" after capture text");
+    }
+    captures.text = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 3;
+  }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Comment_0(captures, __indentCol);
+  return "/* " + __rebuildSlot(captures.text) + " */";
 }
 
 function __invert_Declaration_0_source(value: any, __indentCol: number = 0): string {
@@ -3336,7 +3366,7 @@ function __invert_Declaration_0_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Declaration_0(captures, __indentCol);
+  return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + " !" + __rebuildSlot(captures.important) + ";";
 }
 
 function __invert_Declaration_1_source(value: any, __indentCol: number = 0): string {
@@ -3365,7 +3395,7 @@ function __invert_Declaration_1_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Declaration_1(captures, __indentCol);
+  return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
@@ -3391,13 +3421,13 @@ function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
+    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : __s.slice(__pos, __end).split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Rule_0(captures, __indentCol);
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
 }
 
 function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
@@ -3435,13 +3465,13 @@ function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
     if (__end < 0) {
       throw new Error("stringify: expected separator \"}\" after capture nodes");
     }
-    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
+    captures.nodes = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : __s.slice(__pos, __end).split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __end + 1;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_AtRule_0(captures, __indentCol);
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
 }
 
 function __invert_AtRule_1_source(value: any, __indentCol: number = 0): string {
@@ -3474,7 +3504,7 @@ function __invert_AtRule_1_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_AtRule_1(captures, __indentCol);
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + ";";
 }
 
 function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): string {
@@ -3487,13 +3517,13 @@ function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): stri
   if (__pos >= __s.length) {
     captures.nodes = null;
   } else {
-    captures.nodes = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
+    captures.nodes = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : __s.slice(__pos).split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(__e, __indentCol)));
     __pos = __s.length;
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuild_Stylesheet_0(captures, __indentCol);
+  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
 }
 
 function __dispatchInverse_Comment_ast(value: any, __indentCol: number = 0): string {
@@ -3580,22 +3610,22 @@ function __dispatchInverse_json(value: any): string {
 
 function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_Comment_0_source(value, __indentCol);
+    if (value.startsWith("/* ")) return __invert_Comment_0_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_Declaration_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(" !") >= 0) return __invert_Declaration_0_source(value, __indentCol);
-    return __invert_Declaration_1_source(value, __indentCol);
+    if (value.indexOf(" !") >= 0) { try { return __invert_Declaration_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    try { return __invert_Declaration_1_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
 
 function __dispatchInverse_Rule_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.indexOf(" {") >= 0) return __invert_Rule_0_source(value, __indentCol);
+    if (value.indexOf(" {") >= 0) { try { return __invert_Rule_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -3610,7 +3640,7 @@ function __dispatchInverse_AtRule_source(value: any, __indentCol: number = 0): s
 
 function __dispatchInverse_Stylesheet_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    return __invert_Stylesheet_0_source(value, __indentCol);
+    try { return __invert_Stylesheet_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -4313,6 +4343,9 @@ const __inverseDispatch: Record<string, (value: any) => string> = {
   "source": __dispatchInverse_source,
 };
 
+export function stringify(value: Stylesheet_ast, options: { target: "ast" }): string;
+export function stringify(value: Stylesheet_json, options: { target: "json" }): string;
+export function stringify(value: Stylesheet_source, options: { target: "source" }): string;
 export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -4353,7 +4386,9 @@ function __fusedRender_Comment_0_source(state: State, out: string[]): boolean {
     const text = input.slice(__text_ts, __text_te);
     state.pos = off;
     if (off > state.maxOff) state.maxOff = off;
+    out.push("/* ");
     out.push(String(text ?? ""));
+    out.push(" */");
     return true;
   })();
   return __ok === true;

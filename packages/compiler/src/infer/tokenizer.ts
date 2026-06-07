@@ -1,5 +1,6 @@
 import type { SchemaDef, SpanClass } from '@parser2/parser';
 import type { NodeTypeInfo, TokenClassUsage } from '../model.ts';
+import { normalizeLayer } from '../index.ts';
 
 // Pass 6: derive tokenizer program inputs.
 //
@@ -40,7 +41,10 @@ export function buildTokenizerProgram(
       literalToType.set(decl.literal, decl.type);
     }
     for (const layer of Object.values(schema.operators)) {
-      for (const op of layer) {
+      // Phase 5e: layers may be either a bare op array (legacy) or an
+      // object with `ops` + optional `assoc`. Normalize before iterating.
+      const { ops } = normalizeLayer(layer);
+      for (const op of ops) {
         if (!literalToType.has(op)) literalToType.set(op, op);
       }
     }

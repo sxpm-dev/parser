@@ -68,8 +68,19 @@ test('codegen inlines sub-schema as validator with unique prefix', async () => {
   // body — the parent retains its own single set of exports (render,
   // stringify, validate — typical v2 emit). If the sub-schema's exports
   // leaked through we'd see duplicates and the module would fail to load.
-  const exportFnCount = (source.match(/export function /g) ?? []).length;
-  assert.equal(exportFnCount, 3, `expected exactly 3 exported functions, got ${exportFnCount}`);
+  // Phase 3 added per-target `render`/`stringify` overloads — each is also
+  // `export function`, so count DISTINCT exported function names rather
+  // than raw `export function` occurrences. The set should still be
+  // {render, stringify, validate}.
+  const exportedNames = new Set<string>();
+  for (const m of source.matchAll(/export function ([A-Za-z_$][\w$]*)/g)) {
+    exportedNames.add(m[1]!);
+  }
+  assert.deepEqual(
+    [...exportedNames].sort(),
+    ['render', 'stringify', 'validate'],
+    `expected exactly {render, stringify, validate}, got ${[...exportedNames].sort().join(', ')}`,
+  );
   // Same goes for shared type declarations — exactly one ParseMode /
   // ParseOptions, not two.
   const parseModeCount = (source.match(/export type ParseMode\b/g) ?? []).length;

@@ -176,6 +176,16 @@ function parseNode(schema: InferredSchema, nodeType: string, state: State): Capt
     throw new Error(`interp: unknown node type '${nodeType}'`);
   }
   skipWs(state);
+  // Phase 5 — when the node type has a detected binary-operator production,
+  // run a Pratt climbing loop instead of the standard speculation chain.
+  // The primary dispatch over non-binary alts happens inside
+  // parseNodePratt; the binary captures are synthesized directly without
+  // re-running the binary alt's production-level parse (which would loop
+  // forever on the left-recursive span).
+  const binaryInfo = schema.binaryProductions.get(nodeType);
+  if (binaryInfo !== undefined) {
+    return parseNodePratt(schema, info, binaryInfo, state, 0);
+  }
   // Order productions the same way the v2 dispatcher does — see emit/v2/
   // dispatch.ts for the byte-prefix / speculation strategy. We don't need
   // the byte-prefix fast path for correctness; we DO need the same trial
@@ -188,6 +198,130 @@ function parseNode(schema: InferredSchema, nodeType: string, state: State): Capt
     if (result !== null) return result;
     // Each production rewinds state.pos on failure, but defend in depth.
     state.pos = entry;
+  }
+  return null;
+}
+
+// --- Pratt climbing loop ---------------------------------------------------
+
+// Mirror of `packages/compiler/src/emit/v2/pratt.ts` for the interpreter.
+// Walks the same operator precedence map and synthesizes the same captures
+// payload (`__production: '<NodeType>#<binaryIdx>'` + the schema-author's
+// capture names) so that the rest of the interp pipeline routes through
+// unchanged. Left-associative — the right-operand recursion uses
+// `prec + 1` as its minPrec threshold.
+function parseNodePratt(
+  schema: InferredSchema,
+  info: NodeTypeInfo,
+  binaryInfo: import('../infer/binary-operators.ts').BinaryProductionInfo,
+  state: State,
+  minPrec: number,
+): Captures | null {
+  const entry = state.pos;
+  let left = parseNodePrimary(schema, info, binaryInfo, state);
+  if (left === null) return null;
+  const prodKey = `${info.name}#${binaryInfo.prodIdx}`;
+  while (true) {
+    skipWs(state);
+    if (state.pos >= state.len) break;
+    const opMatch = scanOperatorLiteral(schema, state);
+    if (opMatch === null) break;
+    const prec = schema.operatorPrecedence.get(opMatch.op);
+    if (prec === undefined) break;
+    if (prec < minPrec) break;
+    state.pos += opMatch.len;
+    if (state.pos > state.maxOff) state.maxOff = state.pos;
+    // Phase 5e: right-assoc recurses at `prec`, left-assoc at `prec + 1`.
+    const nextMinPrec = schema.rightAssociativeOps.has(opMatch.op) ? prec : prec + 1;
+    const right = parseNodePratt(schema, info, binaryInfo, state, nextMinPrec);
+    if (right === null) {
+      state.pos = entry;
+      return null;
+    }
+    const next: Captures = { __production: prodKey };
+    (next as Record<string, unknown>)[binaryInfo.leftCapture] = left;
+    (next as Record<string, unknown>)[binaryInfo.opCapture] = opMatch.op;
+    (next as Record<string, unknown>)[binaryInfo.rightCapture] = right;
+    left = next;
+  }
+  return left;
+}
+
+// Primary dispatcher — tries every non-binary production of the node type
+// in the standard dispatch order. The binary production itself is skipped
+// (it would recurse on its left operand and loop forever).
+//
+// Phase 5f: when a unary production is registered for this node, the
+// primary first tries to scan a unary-prefix operator. On hit it
+// consumes the operator + recurses into `parseNodePrimary` for the
+// operand (so `!!a` parses as `!(!a)`), then synthesizes a unary
+// captures payload. On miss it falls through to the standard dispatch.
+function parseNodePrimary(
+  schema: InferredSchema,
+  info: NodeTypeInfo,
+  binaryInfo: import('../infer/binary-operators.ts').BinaryProductionInfo,
+  state: State,
+): Captures | null {
+  const unaryInfo = schema.unaryProductions.get(info.name);
+  if (unaryInfo !== undefined) {
+    skipWs(state);
+    const opMatch = scanUnaryLiteral(unaryInfo.operatorAlts, state);
+    if (opMatch !== null) {
+      const unaryEntry = state.pos;
+      state.pos += opMatch.len;
+      if (state.pos > state.maxOff) state.maxOff = state.pos;
+      const operand = parseNodePrimary(schema, info, binaryInfo, state);
+      if (operand === null) {
+        state.pos = unaryEntry;
+        return null;
+      }
+      const prodKey = `${info.name}#${unaryInfo.prodIdx}`;
+      const next: Captures = { __production: prodKey };
+      (next as Record<string, unknown>)[unaryInfo.opCapture] = opMatch.op;
+      (next as Record<string, unknown>)[unaryInfo.operandCapture] = operand;
+      return next;
+    }
+  }
+  const ordered = orderProductionsForDispatch(info);
+  const entry = state.pos;
+  for (const idx of ordered) {
+    if (idx === binaryInfo.prodIdx) continue;
+    if (unaryInfo !== undefined && idx === unaryInfo.prodIdx) continue;
+    const production = info.productions[idx]!;
+    const result = parseProduction(schema, production, idx, state);
+    if (result !== null) return result;
+    state.pos = entry;
+  }
+  return null;
+}
+
+function scanUnaryLiteral(
+  alts: ReadonlySet<string>,
+  state: State,
+): { readonly op: string; readonly len: number } | null {
+  const input = state.input;
+  const pos = state.pos;
+  // Try longest first.
+  const sorted = [...alts].sort(
+    (a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0),
+  );
+  for (const op of sorted) {
+    if (input.startsWith(op, pos)) return { op, len: op.length };
+  }
+  return null;
+}
+
+// Longest-match scan over schema.operatorLiterals (already sorted longest-
+// first at infer time). Returns null when no literal matches at the
+// current pos. Mirrors the v2 Pratt operator scan.
+function scanOperatorLiteral(
+  schema: InferredSchema,
+  state: State,
+): { readonly op: string; readonly len: number } | null {
+  const input = state.input;
+  const pos = state.pos;
+  for (const op of schema.operatorLiterals) {
+    if (input.startsWith(op, pos)) return { op, len: op.length };
   }
   return null;
 }
@@ -361,8 +495,8 @@ function parseSpan(
   if (span.class === 'literal') {
     return parseLiteralSpan(span, state, captures, ranges, isOptional);
   }
-  // Class span (ident / number / hex / string / comment / ...)
-  return parseClassSpan(span, state, captures, ranges, isOptional);
+  // Class span (ident / number / hex / string / comment / operator / ...)
+  return parseClassSpan(schema, span, state, captures, ranges, isOptional);
 }
 
 // ---- literal span ---------------------------------------------------------
@@ -395,6 +529,7 @@ function parseLiteralSpan(
 // ---- class span ----------------------------------------------------------
 
 function parseClassSpan(
+  schema: InferredSchema,
   span: ResolvedSpan,
   state: State,
   captures: Record<string, unknown>,
@@ -402,7 +537,7 @@ function parseClassSpan(
   isOptional: boolean,
 ): boolean {
   const start = state.pos;
-  const ok = scanClass(span, state);
+  const ok = scanClass(schema, span, state);
   if (!ok) {
     if (isOptional) {
       bindSpan(span, null, start, start, captures, ranges);
@@ -414,6 +549,15 @@ function parseClassSpan(
   // Value extraction. For comment spans the v2 emitter strips `/* ... */`
   // and trims interior whitespace when the span carries the (implicit)
   // .comment() refinement — we mirror that here.
+  //
+  // NOTE: interp deliberately keeps `.number()/.string().coerce()` captures
+  // as raw slices (not Number-coerced / not decoded). v2 DOES coerce, so
+  // interp ≡ v2 doesn't hold for coerced captures. The round-trip check
+  // and the differential fuzzer both call interp's render + interp's
+  // stringify in lockstep, so as long as interp is self-consistent the
+  // checks succeed. Mirroring v2's coerce behavior in interp would also
+  // require teaching interp/stringify to re-encode (JSON-quote, etc.) on
+  // the inverse direction — bigger surface area, deferred.
   const rawSlice = state.input.slice(start, state.pos);
   let value: string;
   if (span.class === 'comment') {
@@ -454,11 +598,29 @@ function parseClassSpan(
 // position. Returns false (without rewinding) when the start predicate
 // fails. On success the position lands one byte past the last consumed
 // character.
-function scanClass(span: ResolvedSpan, state: State): boolean {
+function scanClass(schema: InferredSchema, span: ResolvedSpan, state: State): boolean {
   const refSet = new Set(span.refinements.map((r) => r.name));
   const cls = span.class;
   const input = state.input;
   const len = state.len;
+
+  if (cls === 'operator') {
+    // Longest-match scan over schema.operatorLiterals (already sorted
+    // longest-first by inferSchema). Empty literals list is an authoring
+    // error — declare an operators map on the schema.
+    if (schema.operatorLiterals.length === 0) {
+      throw new Error(
+        `interp: .operator() span '${span.name ?? '<unnamed>'}' has no operators declared on the schema`,
+      );
+    }
+    for (const op of schema.operatorLiterals) {
+      if (input.startsWith(op, state.pos)) {
+        state.pos += op.length;
+        return true;
+      }
+    }
+    return false;
+  }
 
   if (cls === 'ident') {
     if (state.pos >= len) return false;
@@ -1357,3 +1519,4 @@ function trimWs(s: string): string {
   while (end > start && isWs(s.charCodeAt(end - 1))) end--;
   return s.slice(start, end);
 }
+

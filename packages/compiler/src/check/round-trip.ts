@@ -75,11 +75,20 @@ import { interpretStringify } from '../interp/stringify.ts';
 
 export function checkRoundTrip(schema: InferredSchema): void {
   for (const info of schema.nodeTypes.values()) {
+    const passthroughIdxs = new Set(
+      (schema.transparentPassthroughs.get(info.name) ?? []).map((p) => p.prodIdx),
+    );
     for (let pi = 0; pi < info.productions.length; pi++) {
       const production = info.productions[pi]!;
       // Recovery productions describe lossy malformed-input fallbacks.
       // The recovered AST is not expected to re-encode.
       if (production.recovery) continue;
+      // Phase 5g: transparent-passthrough productions (e.g. `(expr)`)
+      // produce the inner's AST verbatim and have no inverter; the
+      // round-trip property is meaningless at the production level.
+      // The example's input parses to the inner's AST, which gets
+      // round-trip-checked through the inner production's own example.
+      if (passthroughIdxs.has(pi)) continue;
       checkProduction(schema, info.name, pi, production);
     }
   }
@@ -232,23 +241,7 @@ type Exclusion = {
   readonly reason: string;
 };
 
-const KNOWN_EXCLUSIONS: ReadonlyArray<Exclusion> = [
-  // CSS Comment source-render produces only the interior text (delimiters
-  // are stripped by `.comment()` during parse but not re-added on
-  // rebuild). The schema header at packages/css/src/schema.ts:166 calls
-  // this out as a Phase 7 follow-up. Fixing it requires either:
-  //   (a) a compiler-side synthesis rule that re-adds `/*` `*/` around
-  //       `.comment()` slots on inverse, or
-  //   (b) splitting the Comment span into three (open delim / interior
-  //       text / close delim).
-  // Either belongs in a separate commit.
-  {
-    nodeType: 'Comment',
-    target: 'source',
-    input: '/* foo */',
-    reason: 'comment-delimiter strip/restore — Phase 7 follow-up',
-  },
-];
+const KNOWN_EXCLUSIONS: ReadonlyArray<Exclusion> = [];
 
 function isKnownException(nodeName: string, target: string, input: string): boolean {
   for (const e of KNOWN_EXCLUSIONS) {

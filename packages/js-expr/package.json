@@ -1,0 +1,17 @@
+{
+  "name": "@parser2/js-expr",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && npm run generate:ts",
+    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0"
+  }
+}

@@ -132,10 +132,23 @@ function dispatchNode(
   // String-shape dispatch — templates, then refs, then scalar-string.
   if (typeof value === 'string') {
     const tplPlans = planTemplateDispatch(templates);
+    // Try plans in priority order. Wrap each attempt in try/catch so a
+    // sibling production gets a chance when the chosen one's positional
+    // scanner throws (substring discriminators are not sufficient on
+    // their own — the inverter IS the position-anchored validator).
+    // Mirrors emit/inverse.ts's plan emission (Task #17).
+    let lastErr: unknown = undefined;
     for (const p of tplPlans) {
       if (p.check === null || p.check(value)) {
-        return invertProduction(schema, p.branch.production, p.branch.ir, target, value, indentCol);
+        try {
+          return invertProduction(schema, p.branch.production, p.branch.ir, target, value, indentCol);
+        } catch (e) {
+          lastErr = e;
+        }
       }
+    }
+    if (lastErr !== undefined && tplPlans.length > 0 && refs.length === 0 && scalars.length === 0) {
+      throw lastErr;
     }
     // Bare-ref bodies normally accept any string. For source-target refs
     // whose capture span is `.string().coerce()`, narrow to quote-prefixed
@@ -371,7 +384,96 @@ function invertProduction(
   }
   const captures: Record<string, unknown> = {};
   walkInverse(schema, ir, value, target, production, captures, indentCol);
+  // Task #18: stringify produces SOURCE regardless of the input target. If
+  // the production's source target body is a Template, that template
+  // describes canonical source — interleave its literal segments with the
+  // captures populated from this target's body. The span-driven
+  // rebuildSource falls back for productions whose source body is
+  // object/dynKey/merge/ref/scalar (no framing literals beyond the spans),
+  // and for productions with no source target at all.
+  const sourceEntry = production.renders.get('source');
+  const sourceIr = sourceEntry?.inverseDerived;
+  if (sourceIr && sourceIr.kind === 'template') {
+    return rebuildFromTemplate(sourceIr, production, captures, indentCol);
+  }
   return rebuildSource(production, captures, indentCol);
+}
+
+// Build a source string from a template IR + populated captures. Mirrors
+// emit/inverse.ts → emitTemplateRebuildExpr: each segment becomes a literal
+// piece, each capture becomes a slot piece carrying the corresponding
+// span's optional/join/encode hooks so optional fusion and repeats joining
+// behave identically to the span-driven rebuild.
+function rebuildFromTemplate(
+  ir: Extract<InverseIR, { kind: 'template' }>,
+  production: Production,
+  captures: Record<string, unknown>,
+  indentCol: number,
+): string {
+  const pieces: Piece[] = [];
+  for (let i = 0; i < ir.captures.length; i++) {
+    const seg = ir.segments[i] ?? '';
+    if (seg.length > 0) {
+      pieces.push({ kind: 'literal', text: seg });
+    }
+    const ref = ir.captures[i]!;
+    const span = production.spans.find((s) => s.name === ref);
+    const optional = span !== undefined && isAbsentAllowedSpan(span);
+    const join = span !== undefined ? joinOf(span) : { kind: 'none' as const };
+    const encode = span !== undefined ? encodeOf(span) : ('none' as const);
+    pieces.push({ kind: 'slot', ref, optional, join, encode });
+  }
+  const lastSeg = ir.segments[ir.segments.length - 1] ?? '';
+  if (lastSeg.length > 0) {
+    pieces.push({ kind: 'literal', text: lastSeg });
+  }
+  return concatPieces(pieces, captures, indentCol);
+}
+
+// Shared piece-concatenation walk used by both rebuildSource (span-driven)
+// and rebuildFromTemplate (template-driven). Applies optional-slot fusion,
+// repeats join, indent join, and JSON encoding. Lifted out of the previous
+// inline body of rebuildSource so both rebuild paths emit byte-identical
+// behavior.
+function concatPieces(
+  pieces: ReadonlyArray<Piece>,
+  captures: Record<string, unknown>,
+  indentCol: number,
+): string {
+  const built: string[] = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const p = pieces[i]!;
+    if (p.kind === 'literal') {
+      built.push(p.text);
+      continue;
+    }
+    let raw = captures[p.ref];
+    if (p.encode === 'jsonString' && typeof raw === 'string') {
+      raw = encodeJsonStringInterp(raw);
+    }
+    if (p.optional && (raw === null || raw === undefined)) {
+      if (built.length > 0 && pieces[i - 1] && pieces[i - 1]!.kind === 'literal') {
+        built.pop();
+      }
+      continue;
+    }
+    let effectiveJoinSep: string;
+    let leadingPrefix: boolean;
+    if (p.join.kind === 'indent') {
+      effectiveJoinSep = '\n' + ' '.repeat(indentCol);
+      leadingPrefix = indentCol > 0;
+    } else if (p.join.kind === 'sep') {
+      effectiveJoinSep = p.join.sep;
+      leadingPrefix = false;
+    } else {
+      effectiveJoinSep = '';
+      leadingPrefix = false;
+    }
+    built.push(rebuildSlotValue(raw, effectiveJoinSep, leadingPrefix));
+  }
+  let result = '';
+  for (const s of built) result += s;
+  return result;
 }
 
 // Walks an InverseIR, populating `captures` from `value`. Mirrors
@@ -529,12 +631,37 @@ function walkInverseTemplate(
     const nextIsTailOptional = nextIdx < captureNames.length && tailOptional[nextIdx];
     if (end < 0) {
       if (nextIsTailOptional) {
-        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos), indentCol);
+        // Tail-optional collapse: when the next separator is missing AND
+        // every remaining capture is absent-allowed, the captures collapse
+        // to null and this capture absorbs the rest. BUT the trailing
+        // literal segment (segments[segments.length-1]) is structural — it
+        // belongs to the production's surface form regardless of whether
+        // the optional captures are present. We only allow the collapse if
+        // the trailing literal is empty OR still present at the END of the
+        // value. Otherwise the value doesn't actually describe this
+        // production's shape and we must throw so the dispatcher can fall
+        // through to a sibling production (e.g. AtRule#1 `; ` for
+        // `@charset "UTF-8";` when AtRule#0's `{ }` framing is absent).
+        const tailLit = segments[segments.length - 1] ?? '';
+        if (tailLit.length === 0) {
+          captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos), indentCol);
+          pos = s.length;
+          for (let k = nextIdx; k < captureNames.length; k++) {
+            captures[captureNames[k]!] = null;
+          }
+          break;
+        }
+        const tailStart = s.length - tailLit.length;
+        if (tailStart < pos || s.slice(tailStart) !== tailLit) {
+          throw new Error(
+            `stringify: tail-optional fallback rejected — trailing literal '${tailLit}' missing or misaligned for capture ${capName}`,
+          );
+        }
+        captures[capName] = invertSlot(schema, capName, production, target, s.slice(pos, tailStart), indentCol);
         pos = s.length;
         for (let k = nextIdx; k < captureNames.length; k++) {
           captures[captureNames[k]!] = null;
         }
-        // Skip to end — the rest of the captures are null.
         break;
       }
       throw new Error(`stringify: expected separator '${nextSeg}' after capture ${capName}`);
@@ -746,54 +873,7 @@ function rebuildSource(
     pieces.push(contributionOf(span));
     if (span.text) cursor = startOffset + span.text.length;
   }
-  // Concat with optional-slot + preceding-literal fusion.
-  let result = '';
-  // We walk pieces and apply the same fusion rule emit/rebuild.ts does:
-  // when an optional slot's captured value is null/undefined AND the
-  // preceding piece is a literal, drop both. Otherwise the slot collapses
-  // to "" but the literal stays.
-  const built: string[] = [];
-  for (let i = 0; i < pieces.length; i++) {
-    const p = pieces[i]!;
-    if (p.kind === 'literal') {
-      built.push(p.text);
-      continue;
-    }
-    let raw = captures[p.ref];
-    // Apply the slot's inverse encoder so the captured value is in source-
-    // string shape (e.g. encodeJsonString re-quotes and escapes a coerced
-    // string capture). Mirrors emit/rebuild.ts piecesToConcat.
-    if (p.encode === 'jsonString' && typeof raw === 'string') {
-      raw = encodeJsonStringInterp(raw);
-    }
-    if (p.optional && (raw === null || raw === undefined)) {
-      // Drop the preceding literal too (if any).
-      if (built.length > 0 && pieces[i - 1] && pieces[i - 1]!.kind === 'literal') {
-        built.pop();
-      }
-      continue;
-    }
-    // For indent-modified slots, compute the per-level separator and
-    // whether to add a leading prefix (when indentCol > 0 the whole block
-    // starts on a new indented line). Non-indent slots use the static join
-    // string ('sep') or empty ('none' — non-repeats slots never reach the
-    // array-join path inside rebuildSlotValue anyway).
-    let effectiveJoinSep: string;
-    let leadingPrefix: boolean;
-    if (p.join.kind === 'indent') {
-      effectiveJoinSep = '\n' + ' '.repeat(indentCol);
-      leadingPrefix = indentCol > 0;
-    } else if (p.join.kind === 'sep') {
-      effectiveJoinSep = p.join.sep;
-      leadingPrefix = false;
-    } else {
-      effectiveJoinSep = '';
-      leadingPrefix = false;
-    }
-    built.push(rebuildSlotValue(raw, effectiveJoinSep, leadingPrefix));
-  }
-  for (const s of built) result += s;
-  return result;
+  return concatPieces(pieces, captures, indentCol);
 }
 
 // Decide whether a bare-ref branch accepts the given string at this

@@ -37,7 +37,7 @@ import { findSpanModifier } from './modifiers.ts';
 // whitespace classes does not constrain what bytes may legitimately appear
 // at depth 0, so the guard would over-reject; gate on at least one of these.
 const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
-  'ident', 'keyword', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+  'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
 ]);
 
 export type FusedRenderOptions = {
@@ -949,6 +949,7 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     emitUnknownCharsGuard,
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
+    operatorLiterals: schema.operatorLiterals,
   };
 }
 

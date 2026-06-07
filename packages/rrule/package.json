@@ -1,0 +1,20 @@
+{
+  "name": "@parser2/rrule",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "generate": "npm run build -w @parser2/compiler && npm run generate:ts",
+    "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
+    "build": "tsc -b",
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run bench:parse && npm run bench:round-trip",
+    "bench:parse": "npm run generate && tsx bench/parse.ts",
+    "bench:round-trip": "npm run generate && tsx bench/round-trip.ts"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@parser2/parser": "0.0.0"
+  }
+}

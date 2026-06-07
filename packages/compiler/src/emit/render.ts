@@ -34,7 +34,15 @@ import { syntheticKey } from './captures.ts';
 import { INDENT_STEP_SPACES } from './rebuild.ts';
 import { jsString } from './strings.ts';
 
-export function emitRender(schema: InferredSchema): string {
+// Optional Phase 3 overloads block. When non-empty, it is emitted as a list
+// of overload signatures immediately before the public `render` implementation
+// — TS overload resolution then picks the right per-target return type for
+// callers, while the implementation stays `unknown`-typed for the body.
+export type EmitRenderOptions = {
+  readonly renderOverloads?: string;
+};
+
+export function emitRender(schema: InferredSchema, options: EmitRenderOptions = {}): string {
   const nodeTypes = [...schema.nodeTypes.values()];
   const targets = collectTargets(nodeTypes);
 
@@ -57,7 +65,7 @@ export function emitRender(schema: InferredSchema): string {
   const dispatchers = targets.map((target) => emitDispatcher(target, nodeTypes));
   const slotHelpers = targets.map((target) => emitRenderSlotHelper(target));
   const renderDispatch = emitRenderDispatchTable(targets);
-  const publicRender = emitPublicRender(schema.defaultTarget);
+  const publicRender = emitPublicRender(schema.defaultTarget, options.renderOverloads ?? '');
   const defaultTargetDecl = emitDefaultTarget(schema.defaultTarget);
 
   return [
@@ -371,7 +379,7 @@ function emitDefaultTarget(defaultTarget: string | undefined): string {
   return `const __defaultTarget: string | undefined = ${defaultTarget === undefined ? 'undefined' : jsString(defaultTarget)};`;
 }
 
-function emitPublicRender(_defaultTarget: string | undefined): string {
+function emitPublicRender(_defaultTarget: string | undefined, overloads: string): string {
   // The constant `__defaultTarget` is emitted separately so the runtime
   // reads it as a plain identifier. No target name flows through the
   // compiler logic — the constant is the only mention.
@@ -387,7 +395,13 @@ function emitPublicRender(_defaultTarget: string | undefined): string {
   // root entry, partial parse, or runtime failure); we then fall back to
   // the captures-based path so semantics stay identical. Task 5.3 closes
   // recursive-slot eligibility so the fast path covers full schemas.
-  return `export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+  //
+  // Phase 3 — Inferred-type overloads: when the caller emits a non-empty
+  // `overloads` block, it's spliced in immediately before the
+  // implementation signature. Consumers see per-target return types via
+  // TS overload resolution; the implementation signature stays `unknown`.
+  const overloadBlock = overloads ? `${overloads}\n` : '';
+  return `${overloadBlock}export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");

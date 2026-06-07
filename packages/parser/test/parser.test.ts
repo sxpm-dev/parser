@@ -132,7 +132,7 @@ test('rejects marks status and leaves renders empty', () => {
     input: 'throw',
     status: { kind: 'rejected' },
     encodings: {
-      src: parse([span('v', 'throw').keyword('throw')]),
+      src: parse([span('v', 'throw').ident()]),
     },
   });
   assert.equal(example.status.kind, 'rejected');

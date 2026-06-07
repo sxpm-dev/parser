@@ -1397,7 +1397,6 @@ function mapClassKind(cls: string): ScanClassKind {
     case 'hex': return ScanClassKind.HEX;
     case 'string': return ScanClassKind.STRING;
     case 'comment': return ScanClassKind.COMMENT;
-    case 'keyword': return ScanClassKind.KEYWORD;
     default:
       throw new Error(`bytecode encoder: SCAN_CLASS does not yet support class '${cls}' (Task 6.2 covers cron primitives only)`);
   }

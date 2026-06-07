@@ -243,10 +243,29 @@ function emitStructuredFusion(schema: InferredSchema): { source: string; targets
         if (canFuseStructured(info.productions[i]!, schema, target)) fusableIdxs.push(i);
       }
       fusableIdxs.sort((a, b) => {
+        // Mirror the captures-path emitGroupSpeculation tie-break: only a
+        // fixed-byte-prefix literal first span contributes a literal
+        // length. Spans modified by .until / .rawUntil / .repeats /
+        // .optional or a recursive role generalize the first-byte set
+        // and must not be treated as long literal prefixes (otherwise
+        // the structured-fused dispatcher tries the generalizing alt
+        // before the more-specific literal one, diverging from the
+        // captures path).
         const litLen = (idx: number): number => {
           const s0 = info.productions[idx]!.spans[0];
-          if (s0 && s0.class === 'literal' && typeof s0.text === 'string') return s0.text.length;
-          return 0;
+          if (!s0 || s0.class !== 'literal' || typeof s0.text !== 'string') return 0;
+          for (const m of s0.modifiers) {
+            if (
+              m.kind === 'optional' ||
+              m.kind === 'until' ||
+              m.kind === 'rawUntil' ||
+              m.kind === 'repeats'
+            ) {
+              return 0;
+            }
+          }
+          if (s0.recursiveRoles.length > 0) return 0;
+          return s0.text.length;
         };
         const diff = litLen(b) - litLen(a);
         return diff !== 0 ? diff : a - b;
@@ -465,6 +484,29 @@ function emitPublicApi(schema: InferredSchema, validateBody: string): string {
   // `tokens: ['comment']` so non-comment-aware schemas stay
   // byte-identical to the prior emit.
   const hasComment = schema.classes.some((t) => t.class === 'comment');
+  // Phase 4c v5: line comment markers declared via the `comment` token
+  // class with a `line` refinement.
+  const lineCommentMarkers: string[] = [];
+  for (const usage of schema.classes) {
+    if (usage.class === 'comment') {
+      for (const ref of usage.refinements) {
+        if (ref.name === 'line' && Array.isArray(ref.args) && typeof ref.args[0] === 'string') {
+          lineCommentMarkers.push(ref.args[0]);
+        }
+      }
+    }
+  }
+  const lineSkipFragment = lineCommentMarkers.length === 0
+    ? ''
+    : lineCommentMarkers.map((marker) => {
+        const m = JSON.stringify(marker);
+        return `    if (input.startsWith(${m}, state.pos)) {
+      state.pos += ${marker.length};
+      while (state.pos < state.len && input.charCodeAt(state.pos) !== 0x0a) state.pos++;
+      if (state.pos < state.len) state.pos++;
+      continue;
+    }`;
+      }).join('\n');
   const trailingSkip = hasComment
     ? `while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
@@ -475,6 +517,7 @@ function emitPublicApi(schema: InferredSchema, validateBody: string): string {
       if (state.pos < state.len) state.pos += 2;
       continue;
     }
+${lineSkipFragment}
     break;
   }`
     : `while (state.pos < state.len) {
@@ -482,13 +525,80 @@ function emitPublicApi(schema: InferredSchema, validateBody: string): string {
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
     break;
   }`;
+  // Phase 4c v4: leading/trailing ws around the root parse. For
+  // preserve schemas the public `__parse` captures the ws (and
+  // comments where applicable) at offset 0 before the root runs and
+  // the ws after the root has matched but before EOF, then attaches
+  // them to the captures payload as `__leadingWs` / `__trailingWs`.
+  // The render builder forwards them to the AST. Stringify (via the
+  // inverse derivation) reads them back and the rebuild concatenates
+  // them on either side of the root output.
+  const preserveWs = schema.whitespace === 'preserve';
+  // Phase 4c v5: leading ws + (block + line) comment skip runs for
+  // comment-aware schemas, EXCEPT when the root production's spans
+  // include a recursive role with a Comment-producing production
+  // (CSS's Stylesheet body lists Comment as a role; eating comments
+  // here would silently consume what the role-ladder is meant to
+  // capture as a Comment child node).
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    for (const span of prod.spans) {
+      for (const roleName of span.recursiveRoles) {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) continue;
+        for (const rolePr of info.productions) {
+          const firstSpan = rolePr.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+      }
+    }
+    return false;
+  });
+  const leadingWsSkip = hasComment && !rootConsumesComments
+    ? `while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    if (__c === 0x2f && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < state.len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+${lineSkipFragment}
+    break;
+  }`
+    : '';
+  const leadingCapture = preserveWs
+    ? `const __leadStart = state.pos;
+  ${leadingWsSkip}
+  const __leadingWs = input.slice(__leadStart, state.pos);`
+    : leadingWsSkip;
+  const trailingCapture = preserveWs
+    ? `const __trailStart = state.pos;`
+    : '';
+  const trailingAssign = preserveWs
+    ? `const __trailingWs = input.slice(__trailStart, state.pos);
+  if (result !== null && typeof result === 'object' && !Array.isArray(result)) {
+    (result as any).__leadingWs = __leadingWs;
+    (result as any).__trailingWs = __trailingWs;
+  }`
+    : '';
   return `function __parse(input: string, options?: ParseOptions): unknown {
   const mode = options?.mode ?? 'fast';
 ${preamble}${emitStateInit('state', 'parametric')}
+  ${leadingCapture}
   const result = ${rootFn}(state);
+  ${trailingCapture}
   ${trailingSkip}
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  ${trailingAssign}
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }

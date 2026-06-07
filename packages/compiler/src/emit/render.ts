@@ -45,6 +45,7 @@ export type EmitRenderOptions = {
 export function emitRender(schema: InferredSchema, options: EmitRenderOptions = {}): string {
   const nodeTypes = [...schema.nodeTypes.values()];
   const targets = collectTargets(nodeTypes);
+  const preserveWs = schema.whitespace === 'preserve';
 
   const builders: string[] = [];
   for (const info of nodeTypes) {
@@ -57,7 +58,7 @@ export function emitRender(schema: InferredSchema, options: EmitRenderOptions = 
           // would mean a code path bypassed the validator.
           throw new Error(`render: production '${info.name}#${i}' missing target '${target}'`);
         }
-        builders.push(emitBuilder(info.name, i, target, entry.body, production));
+        builders.push(emitBuilder(info.name, i, target, entry.body, production, preserveWs));
       }
     }
   }
@@ -65,7 +66,7 @@ export function emitRender(schema: InferredSchema, options: EmitRenderOptions = 
   const dispatchers = targets.map((target) => emitDispatcher(target, nodeTypes));
   const slotHelpers = targets.map((target) => emitRenderSlotHelper(target));
   const renderDispatch = emitRenderDispatchTable(targets);
-  const publicRender = emitPublicRender(schema.defaultTarget, options.renderOverloads ?? '');
+  const publicRender = emitPublicRender(schema.defaultTarget, options.renderOverloads ?? '', { preserveWs });
   const defaultTargetDecl = emitDefaultTarget(schema.defaultTarget);
 
   return [
@@ -102,9 +103,48 @@ function emitBuilder(
   target: string,
   body: RenderBody,
   production: Production,
+  preserveWs: boolean,
 ): string {
   const fnName = builderName(nodeName, prodIdx, target);
   const expr = emitBodyExpr(body, target, production);
+  // Phase 4c v1 — auto-attach `__ws` to the top-level AST object for
+  // preserve schemas. The auto-attach is target-scoped to 'ast' (other
+  // targets are typically string-shaped Templates or non-object
+  // projections where __ws has no place to land) and shape-scoped to
+  // object bodies (scalar/ref/template/array bodies have no fields to
+  // extend). Schema authors can still surface __ws explicitly via
+  // `__ws: $.__ws` for other targets if they need to.
+  const isObjectBody =
+    body !== null &&
+    typeof body === 'object' &&
+    !Array.isArray(body) &&
+    !isStructureRef(body) &&
+    !isTemplate(body) &&
+    !isDynKey(body) &&
+    !isMerge(body);
+  // Phase 4c v2: in addition to `__ws`, every named `.repeats({ sep })`
+  // span contributes a per-iteration ws array under `<spanName>_iws` in
+  // the captures payload. Forward each one to the AST so stringify can
+  // reconstruct the inter-iteration content byte-exactly.
+  const iwsFields: string[] = [];
+  if (preserveWs) {
+    for (const span of production.spans) {
+      if (!span.name) continue;
+      for (const m of span.modifiers) {
+        if (m.kind === 'repeats' && m.sep !== undefined) {
+          const key = `${span.name}_iws`;
+          iwsFields.push(`${key}: captures.${key}`);
+          break;
+        }
+      }
+    }
+  }
+  const baseFields = ['__ws: captures.__ws', '__litPres: captures.__litPres'];
+  const extras = [...baseFields, ...iwsFields].join(', ');
+  const finalExpr =
+    preserveWs && isObjectBody && target === 'ast'
+      ? `Object.assign(${expr}, { ${extras} })`
+      : expr;
   // `__indentCol` is the column at which THIS production's indent-modified
   // children's join lands. Default 0 keeps top-level entry points (the
   // public `render()` wrapper, the dispatcher, the dispatch table) calling
@@ -114,7 +154,7 @@ function emitBuilder(
   // inverse rebuild pattern in emit/rebuild.ts — Task 7.7b — for the
   // forward direction).
   return `function ${fnName}(captures: any, __indentCol: number = 0): any {
-  return ${expr};
+  return ${finalExpr};
 }`;
 }
 
@@ -379,7 +419,7 @@ function emitDefaultTarget(defaultTarget: string | undefined): string {
   return `const __defaultTarget: string | undefined = ${defaultTarget === undefined ? 'undefined' : jsString(defaultTarget)};`;
 }
 
-function emitPublicRender(_defaultTarget: string | undefined, overloads: string): string {
+function emitPublicRender(_defaultTarget: string | undefined, overloads: string, options: { preserveWs: boolean }): string {
   // The constant `__defaultTarget` is emitted separately so the runtime
   // reads it as a plain identifier. No target name flows through the
   // compiler logic — the constant is the only mention.
@@ -401,7 +441,18 @@ function emitPublicRender(_defaultTarget: string | undefined, overloads: string)
   // implementation signature. Consumers see per-target return types via
   // TS overload resolution; the implementation signature stays `unknown`.
   const overloadBlock = overloads ? `${overloads}\n` : '';
-  return `${overloadBlock}export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+  const preserveAttach = options.preserveWs
+    ? `
+  // Phase 4c v4: attach root-only __leadingWs / __trailingWs to the AST
+  // when the schema is preserve. They live on the captures payload
+  // (populated by __parse) and the public stringify reads them back.
+  if (result !== null && typeof result === 'object' && !Array.isArray(result) && target === 'ast') {
+    const __r = result as any;
+    if (typeof (captures as any).__leadingWs === 'string') __r.__leadingWs = (captures as any).__leadingWs;
+    if (typeof (captures as any).__trailingWs === 'string') __r.__trailingWs = (captures as any).__trailingWs;
+  }`
+    : '';
+  return `${overloadBlock}export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -411,7 +462,11 @@ function emitPublicRender(_defaultTarget: string | undefined, overloads: string)
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node \`source: string\` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -420,8 +475,9 @@ function emitPublicRender(_defaultTarget: string | undefined, overloads: string)
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);${preserveAttach}
+  return result;
 }`;
 }
 

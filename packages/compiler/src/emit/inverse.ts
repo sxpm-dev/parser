@@ -95,6 +95,11 @@ export function emitInverse(schema: InferredSchema, options: EmitInverseOptions 
         if (!entry) {
           throw new Error(`inverse: production '${info.name}#${i}' missing target '${target}'`);
         }
+        // Tolerated productions (see infer/invert.ts) have no
+        // inverseDerived. Skip their inverter emit; the canonical
+        // (first declared) production's inverter handles all values
+        // of this shape via the node dispatcher.
+        if (entry.inverseDerived === undefined) continue;
         // Phase 5c: when this is the binary production of a Pratt-detected
         // node type AND we're emitting the 'ast' target's inverter, emit
         // a paren-aware variant that wraps the rebuilt source when the
@@ -152,7 +157,7 @@ export function emitInverse(schema: InferredSchema, options: EmitInverseOptions 
   }
 
   const dispatchTable = emitDispatchTable(targets);
-  const publicStringify = emitPublicStringify(options.stringifyOverloads ?? '');
+  const publicStringify = emitPublicStringify(options.stringifyOverloads ?? '', schema.whitespace === 'preserve');
 
   return [
     inverters.join('\n\n'),
@@ -1679,11 +1684,17 @@ function emitLeafSlotHelper(target: string): string {
   return `function __invertSlotLeaf_${id}(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_${id}(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -1823,8 +1834,23 @@ ${entries}
 };`;
 }
 
-function emitPublicStringify(overloads: string): string {
+function emitPublicStringify(overloads: string, preserveWs: boolean): string {
   const overloadBlock = overloads ? `${overloads}\n` : '';
+  // Phase 4c v4: in preserve mode, prepend/append the root AST's
+  // `__leadingWs` / `__trailingWs` fields when present. Hand-built ASTs
+  // that don't carry the fields are unchanged.
+  const wrap = preserveWs
+    ? `
+  const __out = fn(value);
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    const __v = value as any;
+    const __lead = typeof __v.__leadingWs === 'string' ? __v.__leadingWs : '';
+    const __trail = typeof __v.__trailingWs === 'string' ? __v.__trailingWs : '';
+    return __lead + __out + __trail;
+  }
+  return __out;`
+    : `
+  return fn(value);`;
   return `${overloadBlock}export function stringify(value: unknown, options?: { target?: string }): string {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
@@ -1833,8 +1859,7 @@ function emitPublicStringify(overloads: string): string {
   const fn = __inverseDispatch[target];
   if (!fn) {
     throw new Error("stringify: unknown target '" + target + "'");
-  }
-  return fn(value);
+  }${wrap}
 }`;
 }
 

@@ -1,6 +1,22 @@
 // All DSL types. These are pure data shapes consumed by the compiler.
 
-export type WhitespacePolicy = 'standard' | 'significant';
+// 'standard'    — any whitespace (including newlines) is ignored between
+//                  spans. Inter-span gaps are collapsed to a single space
+//                  when reconstructing source. This is the default and what
+//                  every shipped parser uses today.
+// 'significant'  — declared since day one as a placeholder for languages
+//                  where whitespace is structurally meaningful (Python,
+//                  YAML); behavior matches 'standard' in v2 codegen today
+//                  because no in-scope schema declares it. The `.indent()`
+//                  span modifier is the supported way to express indent
+//                  significance per-production.
+// 'preserve'     — every inter-span whitespace slice is captured as
+//                  `captures.__ws[i]` and re-emitted byte-exactly by
+//                  stringify. Enables formatter / codemod use cases that
+//                  need round-trip fidelity. See
+//                  docs/superpowers/plans/2026-06-06-9-10-roadmap.md
+//                  Phase 4b.
+export type WhitespacePolicy = 'standard' | 'significant' | 'preserve';
 
 // How the generated tokenizer reacts to a byte it can't classify under any
 // declared literal, class scanner, or punctuator.
@@ -314,6 +330,19 @@ export type RenderTargetDef = {
 export type RecoveryPolicy = {
   readonly syncAt: ReadonlyArray<string>;
   readonly drop: string;
+};
+
+// Emitted by the generated parser whenever a `.recovers({ drop, syncAt })`
+// production matched. `code` distinguishes the diagnostic shape (today only
+// 'recovered' is emitted; future codes can mark distinct recovery flavors).
+// `drop` carries the schema-declared label so callers can render
+// language-specific messages from a stable identifier. `start` / `end` are
+// byte offsets into the parsed input demarcating the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
 };
 
 export type ExampleStatus =

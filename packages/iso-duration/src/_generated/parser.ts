@@ -6,9 +6,25 @@
 
 
 export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a `.recovers({ drop, syncAt })` production matched.
+// `code` distinguishes the diagnostic shape; `drop` is the schema-declared
+// label; `start`/`end` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -27,6 +43,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {
@@ -689,10 +710,10 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options: { target: "ast"; mode?: ParseMode }): Duration_ast;
-export function render(input: string, options: { target: "source"; mode?: ParseMode }): Duration_source;
-export function render(input: string, options?: { target?: undefined; mode?: ParseMode }): Duration_ast;
-export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_source;
+export function render(input: string, options?: { target?: undefined; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_ast;
+export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -702,7 +723,11 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node `source: string` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -711,8 +736,9 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);
+  return result;
 }
 
 function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
@@ -727,6 +753,25 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }
 
 function __rebuild_DateUnit_0(captures: any): string {
@@ -1231,11 +1276,17 @@ function __invertSlotFor_Duration_ast(v: any, __indentCol: number = 0): any {
 function __invertSlotLeaf_ast(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -1344,11 +1395,17 @@ function __invertSlotFor_Duration_source(v: any, __indentCol: number = 0): any {
 function __invertSlotLeaf_source(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_source(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -2766,6 +2823,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
       const result = sRoot(state);
       if (result === null) return null;
@@ -2789,6 +2847,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -2809,8 +2868,11 @@ function __parse(input: string, options?: ParseOptions): unknown {
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
+  
   const result = parseDuration(state);
+  
   while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
@@ -2818,6 +2880,13 @@ function __parse(input: string, options?: ParseOptions): unknown {
   }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }
@@ -2832,10 +2901,17 @@ export function validate(input: string, options?: ParseOptions): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __result = parseDuration(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < __state.diagnostics.length; __i++) {
+      __onDiag(__state.diagnostics[__i]);
+    }
   }
 }
 

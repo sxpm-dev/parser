@@ -44,7 +44,7 @@ test('fusion: render() entry tries __renderFused before __renderDispatch', async
   assert.match(src, /const __rootProductionKey: string = "MarkdownDocument#0";/);
   // Public render() body — match it as a single chunk and verify the
   // __renderFused call appears BEFORE the __renderDispatch lookup.
-  const renderMatch = src.match(/export function render\(input: string, options\?: \{ target\?: string; mode\?: ParseMode \}\): unknown \{[\s\S]*?\n\}/);
+  const renderMatch = src.match(/export function render\(input: string, options\?: \{[^}]*?\}\): unknown \{[\s\S]*?\n\}/);
   assert.ok(renderMatch, 'public render() body must be locatable');
   const body = renderMatch![0];
   const fusedIdx = body.indexOf('__renderFused(');

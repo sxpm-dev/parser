@@ -6,9 +6,25 @@
 
 
 export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a `.recovers({ drop, syncAt })` production matched.
+// `code` distinguishes the diagnostic shape; `drop` is the schema-declared
+// label; `start`/`end` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -27,6 +43,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {
@@ -1459,6 +1480,7 @@ function __validator_0(input: string): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __r = __v0_parseCssColor(__state);
   if (__r === null || __state.pos !== input.length) {
@@ -1475,6 +1497,7 @@ function __validator_1(input: string): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __r = __v1_parseCssLengthPercentage(__state);
   if (__r === null || __state.pos !== input.length) {
@@ -1662,6 +1685,7 @@ function parseDeclaration__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -1675,6 +1699,7 @@ function parseDeclaration__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   let value: string = '';
@@ -1814,6 +1839,7 @@ function parseDeclaration__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -1827,6 +1853,7 @@ function parseDeclaration__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -1990,6 +2017,7 @@ function parseDeclaration__alt1(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2003,6 +2031,7 @@ function parseDeclaration__alt1(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   let value: string = '';
@@ -2295,6 +2324,7 @@ function parseRule(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2308,12 +2338,12 @@ function parseRule(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    // Skip ws before the separator. v1 always allows ws around seps.
+    // Skip ws (and comments when declared) before the separator.
     while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     while (input.charCodeAt(off) === 59) {
       __sepConsumed = true;
       off += 1;
-      // Skip ws after the separator.
+      // Skip ws (and comments) after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
@@ -2349,6 +2379,7 @@ function parseRule(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2380,6 +2411,7 @@ function parseAtRule__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2397,6 +2429,7 @@ function parseAtRule__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   let params: string = '';
@@ -2536,6 +2569,7 @@ function parseAtRule__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2549,12 +2583,12 @@ function parseAtRule__alt0(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    // Skip ws before the separator. v1 always allows ws around seps.
+    // Skip ws (and comments when declared) before the separator.
     while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     while (input.charCodeAt(off) === 59) {
       __sepConsumed = true;
       off += 1;
-      // Skip ws after the separator.
+      // Skip ws (and comments) after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
@@ -2590,6 +2624,7 @@ function parseAtRule__alt0(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2621,6 +2656,7 @@ function parseAtRule__alt1(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -2638,6 +2674,7 @@ function parseAtRule__alt1(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+
     break;
   }
   let params: string = '';
@@ -2808,12 +2845,12 @@ function parseStylesheet(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    // Skip ws before the separator. v1 always allows ws around seps.
+    // Skip ws (and comments when declared) before the separator.
     while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     while (input.charCodeAt(off) === 59) {
       __sepConsumed = true;
       off += 1;
-      // Skip ws after the separator.
+      // Skip ws (and comments) after the separator.
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
@@ -3049,10 +3086,10 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options: { target: "ast"; mode?: ParseMode }): Stylesheet_ast;
-export function render(input: string, options: { target: "json"; mode?: ParseMode }): Stylesheet_json;
-export function render(input: string, options: { target: "source"; mode?: ParseMode }): Stylesheet_source;
-export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Stylesheet_ast;
+export function render(input: string, options: { target: "json"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Stylesheet_json;
+export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Stylesheet_source;
+export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -3062,7 +3099,11 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node `source: string` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -3071,8 +3112,9 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);
+  return result;
 }
 
 function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
@@ -3087,6 +3129,25 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }
 
 function __rebuild_Comment_0(captures: any): string {
@@ -3864,11 +3925,17 @@ function __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(v: any, __indentC
 function __invertSlotLeaf_ast(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -4100,11 +4167,17 @@ function __invertMergeEntry_Comment_AtRule_Rule_Declaration_json(__mWrapped: any
 function __invertSlotLeaf_json(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_json(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -4326,11 +4399,17 @@ function __invertSlotMulti_Comment_AtRule_Rule_Declaration_source(v: any, __inde
 function __invertSlotLeaf_source(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_source(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -7023,6 +7102,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
       const result = sRoot(state);
       if (result === null) return null;
@@ -7046,6 +7126,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -7066,8 +7147,11 @@ function __parse(input: string, options?: ParseOptions): unknown {
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
+  
   const result = parseStylesheet(state);
+  
   while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
@@ -7077,17 +7161,27 @@ function __parse(input: string, options?: ParseOptions): unknown {
       if (state.pos < state.len) state.pos += 2;
       continue;
     }
+
     break;
   }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }
 
 export function validate(input: string, options?: ParseOptions): void {
   // Syntax check: parse in fast mode first (will throw SyntaxError on bad syntax).
-  __parse(input, { mode: 'fast' });
+  // Recovery diagnostics surface here (single flush) — the raws-mode walk
+  // call below intentionally suppresses onDiagnostic to avoid double-flush.
+  __parse(input, { mode: 'fast', onDiagnostic: options?.onDiagnostic });
   // Validation check: only runs when opt-in.
   if (!options?.validate) return;
   // Parse in raws mode to get source offsets for error reporting.

@@ -17,9 +17,25 @@
 //     error-message string parsing; position comes from state.maxOff
 
 export const V2_RUNTIME = `export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a \`.recovers({ drop, syncAt })\` production matched.
+// \`code\` distinguishes the diagnostic shape; \`drop\` is the schema-declared
+// label; \`start\`/\`end\` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -38,6 +54,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {

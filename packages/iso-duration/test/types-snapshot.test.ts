@@ -52,9 +52,9 @@ test('iso-duration: render overloads cover every declared target plus default', 
   assert.equal(
     overloads,
     [
-      'export function render(input: string, options: { target: "ast"; mode?: ParseMode }): Duration_ast;',
-      'export function render(input: string, options: { target: "source"; mode?: ParseMode }): Duration_source;',
-      'export function render(input: string, options?: { target?: undefined; mode?: ParseMode }): Duration_ast;',
+      'export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_ast;',
+      'export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_source;',
+      'export function render(input: string, options?: { target?: undefined; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): Duration_ast;',
     ].join('\n'),
   );
 });

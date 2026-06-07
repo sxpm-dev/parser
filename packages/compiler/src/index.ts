@@ -58,7 +58,7 @@ export function inferSchema(
   const nodeTypes = buildProductions(schemas);
   resolveRecursiveRoles(nodeTypes, root.rootType);
   validate(nodeTypes);
-  attachRenderTargets(nodeTypes);
+  attachRenderTargets(nodeTypes, { preserveWs: root.whitespace === 'preserve' });
   // Phase 5 detection runs BEFORE inverse derivation so a schema with
   // ambiguous binary shapes (two matching binary productions on the same
   // node type) fails with the actionable "more than one binary production"
@@ -72,7 +72,7 @@ export function inferSchema(
   // for `ast: $.inner` (recursive passthrough) would necessarily
   // conflict with whatever the inner production already produces.
   const transparentPassthroughs = detectTransparentPassthroughs(nodeTypes);
-  deriveInverses(nodeTypes, transparentPassthroughs);
+  deriveInverses(nodeTypes, transparentPassthroughs, { preserveWs: root.whitespace === 'preserve' });
   const { literals, literalTypeByText, classes, tokenTypeIds } = buildTokenizerProgram(schemas, nodeTypes);
   // Flatten declared operator layers into a single list, deduped and sorted
   // longest-first so .operator() scanners can do longest-match without

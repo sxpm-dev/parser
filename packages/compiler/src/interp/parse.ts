@@ -21,12 +21,17 @@
 import {
   isStructureRef,
   isTemplate,
+  type Diagnostic,
   type RenderBody,
   type SpanModifier,
   type StructureRef,
   type Template,
 } from '@parser2/parser';
 import type { InferredSchema, NodeTypeInfo, Production, ResolvedSpan } from '../model.ts';
+
+export type InterpOptions = {
+  readonly onDiagnostic?: (d: Diagnostic) => void;
+};
 
 // --- Phase 8 input-normalization preamble ----------------------------------
 //
@@ -90,6 +95,11 @@ type State = {
   // exit. Top of stack = current required column (in chars) for the next
   // child item in an indented block.
   readonly indentStack: number[];
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before returning its captures. The
+  // entry-point interpretParse* functions flush the list to the caller's
+  // onDiagnostic callback only after the parse as a whole succeeds.
+  readonly diagnostics: Diagnostic[];
 };
 
 // --- Indent helpers --------------------------------------------------------
@@ -135,35 +145,151 @@ type SpanRange = { readonly start: number; readonly end: number };
 
 // --- Entry points ----------------------------------------------------------
 
-export function interpretParse(schema: InferredSchema, input: string): unknown {
+export function interpretParse(
+  schema: InferredSchema,
+  input: string,
+  options: InterpOptions = {},
+): unknown {
   input = applyPreamble(schema, input);
-  const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    indentStack: [],
+    diagnostics: [],
+  };
+  const preserveWs = schema.whitespace === 'preserve';
+  // Phase 4c v5: always run the top-level skip for comment-aware
+  // schemas so leading block + line comments are consumed before the
+  // root parse. Preserve additionally records the slice as
+  // __leadingWs.
+  let leadingWs = '';
+  const leadStart = state.pos;
+  skipWsAndCommentsTopLevel(schema, state);
+  if (preserveWs) leadingWs = state.input.slice(leadStart, state.pos);
   const captures = parseNode(schema, schema.rootType, state);
+  let trailStart = state.pos;
   // Trailing-input check mirrors the v2 public API: a partial match is a
   // parse error.
-  skipWs(state);
+  skipWsAndCommentsTopLevel(schema, state);
   if (captures === null || state.pos !== input.length) {
     throw new SyntaxError(
       `interp: parse failed at position ${state.maxOff > state.pos ? state.maxOff : state.pos}`,
     );
   }
+  if (options.onDiagnostic !== undefined) {
+    for (const d of state.diagnostics) options.onDiagnostic(d);
+  }
+  const out = renderCapturesAsAst(schema, captures);
+  if (preserveWs && out !== null && typeof out === 'object' && !Array.isArray(out)) {
+    const o = out as Record<string, unknown>;
+    o.__leadingWs = leadingWs;
+    o.__trailingWs = state.input.slice(trailStart, state.pos);
+  }
   // Render the AST target by walking the production's `ast` render body
   // against the captures. The result mirrors what render(input, {type:'ast'})
   // produces in v2-generated parsers.
-  return renderCapturesAsAst(schema, captures);
+  return out;
+}
+
+function skipWsAndCommentsTopLevel(schema: InferredSchema, state: State): void {
+  // Mirror emit/v2/index.ts's rootConsumesComments guard — when the
+  // root's spans dispatch into a Comment-producing role, don't eat
+  // comments at the leading/trailing edge.
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    for (const span of prod.spans) {
+      for (const roleName of span.recursiveRoles) {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) continue;
+        for (const rolePr of info.productions) {
+          const firstSpan = rolePr.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+      }
+    }
+    return false;
+  });
+  const hasComments = !rootConsumesComments && schema.classes.some((c) => c.class === 'comment');
+  const lineMarkers = !rootConsumesComments ? collectLineCommentMarkers(schema) : [];
+  while (state.pos < state.len) {
+    const c = state.input.charCodeAt(state.pos);
+    if (isWs(c)) { state.pos++; continue; }
+    if (
+      hasComments &&
+      c === 0x2f &&
+      state.pos + 1 < state.len &&
+      state.input.charCodeAt(state.pos + 1) === 0x2a
+    ) {
+      state.pos += 2;
+      while (
+        state.pos < state.len &&
+        !(
+          state.input.charCodeAt(state.pos) === 0x2a &&
+          state.pos + 1 < state.len &&
+          state.input.charCodeAt(state.pos + 1) === 0x2f
+        )
+      ) {
+        state.pos++;
+      }
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    let consumedLine = false;
+    for (const marker of lineMarkers) {
+      if (state.input.startsWith(marker, state.pos)) {
+        state.pos += marker.length;
+        while (state.pos < state.len && state.input.charCodeAt(state.pos) !== 0x0a) state.pos++;
+        if (state.pos < state.len) state.pos++;
+        consumedLine = true;
+        break;
+      }
+    }
+    if (consumedLine) continue;
+    break;
+  }
+}
+
+function collectLineCommentMarkers(schema: InferredSchema): ReadonlyArray<string> {
+  const out: string[] = [];
+  for (const usage of schema.classes) {
+    if (usage.class !== 'comment') continue;
+    for (const ref of usage.refinements) {
+      if (ref.name === 'line' && Array.isArray(ref.args) && typeof ref.args[0] === 'string') {
+        out.push(ref.args[0]);
+      }
+    }
+  }
+  return out;
 }
 
 // Exposed for the future differential fuzzer (Task 2.4) — gives raw captures
 // without forcing the ast render walk.
-export function interpretParseCaptures(schema: InferredSchema, input: string): Captures {
+export function interpretParseCaptures(
+  schema: InferredSchema,
+  input: string,
+  options: InterpOptions = {},
+): Captures {
   input = applyPreamble(schema, input);
-  const state: State = { input, len: input.length, pos: 0, maxOff: 0, indentStack: [] };
+  const state: State = {
+    input,
+    len: input.length,
+    pos: 0,
+    maxOff: 0,
+    indentStack: [],
+    diagnostics: [],
+  };
+  skipWsAndCommentsTopLevel(schema, state);
   const captures = parseNode(schema, schema.rootType, state);
-  skipWs(state);
+  skipWsAndCommentsTopLevel(schema, state);
   if (captures === null || state.pos !== input.length) {
     throw new SyntaxError(
       `interp: parse failed at position ${state.maxOff > state.pos ? state.maxOff : state.pos}`,
     );
+  }
+  if (options.onDiagnostic !== undefined) {
+    for (const d of state.diagnostics) options.onDiagnostic(d);
   }
   return captures;
 }
@@ -423,23 +549,85 @@ function parseProduction(
   state: State,
 ): Captures | null {
   const entry = state.pos;
+  const diagSnap = state.diagnostics.length;
+  // Phase 4a v2 — span-less recovery short-circuit. The interp mirrors
+  // the v2 emit: a `.recovers({syncAt, drop})` production with no spans
+  // scans forward (with bracket depth tracking) until a syncAt literal
+  // appears at depth 0, then emits a diagnostic and returns the
+  // production's captures envelope.
+  if (production.recovery !== undefined && production.spans.length === 0) {
+    skipWs(state);
+    const recStart = state.pos;
+    const syncSet = production.recovery.syncAt.filter((s) => s.length > 0);
+    if (syncSet.length === 0) {
+      throw new Error(
+        `interp: span-less recovery production for '${production.nodeType}' has empty syncAt`,
+      );
+    }
+    const sorted = [...syncSet].sort((a, b) => b.length - a.length);
+    let depth = 0;
+    while (state.pos < state.len) {
+      const c = state.input.charCodeAt(state.pos);
+      if (depth === 0) {
+        let hit = false;
+        for (const s of sorted) {
+          if (state.input.startsWith(s, state.pos)) { hit = true; break; }
+        }
+        if (hit) break;
+      }
+      if (c === 0x28 || c === 0x5b || c === 0x7b) depth++;
+      else if (c === 0x29 || c === 0x5d || c === 0x7d) { if (depth > 0) depth--; }
+      state.pos++;
+    }
+    if (state.pos === recStart) {
+      state.pos = entry;
+      state.diagnostics.length = diagSnap;
+      return null;
+    }
+    state.diagnostics.push({
+      code: 'recovered',
+      drop: production.recovery.drop,
+      start: recStart,
+      end: state.pos,
+    });
+    return { __production: `${production.nodeType}#${prodIdx}` };
+  }
   const captures: Record<string, unknown> = {};
   const ranges = new Map<string, SpanRange>();
+  const preserveWs = schema.whitespace === 'preserve';
+  const ws: string[] = preserveWs ? [] : (undefined as unknown as string[]);
+  const litPres: boolean[] = preserveWs ? [] : (undefined as unknown as boolean[]);
   // Track production end offset for $.tail refs.
   let endOff = entry;
 
   for (let i = 0; i < production.spans.length; i++) {
     const span = production.spans[i]!;
-    if (i > 0) {
-      skipWs(state);
-    } else {
-      skipWs(state);
+    // Inter-span ws-skip. When preserve is on, snapshot the pre-skip
+    // position so the consumed slice can be archived into `ws` for the
+    // captures payload's `__ws` field. The leading-ws-skip (i === 0) is
+    // NOT captured — leading ws belongs to the parent.
+    const preSkip = state.pos;
+    skipWs(state);
+    if (preserveWs && i > 0) {
+      ws.push(state.input.slice(preSkip, state.pos));
     }
     const before = state.pos;
+    const isUnnamedOptLit =
+      preserveWs &&
+      span.name === undefined &&
+      span.class === 'literal' &&
+      span.modifiers.some((m) => m.kind === 'optional');
+    const litPreOff = isUnnamedOptLit ? state.pos : 0;
     const ok = parseSpan(schema, span, state, captures, ranges);
     if (!ok) {
       state.pos = entry;
+      // Undo any diagnostics pushed by nested productions inside this
+      // body — mirrors emit/v2/production.ts's failure-return rewrite.
+      state.diagnostics.length = diagSnap;
       return null;
+    }
+    if (isUnnamedOptLit) {
+      litPres.push(state.pos > litPreOff);
     }
     if (state.pos > state.maxOff) state.maxOff = state.pos;
     endOff = state.pos;
@@ -458,7 +646,21 @@ function parseProduction(
     __production: `${production.nodeType}#${prodIdx}`,
     ...captures,
   };
+  if (preserveWs) {
+    const o = out as Record<string, unknown>;
+    o.__ws = ws;
+    o.__litPres = litPres;
+  }
   attachSyntheticRefs(production, out, ranges, state.input, endOff);
+  // Recovery diagnostic — mirrors emit/v2/production.ts's push site.
+  if (production.recovery !== undefined) {
+    state.diagnostics.push({
+      code: 'recovered',
+      drop: production.recovery.drop,
+      start: entry,
+      end: endOff,
+    });
+  }
   return out;
 }
 
@@ -984,6 +1186,11 @@ function parseRepeatsSpan(
   const list: unknown[] = [];
   let sepConsumed = false;
   let preSweep = state.pos;
+  // Phase 4c v2: per-iteration ws capture for preserve schemas.
+  // Gated on (preserve + sep + named span) to match v2's emit.
+  const captureIws = schema.whitespace === 'preserve' && sep !== undefined && span.name !== undefined;
+  const iws: string[] = captureIws ? [] : (undefined as unknown as string[]);
+  let prevItemEnd = -1;
 
   // Indent-scope setup. If this span carries kind:'indent', we capture the
   // column of the first child and push it onto the indent stack. Each
@@ -1026,12 +1233,23 @@ function parseRepeatsSpan(
     if (sep !== undefined) {
       preSweep = state.pos;
       sepConsumed = false;
-      // Skip ws before sep.
-      while (state.pos < state.len && isWs(state.input.charCodeAt(state.pos))) state.pos++;
+      // Skip ws (and block comments when the schema declares them AND
+      // none of the repeats roles consume comments). Mirrors emit/v2/
+      // span.ts's rolesConsumeComments guard.
+      const rolesConsumeComments = span.recursiveRoles.some((roleName) => {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) return false;
+        for (const prod of info.productions) {
+          const firstSpan = prod.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+        return false;
+      });
+      sweepWsAndComments(schema, state, rolesConsumeComments);
       while (state.input.startsWith(sep, state.pos)) {
         sepConsumed = true;
         state.pos += sep.length;
-        while (state.pos < state.len && isWs(state.input.charCodeAt(state.pos))) state.pos++;
+        sweepWsAndComments(schema, state, rolesConsumeComments);
       }
     }
     // For indent scopes (and only when the stack was actually pushed), check
@@ -1064,7 +1282,11 @@ function parseRepeatsSpan(
       state.pos = beforeAttempt;
       break;
     }
+    if (captureIws && prevItemEnd >= 0) {
+      iws.push(state.input.slice(prevItemEnd, beforeAttempt));
+    }
     list.push(value);
+    if (captureIws) prevItemEnd = state.pos;
     if (state.pos === loopStart) break;
     if (max !== undefined && list.length > max) {
       state.pos = start;
@@ -1091,6 +1313,9 @@ function parseRepeatsSpan(
     return false;
   }
   bindSpan(span, list, start, state.pos, captures, ranges);
+  if (captureIws) {
+    captures[`${span.name!}_iws`] = iws;
+  }
   return true;
 }
 
@@ -1326,7 +1551,34 @@ function renderSlotAst(schema: InferredSchema, value: unknown): unknown {
       if (!entry) {
         throw new Error(`interp render: production '${c.__production}' has no 'ast' target`);
       }
-      return walkBody(schema, entry.body, c, /* target */ 'ast');
+      const out = walkBody(schema, entry.body, c, /* target */ 'ast');
+      // Phase 4c v1 — mirror emit/render.ts's auto-attach. Only object
+      // ASTs get __ws; other shapes (templates, arrays, scalars) are
+      // left alone.
+      if (
+        schema.whitespace === 'preserve' &&
+        out !== null &&
+        typeof out === 'object' &&
+        !Array.isArray(out)
+      ) {
+        const o = out as Record<string, unknown>;
+        o.__ws = c.__ws;
+        o.__litPres = c.__litPres;
+        // Phase 4c v2 — forward each named .repeats({sep}) span's
+        // per-iteration ws array under `<name>_iws`. Mirrors the
+        // emit/render.ts iwsFields auto-attach.
+        for (const span of production.spans) {
+          if (!span.name) continue;
+          for (const m of span.modifiers) {
+            if (m.kind === 'repeats' && m.sep !== undefined) {
+              const key = `${span.name}_iws`;
+              o[key] = c[key];
+              break;
+            }
+          }
+        }
+      }
+      return out;
     }
   }
   return value;
@@ -1429,6 +1681,55 @@ function walkTemplate(
 
 function skipWs(state: State): void {
   while (state.pos < state.len && isWs(state.input.charCodeAt(state.pos))) state.pos++;
+}
+
+// Phase 4c v4: mirror of emit/v2/span.ts's sweepWsBlock. When the
+// schema declares `comment` as a token class, the repeats sep-sweep
+// also eats `/* ... */` block comments so a comment between two
+// iterations doesn't block the sep-match.
+function sweepWsAndComments(
+  schema: InferredSchema,
+  state: State,
+  rolesConsumeComments: boolean = false,
+): void {
+  const hasComments = !rolesConsumeComments && schema.classes.some((c) => c.class === 'comment');
+  const lineMarkers = !rolesConsumeComments ? collectLineCommentMarkers(schema) : [];
+  while (state.pos < state.len) {
+    const c = state.input.charCodeAt(state.pos);
+    if (isWs(c)) { state.pos++; continue; }
+    if (
+      hasComments &&
+      c === 0x2f &&
+      state.pos + 1 < state.len &&
+      state.input.charCodeAt(state.pos + 1) === 0x2a
+    ) {
+      state.pos += 2;
+      while (
+        state.pos < state.len &&
+        !(
+          state.input.charCodeAt(state.pos) === 0x2a &&
+          state.pos + 1 < state.len &&
+          state.input.charCodeAt(state.pos + 1) === 0x2f
+        )
+      ) {
+        state.pos++;
+      }
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    let consumedLine = false;
+    for (const marker of lineMarkers) {
+      if (state.input.startsWith(marker, state.pos)) {
+        state.pos += marker.length;
+        while (state.pos < state.len && state.input.charCodeAt(state.pos) !== 0x0a) state.pos++;
+        if (state.pos < state.len) state.pos++;
+        consumedLine = true;
+        break;
+      }
+    }
+    if (consumedLine) continue;
+    break;
+  }
 }
 
 function isWs(c: number): boolean {

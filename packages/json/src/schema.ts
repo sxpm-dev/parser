@@ -13,7 +13,14 @@ export default defineSchema({
     colon: ':',
     comma: ',',
   },
-  tokens: ['number', 'string', 'comment'],
+  tokens: [
+    'number',
+    'string',
+    // Phase 4c v5: the `line` refinement opts into JSON5 `// ...\n`
+    // line-comment support in the leading/trailing skip, the
+    // inter-span gap, and the `.repeats()` sep-sweep.
+    { class: 'comment', refinements: [{ name: 'line', args: ['//'] }] },
+  ],
   examples: [
     // --- Comment (block) -------------------------------------------------
     // Not surfaced in the AST; recognized by the tokenizer so standard
@@ -87,6 +94,20 @@ export default defineSchema({
       },
     }),
 
+    // JSON5: single-quoted string. Same body shape as the canonical
+    // double-quoted production; the compiler's first-declared-wins
+    // inverse relaxation (Phase 4c v6) means stringify always emits
+    // double quotes, so round-trip from a single-quoted source
+    // canonicalizes.
+    relation('JsonString', {
+      input: "'hello'",
+      encodings: {
+        parse: parse([span('value', "'hello'").string().singleQuoted().coerce()]),
+        ast: $.value,
+        source: $.value,
+      },
+    }),
+
     // --- JsonArray ------------------------------------------------------
     // `trailing: 'allowed'` accepts JSON5 trailing commas on input; the
     // inverse rebuild emits no trailing comma (canonical strict JSON).
@@ -109,6 +130,23 @@ export default defineSchema({
       encodings: {
         parse: parse([
           span('key', '"a"').string().doubleQuoted().coerce(),
+          literal(':'),
+          span('value', '1').of('JsonValue'),
+        ]),
+        ast: dynKey($.key, $.value),
+        source: tpl`${$.key}:${$.value}`,
+      },
+    }),
+
+    // JSON5: unquoted identifier key. Same body shape as the canonical
+    // quoted variant; the first-declared-wins relaxation (Phase 4c v6)
+    // means stringify always emits the quoted form so round-trip
+    // canonicalizes.
+    relation('JsonMember', {
+      input: 'a:1',
+      encodings: {
+        parse: parse([
+          span('key', 'a').ident().js(),
           literal(':'),
           span('value', '1').of('JsonValue'),
         ]),

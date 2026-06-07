@@ -6,9 +6,25 @@
 
 
 export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a `.recovers({ drop, syncAt })` production matched.
+// `code` distinguishes the diagnostic shape; `drop` is the schema-declared
+// label; `start`/`end` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -27,6 +43,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {
@@ -376,7 +397,7 @@ function parseJsonNumber(state: State): unknown {
   return { __production: "JsonNumber#0", value: value };
 }
 
-function parseJsonString(state: State): unknown {
+function parseJsonString__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -407,6 +428,51 @@ function parseJsonString(state: State): unknown {
   return { __production: "JsonString#0", value: value };
 }
 
+function parseJsonString__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __value_start = off;
+  {
+    const __q = input.charCodeAt(off);
+    off++;
+    while (off < len) {
+      const __c = input.charCodeAt(off);
+      if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+      if (__c === __q) { off++; break; }
+      if (__c === 0x0a || __c === 0x0d) break;
+      off++;
+    }
+  }
+  const __value_end = off;
+  const value = decodeJsonString(input.slice(__value_start, __value_end));
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "JsonString#1", value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "JsonString#1", value: value };
+}
+
+function parseJsonString(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
+  { const r = parseJsonString__alt0(state); if (r !== null) return r; }
+  return parseJsonString__alt1(state);
+}
+  return null;
+}
+
 function parseJsonArray(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -424,6 +490,12 @@ function parseJsonArray(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
     break;
   }
   const __items_start = off;
@@ -434,13 +506,45 @@ function parseJsonArray(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    // Skip ws before the separator. v1 always allows ws around seps.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    // Skip ws (and comments when declared) before the separator.
+    while (off < len) {
+      const __sw = input.charCodeAt(off);
+      if (__sw === 0x20 || __sw === 0x09 || __sw === 0x0a || __sw === 0x0d) { off++; continue; }
+      if (__sw === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        continue;
+      }
+      if (input.startsWith("//", off)) {
+        off += 2;
+        while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+        if (off < len) off++;
+        continue;
+      }
+      break;
+    }
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      // Skip ws after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+      // Skip ws (and comments) after the separator.
+      while (off < len) {
+      const __sw = input.charCodeAt(off);
+      if (__sw === 0x20 || __sw === 0x09 || __sw === 0x0a || __sw === 0x0d) { off++; continue; }
+      if (__sw === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        continue;
+      }
+      if (input.startsWith("//", off)) {
+        off += 2;
+        while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+        if (off < len) off++;
+        continue;
+      }
+      break;
+    }
     }
     let __cand: unknown = null;
     state.pos = off;
@@ -460,6 +564,12 @@ function parseJsonArray(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
     break;
   }
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -474,7 +584,7 @@ function parseJsonArray(state: State): unknown {
   return { __production: "JsonArray#0", items: items };
 }
 
-function parseJsonMember(state: State): unknown {
+function parseJsonMember__alt0(state: State): unknown {
   const input = state.input;
   const len = state.len;
   let off = state.pos;
@@ -504,6 +614,12 @@ function parseJsonMember(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
     break;
   }
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
@@ -515,6 +631,12 @@ function parseJsonMember(state: State): unknown {
       off += 2;
       while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
       if (off < len) off += 2;
+      continue;
+    }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
       continue;
     }
     break;
@@ -535,6 +657,86 @@ function parseJsonMember(state: State): unknown {
   return { __production: "JsonMember#0", key: key, value: value };
 }
 
+function parseJsonMember__alt1(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __key_start = off;
+  off++;
+  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
+  const __key_end = off;
+  const key = input.slice(__key_start, __key_end);
+  while (off < len) {
+    const c = input.charCodeAt(off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      off += 2;
+      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+      if (off < len) off += 2;
+      continue;
+    }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
+    break;
+  }
+  if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 1;
+  while (off < len) {
+    const c = input.charCodeAt(off);
+    if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
+    if (c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      off += 2;
+      while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+      if (off < len) off += 2;
+      continue;
+    }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
+    break;
+  }
+  state.pos = off;
+  const __value_start = off;
+  const value = parseJsonValue(state);
+  if (value === null) { state.pos = entryOff; return null; }
+  off = state.pos;
+  const __value_end = off;
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  if (state.mode === 'raws') {
+    const __captures: any = { __production: "JsonMember#1", key: key, value: value };
+    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
+    return __captures;
+  }
+  return { __production: "JsonMember#1", key: key, value: value };
+}
+
+function parseJsonMember(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+state.pos = off;
+  if (off >= len) return null;
+  if ((input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)) {
+  return parseJsonMember__alt0(state);
+}
+  if (isJsIdentStart(input.charCodeAt(off))) {
+  return parseJsonMember__alt1(state);
+}
+  return null;
+}
+
 function parseJsonObject(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -552,6 +754,12 @@ function parseJsonObject(state: State): unknown {
       if (off < len) off += 2;
       continue;
     }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
+      continue;
+    }
     break;
   }
   const __entries_start = off;
@@ -562,13 +770,45 @@ function parseJsonObject(state: State): unknown {
     const __loopStart = off;
     __preSweep = off;
     __sepConsumed = false;
-    // Skip ws before the separator. v1 always allows ws around seps.
-    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+    // Skip ws (and comments when declared) before the separator.
+    while (off < len) {
+      const __sw = input.charCodeAt(off);
+      if (__sw === 0x20 || __sw === 0x09 || __sw === 0x0a || __sw === 0x0d) { off++; continue; }
+      if (__sw === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        continue;
+      }
+      if (input.startsWith("//", off)) {
+        off += 2;
+        while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+        if (off < len) off++;
+        continue;
+      }
+      break;
+    }
     while (input.charCodeAt(off) === 44) {
       __sepConsumed = true;
       off += 1;
-      // Skip ws after the separator.
-      while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+      // Skip ws (and comments) after the separator.
+      while (off < len) {
+      const __sw = input.charCodeAt(off);
+      if (__sw === 0x20 || __sw === 0x09 || __sw === 0x0a || __sw === 0x0d) { off++; continue; }
+      if (__sw === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+        off += 2;
+        while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+        if (off < len) off += 2;
+        continue;
+      }
+      if (input.startsWith("//", off)) {
+        off += 2;
+        while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+        if (off < len) off++;
+        continue;
+      }
+      break;
+    }
     }
     let __cand: unknown = null;
     state.pos = off;
@@ -586,6 +826,12 @@ function parseJsonObject(state: State): unknown {
       off += 2;
       while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
       if (off < len) off += 2;
+      continue;
+    }
+    if (input.startsWith("//", off)) {
+      off += 2;
+      while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+      if (off < len) off++;
       continue;
     }
     break;
@@ -710,6 +956,14 @@ function __build_JsonString_0_source(captures: any, __indentCol: number = 0): an
   return __renderSlot_source(captures.value, __indentCol);
 }
 
+function __build_JsonString_1_ast(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_ast(captures.value, __indentCol);
+}
+
+function __build_JsonString_1_source(captures: any, __indentCol: number = 0): any {
+  return __renderSlot_source(captures.value, __indentCol);
+}
+
 function __build_JsonArray_0_ast(captures: any, __indentCol: number = 0): any {
   return __renderSlot_ast(captures.items, __indentCol);
 }
@@ -723,6 +977,14 @@ function __build_JsonMember_0_ast(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_JsonMember_0_source(captures: any, __indentCol: number = 0): any {
+  return (__renderSlot_source(captures.key, __indentCol) ?? "") + ":" + (__renderSlot_source(captures.value, __indentCol) ?? "");
+}
+
+function __build_JsonMember_1_ast(captures: any, __indentCol: number = 0): any {
+  return ({ [__renderSlot_ast(captures.key, __indentCol)]: __renderSlot_ast(captures.value, __indentCol) });
+}
+
+function __build_JsonMember_1_source(captures: any, __indentCol: number = 0): any {
   return (__renderSlot_source(captures.key, __indentCol) ?? "") + ":" + (__renderSlot_source(captures.value, __indentCol) ?? "");
 }
 
@@ -763,8 +1025,10 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     case "JsonFalse#0": return __build_JsonFalse_0_ast(captures, __indentCol);
     case "JsonNumber#0": return __build_JsonNumber_0_ast(captures, __indentCol);
     case "JsonString#0": return __build_JsonString_0_ast(captures, __indentCol);
+    case "JsonString#1": return __build_JsonString_1_ast(captures, __indentCol);
     case "JsonArray#0": return __build_JsonArray_0_ast(captures, __indentCol);
     case "JsonMember#0": return __build_JsonMember_0_ast(captures, __indentCol);
+    case "JsonMember#1": return __build_JsonMember_1_ast(captures, __indentCol);
     case "JsonObject#0": return __build_JsonObject_0_ast(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_ast(captures, __indentCol);
   }
@@ -782,8 +1046,10 @@ function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
     case "JsonFalse#0": return __build_JsonFalse_0_source(captures, __indentCol);
     case "JsonNumber#0": return __build_JsonNumber_0_source(captures, __indentCol);
     case "JsonString#0": return __build_JsonString_0_source(captures, __indentCol);
+    case "JsonString#1": return __build_JsonString_1_source(captures, __indentCol);
     case "JsonArray#0": return __build_JsonArray_0_source(captures, __indentCol);
     case "JsonMember#0": return __build_JsonMember_0_source(captures, __indentCol);
+    case "JsonMember#1": return __build_JsonMember_1_source(captures, __indentCol);
     case "JsonObject#0": return __build_JsonObject_0_source(captures, __indentCol);
     case "JsonValue#0": return __build_JsonValue_0_source(captures, __indentCol);
   }
@@ -821,10 +1087,10 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options: { target: "ast"; mode?: ParseMode }): JsonValue_ast;
-export function render(input: string, options: { target: "source"; mode?: ParseMode }): JsonValue_source;
-export function render(input: string, options?: { target?: undefined; mode?: ParseMode }): JsonValue_ast;
-export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): JsonValue_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): JsonValue_source;
+export function render(input: string, options?: { target?: undefined; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): JsonValue_ast;
+export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -834,7 +1100,11 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node `source: string` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -843,8 +1113,9 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);
+  return result;
 }
 
 function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
@@ -859,6 +1130,25 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }
 
 function __rebuild_Comment_0(captures: any): string {
@@ -885,12 +1175,20 @@ function __rebuild_JsonString_0(captures: any): string {
   return String(__rebuildSlot((typeof captures.value === "string" ? encodeJsonString(captures.value) : captures.value)));
 }
 
+function __rebuild_JsonString_1(captures: any): string {
+  return String(__rebuildSlot((typeof captures.value === "string" ? encodeJsonString(captures.value) : captures.value)));
+}
+
 function __rebuild_JsonArray_0(captures: any): string {
   return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
 }
 
 function __rebuild_JsonMember_0(captures: any): string {
   return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
+}
+
+function __rebuild_JsonMember_1(captures: any): string {
+  return __rebuildSlot(captures.key) + ":" + __rebuildSlot(captures.value);
 }
 
 function __rebuild_JsonObject_0(captures: any): string {
@@ -1084,6 +1382,29 @@ function __invert_JsonMember_0_source(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
   return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
+}
+
+function __invert_JsonMember_1_source(value: any, __indentCol: number = 0): string {
+  const captures: any = {};
+  if (typeof value !== "string") {
+    throw new Error("stringify: expected string value for template body, got " + typeof value);
+  }
+  const __s: string = value;
+  let __pos = 0;
+  {
+    const __end = __s.indexOf(":", __pos);
+    if (__end < 0) {
+      throw new Error("stringify: expected separator \":\" after capture key");
+    }
+    captures.key = __invertSlotLeaf_source(__s.slice(__pos, __end));
+    __pos = __end + 1;
+  }
+  captures.value = __invertSlotFor_JsonValue_source(__s.slice(__pos), __indentCol);
+  __pos = __s.length;
+  if (__pos !== __s.length) {
+    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  return __rebuildSlot(captures.key) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonObject_0_source(value: any, __indentCol: number = 0): string {
@@ -1653,11 +1974,17 @@ function __invertMergeEntry_JsonMember_ast(__mWrapped: any, __mV: any, __indentC
 function __invertSlotLeaf_ast(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -2059,11 +2386,17 @@ function __invertSlotMulti_JsonObject_JsonArray_JsonString_JsonNumber_JsonTrue_J
 function __invertSlotLeaf_source(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_source(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -2161,6 +2494,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
       const result = sRoot(state);
       if (result === null) return null;
@@ -2184,6 +2518,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -2204,8 +2539,8 @@ function __parse(input: string, options?: ParseOptions): unknown {
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
-  const result = parseJsonValue(state);
   while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
@@ -2215,10 +2550,42 @@ function __parse(input: string, options?: ParseOptions): unknown {
       if (state.pos < state.len) state.pos += 2;
       continue;
     }
+    if (input.startsWith("//", state.pos)) {
+      state.pos += 2;
+      while (state.pos < state.len && input.charCodeAt(state.pos) !== 0x0a) state.pos++;
+      if (state.pos < state.len) state.pos++;
+      continue;
+    }
+    break;
+  }
+  const result = parseJsonValue(state);
+  
+  while (state.pos < state.len) {
+    const __c = input.charCodeAt(state.pos);
+    if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
+    if (__c === 0x2f && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < state.len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < state.len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < state.len) state.pos += 2;
+      continue;
+    }
+    if (input.startsWith("//", state.pos)) {
+      state.pos += 2;
+      while (state.pos < state.len && input.charCodeAt(state.pos) !== 0x0a) state.pos++;
+      if (state.pos < state.len) state.pos++;
+      continue;
+    }
     break;
   }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }
@@ -2233,10 +2600,17 @@ export function validate(input: string, options?: ParseOptions): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __result = parseJsonValue(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < __state.diagnostics.length; __i++) {
+      __onDiag(__state.diagnostics[__i]);
+    }
   }
 }
 

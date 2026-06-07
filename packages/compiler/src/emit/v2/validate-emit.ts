@@ -182,7 +182,9 @@ export function emitValidate(
 
   const body = `export function validate(input: string, options?: ParseOptions): void {
   // Syntax check: parse in fast mode first (will throw SyntaxError on bad syntax).
-  __parse(input, { mode: 'fast' });
+  // Recovery diagnostics surface here (single flush) — the raws-mode walk
+  // call below intentionally suppresses onDiagnostic to avoid double-flush.
+  __parse(input, { mode: 'fast', onDiagnostic: options?.onDiagnostic });
   // Validation check: only runs when opt-in.
   if (!options?.validate) return;
   // Parse in raws mode to get source offsets for error reporting.
@@ -221,6 +223,12 @@ ${emitStateInit('__state', 'fast')}
   const __result = ${rootFn}(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < __state.diagnostics.length; __i++) {
+      __onDiag(__state.diagnostics[__i]);
+    }
   }
 }
 

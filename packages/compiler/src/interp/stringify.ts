@@ -39,6 +39,7 @@ import {
   encodeOf,
   isRequiredRecursiveRepeats,
   joinOf,
+  synthesizePieces,
   type Piece,
 } from '../emit/rebuild.ts';
 import { findSpanByName, isAbsentAllowedSpan } from '../span-helpers.ts';
@@ -50,7 +51,19 @@ export function interpretStringify(
   value: unknown,
   target: string,
 ): string {
-  return dispatchNode(schema, schema.rootType, target, value, 0);
+  const out = dispatchNode(schema, schema.rootType, target, value, 0);
+  if (
+    schema.whitespace === 'preserve' &&
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value)
+  ) {
+    const v = value as Record<string, unknown>;
+    const lead = typeof v.__leadingWs === 'string' ? v.__leadingWs : '';
+    const trail = typeof v.__trailingWs === 'string' ? v.__trailingWs : '';
+    return lead + out + trail;
+  }
+  return out;
 }
 
 // --- Per-(NodeType, target) dispatcher -------------------------------------
@@ -396,7 +409,7 @@ function invertProduction(
   if (sourceIr && sourceIr.kind === 'template') {
     return rebuildFromTemplate(sourceIr, production, captures, indentCol);
   }
-  return rebuildSource(production, captures, indentCol);
+  return rebuildSource(schema, production, captures, indentCol);
 }
 
 // Build a source string from a template IR + populated captures. Mirrors
@@ -447,6 +460,27 @@ function concatPieces(
       built.push(p.text);
       continue;
     }
+    if (p.kind === 'wsSlot') {
+      // Mirror emit/rebuild.ts piecesToConcat: read captures.__ws[index]
+      // when present, fall back to "" when the captures payload doesn't
+      // carry __ws (e.g. a hand-built AST or a non-preserve sub-schema).
+      const wsList = captures.__ws;
+      const wsVal =
+        Array.isArray(wsList) && typeof wsList[p.index] === 'string'
+          ? (wsList[p.index] as string)
+          : '';
+      built.push(wsVal);
+      continue;
+    }
+    if (p.kind === 'optLit') {
+      // Phase 4c v2 — emit the literal only when the parser's recorded
+      // presence bit is truthy (or absent — default to PRESENT to
+      // preserve hand-built ASTs that don't carry __litPres).
+      const presArr = captures.__litPres;
+      const absent = Array.isArray(presArr) && presArr[p.litIdx] === false;
+      built.push(absent ? '' : p.text);
+      continue;
+    }
     let raw = captures[p.ref];
     if (p.encode === 'jsonString' && typeof raw === 'string') {
       raw = encodeJsonStringInterp(raw);
@@ -463,6 +497,14 @@ function concatPieces(
       effectiveJoinSep = '\n' + ' '.repeat(indentCol);
       leadingPrefix = indentCol > 0;
     } else if (p.join.kind === 'sep') {
+      // Phase 4c v2: when iwsRef is present, use the captured
+      // per-iteration ws array to interleave items. Mirrors
+      // emit/rebuild.ts piecesToConcat's __rebuildSlotIws emit.
+      if (p.join.iwsRef !== undefined) {
+        const iwsArr = captures[p.join.iwsRef];
+        built.push(rebuildSlotWithIws(raw, iwsArr, p.join.sep));
+        continue;
+      }
       effectiveJoinSep = p.join.sep;
       leadingPrefix = false;
     } else {
@@ -842,37 +884,15 @@ function invertMultiRoleSlot(
 // prepend a leading `'\n' + ' '.repeat(indentCol)` before the first child
 // so the whole block starts on a new indented line.
 function rebuildSource(
+  schema: InferredSchema,
   production: Production,
   captures: Record<string, unknown>,
   indentCol: number,
 ): string {
-  const input = production.source.input;
-  const pieces: Piece[] = [];
-  let cursor = 0;
-  for (const span of production.spans) {
-    const startOffset = findSpanStart(input, span, cursor);
-    if (startOffset === null) {
-      // Empty-text spans are legal when the span is absent-allowed
-      // (.optional() / .repeats({min:0})) OR a required-recursive-repeats
-      // shape (.of(roles).repeats({min:>=1})) whose runtime children are
-      // always supplied by recursive dispatch. Mirrors the same relaxation
-      // in emit/rebuild.ts so interp and codegen agree on which shapes
-      // skip the text-anchoring requirement.
-      if (isAbsentAllowedSpan(span) || isRequiredRecursiveRepeats(span)) {
-        pieces.push(contributionOf(span));
-        continue;
-      }
-      throw new Error(
-        `stringify: span '${span.name ?? span.text ?? '<unnamed>'}' not found in example '${truncate(input)}'`,
-      );
-    }
-    const sepText = input.slice(cursor, startOffset);
-    if (sepText.length > 0) {
-      pieces.push({ kind: 'literal', text: canonicalSeparator(sepText) });
-    }
-    pieces.push(contributionOf(span));
-    if (span.text) cursor = startOffset + span.text.length;
-  }
+  // Phase 4b: delegate the pieces-synthesis to the shared rebuild helper
+  // so the preserve-ws gap-slot emission stays single-source-of-truth.
+  const preserveWs = schema.whitespace === 'preserve';
+  const pieces = synthesizePieces(production, preserveWs) as Piece[];
   return concatPieces(pieces, captures, indentCol);
 }
 
@@ -999,6 +1019,26 @@ function rebuildSlotValue(v: unknown, joinSep: string, leadingPrefix = false): s
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: per-iteration ws join for preserve schemas. Mirrors the
+// `__rebuildSlotIws` runtime helper emitted by emit/rebuild.ts. Falls
+// back to fallbackSep when iws is missing or shorter than expected.
+function rebuildSlotWithIws(v: unknown, iws: unknown, fallbackSep: string): string {
+  if (v === null || v === undefined) return '';
+  if (!Array.isArray(v)) return String(v);
+  let out = '';
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof (iws as unknown[])[i - 1] === 'string'
+        ? ((iws as unknown[])[i - 1] as string)
+        : fallbackSep;
+      out += gap;
+    }
+    out += rebuildSlotValue(v[i], '');
+  }
+  return out;
 }
 
 // --- Helpers --------------------------------------------------------------

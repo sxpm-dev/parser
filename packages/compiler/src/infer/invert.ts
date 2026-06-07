@@ -62,6 +62,7 @@ export function deriveInverses(
     string,
     ReadonlyArray<import('./transparent-passthrough.ts').TransparentPassthroughInfo>
   > = new Map(),
+  options: { readonly preserveWs?: boolean } = {},
 ): void {
   // Phase 5g: skip transparent-passthrough productions entirely. They have
   // no usable inverse (their AST body is a recursive ref to the same node
@@ -73,18 +74,111 @@ export function deriveInverses(
       const production = info.productions[i]!;
       if (isPassthrough(info.name, i)) continue;
       for (const entry of production.renders.values()) {
-        const derived = entry.inverse
+        let derived = entry.inverse
           ? deriveFromTemplate(entry.inverse, info.name, entry.target, production.source.input)
           : deriveFromBody(entry.body, info.name, entry.target, production.source.input);
+        // Phase 4c v1 — match the render-side auto-attach in
+        // emit/render.ts:emitBuilder. When the schema is preserve AND
+        // the target is 'ast' AND the derived inverse is an object
+        // shape (the only render shape we auto-attach to forward), add
+        // a synthetic field that extracts `value.__ws` into
+        // captures.__ws so stringify reads the captured whitespace
+        // back. Non-object inverses (template, scalar, ref, array,
+        // dynKey, merge) are unchanged — schemas using non-object 'ast'
+        // bodies with preserve must still surface __ws explicitly.
+        if (
+          options.preserveWs &&
+          entry.target === 'ast' &&
+          derived.kind === 'object'
+        ) {
+          // Phase 4c v2: per-`<name>_iws` field for every named
+          // .repeats({sep}) span. Mirror emit/render.ts's iwsFields
+          // forwarding so the inverse reads them back into captures.
+          const iwsFields = [];
+          for (const span of production.spans) {
+            if (!span.name) continue;
+            for (const m of span.modifiers) {
+              if (m.kind === 'repeats' && m.sep !== undefined) {
+                const key = `${span.name}_iws`;
+                iwsFields.push({ kind: 'inverse' as const, name: key, inverse: { kind: 'ref' as const, capture: key } });
+                break;
+              }
+            }
+          }
+          derived = {
+            kind: 'object',
+            fields: [
+              ...derived.fields,
+              { kind: 'inverse', name: '__ws', inverse: { kind: 'ref', capture: '__ws' } },
+              { kind: 'inverse', name: '__litPres', inverse: { kind: 'ref', capture: '__litPres' } },
+              ...iwsFields,
+            ],
+          };
+        }
         (entry as { inverseDerived?: InverseIR }).inverseDerived = derived;
       }
     }
   }
+  // Phase 4c v6 — first-declared-wins relaxation. When two productions
+  // for the same node type have indistinguishable inverse shapes (a
+  // `ref`-to-`ref` collision is the canonical case — JSON5's
+  // single-quoted vs double-quoted strings, unquoted vs quoted object
+  // keys), clear the LATER production's `inverseDerived`. The emit
+  // side's "skip when inverseDerived is undefined" guard then suppresses
+  // the tolerated inverter; the canonical (first) production's inverter
+  // handles every value of that shape, producing canonical source on
+  // stringify. The forward parse still tries all alts in order.
+  tolerateIndistinguishableInverses(nodeTypes);
   // validateInverseDiscrimination short-circuits per-pair when either
   // production's `inverseDerived` is undefined, so transparent-passthrough
-  // productions (skipped above) are naturally excluded from the conflict
-  // search.
+  // productions (skipped above) AND tolerated productions are naturally
+  // excluded from the conflict search.
   validateInverseDiscrimination(nodeTypes);
+}
+
+function tolerateIndistinguishableInverses(
+  nodeTypes: ReadonlyMap<string, NodeTypeInfo>,
+): void {
+  for (const info of nodeTypes.values()) {
+    if (info.productions.length <= 1) continue;
+    const targets = new Set<string>();
+    for (const production of info.productions) {
+      for (const target of production.renders.keys()) targets.add(target);
+    }
+    for (const target of targets) {
+      // For each (production a, production b) with a < b, if their
+      // inverses collide AND the collision is the "indistinguishable
+      // by value" kind (bare ref, dynKey, merge, array, scalar of same
+      // value, template of same shape), tolerate b by clearing its
+      // inverseDerived. Object collisions are NOT tolerated — they
+      // require explicit literal discriminators (already required by
+      // checkTargetDiscrimination's error message).
+      for (let i = 0; i < info.productions.length; i++) {
+        const a = info.productions[i]!;
+        const ea = a.renders.get(target);
+        if (!ea || ea.inverseDerived === undefined) continue;
+        for (let j = i + 1; j < info.productions.length; j++) {
+          const b = info.productions[j]!;
+          const eb = b.renders.get(target);
+          if (!eb || eb.inverseDerived === undefined) continue;
+          if (isNullBody(ea.inverseDerived) || isNullBody(eb.inverseDerived)) continue;
+          const reason = collisionReason(ea.inverseDerived, eb.inverseDerived);
+          if (reason === null) continue;
+          // Tolerate when both are bare-ref/dynKey/merge/array/scalar/
+          // template — i.e. the inverse shape carries no value-level
+          // discriminator at all and any value matches both. Object
+          // collisions usually signal a schema bug and should still
+          // throw via the validator.
+          if (
+            ea.inverseDerived.kind === eb.inverseDerived.kind &&
+            ea.inverseDerived.kind !== 'object'
+          ) {
+            (eb as { inverseDerived?: InverseIR }).inverseDerived = undefined;
+          }
+        }
+      }
+    }
+  }
 }
 
 function buildPassthroughLookup(

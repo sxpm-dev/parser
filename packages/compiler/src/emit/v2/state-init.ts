@@ -31,5 +31,6 @@ export function emitStateInit(varName: string, mode: StateInitMode): string {
     lineStarts: ${lineStartsField},
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };`;
 }

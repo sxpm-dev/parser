@@ -8,6 +8,7 @@ export { dynKey, merge, isDynKey, isMerge } from './body-builders.ts';
 export { assertRoundTrip, type RoundTripModule } from './test-harness/round-trip.ts';
 export type {
   BomPolicy,
+  Diagnostic,
   DynKeyBody,
   ExampleDef,
   ExampleStatus,

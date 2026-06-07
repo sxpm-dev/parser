@@ -49,10 +49,11 @@ import { jsString } from './strings.ts';
 export const INDENT_STEP_SPACES = 2;
 
 export function emitRebuild(schema: InferredSchema): string {
+  const preserve = schema.whitespace === 'preserve';
   const fns: string[] = [];
   for (const info of schema.nodeTypes.values()) {
     for (let i = 0; i < info.productions.length; i++) {
-      fns.push(emitOne(info.name, i, info.productions[i]!));
+      fns.push(emitOne(info.name, i, info.productions[i]!, preserve));
     }
   }
   return fns.join('\n\n');
@@ -74,7 +75,12 @@ export function emitRebuild(schema: InferredSchema): string {
 export type SlotJoin =
   | { readonly kind: 'none' }
   | { readonly kind: 'indent' }
-  | { readonly kind: 'sep'; readonly sep: string };
+  // Phase 4c v2: when `iwsRef` is set, the slot's array-join interleaves
+  // items[i] with captures.<iwsRef>[i-1] (the per-iteration ws array
+  // captured at parse time) instead of using the static `sep` literal.
+  // The `sep` field stays so a fallback emit path can drop back to the
+  // canonical sep if iws is absent at runtime (defense-in-depth).
+  | { readonly kind: 'sep'; readonly sep: string; readonly iwsRef?: string };
 
 // Optional encoding hook applied to a slot's captured value before it
 // contributes to the source string. Set when the slot's span declares an
@@ -91,10 +97,21 @@ export type Piece =
       readonly optional: boolean;
       readonly join: SlotJoin;
       readonly encode: SlotEncode;
-    };
+    }
+  // Phase 4b — `whitespace: 'preserve'`. Emitted between consecutive
+  // production spans when the schema opts into preserve. At codegen time
+  // the inter-span gap is unknown (parse may see arbitrary ws); the slot
+  // resolves to `captures.__ws[index]` at runtime, falling back to ""
+  // (the captures-payload guarantees __ws is populated for preserve
+  // schemas, so the fallback is just defense-in-depth).
+  | { readonly kind: 'wsSlot'; readonly index: number }
+  // Phase 4c v2 — unnamed optional literal piece for preserve schemas.
+  // The parser tracks per-span presence in `__litPres`; rebuild emits
+  // the literal only when `captures.__litPres[litIdx]` is truthy.
+  | { readonly kind: 'optLit'; readonly text: string; readonly litIdx: number };
 
-function emitOne(nodeName: string, prodIdx: number, production: Production): string {
-  const pieces = synthesizePieces(production);
+function emitOne(nodeName: string, prodIdx: number, production: Production, preserve: boolean): string {
+  const pieces = synthesizePieces(production, preserve);
   const hasIndentPiece = pieces.some((p) => p.kind === 'slot' && p.join.kind === 'indent');
   const expr = piecesToConcat(pieces);
   if (hasIndentPiece) {
@@ -107,11 +124,21 @@ function emitOne(nodeName: string, prodIdx: number, production: Production): str
 }`;
 }
 
-function synthesizePieces(production: Production): ReadonlyArray<Piece> {
+export function synthesizePieces(
+  production: Production,
+  preserveWs: boolean = false,
+): ReadonlyArray<Piece> {
   const input = production.source.input;
   const pieces: Piece[] = [];
   let cursor = 0;
+  let gapIdx = 0;
+  let spanIdx = -1;
+  // Phase 4c v2 — counter for unnamed-optional-literal pieces. Indexes
+  // align with the __litPres array pushed by the parser (production.ts
+  // increments on the same condition).
+  let litIdx = 0;
   for (const span of production.spans) {
+    spanIdx++;
     const startOffset = findSpanStart(input, span, cursor);
     if (startOffset === null) {
       // Absent path: the example doesn't surface this span. Both
@@ -136,20 +163,41 @@ function synthesizePieces(production: Production): ReadonlyArray<Piece> {
       );
     }
     const sepText = input.slice(cursor, startOffset);
-    if (sepText.length > 0) {
+    if (preserveWs && spanIdx > 0) {
+      // Always emit a ws-slot for preserve schemas, regardless of whether
+      // the example happened to have ws there. Parse-time may have seen
+      // arbitrary ws; the captured slice (possibly empty) is replayed.
+      pieces.push({ kind: 'wsSlot', index: gapIdx });
+      gapIdx++;
+    } else if (sepText.length > 0) {
       pieces.push({ kind: 'literal', text: canonicalSeparator(sepText) });
     }
-    pieces.push(contributionOf(span));
+    // Phase 4c v2 — unnamed optional literal becomes an optLit piece
+    // that consults `captures.__litPres[litIdx]` at stringify time.
+    // Plain (non-preserve) schemas keep the unconditional literal
+    // emit since presence isn't tracked there.
+    const isUnnamedOptLit =
+      preserveWs &&
+      span.name === undefined &&
+      span.class === 'literal' &&
+      typeof span.text === 'string' &&
+      span.modifiers.some((m) => m.kind === 'optional');
+    if (isUnnamedOptLit) {
+      pieces.push({ kind: 'optLit', text: span.text!, litIdx });
+      litIdx++;
+    } else {
+      pieces.push(contributionOf(span, preserveWs));
+    }
     if (span.text) cursor = startOffset + span.text.length;
   }
   return pieces;
 }
 
-function contributionOf(span: ResolvedSpan): Piece {
+function contributionOf(span: ResolvedSpan, preserveWs: boolean = false): Piece {
   // Treat both .optional() and .repeats({ min: 0 }) as absent-allowed: the
   // captured value may be null and the slot must collapse to "" at runtime.
   const optional = isAbsentAllowed(span);
-  const join = joinOf(span);
+  const join = joinOf(span, preserveWs);
   if (span.recursiveRoles.length > 0) {
     if (!span.name) throw new CompilerError('rebuild: recursive span without name');
     return { kind: 'slot', ref: span.name, optional, join, encode: encodeOf(span) };
@@ -188,11 +236,19 @@ export function encodeOf(span: ResolvedSpan): SlotEncode {
 // re-introduce it). `.repeats()` without `sep` defaults to single-space
 // (schema-level whitespace policy). Non-repeats spans return 'none' — they
 // never reach the array-join code path at runtime.
-export function joinOf(span: ResolvedSpan): SlotJoin {
+export function joinOf(span: ResolvedSpan, preserveWs: boolean = false): SlotJoin {
   const hasIndent = span.modifiers.some((m) => m.kind === 'indent');
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
       if (hasIndent) return { kind: 'indent' };
+      // Phase 4c v2: when preserve is on AND the repeats has a sep AND
+      // the span is named (anonymous spans have no captures slot), the
+      // captures payload carries `<spanName>_iws`. Tag the join with
+      // iwsRef so piecesToConcat emits an inline-interleave instead of
+      // the static __rebuildSlot join.
+      if (preserveWs && m.sep !== undefined && span.name !== undefined) {
+        return { kind: 'sep', sep: m.sep, iwsRef: `${span.name}_iws` };
+      }
       return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
     }
   }
@@ -206,6 +262,24 @@ export function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
     const p = pieces[i]!;
     if (p.kind === 'literal') {
       parts.push(jsString(p.text));
+      continue;
+    }
+    if (p.kind === 'wsSlot') {
+      // Read the captured inter-span ws from captures.__ws[index]. Empty
+      // fallback when the captures payload was constructed by a path that
+      // didn't populate __ws (e.g. a hand-built AST or a non-preserve
+      // parent merging in a preserve child).
+      parts.push(`((captures.__ws && captures.__ws[${p.index}]) || "")`);
+      continue;
+    }
+    if (p.kind === 'optLit') {
+      // Conditionally emit the literal based on the parser-tracked
+      // presence bit. Defensive fallback: when __litPres is missing
+      // (hand-built AST), default to PRESENT so byte-exact round-trip
+      // is preferred over silent omission of authored literals.
+      parts.push(
+        `(captures.__litPres && captures.__litPres[${p.litIdx}] === false ? "" : ${jsString(p.text)})`,
+      );
       continue;
     }
     // Apply the slot's inverse encoder (e.g. encodeJsonString for
@@ -227,7 +301,16 @@ export function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       // Dynamic leading prefix: __indentCol > 0 → also prefix the first child
       slotExpr = `__rebuildSlot(${slotAccess}, "\\n" + " ".repeat(__indentCol), __indentCol > 0)`;
     } else if (p.join.kind === 'sep') {
-      slotExpr = `__rebuildSlot(${slotAccess}${p.join.sep ? `, ${jsString(p.join.sep)}` : ''})`;
+      if (p.join.iwsRef) {
+        // Phase 4c v2: preserve mode + .repeats({sep}) — interleave
+        // items[i] with captures.<iwsRef>[i-1] (the per-iteration ws
+        // array captured at parse time). Fall back to the static sep
+        // when iws is missing (hand-built AST, length mismatch).
+        const iws = `captures${memberAccess(p.join.iwsRef)}`;
+        slotExpr = `__rebuildSlotIws(${slotAccess}, ${iws}, ${jsString(p.join.sep)})`;
+      } else {
+        slotExpr = `__rebuildSlot(${slotAccess}${p.join.sep ? `, ${jsString(p.join.sep)}` : ''})`;
+      }
     } else {
       slotExpr = `__rebuildSlot(${slotAccess})`;
     }
@@ -331,6 +414,25 @@ export const REBUILD_SLOT_RUNTIME = `function __rebuildSlot(v: any, joinSep: str
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }`;
 
 export function rebuildFnName(nodeName: string, prodIdx: number): string {

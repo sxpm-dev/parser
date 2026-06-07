@@ -633,8 +633,21 @@ export function classFirstBytes(span: ResolvedSpan): ReadonlySet<number> {
     return out;
   }
   if (cls === 'string') {
-    out.add(0x22); // "
-    out.add(0x27); // '
+    // Phase 4c v6: respect quote refinements so single-quoted and
+    // double-quoted productions get distinct first-byte signatures.
+    // Without this, JSON5's single + double quoted JsonString
+    // productions collide in the dispatch check.
+    const hasDouble = refSet.has('doubleQuoted');
+    const hasSingle = refSet.has('singleQuoted');
+    const hasBacktick = refSet.has('backtick');
+    if (hasDouble || hasSingle || hasBacktick) {
+      if (hasDouble) out.add(0x22); // "
+      if (hasSingle) out.add(0x27); // '
+      if (hasBacktick) out.add(0x60); // `
+    } else {
+      out.add(0x22);
+      out.add(0x27);
+    }
     return out;
   }
   // Other classes (regex/template/whitespace/keyword/operator) aren't used as

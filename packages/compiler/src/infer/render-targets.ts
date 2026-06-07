@@ -17,6 +17,7 @@ import {
 
 export function attachRenderTargets(
   nodeTypes: ReadonlyMap<string, NodeTypeInfo>,
+  options: { readonly preserveWs?: boolean } = {},
 ): void {
   for (const info of nodeTypes.values()) {
     for (const production of info.productions) {
@@ -24,6 +25,12 @@ export function attachRenderTargets(
       for (const span of production.spans) {
         if (span.name) spanNames.add(span.name);
       }
+      // Phase 4b — `whitespace: 'preserve'` exposes a synthetic `__ws`
+      // capture (the array of inter-span ws slices). Schemas opt their
+      // AST into byte-exact round-trip by including `__ws: $.__ws` in
+      // the render body; whitelist that ref-name so validation accepts
+      // it as a legal capture reference.
+      if (options.preserveWs) spanNames.add('__ws');
       const renders = new Map<string, RenderTargetIR>();
       for (const entry of production.source.renders) {
         if (renders.has(entry.target)) {

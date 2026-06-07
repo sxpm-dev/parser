@@ -250,6 +250,7 @@ function emitFusedBody(
     presenceExpr: new Map(),
     startOffExpr: new Map(),
     endOffExpr: new Map(),
+    iwsExpr: new Map(),
   };
   const ctx = buildSpanContext(schema);
 
@@ -940,6 +941,16 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
   }
   const hasContentClass = schema.classes.some((cls) => CONTENT_CLASSES.has(cls.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
+  const lineCommentMarkers: string[] = [];
+  for (const usage of schema.classes) {
+    if (usage.class === 'comment') {
+      for (const ref of usage.refinements) {
+        if (ref.name === 'line' && Array.isArray(ref.args) && typeof ref.args[0] === 'string') {
+          lineCommentMarkers.push(ref.args[0]);
+        }
+      }
+    }
+  }
   return {
     entryOffVar: 'entryOff',
     raws: false,
@@ -950,6 +961,8 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
+    preserveWs: schema.whitespace === 'preserve',
+    lineCommentMarkers,
   };
 }
 

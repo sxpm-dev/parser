@@ -107,6 +107,21 @@ export type SpanContext = {
   // (in which case any .operator() span would already have failed the
   // tokenizer pass earlier).
   readonly operatorLiterals: ReadonlyArray<string>;
+  // Phase 4c v2: `whitespace: 'preserve'` mode triggers per-iteration ws
+  // capture inside .repeats() spans (so the inter-Decl `; ` shape
+  // survives round-trip, not just intra-Decl ws). When true, the
+  // repeats emit declares a sibling `__<name>_iws` array and the
+  // SpanBindings.iwsExpr map registers the parent's access to it. The
+  // rebuild emit consults the same map and specializes the slot's
+  // array-join to interleave items with the captured ws slices.
+  readonly preserveWs: boolean;
+  // Phase 4c v5: line comment markers declared via the `comment` token
+  // class with a `line` refinement (`tokens: [{ class: 'comment',
+  // refinements: [{ name: 'line', args: ['//'] }] }]`). When non-empty,
+  // the inter-span ws-skip, repeats sep-sweep, and __parse leading /
+  // trailing skip also consume `<marker>...\n` regions alongside block
+  // comments. Empty for schemas that don't opt in (default).
+  readonly lineCommentMarkers: ReadonlyArray<string>;
 };
 
 export type SpanBindings = {
@@ -117,6 +132,10 @@ export type SpanBindings = {
   // Span name → JS expressions for start/end offsets (used by $.gap).
   readonly startOffExpr: Map<string, string>;
   readonly endOffExpr: Map<string, string>;
+  // Phase 4c v2: span name → JS expression for the per-iteration ws
+  // array captured by a `.repeats()` span in preserve mode. Empty for
+  // non-preserve schemas and for non-repeats spans.
+  readonly iwsExpr: Map<string, string>;
 };
 
 // Re-exported under the legacy names so existing imports (`dispatch.ts`) keep
@@ -377,11 +396,19 @@ function emitRepeatsSpan(
   const trailing = repeats.trailing ?? 'allowed';
   const listVar = span.name ? jsIdent(span.name) : '__repeated';
   const startVar = `__${listVar}_start`, endVar = `__${listVar}_end`;
+  // Phase 4c v2: per-iteration ws capture. Only when the schema is
+  // preserve, the span has a sep, and the span is named (anonymous
+  // repeats have no captures slot to attach iws to). Gated this tightly
+  // because the non-sep case has no "between" content worth recording
+  // (inter-item ws is what the parent's __ws already covers).
+  const captureIws = ctx.preserveWs && sep !== undefined && span.name !== undefined;
+  const iwsVar = captureIws ? `__${listVar}_iws` : '';
 
   if (span.name) {
     bindings.valueExpr.set(span.name, listVar);
     bindings.startOffExpr.set(span.name, startVar);
     bindings.endOffExpr.set(span.name, endVar);
+    if (captureIws) bindings.iwsExpr.set(span.name, iwsVar);
   }
 
   // Build the inner "try one role" code block. Single role: direct call.
@@ -425,16 +452,56 @@ if (__cand !== null) { off = state.pos; }`;
   // rewind when a sweep consumed a sep but no item followed. __sepConsumed
   // records whether THIS sweep consumed at least one sep, used by both
   // trailing:forbidden (rewind) and trailing:required (final check).
+  // Phase 4c v4: when the schema declares the `comment` token class,
+  // the sep-sweep also consumes `/* ... */` block comments alongside
+  // whitespace — UNLESS the repeats roles include a Comment-style
+  // production (e.g. CSS's Stylesheet body lists Comment as a role).
+  // Eating comments there would silently consume what the role
+  // dispatcher is meant to capture as a Comment node.
+  const rolesConsumeComments = roles.some((roleName) => {
+    const info = ctx.nodeTypes.get(roleName);
+    if (!info) return false;
+    for (const prod of info.productions) {
+      const firstSpan = prod.spans[0];
+      if (firstSpan && firstSpan.class === 'comment') return true;
+    }
+    return false;
+  });
+  const lineCheck = ctx.lineCommentMarkers.length === 0
+    ? ''
+    : ctx.lineCommentMarkers.map((marker) => {
+        const m = JSON.stringify(marker);
+        return `  if (input.startsWith(${m}, off)) {
+    off += ${marker.length};
+    while (off < len && input.charCodeAt(off) !== 0x0a) off++;
+    if (off < len) off++;
+    continue;
+  }`;
+      }).join('\n');
+  const sweepWsBlock = ctx.tokens.has('comment') && !rolesConsumeComments
+    ? `while (off < len) {
+  const __sw = input.charCodeAt(off);
+  if (__sw === 0x20 || __sw === 0x09 || __sw === 0x0a || __sw === 0x0d) { off++; continue; }
+  if (__sw === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+    off += 2;
+    while (off < len && !(input.charCodeAt(off) === 0x2a && off + 1 < len && input.charCodeAt(off + 1) === 0x2f)) off++;
+    if (off < len) off += 2;
+    continue;
+  }
+${lineCheck}
+  break;
+}`
+    : `while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`;
   const sepBlock = sep
     ? `__preSweep = off;
 __sepConsumed = false;
-// Skip ws before the separator. v1 always allows ws around seps.
-while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+// Skip ws (and comments when declared) before the separator.
+${sweepWsBlock}
 while (${literalMatchExpr(sep, 'off')}) {
   __sepConsumed = true;
   off += ${sep.length};
-  // Skip ws after the separator.
-  while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
+  // Skip ws (and comments) after the separator.
+  ${sweepWsBlock}
 }`
     // No explicit separator. Inter-item whitespace is absorbed by the inner
     // `try one role` block:
@@ -500,6 +567,17 @@ while (${literalMatchExpr(sep, 'off')}) {
     // offset before that sweep (used by trailing:forbidden to rewind off).
     lines.push(`let __sepConsumed = false;`);
     lines.push(`let __preSweep = off;`);
+  }
+  if (captureIws) {
+    // Per-iteration ws capture. __iws is the parallel array (length
+    // N-1 for N successful items). __prevItemEnd records the offset
+    // immediately after the previous item was pushed. The first
+    // iteration leaves __prevItemEnd at -1; subsequent iterations
+    // archive `input.slice(__prevItemEnd, off)` AFTER the sep-sweep
+    // (i.e. after the parser has settled on where the next item
+    // should start), capturing the full sep+ws region between items.
+    lines.push(`const ${iwsVar}: string[] = [];`);
+    lines.push(`let __prevItemEnd = -1;`);
   }
   if (isIndented) {
     // Indent prologue: skip blank lines + horizontal ws to find first item's
@@ -582,9 +660,23 @@ while (${literalMatchExpr(sep, 'off')}) {
     lines.push(indent(stopBeforeCheck, 1));
   }
   lines.push(`  let __cand: unknown = null;`);
+  if (captureIws) {
+    // Snapshot the offset where the upcoming item's parse will START
+    // (after sep-sweep + leading ws-skip — both have run by now). We
+    // resolve the inter-iteration slice using this snapshot below.
+    lines.push(`  const __itemStart = off;`);
+  }
   lines.push(indent(tryItemBlock, 1));
   lines.push(`  if (__cand === null) break;`);
+  if (captureIws) {
+    // Archive the slice between the previous item's end and this
+    // item's start. Skip on the first item (__prevItemEnd === -1).
+    lines.push(`  if (__prevItemEnd >= 0) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+  }
   lines.push(`  ${listVar}.push(__cand);`);
+  if (captureIws) {
+    lines.push(`  __prevItemEnd = off;`);
+  }
   lines.push(`  if (off === __loopStart) break;`);
   lines.push(`}`);
   if (isIndented) {

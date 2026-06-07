@@ -40,6 +40,23 @@ export function canFuseStructured(
   // shared-dispatch, so structural fusion is a net win there.
   const info = schema.nodeTypes.get(production.nodeType);
   if (info && detectSharedDispatch(info) !== null) return false;
+  // Phase 4a: recovery productions skip structured fusion. Two reasons:
+  //   (1) They belong on the captures path where emitProduction pushes a
+  //       Diagnostic onto state.diagnostics just before successful return.
+  //       Replicating that push inside every structured-fused emit site
+  //       would scatter the recovery hook across two backends.
+  //   (2) Their dispatch order must be "tried last" relative to valid
+  //       alts (so a normal-input ambiguity always prefers the
+  //       well-formed shape). The structured-role dispatcher's
+  //       longest-literal-prefix sort doesn't honor that.
+  if (production.recovery !== undefined) return false;
+  // Phase 4b: 'preserve' schemas need the captures payload's `__ws`
+  // array to round-trip byte-exactly. The structured-fused path bypasses
+  // the captures envelope and reconstructs the target value directly, so
+  // there's no place to surface __ws. Fall through to the captures path
+  // (it's slower but byte-exact). Recovery + preserve are the only two
+  // skip conditions in the same code style.
+  if (schema.whitespace === 'preserve') return false;
   // Phase 5f: a unary-prefix or binary-operator production's first span
   // is a class='operator' or recursive(self) which the structured-fusion
   // role-ladder analyzer can't handle. The Pratt path emits these
@@ -109,6 +126,7 @@ export function emitFusedRenderStructured(
     presenceExpr: new Map(),
     startOffExpr: new Map(),
     endOffExpr: new Map(),
+    iwsExpr: new Map(),
   };
 
   const lines: string[] = [];
@@ -421,6 +439,16 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
   ]);
   const hasContentClass = schema.classes.some((c) => contentClasses.has(c.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
+  const lineCommentMarkers: string[] = [];
+  for (const usage of schema.classes) {
+    if (usage.class === 'comment') {
+      for (const ref of usage.refinements) {
+        if (ref.name === 'line' && Array.isArray(ref.args) && typeof ref.args[0] === 'string') {
+          lineCommentMarkers.push(ref.args[0]);
+        }
+      }
+    }
+  }
   return {
     entryOffVar: 'entryOff',
     raws: false,
@@ -431,6 +459,8 @@ function buildSpanContext(schema: InferredSchema): SpanContext {
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
+    preserveWs: schema.whitespace === 'preserve',
+    lineCommentMarkers,
   };
 }
 

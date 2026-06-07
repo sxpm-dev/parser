@@ -6,9 +6,25 @@
 
 
 export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a `.recovers({ drop, syncAt })` production matched.
+// `code` distinguishes the diagnostic shape; `drop` is the schema-declared
+// label; `start`/`end` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -27,6 +43,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {
@@ -3180,10 +3201,10 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options: { target: "ast"; mode?: ParseMode }): MarkdownDocument_ast;
-export function render(input: string, options: { target: "html"; mode?: ParseMode }): MarkdownDocument_html;
-export function render(input: string, options: { target: "source"; mode?: ParseMode }): MarkdownDocument_source;
-export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): MarkdownDocument_ast;
+export function render(input: string, options: { target: "html"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): MarkdownDocument_html;
+export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): MarkdownDocument_source;
+export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -3193,7 +3214,11 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node `source: string` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -3202,8 +3227,9 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);
+  return result;
 }
 
 function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
@@ -3218,6 +3244,25 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }
 
 function __rebuild_MarkdownDocument_0(captures: any): string {
@@ -6155,11 +6200,17 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(v: any, __indentCo
 function __invertSlotLeaf_ast(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -6305,11 +6356,17 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_html(v: any, __indentC
 function __invertSlotLeaf_html(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_html(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -6455,11 +6512,17 @@ function __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_source(v: any, __inden
 function __invertSlotLeaf_source(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_source(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -13760,42 +13823,42 @@ function __fusedRenderStructured_MarkdownParagraph_0_ast(state: State): unknown 
 }
 
 function __fusedRenderStructuredDispatch_MarkdownLeaf_ast(state: State): unknown {
-  const r0 = __fusedRenderStructured_MarkdownLeaf_6_ast(state); if (r0 !== null) return r0;
-  const r1 = __fusedRenderStructured_MarkdownLeaf_7_ast(state); if (r1 !== null) return r1;
-  const r2 = __fusedRenderStructured_MarkdownLeaf_0_ast(state); if (r2 !== null) return r2;
-  const r3 = __fusedRenderStructured_MarkdownLeaf_1_ast(state); if (r3 !== null) return r3;
-  const r4 = __fusedRenderStructured_MarkdownLeaf_11_ast(state); if (r4 !== null) return r4;
-  const r5 = __fusedRenderStructured_MarkdownLeaf_12_ast(state); if (r5 !== null) return r5;
-  const r6 = __fusedRenderStructured_MarkdownLeaf_2_ast(state); if (r6 !== null) return r6;
-  const r7 = __fusedRenderStructured_MarkdownLeaf_19_ast(state); if (r7 !== null) return r7;
-  const r8 = __fusedRenderStructured_MarkdownLeaf_3_ast(state); if (r8 !== null) return r8;
-  const r9 = __fusedRenderStructured_MarkdownLeaf_8_ast(state); if (r9 !== null) return r9;
-  const r10 = __fusedRenderStructured_MarkdownLeaf_9_ast(state); if (r10 !== null) return r10;
-  const r11 = __fusedRenderStructured_MarkdownLeaf_10_ast(state); if (r11 !== null) return r11;
-  const r12 = __fusedRenderStructured_MarkdownLeaf_18_ast(state); if (r12 !== null) return r12;
-  const r13 = __fusedRenderStructured_MarkdownLeaf_4_ast(state); if (r13 !== null) return r13;
-  const r14 = __fusedRenderStructured_MarkdownLeaf_13_ast(state); if (r14 !== null) return r14;
-  const r15 = __fusedRenderStructured_MarkdownLeaf_14_ast(state); if (r15 !== null) return r15;
-  const r16 = __fusedRenderStructured_MarkdownLeaf_15_ast(state); if (r16 !== null) return r16;
-  const r17 = __fusedRenderStructured_MarkdownLeaf_20_ast(state); if (r17 !== null) return r17;
-  const r18 = __fusedRenderStructured_MarkdownLeaf_22_ast(state); if (r18 !== null) return r18;
-  const r19 = __fusedRenderStructured_MarkdownLeaf_33_ast(state); if (r19 !== null) return r19;
-  const r20 = __fusedRenderStructured_MarkdownLeaf_34_ast(state); if (r20 !== null) return r20;
-  const r21 = __fusedRenderStructured_MarkdownLeaf_5_ast(state); if (r21 !== null) return r21;
-  const r22 = __fusedRenderStructured_MarkdownLeaf_17_ast(state); if (r22 !== null) return r22;
-  const r23 = __fusedRenderStructured_MarkdownLeaf_21_ast(state); if (r23 !== null) return r23;
-  const r24 = __fusedRenderStructured_MarkdownLeaf_23_ast(state); if (r24 !== null) return r24;
-  const r25 = __fusedRenderStructured_MarkdownLeaf_24_ast(state); if (r25 !== null) return r25;
-  const r26 = __fusedRenderStructured_MarkdownLeaf_25_ast(state); if (r26 !== null) return r26;
-  const r27 = __fusedRenderStructured_MarkdownLeaf_26_ast(state); if (r27 !== null) return r27;
-  const r28 = __fusedRenderStructured_MarkdownLeaf_27_ast(state); if (r28 !== null) return r28;
-  const r29 = __fusedRenderStructured_MarkdownLeaf_28_ast(state); if (r29 !== null) return r29;
-  const r30 = __fusedRenderStructured_MarkdownLeaf_29_ast(state); if (r30 !== null) return r30;
-  const r31 = __fusedRenderStructured_MarkdownLeaf_30_ast(state); if (r31 !== null) return r31;
-  const r32 = __fusedRenderStructured_MarkdownLeaf_31_ast(state); if (r32 !== null) return r32;
-  const r33 = __fusedRenderStructured_MarkdownLeaf_32_ast(state); if (r33 !== null) return r33;
-  const r34 = __fusedRenderStructured_MarkdownLeaf_35_ast(state); if (r34 !== null) return r34;
-  const r35 = __fusedRenderStructured_MarkdownLeaf_36_ast(state); if (r35 !== null) return r35;
+  const r0 = __fusedRenderStructured_MarkdownLeaf_0_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_MarkdownLeaf_1_ast(state); if (r1 !== null) return r1;
+  const r2 = __fusedRenderStructured_MarkdownLeaf_11_ast(state); if (r2 !== null) return r2;
+  const r3 = __fusedRenderStructured_MarkdownLeaf_12_ast(state); if (r3 !== null) return r3;
+  const r4 = __fusedRenderStructured_MarkdownLeaf_2_ast(state); if (r4 !== null) return r4;
+  const r5 = __fusedRenderStructured_MarkdownLeaf_19_ast(state); if (r5 !== null) return r5;
+  const r6 = __fusedRenderStructured_MarkdownLeaf_3_ast(state); if (r6 !== null) return r6;
+  const r7 = __fusedRenderStructured_MarkdownLeaf_8_ast(state); if (r7 !== null) return r7;
+  const r8 = __fusedRenderStructured_MarkdownLeaf_9_ast(state); if (r8 !== null) return r8;
+  const r9 = __fusedRenderStructured_MarkdownLeaf_10_ast(state); if (r9 !== null) return r9;
+  const r10 = __fusedRenderStructured_MarkdownLeaf_18_ast(state); if (r10 !== null) return r10;
+  const r11 = __fusedRenderStructured_MarkdownLeaf_4_ast(state); if (r11 !== null) return r11;
+  const r12 = __fusedRenderStructured_MarkdownLeaf_13_ast(state); if (r12 !== null) return r12;
+  const r13 = __fusedRenderStructured_MarkdownLeaf_14_ast(state); if (r13 !== null) return r13;
+  const r14 = __fusedRenderStructured_MarkdownLeaf_15_ast(state); if (r14 !== null) return r14;
+  const r15 = __fusedRenderStructured_MarkdownLeaf_20_ast(state); if (r15 !== null) return r15;
+  const r16 = __fusedRenderStructured_MarkdownLeaf_22_ast(state); if (r16 !== null) return r16;
+  const r17 = __fusedRenderStructured_MarkdownLeaf_33_ast(state); if (r17 !== null) return r17;
+  const r18 = __fusedRenderStructured_MarkdownLeaf_34_ast(state); if (r18 !== null) return r18;
+  const r19 = __fusedRenderStructured_MarkdownLeaf_5_ast(state); if (r19 !== null) return r19;
+  const r20 = __fusedRenderStructured_MarkdownLeaf_17_ast(state); if (r20 !== null) return r20;
+  const r21 = __fusedRenderStructured_MarkdownLeaf_21_ast(state); if (r21 !== null) return r21;
+  const r22 = __fusedRenderStructured_MarkdownLeaf_23_ast(state); if (r22 !== null) return r22;
+  const r23 = __fusedRenderStructured_MarkdownLeaf_24_ast(state); if (r23 !== null) return r23;
+  const r24 = __fusedRenderStructured_MarkdownLeaf_25_ast(state); if (r24 !== null) return r24;
+  const r25 = __fusedRenderStructured_MarkdownLeaf_26_ast(state); if (r25 !== null) return r25;
+  const r26 = __fusedRenderStructured_MarkdownLeaf_27_ast(state); if (r26 !== null) return r26;
+  const r27 = __fusedRenderStructured_MarkdownLeaf_28_ast(state); if (r27 !== null) return r27;
+  const r28 = __fusedRenderStructured_MarkdownLeaf_29_ast(state); if (r28 !== null) return r28;
+  const r29 = __fusedRenderStructured_MarkdownLeaf_30_ast(state); if (r29 !== null) return r29;
+  const r30 = __fusedRenderStructured_MarkdownLeaf_31_ast(state); if (r30 !== null) return r30;
+  const r31 = __fusedRenderStructured_MarkdownLeaf_32_ast(state); if (r31 !== null) return r31;
+  const r32 = __fusedRenderStructured_MarkdownLeaf_35_ast(state); if (r32 !== null) return r32;
+  const r33 = __fusedRenderStructured_MarkdownLeaf_36_ast(state); if (r33 !== null) return r33;
+  const r34 = __fusedRenderStructured_MarkdownLeaf_6_ast(state); if (r34 !== null) return r34;
+  const r35 = __fusedRenderStructured_MarkdownLeaf_7_ast(state); if (r35 !== null) return r35;
   const r36 = __fusedRenderStructured_MarkdownLeaf_16_ast(state); if (r36 !== null) return r36;
   return null;
 }
@@ -13882,6 +13945,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
       const result = sRoot(state);
       if (result === null) return null;
@@ -13905,6 +13969,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -13925,8 +13990,11 @@ function __parse(input: string, options?: ParseOptions): unknown {
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
+  
   const result = parseMarkdownDocument(state);
+  
   while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
@@ -13934,6 +14002,13 @@ function __parse(input: string, options?: ParseOptions): unknown {
   }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }
@@ -13948,10 +14023,17 @@ export function validate(input: string, options?: ParseOptions): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __result = parseMarkdownDocument(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < __state.diagnostics.length; __i++) {
+      __onDiag(__state.diagnostics[__i]);
+    }
   }
 }
 

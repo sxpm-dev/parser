@@ -67,13 +67,13 @@ function emitRenderOverloads(schema: InferredSchema, types: StructureTypes): str
   for (const target of types.targets) {
     const rt = aliasNameFor(rootName, target);
     lines.push(
-      `export function render(input: string, options: { target: ${jsString(target)}; mode?: ParseMode }): ${rt};`,
+      `export function render(input: string, options: { target: ${jsString(target)}; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): ${rt};`,
     );
   }
   if (schema.defaultTarget !== undefined) {
     const defaultRt = aliasNameFor(rootName, schema.defaultTarget);
     lines.push(
-      `export function render(input: string, options?: { target?: undefined; mode?: ParseMode }): ${defaultRt};`,
+      `export function render(input: string, options?: { target?: undefined; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): ${defaultRt};`,
     );
   }
   return lines.join('\n');

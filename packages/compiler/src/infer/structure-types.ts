@@ -83,6 +83,7 @@ export function inferStructureTypes(schema: InferredSchema): StructureTypes {
   }> = [];
   const byNodeAndTarget = new Map<string, Map<string, TsType>>();
 
+  const preserveWs = schema.whitespace === 'preserve';
   for (const info of schema.nodeTypes.values()) {
     const perTarget = new Map<string, TsType>();
     for (const target of targets) {
@@ -91,7 +92,40 @@ export function inferStructureTypes(schema: InferredSchema): StructureTypes {
         const production = info.productions[i]!;
         const entry = production.renders.get(target);
         if (!entry) continue;
-        members.push(bodyToTs(entry.body, target, production, schema));
+        let ts = bodyToTs(entry.body, target, production, schema);
+        // Phase 4c v1 — mirror emit/render.ts:emitBuilder + invert.ts
+        // deriveInverses auto-attach. Object 'ast' bodies emitted by a
+        // preserve schema get a synthetic `__ws: string[]` field at the
+        // type level so consumers see the property TypeScript guarantees
+        // is on the returned AST.
+        if (preserveWs && target === 'ast' && ts.kind === 'object') {
+          // Mirror emit/render.ts iwsFields: type the per-repeats-span
+          // `<name>_iws` array fields as `string[]` so consumers see
+          // them at the type level too.
+          const iwsTsFields: Array<{ name: string; type: TsType }> = [];
+          for (const span of production.spans) {
+            if (!span.name) continue;
+            for (const m of span.modifiers) {
+              if (m.kind === 'repeats' && m.sep !== undefined) {
+                iwsTsFields.push({
+                  name: `${span.name}_iws`,
+                  type: { kind: 'array', element: { kind: 'string' } },
+                });
+                break;
+              }
+            }
+          }
+          ts = {
+            kind: 'object',
+            fields: [
+              ...ts.fields,
+              { name: '__ws', type: { kind: 'array', element: { kind: 'string' } } },
+              { name: '__litPres', type: { kind: 'array', element: { kind: 'boolean' } } },
+              ...iwsTsFields,
+            ],
+          };
+        }
+        members.push(ts);
       }
       const merged = mergeTypes(members);
       perTarget.set(target, merged);

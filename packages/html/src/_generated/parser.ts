@@ -6,9 +6,25 @@
 
 
 export type ParseMode = 'fast' | 'raws';
+// Emitted whenever a `.recovers({ drop, syncAt })` production matched.
+// `code` distinguishes the diagnostic shape; `drop` is the schema-declared
+// label; `start`/`end` are byte offsets into the parsed input demarcating
+// the dropped region.
+export type Diagnostic = {
+  readonly code: string;
+  readonly drop: string;
+  readonly start: number;
+  readonly end: number;
+};
 export type ParseOptions = {
   readonly mode?: ParseMode;
   readonly validate?: boolean;
+  // Invoked once per recovered production, after the parse has succeeded.
+  // Suppressed when the parse ultimately fails (a diagnostic for a region
+  // inside an alt that the dispatcher later rolled back would be misleading
+  // — only diagnostics from the production path that produced the final
+  // result are surfaced).
+  readonly onDiagnostic?: (d: Diagnostic) => void;
 };
 
 type SourcePos = { readonly line: number; readonly column: number; readonly offset: number };
@@ -27,6 +43,11 @@ type State = {
   // indentStackTop is the count of pushed entries (0 when no indent is active).
   indentStack: Int32Array;
   indentStackTop: number;
+  // Recovery diagnostics accumulated during this parse. A recovery
+  // production pushes one entry just before its successful return.
+  // Speculation rewinds truncate the list back to a pre-entry snapshot
+  // when the speculating alt returns null — see emitProduction.
+  diagnostics: Diagnostic[];
 };
 
 function computeLineStarts(input: string): number[] {
@@ -336,18 +357,19 @@ function parseDoctype__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __diagSnap = state.diagnostics.length;
+  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
   off += 2;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
   const __keyword_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __keyword_end = off;
   const keyword = input.slice(__keyword_start, __keyword_end);
-  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
+  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
@@ -355,6 +377,7 @@ function parseDoctype__alt1(state: State): unknown {
   const name = input.slice(__name_start, __name_end);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
+  state.diagnostics.push({ code: 'recovered', drop: "incomplete-doctype", start: entryOff, end: off });
   if (state.mode === 'raws') {
     const __captures: any = { __production: "Doctype#1", keyword: keyword, name: name };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
@@ -569,6 +592,7 @@ function parseHtmlElement__alt3(state: State, entryOff: number, tag: string, tag
   const input = state.input;
   const len = state.len;
   let off = state.pos;
+  const __diagSnap = state.diagnostics.length;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   const __attrs_start = off;
   const attrs: unknown[] = [];
@@ -584,10 +608,11 @@ function parseHtmlElement__alt3(state: State, entryOff: number, tag: string, tag
   }
   const __attrs_end = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  if (!(input.charCodeAt(off) === 47 && input.charCodeAt(off + 1) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; state.diagnostics.length = __diagSnap; return null; }
   off += 2;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
+  state.diagnostics.push({ code: 'recovered', drop: "self-closing-element", start: entryOff, end: off });
   if (state.mode === 'raws') {
     const __captures: any = { __production: "HtmlElement#3", tag: tag, attrs: attrs };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
@@ -2242,9 +2267,9 @@ const __renderDispatch: Record<string, (captures: any) => any> = {
   "source": (captures: any) => __dispatchRender_source(captures),
 };
 
-export function render(input: string, options: { target: "ast"; mode?: ParseMode }): HtmlDocument_ast;
-export function render(input: string, options: { target: "source"; mode?: ParseMode }): HtmlDocument_source;
-export function render(input: string, options?: { target?: string; mode?: ParseMode }): unknown {
+export function render(input: string, options: { target: "ast"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): HtmlDocument_ast;
+export function render(input: string, options: { target: "source"; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): HtmlDocument_source;
+export function render(input: string, options?: { target?: string; mode?: ParseMode; onDiagnostic?: (d: Diagnostic) => void }): unknown {
   const target = options?.target ?? __defaultTarget;
   if (!target) {
     throw new Error("render: missing target; pass options.target or set defaultTarget on the schema");
@@ -2254,7 +2279,11 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   // ast body is a structured object with statically resolvable refs). In
   // raws mode the captures path attaches a per-node `source: string` field
   // that the structured-fused emit does not synthesize — skip fusion so the
-  // returned shape matches caller expectations.
+  // returned shape matches caller expectations. Recovery diagnostics also
+  // force the captures path: structurally-fused render skips recovery
+  // productions (see canFuseStructured), so a parse that depends on a
+  // recovery alt naturally falls through to the captures path where the
+  // diagnostic is emitted.
   if (options?.mode !== 'raws') {
     const fused = __renderFused(input, target);
     if (fused !== null) return fused;
@@ -2263,8 +2292,9 @@ export function render(input: string, options?: { target?: string; mode?: ParseM
   if (!fn) {
     throw new Error("render: unknown target '" + target + "'");
   }
-  const captures = options && options.mode ? __parse(input, { mode: options.mode }) : __parse(input);
-  return fn(captures);
+  const captures = __parse(input, { mode: options?.mode, onDiagnostic: options?.onDiagnostic });
+  const result = fn(captures);
+  return result;
 }
 
 function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = false): string {
@@ -2279,6 +2309,25 @@ function __rebuildSlot(v: any, joinSep: string = "", leadingPrefix: boolean = fa
     return out;
   }
   return String(v);
+}
+
+// Phase 4c v2: preserve-mode array join. Interleaves items[i] with
+// iws[i-1] (per-iteration ws captured at parse time). Falls back to
+// the static fallbackSep when iws is null/short — defensive against
+// hand-built ASTs that don't carry the iws array.
+function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
+  if (v === null || v === undefined) return "";
+  if (!Array.isArray(v)) return String(v);
+  let out = "";
+  const hasIws = Array.isArray(iws);
+  for (let i = 0; i < v.length; i++) {
+    if (i > 0) {
+      const gap = hasIws && typeof iws[i - 1] === "string" ? iws[i - 1] : fallbackSep;
+      out += gap;
+    }
+    out += __rebuildSlot(v[i]);
+  }
+  return out;
 }
 
 function __rebuild_HtmlDocument_0(captures: any): string {
@@ -4094,11 +4143,17 @@ function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_ast(v: any, __in
 function __invertSlotLeaf_ast(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_ast(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -4353,11 +4408,17 @@ function __invertSlotMulti_Doctype_Comment_HtmlElement_TextNode_source(v: any, _
 function __invertSlotLeaf_source(v: any): any {
   if (v === null || v === undefined) return null;
   if (typeof v === "string") return v;
+  // Phase 4c v2: booleans pass through verbatim so synthetic presence
+  // fields like __litPres survive the inverse without being coerced to
+  // the string "true"/"false". Same for numbers (defensive — no existing
+  // codegen path stores numbers in slots, but coercion would be a
+  // silent bug in any future schema that does).
+  if (typeof v === "boolean" || typeof v === "number") return v;
   if (Array.isArray(v)) {
     const out: any[] = [];
     for (let i = 0; i < v.length; i++) {
       const r = __invertSlotLeaf_source(v[i]);
-      if (r != null) out.push(r);
+      if (r !== null && r !== undefined) out.push(r);
     }
     return out;
   }
@@ -28107,34 +28168,6 @@ function __fusedRenderStructured_Doctype_0_ast(state: State): unknown {
   return { _kind: "doctype", _keyword: keyword, nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
 }
 
-function __fusedRenderStructured_Doctype_1_ast(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 2;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off)) || input.charCodeAt(off) === 0x5c))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __keyword_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __keyword_end = off;
-  const keyword = input.slice(__keyword_start, __keyword_end);
-  if (!(keyword.toLowerCase() === "doctype")) { state.pos = entryOff; return null; }
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  const __name_start = off;
-  off++;
-  while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
-  const __name_end = off;
-  const name = input.slice(__name_start, __name_end);
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  return { _kind: "doctype-incomplete", _keyword: keyword, nodeName: "#documentType", name: name, publicId: "", systemId: "", parentNode: null };
-}
-
 function __fusedRenderStructured_Comment_0_ast(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -28429,7 +28462,6 @@ function __fusedRenderStructured_Attribute_3_ast(state: State): unknown {
 
 const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown> = {
   "Doctype#0": __fusedRenderStructured_Doctype_0_ast,
-  "Doctype#1": __fusedRenderStructured_Doctype_1_ast,
   "Comment#0": __fusedRenderStructured_Comment_0_ast,
   "TextNode#0": __fusedRenderStructured_TextNode_0_ast,
   "Attribute#0": __fusedRenderStructured_Attribute_0_ast,
@@ -28473,6 +28505,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
       const result = sRoot(state);
       if (result === null) return null;
@@ -28497,6 +28530,7 @@ function __renderFused(input: string, target: string): unknown {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const out: string[] = [];
   const ok = rootFusedFn(state, out);
@@ -28518,8 +28552,11 @@ function __parse(input: string, options?: ParseOptions): unknown {
     lineStarts: mode === 'raws' ? computeLineStarts(input) : [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
+  
   const result = parseHtmlDocument(state);
+  
   while (state.pos < state.len) {
     const __c = input.charCodeAt(state.pos);
     if (__c === 0x20 || __c === 0x09 || __c === 0x0a || __c === 0x0d) { state.pos++; continue; }
@@ -28527,6 +28564,13 @@ function __parse(input: string, options?: ParseOptions): unknown {
   }
   if (result === null || state.pos !== input.length) {
     throw syntaxErrorAt(input, state.maxOff > state.pos ? state.maxOff : state.pos);
+  }
+  
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < state.diagnostics.length; __i++) {
+      __onDiag(state.diagnostics[__i]);
+    }
   }
   return result;
 }
@@ -28541,10 +28585,17 @@ export function validate(input: string, options?: ParseOptions): void {
     lineStarts: [],
     indentStack: new Int32Array(16),
     indentStackTop: 0,
+    diagnostics: [],
   };
   const __result = parseHtmlDocument(__state);
   if (__result === null || __state.pos !== input.length) {
     throw syntaxErrorAt(input, __state.maxOff > __state.pos ? __state.maxOff : __state.pos);
+  }
+  const __onDiag = options?.onDiagnostic;
+  if (__onDiag !== undefined) {
+    for (let __i = 0; __i < __state.diagnostics.length; __i++) {
+      __onDiag(__state.diagnostics[__i]);
+    }
   }
 }
 

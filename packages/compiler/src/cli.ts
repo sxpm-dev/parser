@@ -6,9 +6,10 @@ import { generateParser } from './index.ts';
 import type { Backend } from './emit/backend.ts';
 import { TS_BACKEND } from './emit/ts.ts';
 import { BYTECODE_BACKEND } from './emit/bytecode/index.ts';
+import { RUST_BACKEND } from './emit/rust/index.ts';
 
 // Usage:
-//   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts [--backend ts|bytecode]
+//   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts [--backend ts|bytecode|rust]
 //
 // Imports the schema module (default export must be a SchemaDef), runs the
 // compiler, and writes packages/<schema>/src/_generated/parser<ext> where
@@ -23,7 +24,7 @@ const backendName = parseFlag('--backend', argv) ?? 'ts';
 const positional = argv.filter((arg, idx) => !isFlag(arg, idx, argv));
 const schemaArg = positional[0];
 if (!schemaArg) {
-  console.error('usage: tsx packages/compiler/src/cli.ts <schema.ts> [--backend ts|bytecode]');
+  console.error('usage: tsx packages/compiler/src/cli.ts <schema.ts> [--backend ts|bytecode|rust]');
   process.exit(1);
 }
 
@@ -51,6 +52,7 @@ async function main(path: string, backend: Backend): Promise<void> {
 function resolveBackend(name: string): Backend {
   if (name === 'ts') return TS_BACKEND;
   if (name === 'bytecode') return BYTECODE_BACKEND;
+  if (name === 'rust') return RUST_BACKEND;
   throw new Error(`Unknown backend: ${name}`);
 }
 

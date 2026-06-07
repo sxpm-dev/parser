@@ -15,3 +15,6 @@ isolate-*-v8.log
 
 # Compiler test temp directories (preamble emission artifacts)
 packages/compiler/test/.preamble-emit-*/
+
+# Phase 6.5 Rust differential test workdir — cargo projects + build cache
+packages/compiler/test/.rust-diff/

@@ -506,7 +506,6 @@ fn stringify_Duration__alt0(value: &Value) -> Option<String> {
     let date = value.obj_get("date");
     let mut __out = String::new();
     __out.push_str("P");
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
     if let Some(Value::Array(items)) = date {
         for (i, item) in items.iter().enumerate() {
             if i > 0 { __out.push_str(" "); }
@@ -523,7 +522,6 @@ fn stringify_Duration__alt1(value: &Value) -> Option<String> {
     let time = value.obj_get("time");
     let mut __out = String::new();
     __out.push_str("P");
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
     if let Some(Value::Array(items)) = date {
         for (i, item) in items.iter().enumerate() {
             if i > 0 { __out.push_str(" "); }
@@ -531,7 +529,6 @@ fn stringify_Duration__alt1(value: &Value) -> Option<String> {
         }
     }
     __out.push_str("T");
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
     if let Some(Value::Array(items)) = time {
         for (i, item) in items.iter().enumerate() {
             if i > 0 { __out.push_str(" "); }

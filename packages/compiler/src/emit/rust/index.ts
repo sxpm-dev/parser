@@ -32,7 +32,7 @@
 
 import type { Backend } from '../backend.ts';
 import { CompilerError, type InferredSchema, type Production, type ResolvedSpan } from '../../model.ts';
-import { isStructureRef, isTemplate, type RenderBody } from '@parser2/parser';
+import { isStructureRef, isTemplate, type RenderBody, type StructureRef } from '@parser2/parser';
 
 export const RUST_BACKEND: Backend = {
   name: 'rust',
@@ -866,11 +866,27 @@ function emitStringifyAltFn(
   altIdx: number,
 ): string | null {
   const renderBody = pickRenderBody(production);
-  if (renderBody === null || renderBody === undefined) return null;
+  if (renderBody === undefined) return null;
+  const fnName = `stringify_${rustIdent(production.nodeType)}__alt${altIdx}`;
+  // Scalar-body production — `ast: '<lit>'` (litEnum: Operator, FreqValue,
+  // …), `ast: true / false / 42`, `ast: null`. The stringify dispatcher
+  // emits a wrapper that calls every __altN; without a function here the
+  // binary fails to link. The fix: check the value equals the scalar
+  // discriminant; on match emit the production's source (the spans
+  // concatenated verbatim).
+  if (renderBody === null || typeof renderBody === 'string' || typeof renderBody === 'boolean' || typeof renderBody === 'number') {
+    return emitScalarStringifyAlt(fnName, renderBody, production);
+  }
   if (typeof renderBody !== 'object') return null;
   if (Array.isArray(renderBody)) return null;
-  if (isTemplate(renderBody) || isStructureRef(renderBody)) {
-    // Template / bare-ref bodies: out of scope for Phase 6.4 minimum.
+  if (isStructureRef(renderBody)) {
+    // `ast: $.value` — the production's ast IS the named span's captured
+    // value. Stringify returns that captured string (or its render via the
+    // role dispatcher when recursive).
+    return emitRefStringifyAlt(fnName, renderBody, production);
+  }
+  if (isTemplate(renderBody)) {
+    // Template bodies remain out of scope for Phase 6.4.
     return null;
   }
   const obj = renderBody as Record<string, RenderBody>;
@@ -878,7 +894,18 @@ function emitStringifyAltFn(
   // field qualifies; pick the first one). Most ASTs in this repo use
   // `type:` by convention.
   const discrim = pickDiscriminator(obj);
-  const fnName = `stringify_${rustIdent(production.nodeType)}__alt${altIdx}`;
+
+  // Prefer the inverse direction: when the production declares a source
+  // template (e.g. `source: tpl\`${$.key} = ${$.value}\``), drive the emit
+  // straight off its `parts` + `slots`. That preserves the EXACT inter-slot
+  // whitespace the schema author wrote — the heuristic fallback below
+  // either drops or inserts spaces that don't match (Phase 6.5 surfaced this
+  // for toml `key= value`, pg-select `SELECT *FROM`, rrule `FREQ= DAILY`).
+  const sourceTpl = findSourceTemplate(production);
+  if (sourceTpl !== null) {
+    return emitTemplateStringifyBody(fnName, obj, production, sourceTpl, discrim);
+  }
+
   const lines: string[] = [];
   lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
   if (discrim !== null) {
@@ -912,6 +939,196 @@ function emitStringifyAltFn(
     firstEmit = false;
   }
   lines.push(`    Some(__out)`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+function findSourceTemplate(production: Production): import('@parser2/parser').Template | null {
+  // The same production may declare several render targets (cron has both
+  // ast and source). We want whichever target's body IS a Template so the
+  // inverse stringify can replay the author's literal text verbatim.
+  for (const entry of production.renders.values()) {
+    if (isTemplate(entry.body)) return entry.body;
+  }
+  return null;
+}
+
+function emitTemplateStringifyBody(
+  fnName: string,
+  astBody: Record<string, RenderBody>,
+  production: Production,
+  tpl: import('@parser2/parser').Template,
+  discrim: ReturnType<typeof pickDiscriminator>,
+): string {
+  const lines: string[] = [];
+  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  if (discrim !== null) {
+    lines.push(`    let ty = value.obj_get(${rustString(discrim.field)})?;`);
+    lines.push(`    if let Value::String(s) = ty { if s != ${rustString(discrim.value)} { return None; } } else { return None; }`);
+  }
+  // Bind every slot's ast field once. Slots may reuse the same capture; only
+  // emit the local once per unique name.
+  const bound = new Set<string>();
+  for (const slot of tpl.slots) {
+    if (slot.kind !== 'capture') continue;
+    if (bound.has(slot.ref)) continue;
+    bound.add(slot.ref);
+    const fieldKey = findFieldForCapture(astBody, slot.ref);
+    // No corresponding ast field — fall back to None below (stringify will
+    // silently skip the slot, matching the TS backend's `?? ''` pattern for
+    // unused refs).
+    const v = rustIdent(slot.ref);
+    if (fieldKey === null) {
+      lines.push(`    let ${v}: Option<&Value> = None;`);
+    } else {
+      lines.push(`    let ${v} = value.obj_get(${rustString(fieldKey)});`);
+    }
+  }
+  lines.push(`    let mut __out = String::new();`);
+  // Walk parts[0], slot[0], parts[1], slot[1], … parts[last].
+  for (let i = 0; i < tpl.parts.length; i++) {
+    const part = tpl.parts[i]!;
+    if (part) lines.push(`    __out.push_str(${rustString(part)});`);
+    if (i < tpl.slots.length) {
+      const slot = tpl.slots[i]!;
+      if (slot.kind !== 'capture') continue;
+      const span = production.spans.find((s) => s.name === slot.ref);
+      if (!span) continue;
+      lines.push(...emitTemplateSlot(span, slot.ref).map((l) => `    ${l}`));
+    }
+  }
+  lines.push(`    Some(__out)`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+function emitTemplateSlot(span: ResolvedSpan, captureName: string): string[] {
+  const v = rustIdent(captureName);
+  const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+  const isRecursive = span.recursiveRoles.length > 0;
+
+  if (repeatsMod !== undefined) {
+    const sep = (repeatsMod as RepeatsModifier).sep ?? ' ';
+    const role = isRecursive ? rustIdent(span.recursiveRoles[0]!) : null;
+    if (role === null) {
+      // repeats over a class — not common in tested schemas; output the
+      // raw slot's array as best-effort.
+      return [
+        `if let Some(Value::Array(items)) = ${v} {`,
+        `    for (i, item) in items.iter().enumerate() {`,
+        `        if i > 0 { __out.push_str(${rustString(sep)}); }`,
+        `        if let Value::String(s) = item { __out.push_str(s); }`,
+        `    }`,
+        `}`,
+      ];
+    }
+    return [
+      `if let Some(Value::Array(items)) = ${v} {`,
+      `    for (i, item) in items.iter().enumerate() {`,
+      `        if i > 0 { __out.push_str(${rustString(sep)}); }`,
+      `        __out.push_str(&stringify_${role}(item));`,
+      `    }`,
+      `}`,
+    ];
+  }
+
+  if (isRecursive) {
+    const role = rustIdent(span.recursiveRoles[0]!);
+    if (isOptional) {
+      return [
+        `if let Some(inner) = ${v} { if !matches!(inner, Value::Null) { __out.push_str(&stringify_${role}(inner)); } }`,
+      ];
+    }
+    return [
+      `if let Some(inner) = ${v} { __out.push_str(&stringify_${role}(inner)); }`,
+    ];
+  }
+
+  // Class capture (string-valued in the ast).
+  if (isOptional) {
+    return [`if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`];
+  }
+  return [`if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`];
+}
+
+/** Stringify a production whose `ast` body is a scalar (string, boolean,
+ *  number) — the litEnum shape (`...litEnum('Operator', ['!=', '<=', …])`)
+ *  and bare-literal alts (`relation('X', { encodings: { ast: true, ... } })`).
+ *
+ *  Strategy: gate on the value matching the scalar; on match, emit the
+ *  production's spans verbatim (each unnamed literal contributes its text;
+ *  named spans aren't possible here by definition — a scalar body has no
+ *  captures to inject). The vast majority of these productions are a single
+ *  literal span (the keyword being matched).
+ */
+function emitScalarStringifyAlt(
+  fnName: string,
+  body: string | boolean | number | null,
+  production: Production,
+): string {
+  const lines: string[] = [];
+  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  if (body === null) {
+    lines.push(`    if !matches!(value, Value::Null) { return None; }`);
+  } else if (typeof body === 'boolean') {
+    lines.push(`    if let Value::Bool(b) = value { if *b != ${body} { return None; } } else { return None; }`);
+  } else if (typeof body === 'number') {
+    lines.push(`    if let Value::Number(n) = value { if *n != ${body}_f64 { return None; } } else { return None; }`);
+  } else {
+    lines.push(`    if let Value::String(s) = value { if s != ${rustString(body)} { return None; } } else { return None; }`);
+  }
+  lines.push(`    let mut __out = String::new();`);
+  for (const span of production.spans) {
+    if (span.class === 'literal' && span.text !== undefined) {
+      lines.push(`    __out.push_str(${rustString(span.text)});`);
+    }
+  }
+  lines.push(`    Some(__out)`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+/** Stringify a production whose `ast` body is a bare `$.<span>` reference
+ *  — `relation('CommandWord', { ast: $.value, source: tpl\`${$.value}\` })`.
+ *  The ast value IS the named span's captured value, so stringify takes the
+ *  value directly:
+ *   - For a class-capturing span (ident/number/…), the captured value is a
+ *     string → output it verbatim.
+ *   - For a recursive span, dispatch through that role's stringify.
+ */
+function emitRefStringifyAlt(
+  fnName: string,
+  body: StructureRef,
+  production: Production,
+): string {
+  const lines: string[] = [];
+  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  if (body.__ref !== 'span-value') {
+    // span-presence / synthetic refs as bare ast aren't a real schema shape;
+    // bail conservatively rather than emit code that won't compile.
+    lines.push(`    None`);
+    lines.push(`}`);
+    return lines.join('\n');
+  }
+  const span = production.spans.find((s) => s.name === body.name);
+  if (!span) {
+    lines.push(`    None`);
+    lines.push(`}`);
+    return lines.join('\n');
+  }
+  if (span.recursiveRoles.length === 1) {
+    const role = rustIdent(span.recursiveRoles[0]!);
+    lines.push(`    Some(stringify_${role}(value))`);
+  } else if (span.recursiveRoles.length > 1) {
+    // Multi-role: fall back to the first role's stringify alt0 as a best-
+    // effort — the schema author can always extend this later.
+    const role = rustIdent(span.recursiveRoles[0]!);
+    lines.push(`    Some(stringify_${role}(value))`);
+  } else {
+    // Class capture: value must be a String. Output it verbatim.
+    lines.push(`    if let Value::String(s) = value { Some(s.clone()) } else { None }`);
+  }
   lines.push(`}`);
   return lines.join('\n');
 }
@@ -1053,11 +1270,31 @@ function rustString(text: string): string {
   return `"${escaped}"`;
 }
 
+// Reserved Rust 2021 edition keywords that would shadow as ordinary
+// identifiers. Schema authors freely pick capture names like `where`,
+// `type`, `match`, etc. — those need raw-identifier escaping in the emit
+// (`r#where`). Subset list: only keywords that can legitimately appear as
+// span/field names; struct/path-only keywords like `mod` or `crate` are
+// included defensively since they cost nothing to escape.
+const RUST_RESERVED: ReadonlySet<string> = new Set([
+  'as', 'break', 'const', 'continue', 'crate', 'else', 'enum', 'extern',
+  'false', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop', 'match', 'mod',
+  'move', 'mut', 'pub', 'ref', 'return', 'self', 'Self', 'static', 'struct',
+  'super', 'trait', 'true', 'type', 'unsafe', 'use', 'where', 'while',
+  'async', 'await', 'dyn',
+  // Reserved for future use:
+  'abstract', 'become', 'box', 'do', 'final', 'macro', 'override', 'priv',
+  'typeof', 'unsized', 'virtual', 'yield', 'try',
+]);
+
 function rustIdent(name: string): string {
   // Rust identifier: replace illegal chars with underscores. Names are
   // already kebab-or-camel from the schema; conservatively replace anything
-  // not [A-Za-z0-9_].
-  return name.replace(/[^A-Za-z0-9_]/g, '_');
+  // not [A-Za-z0-9_]. Reserved keywords are wrapped as raw identifiers
+  // (e.g. `where` → `r#where`) so a schema span named `where`
+  // (pg-select) doesn't collide with Rust syntax.
+  const safe = name.replace(/[^A-Za-z0-9_]/g, '_');
+  return RUST_RESERVED.has(safe) ? `r#${safe}` : safe;
 }
 
 function rustChar(ch: string): string {

@@ -257,9 +257,7 @@ fn stringify_CronField__alt1(value: &Value) -> Option<String> {
     if let Value::String(s) = ty { if s != "step" { return None; } } else { return None; }
     let step = value.obj_get("step");
     let mut __out = String::new();
-    __out.push_str("*");
-    __out.push_str("/");
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    __out.push_str("*/");
     if let Some(Value::String(s)) = step { __out.push_str(s); }
     Some(__out)
 }
@@ -281,7 +279,6 @@ fn stringify_CronField__alt3(value: &Value) -> Option<String> {
     let mut __out = String::new();
     if let Some(Value::String(s)) = start { __out.push_str(s); }
     __out.push_str("-");
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
     if let Some(Value::String(s)) = end { __out.push_str(s); }
     Some(__out)
 }
@@ -318,6 +315,10 @@ fn parse_CommandWord(state: &mut State) -> Option<Value> {
     }
     state.pos = snapshot;
     None
+}
+
+fn stringify_CommandWord__alt0(value: &Value) -> Option<String> {
+    if let Value::String(s) = value { Some(s.clone()) } else { None }
 }
 
 fn stringify_CommandWord(value: &Value) -> String {
@@ -430,18 +431,16 @@ fn stringify_Cron__alt0(value: &Value) -> Option<String> {
     let command = value.obj_get("command");
     let mut __out = String::new();
     if let Some(inner) = minute { __out.push_str(&stringify_CronField(inner)); }
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    __out.push_str(" ");
     if let Some(inner) = hour { __out.push_str(&stringify_CronField(inner)); }
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    __out.push_str(" ");
     if let Some(inner) = dayOfMonth { __out.push_str(&stringify_CronField(inner)); }
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    __out.push_str(" ");
     if let Some(inner) = month { __out.push_str(&stringify_CronField(inner)); }
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
+    __out.push_str(" ");
     if let Some(inner) = dayOfWeek { __out.push_str(&stringify_CronField(inner)); }
-    if !__out.is_empty() && !__out.ends_with(' ') { __out.push(' '); }
-    if let Some(inner) = command {
-        if !matches!(inner, Value::Null) { __out.push_str(&stringify_Command(inner)); }
-    }
+    __out.push_str(" ");
+    if let Some(inner) = command { if !matches!(inner, Value::Null) { __out.push_str(&stringify_Command(inner)); } }
     Some(__out)
 }
 

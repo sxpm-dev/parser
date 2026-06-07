@@ -85,7 +85,7 @@ test('rust backend: ident span captures the slice + Object AST references it', (
   });
   const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
   assert.match(code, /let __name_start = state\.pos;/);
-  assert.match(code, /while state\.pos < state\.input\.len\(\) && is_ident_cont\(state\.input\[state\.pos\]\) \{/);
+  assert.match(code, /while state\.pos < state\.input\.len\(\) && \(?is_ident_cont\(state\.input\[state\.pos\]\)\)? \{/);
   assert.match(code, /let __name_end = state\.pos;/);
   assert.match(code, /let name: String = state\.src\[__name_start\.\.__name_end\]\.to_string\(\);/);
   assert.match(code, /Value::String\(name\.clone\(\)\)/);
@@ -177,6 +177,91 @@ test('rust backend: rejects recursive spans with Phase-6.0 error', () => {
     () => generateParser(schema, undefined, { backend: RUST_BACKEND }),
     /Phase 6\.0.*recursive spans not yet supported/,
   );
+});
+
+test('rust backend (6.1): number().int() scans digits and captures the slice', () => {
+  const schema = defineSchema({
+    rootType: 'N',
+    examples: [
+      relation('N', {
+        input: '42',
+        encodings: {
+          src: parse([span('value', '42').number().int()]),
+          ast: { type: 'n', value: $.value },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // is_digit predicate must be present in the preamble.
+  assert.match(code, /fn is_digit\(b: u8\) -> bool \{/);
+  // Integer-only — no fractional tail.
+  assert.match(
+    code,
+    /while state\.pos < state\.input\.len\(\) && \(is_digit\(state\.input\[state\.pos\]\)\) \{[\s\S]+?state\.pos \+= 1;[\s\S]+?\}/,
+  );
+  assert.doesNotMatch(code, /b'\.' /);
+  // Capture binds the slice.
+  assert.match(code, /let value: String = state\.src\[__value_start\.\.__value_end\]\.to_string\(\);/);
+});
+
+test('rust backend (6.1): plain number() admits fractional + exponent tail', () => {
+  const schema = defineSchema({
+    rootType: 'N',
+    examples: [
+      relation('N', {
+        input: '3.14',
+        encodings: {
+          src: parse([span('value', '3.14').number()]),
+          ast: { type: 'n', value: $.value },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  // Decimal-point branch.
+  assert.match(code, /if state\.pos < state\.input\.len\(\) && state\.input\[state\.pos\] == b'\.' \{/);
+  // Exponent branch.
+  assert.match(code, /state\.input\[state\.pos\] == b'e' \|\| state\.input\[state\.pos\] == b'E'/);
+});
+
+test('rust backend (6.1): string().doubleQuoted() consumes "..." with \\\\ escapes', () => {
+  const schema = defineSchema({
+    rootType: 'S',
+    examples: [
+      relation('S', {
+        input: '"hi"',
+        encodings: {
+          src: parse([span('s', '"hi"').string().doubleQuoted()]),
+          ast: { type: 's', s: $.s },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /state\.input\[state\.pos\] != b'"'/);
+  assert.match(code, /if b == b'\\\\' && state\.pos \+ 1 < state\.input\.len\(\) \{/);
+  assert.match(code, /state\.pos \+= 2;/);
+  // Closing-quote branch breaks out of the scan loop.
+  assert.match(code, /if b == b'"' \{/);
+});
+
+test('rust backend (6.1): string().singleQuoted() targets the apostrophe', () => {
+  const schema = defineSchema({
+    rootType: 'S',
+    examples: [
+      relation('S', {
+        input: "'hi'",
+        encodings: {
+          src: parse([span('s', "'hi'").string().singleQuoted()]),
+          ast: { type: 's', s: $.s },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
+  assert.match(code, /state\.input\[state\.pos\] != b'\\''/);
+  assert.match(code, /if b == b'\\'' \{/);
 });
 
 test('rust backend: per-production fn name follows parse_<NodeType>__alt<idx>', () => {

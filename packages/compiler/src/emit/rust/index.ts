@@ -162,6 +162,10 @@ fn is_ident_cont(b: u8) -> bool {
     is_ident_start(b) || (b >= b'0' && b <= b'9') || b == b'-'
 }
 
+fn is_digit(b: u8) -> bool {
+    b >= b'0' && b <= b'9'
+}
+
 fn match_literal(state: &mut State, lit: &str) -> bool {
     let bytes = lit.as_bytes();
     let end = state.pos + bytes.len();
@@ -231,31 +235,131 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
     return;
   }
   if (span.class === 'ident') {
-    const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
-    const endVar = `__${rustIdent(span.name ?? 'anon')}_end`;
-    lines.push(
-      `    let ${startVar} = state.pos;\n` +
-        `    if state.pos >= state.input.len() || !is_ident_start(state.input[state.pos]) {\n` +
-        `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
-        `        state.pos = entry_pos;\n` +
-        `        return None;\n` +
-        `    }\n` +
-        `    state.pos += 1;\n` +
-        `    while state.pos < state.input.len() && is_ident_cont(state.input[state.pos]) {\n` +
-        `        state.pos += 1;\n` +
-        `    }\n` +
-        `    let ${endVar} = state.pos;`,
-    );
-    if (span.name !== undefined) {
-      const v = rustIdent(span.name);
-      lines.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
-    }
+    emitClassSpan(lines, span, {
+      startPredicate: `is_ident_start(state.input[state.pos])`,
+      contPredicate: `is_ident_cont(state.input[state.pos])`,
+    });
+    return;
+  }
+  if (span.class === 'number') {
+    // Phase 6.1: integer-or-decimal number. The .int() refinement narrows
+    // to `[0-9]+`; without it we also allow an optional `.<digits>` and
+    // an optional `[eE][+-]?[0-9]+` exponent. Sign is NOT consumed here —
+    // unary minus belongs to the unary-prefix path (Phase 5).
+    const isInt = span.refinements.some((r) => r.name === 'int');
+    const contPredicate = `is_digit(state.input[state.pos])`;
+    emitClassSpan(lines, span, {
+      startPredicate: `is_digit(state.input[state.pos])`,
+      contPredicate,
+      afterContScan: isInt ? '' : NUMBER_FRACTION_EXPONENT_SCAN,
+    });
+    return;
+  }
+  if (span.class === 'string') {
+    // Phase 6.1: quoted string with one of doubleQuoted / singleQuoted /
+    // backtick refinements. Default (no refinement) accepts double-quoted.
+    const quote = stringQuoteChar(span);
+    emitQuotedStringSpan(lines, span, quote);
     return;
   }
   throw new CompilerError(
     `rust backend (Phase 6.0): span class '${span.class}' not yet supported`,
   );
 }
+
+// Shared emitter for class spans that scan `start` then `cont*`. Optionally
+// runs an additional scan after the main loop (e.g. number's fractional /
+// exponent tail).
+function emitClassSpan(
+  lines: string[],
+  span: ResolvedSpan,
+  parts: {
+    readonly startPredicate: string;
+    readonly contPredicate: string;
+    readonly afterContScan?: string;
+  },
+): void {
+  const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
+  const endVar = `__${rustIdent(span.name ?? 'anon')}_end`;
+  const tail = parts.afterContScan ? `\n${parts.afterContScan}` : '';
+  lines.push(
+    `    let ${startVar} = state.pos;\n` +
+      `    if state.pos >= state.input.len() || !(${parts.startPredicate}) {\n` +
+      `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
+      `        state.pos = entry_pos;\n` +
+      `        return None;\n` +
+      `    }\n` +
+      `    state.pos += 1;\n` +
+      `    while state.pos < state.input.len() && (${parts.contPredicate}) {\n` +
+      `        state.pos += 1;\n` +
+      `    }${tail}\n` +
+      `    let ${endVar} = state.pos;`,
+  );
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    lines.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+  }
+}
+
+function emitQuotedStringSpan(lines: string[], span: ResolvedSpan, quote: string): string | void {
+  const startVar = `__${rustIdent(span.name ?? 'anon')}_start`;
+  const endVar = `__${rustIdent(span.name ?? 'anon')}_end`;
+  const quoteByte = `b${rustChar(quote)}`;
+  lines.push(
+    `    let ${startVar} = state.pos;\n` +
+      `    if state.pos >= state.input.len() || state.input[state.pos] != ${quoteByte} {\n` +
+      `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
+      `        state.pos = entry_pos;\n` +
+      `        return None;\n` +
+      `    }\n` +
+      `    state.pos += 1;\n` +
+      `    while state.pos < state.input.len() {\n` +
+      `        let b = state.input[state.pos];\n` +
+      `        if b == b'\\\\' && state.pos + 1 < state.input.len() {\n` +
+      `            state.pos += 2;\n` +
+      `            continue;\n` +
+      `        }\n` +
+      `        if b == ${quoteByte} {\n` +
+      `            state.pos += 1;\n` +
+      `            break;\n` +
+      `        }\n` +
+      `        state.pos += 1;\n` +
+      `    }\n` +
+      `    let ${endVar} = state.pos;`,
+  );
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    lines.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+  }
+}
+
+function stringQuoteChar(span: ResolvedSpan): string {
+  for (const ref of span.refinements) {
+    if (ref.name === 'doubleQuoted') return '"';
+    if (ref.name === 'singleQuoted') return "'";
+    if (ref.name === 'backtick') return '`';
+  }
+  return '"';
+}
+
+// Phase 6.1: number tail-scan when .int() is NOT in effect. Consumes an
+// optional `.<digits>` then an optional `[eE][+-]?<digits>`. Inlined so
+// the function body stays straight-line.
+const NUMBER_FRACTION_EXPONENT_SCAN = `    if state.pos < state.input.len() && state.input[state.pos] == b'.' {
+        state.pos += 1;
+        while state.pos < state.input.len() && is_digit(state.input[state.pos]) {
+            state.pos += 1;
+        }
+    }
+    if state.pos < state.input.len() && (state.input[state.pos] == b'e' || state.input[state.pos] == b'E') {
+        state.pos += 1;
+        if state.pos < state.input.len() && (state.input[state.pos] == b'+' || state.input[state.pos] == b'-') {
+            state.pos += 1;
+        }
+        while state.pos < state.input.len() && is_digit(state.input[state.pos]) {
+            state.pos += 1;
+        }
+    }`;
 
 // ---------------------------------------------------------------------------
 // Render-body emit
@@ -367,4 +471,14 @@ function rustIdent(name: string): string {
   // already kebab-or-camel from the schema; conservatively replace anything
   // not [A-Za-z0-9_].
   return name.replace(/[^A-Za-z0-9_]/g, '_');
+}
+
+function rustChar(ch: string): string {
+  // Rust byte-char literal: `b'x'`. Escape \, ', and non-printables.
+  if (ch === '\\') return "'\\\\'";
+  if (ch === "'") return "'\\''";
+  if (ch === '\n') return "'\\n'";
+  if (ch === '\r') return "'\\r'";
+  if (ch === '\t') return "'\\t'";
+  return `'${ch}'`;
 }

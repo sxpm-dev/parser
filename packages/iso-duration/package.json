@@ -9,7 +9,14 @@
     "test": "npm run generate && tsx --test test/*.test.ts",
     "bench": "npm run bench:parse && npm run bench:round-trip",
     "bench:parse": "npm run generate && tsx bench/parse.ts",
-    "bench:round-trip": "npm run generate && tsx bench/round-trip.ts"
+    "bench:round-trip": "npm run generate && tsx bench/round-trip.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts iso-duration",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts iso-duration --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts iso-duration",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts iso-duration --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts iso-duration",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
   },
   "exports": {
     ".": "./dist/index.js"

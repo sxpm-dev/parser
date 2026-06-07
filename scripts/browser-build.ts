@@ -10,13 +10,19 @@ type PackageName =
   | 'css-color'
   | 'css-length-percentage'
   | 'html'
+  | 'iso-duration'
   | 'js'
+  | 'js-expr'
   | 'json'
   | 'log'
   | 'mac'
   | 'markdown'
+  | 'pg-select'
   | 'proto'
-  | 'url';
+  | 'rrule'
+  | 'toml'
+  | 'url'
+  | 'yaml-block';
 
 const packageNames = new Set<PackageName>([
   'arn',
@@ -25,13 +31,19 @@ const packageNames = new Set<PackageName>([
   'css-color',
   'css-length-percentage',
   'html',
+  'iso-duration',
   'js',
+  'js-expr',
   'json',
   'log',
   'mac',
   'markdown',
+  'pg-select',
   'proto',
+  'rrule',
+  'toml',
   'url',
+  'yaml-block',
 ]);
 const explicitPackage = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);

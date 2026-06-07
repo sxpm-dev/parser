@@ -3,7 +3,18 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Bench } from 'tinybench';
 
-type PackageName = 'cron' | 'css' | 'html' | 'json' | 'markdown';
+type PackageName =
+  | 'cron'
+  | 'css'
+  | 'html'
+  | 'iso-duration'
+  | 'js-expr'
+  | 'json'
+  | 'markdown'
+  | 'pg-select'
+  | 'rrule'
+  | 'toml'
+  | 'yaml-block';
 
 type PerfCase = {
   readonly name: string;
@@ -20,7 +31,19 @@ type BaselineEntry = {
 
 type Baseline = Record<string, BaselineEntry>;
 
-const packageNames = new Set<PackageName>(['cron', 'css', 'html', 'json', 'markdown']);
+const packageNames = new Set<PackageName>([
+  'cron',
+  'css',
+  'html',
+  'iso-duration',
+  'js-expr',
+  'json',
+  'markdown',
+  'pg-select',
+  'rrule',
+  'toml',
+  'yaml-block',
+]);
 const args = process.argv.slice(2);
 const explicitPackage = args.find((arg) => !arg.startsWith('-'));
 const packageName = resolvePackageName(explicitPackage);
@@ -152,6 +175,60 @@ function createCases(name: PackageName): PerfCase[] {
       kb,
       input: generateJson(kb * 1024),
       run: (api, json) => (api.render as (input: string, opts: { target: string }) => unknown)(json, { target: 'ast' }),
+    }));
+  }
+
+  if (name === 'iso-duration') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateIsoDuration(kb * 1024),
+      run: (api, input) => parsePerLine(api, input),
+    }));
+  }
+
+  if (name === 'js-expr') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateJsExpr(kb * 1024),
+      run: (api, input) => parsePerLine(api, input),
+    }));
+  }
+
+  if (name === 'pg-select') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generatePgSelect(kb * 1024),
+      run: (api, input) => parsePerLine(api, input),
+    }));
+  }
+
+  if (name === 'rrule') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateRrule(kb * 1024),
+      run: (api, input) => parsePerLine(api, input),
+    }));
+  }
+
+  if (name === 'toml') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateToml(kb * 1024),
+      run: (api, toml) => (api.render as (input: string, opts: { target: string }) => unknown)(toml, { target: 'ast' }),
+    }));
+  }
+
+  if (name === 'yaml-block') {
+    return sizes.map((kb) => ({
+      name: `parse:${kb}KB`,
+      kb,
+      input: generateYamlBlock(kb * 1024),
+      run: (api, yaml) => (api.render as (input: string, opts: { target: string }) => unknown)(yaml, { target: 'ast' }),
     }));
   }
 
@@ -304,6 +381,136 @@ function repeat(seed: string, targetBytes: number): string {
   let out = '';
   while (out.length < targetBytes) out += seed;
   return out;
+}
+
+// Line-oriented bench runner — one iteration parses every line of the
+// input through `render(line, { target: 'ast' })`. Mirrors the cron
+// validate-per-row pattern but routes through the schema-default `render`
+// so it works for any parser whose root accepts one line at a time.
+function parsePerLine(api: Record<string, unknown>, input: string): unknown {
+  const render = api.render as (value: string, opts: { target: string }) => unknown;
+  let rows = 0;
+  for (const row of input.trim().split(/\n/)) {
+    if (row === '') continue;
+    render(row, { target: 'ast' });
+    rows++;
+  }
+  return rows;
+}
+
+function generateIsoDuration(targetBytes: number): string {
+  // ISO 8601 durations — date-only, time-only, full forms, and week
+  // designator. Mirrors the schema's tested surface so per-line bench
+  // measures realistic parse cost (no negatives / fractional values —
+  // the schema rejects those).
+  const seed = [
+    'P1Y2M3DT4H5M6S',
+    'PT15M',
+    'P2W',
+    'P10D',
+    'PT1H',
+    'PT45S',
+    'P1DT1H',
+    'P1Y2M',
+    'PT4H5M',
+    'P1MT1M',
+  ].join('\n') + '\n';
+  return repeat(seed, targetBytes);
+}
+
+function generateJsExpr(targetBytes: number): string {
+  // Mixed arithmetic / logical / parenthesised expressions covering
+  // every declared operator-precedence layer plus unary prefixes.
+  const seed = [
+    'a + b * c - d',
+    '(x + y) / z',
+    'a == b && c != d',
+    '!a || b',
+    'x ** y ** z',
+    '~a + ~b',
+    'a + b + c + d',
+    '(a + b) * (c - d) / e',
+    '42 + foo * bar',
+    'a >= b && b <= c',
+  ].join('\n') + '\n';
+  return repeat(seed, targetBytes);
+}
+
+function generatePgSelect(targetBytes: number): string {
+  // SELECT shapes that stay within the schema's tested surface — the
+  // grammar accepts numeric comparisons (no boolean literals, no
+  // string equality on the right-hand side).
+  const seed = [
+    'SELECT * FROM users',
+    'SELECT id, name FROM users',
+    'SELECT id, name, email FROM users',
+    'SELECT name FROM users WHERE id = 42',
+    'SELECT * FROM orders WHERE total > 100',
+    'SELECT a, b, c FROM t WHERE x <= 10',
+    'SELECT name, age FROM people WHERE age >= 18',
+    'SELECT a FROM t WHERE x < 1',
+    'SELECT * FROM users LIMIT 25',
+    'SELECT id FROM users WHERE active = 1 LIMIT 10',
+  ].join('\n') + '\n';
+  return repeat(seed, targetBytes);
+}
+
+function generateRrule(targetBytes: number): string {
+  // RFC 5545 RRULE strings exercising FREQ, COUNT, INTERVAL, BYDAY,
+  // BYMONTHDAY shapes.
+  const seed = [
+    'FREQ=DAILY',
+    'FREQ=DAILY;COUNT=10',
+    'FREQ=DAILY;INTERVAL=2',
+    'FREQ=WEEKLY;BYDAY=MO',
+    'FREQ=WEEKLY;BYDAY=MO,WE,FR',
+    'FREQ=MONTHLY;BYMONTHDAY=1,15',
+    'FREQ=MONTHLY;COUNT=12',
+    'FREQ=YEARLY;BYMONTH=1',
+    'FREQ=DAILY;COUNT=10;INTERVAL=2',
+    'FREQ=WEEKLY;COUNT=4;BYDAY=TU,TH',
+  ].join('\n') + '\n';
+  return repeat(seed, targetBytes);
+}
+
+function generateToml(targetBytes: number): string {
+  // Scalar key/value pairs that stay within the schema's tested
+  // surface — quoted strings, integers, booleans, and section
+  // headers. The schema today rejects floats with decimals, so they
+  // are intentionally omitted.
+  const block = [
+    'title = "parser benchmark"',
+    'count = 42',
+    'active = true',
+    'disabled = false',
+    'name = "alice"',
+    'home = "/home/alice"',
+    'version = "release"',
+    'retries = 3',
+    'timeout = 30',
+    'depth = 9001',
+  ].join('\n') + '\n';
+  return repeat(block, targetBytes);
+}
+
+function generateYamlBlock(targetBytes: number): string {
+  // Flat yaml-block document — each repeated unit is a top-level key
+  // with a scalar value. Keeps indent semantics simple so the bench
+  // input stays parseable when scaled to 100KB. Schema authors who
+  // want nested-block coverage can extend this later.
+  const block = [
+    'name: my-project',
+    'version: 1.0.0',
+    'author: alice',
+    'license: MIT',
+    'description: parser2 yaml-block benchmark',
+    'language: typescript',
+    'target: esnext',
+    'strict: true',
+    'declaration: true',
+    'composite: true',
+  ].join('\n') + '\n';
+  return repeat(block, targetBytes);
 }
 
 function hashInput(input: string): string {

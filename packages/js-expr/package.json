@@ -6,7 +6,16 @@
     "generate": "npm run build -w @parser2/compiler && npm run generate:ts",
     "generate:ts": "tsx ../../packages/compiler/src/cli.ts src/schema.ts --backend ts",
     "build": "tsc -b",
-    "test": "npm run generate && tsx --test test/*.test.ts"
+    "test": "npm run generate && tsx --test test/*.test.ts",
+    "bench": "npm run bench:parse",
+    "bench:parse": "npm run generate && tsx bench/parse.ts",
+    "browser:build": "tsx ../../scripts/browser-build.ts js-expr",
+    "perf:baseline": "tsx ../../scripts/perf-gate.ts js-expr --write",
+    "perf:gate": "tsx ../../scripts/perf-gate.ts js-expr",
+    "size:baseline": "npm run browser:build && tsx ../../scripts/size-gate.ts js-expr --write",
+    "size:gate": "npm run browser:build && tsx ../../scripts/size-gate.ts js-expr",
+    "baseline": "npm run generate && npm run perf:baseline && npm run size:baseline",
+    "gate": "npm run generate && npm run perf:gate && npm run size:gate"
   },
   "exports": {
     ".": "./dist/index.js"

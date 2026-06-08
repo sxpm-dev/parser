@@ -19,3 +19,4 @@ packages/compiler/test/.preamble-emit-*/
 # Phase 6.5 Rust differential test workdir — cargo projects + build cache
 packages/compiler/test/.rust-diff/
 packages/compiler/test/.rust-wasm/
+.bench-cache/

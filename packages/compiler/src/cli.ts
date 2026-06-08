@@ -9,31 +9,71 @@ import { BYTECODE_BACKEND } from './emit/bytecode/index.ts';
 import { RUST_BACKEND } from './emit/rust/index.ts';
 
 // Usage:
-//   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts [--backend ts|bytecode|rust]
+//   tsx packages/compiler/src/cli.ts packages/<schema>/src/schema.ts \
+//        [--ts] [--rs] [--bcode]                     # multi-backend (new)
+//        [--backend ts|bytecode|rust]                # single-backend (legacy)
 //
 // Imports the schema module (default export must be a SchemaDef), runs the
-// compiler, and writes packages/<schema>/src/_generated/parser<ext> where
-// <ext> comes from the selected backend (default: .ts).
+// compiler once per requested backend, and writes
+// `packages/<schema>/src/_generated/parser<ext>` per backend.
+//
+// Default behaviour (no flags): emit TS only — byte-identical to the
+// pre-multi-flag behaviour so every existing per-package `generate` script
+// keeps working without change.
+//
 // The packageName passed to the compiler is derived from the schema path —
 // it is the only piece of "identity" the compiler ever sees, and it never
 // influences parser behavior (only the generated file header and the
 // validator module metadata).
 
 const argv = process.argv.slice(2);
-const backendName = parseFlag('--backend', argv) ?? 'ts';
-const positional = argv.filter((arg, idx) => !isFlag(arg, idx, argv));
+const positional: string[] = [];
+const requested: Backend[] = [];
+const requestedNames = new Set<string>();
+
+for (let i = 0; i < argv.length; i++) {
+  const arg = argv[i]!;
+  if (arg === '--ts') {
+    addBackend(TS_BACKEND);
+  } else if (arg === '--rs' || arg === '--rust') {
+    addBackend(RUST_BACKEND);
+  } else if (arg === '--bcode' || arg === '--bytecode') {
+    addBackend(BYTECODE_BACKEND);
+  } else if (arg === '--backend') {
+    const name = argv[++i];
+    if (name === undefined || name.startsWith('--')) {
+      throw new Error('--backend requires a value');
+    }
+    addBackend(resolveBackend(name));
+  } else if (arg.startsWith('--')) {
+    throw new Error(`Unknown flag: ${arg}`);
+  } else {
+    positional.push(arg);
+  }
+}
+
 const schemaArg = positional[0];
 if (!schemaArg) {
-  console.error('usage: tsx packages/compiler/src/cli.ts <schema.ts> [--backend ts|bytecode|rust]');
+  console.error(
+    'usage: tsx packages/compiler/src/cli.ts <schema.ts> [--ts] [--rs] [--bcode] | [--backend ts|bytecode|rust]',
+  );
   process.exit(1);
 }
 
+// Back-compat: no flags ⇒ TS only.
+if (requested.length === 0) addBackend(TS_BACKEND);
+
 const schemaPath = isAbsolute(schemaArg) ? schemaArg : resolve(process.cwd(), schemaArg);
-const backend = resolveBackend(backendName);
 
-await main(schemaPath, backend);
+await main(schemaPath, requested);
 
-async function main(path: string, backend: Backend): Promise<void> {
+function addBackend(backend: Backend): void {
+  if (requestedNames.has(backend.name)) return;
+  requestedNames.add(backend.name);
+  requested.push(backend);
+}
+
+async function main(path: string, backends: ReadonlyArray<Backend>): Promise<void> {
   const module = (await import(pathToFileURL(path).href)) as { default?: unknown; validation?: unknown };
   const schema = module.default;
   if (!isSchema(schema)) {
@@ -41,12 +81,14 @@ async function main(path: string, backend: Backend): Promise<void> {
   }
   const validation = isValidation(module.validation) ? module.validation : undefined;
   const packageName = packageNameFromPath(path);
-  const code = generateParser(schema, validation, { packageName, backend });
   const outDir = resolve(dirname(path), '_generated');
-  const outFile = resolve(outDir, `parser${backend.fileExtension}`);
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(outFile, code);
-  console.log(`generated ${relative(outFile)}`);
+  for (const backend of backends) {
+    const code = generateParser(schema, validation, { packageName, backend });
+    const outFile = resolve(outDir, `parser${backend.fileExtension}`);
+    writeFileSync(outFile, code);
+    console.log(`generated ${relative(outFile)}`);
+  }
 }
 
 function resolveBackend(name: string): Backend {
@@ -54,23 +96,6 @@ function resolveBackend(name: string): Backend {
   if (name === 'bytecode') return BYTECODE_BACKEND;
   if (name === 'rust') return RUST_BACKEND;
   throw new Error(`Unknown backend: ${name}`);
-}
-
-function parseFlag(name: string, argv: readonly string[]): string | undefined {
-  const idx = argv.indexOf(name);
-  if (idx === -1) return undefined;
-  const value = argv[idx + 1];
-  if (value === undefined || value.startsWith('--')) {
-    throw new Error(`Flag ${name} requires a value`);
-  }
-  return value;
-}
-
-function isFlag(arg: string, idx: number, argv: readonly string[]): boolean {
-  if (arg.startsWith('--')) return true;
-  // The token immediately after a known flag is its value, not a positional.
-  const prev = argv[idx - 1];
-  return prev === '--backend';
 }
 
 function packageNameFromPath(path: string): string {

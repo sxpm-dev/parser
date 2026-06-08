@@ -31,8 +31,9 @@
 // compile-and-run smoke test.
 
 import type { Backend } from '../backend.ts';
-import { CompilerError, type InferredSchema, type Production, type ResolvedSpan } from '../../model.ts';
+import { CompilerError, type InferredSchema, type NodeTypeInfo, type Production, type ResolvedSpan } from '../../model.ts';
 import { isStructureRef, isTemplate, type RenderBody, type StructureRef } from '@parser2/parser';
+import { detectPrefixShare, type PrefixShare } from '../v2/prefix-share-dispatch.ts';
 
 export const RUST_BACKEND: Backend = {
   name: 'rust',
@@ -53,10 +54,24 @@ function emitRustParser(schema: InferredSchema): string {
   parts.push(RUST_PREAMBLE);
   for (const info of schema.nodeTypes.values()) {
     if (info.productions.length === 0) continue;
+    // Phase 6.5 follow-up #1 — generic shared-prefix factoring. When >=2
+    // alts share a byte-identical K-span prefix and split on a literal
+    // token after it, the parser fan-out for the losing alts re-parses
+    // the prefix from scratch (pg-select.Select: 4 alts re-parsing
+    // `SELECT cols FROM table` four times). The factored dispatcher
+    // parses the prefix ONCE, peeks the next literal, and routes to the
+    // matching alt tail with the prefix captures forwarded as params.
+    // Mirrors the TS-backend logic in emit/v2/prefix-share-dispatch.ts.
+    const prefixShare = info.productions.length > 1 ? detectPrefixShare(info) : null;
+    const prefixCaps = prefixShare !== null ? prefixCaptureParams(info, prefixShare) : null;
     for (let i = 0; i < info.productions.length; i++) {
-      parts.push(emitProductionFn(schema, info.productions[i]!, i));
+      parts.push(emitProductionFn(schema, info.productions[i]!, i, prefixCaps));
     }
-    parts.push(emitNodeTypeDispatcher(info.name, info.productions.length));
+    if (prefixShare !== null && prefixCaps !== null) {
+      parts.push(emitPrefixShareDispatcherRust(schema, info, prefixShare, prefixCaps));
+    } else {
+      parts.push(emitNodeTypeDispatcher(info.name, info.productions.length));
+    }
     // Phase 6.4 — per-production inverse + per-node dispatcher.
     for (let i = 0; i < info.productions.length; i++) {
       const fn = emitStringifyAltFn(schema, info.productions[i]!, i);
@@ -67,6 +82,55 @@ function emitRustParser(schema: InferredSchema): string {
   parts.push(emitRenderEntry(schema));
   parts.push(emitStringifyEntry(schema));
   return parts.join('\n\n') + '\n';
+}
+
+// Forwarded captures + Rust types for an alt-tail's function signature
+// when prefix-share factoring is in effect. The order is the order of named
+// spans within the shared prefix — every alt tail receives the same list,
+// so the dispatcher's call site can pass positional arguments without
+// per-alt remapping. Span-name → Rust parameter type, derived from the
+// span's class / modifiers (same shape the non-tail-mode emit would have
+// bound as a local).
+type PrefixCaptureParam = { readonly name: string; readonly ty: string };
+type PrefixCaptures = {
+  readonly skipCount: number;
+  readonly params: ReadonlyArray<PrefixCaptureParam>;
+};
+
+function prefixCaptureParams(info: NodeTypeInfo, share: PrefixShare): PrefixCaptures | null {
+  // The Rust backend doesn't emit a binding for a NAMED PURE-LITERAL span
+  // (no recursive roles, class === 'literal') — emitSpan's literal arm just
+  // matches the text and binds `__<name>_start`, never `<name>` itself.
+  // detectPrefixShare can match a prefix that includes such a span; if it
+  // does, the alt tail would receive a typed parameter with no
+  // corresponding caller-side binding. Conservatively bail. Recursive spans
+  // (.of() with or without .repeats()) commonly carry class === 'literal'
+  // because span(name, exampleText) defaults the class to literal — those
+  // are fine because emitSpan dispatches on recursiveRoles, not on class,
+  // and produces a real local binding.
+  const prefixProd = info.productions[0]!;
+  const params: PrefixCaptureParam[] = [];
+  for (let i = 0; i < share.prefixLen; i++) {
+    const s = prefixProd.spans[i]!;
+    if (!s.name) continue;
+    if (s.class === 'literal' && s.recursiveRoles.length === 0) return null;
+    params.push({ name: s.name, ty: rustCaptureType(s) });
+  }
+  return { skipCount: share.prefixLen, params };
+}
+
+// The Rust type the dispatcher binds locally for a prefix span (and that
+// each alt tail receives by value as a parameter). Mirrors emitSpan's local
+// binding for the same span: class spans get `String`, .repeats() spans
+// get `Vec<Value>`, recursive spans get `Value`, with `Option<...>` for
+// optional variants.
+function rustCaptureType(span: ResolvedSpan): string {
+  const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const isRepeats = span.modifiers.some((m) => m.kind === 'repeats');
+  const isRecursive = span.recursiveRoles.length > 0;
+  if (isRepeats) return 'Vec<Value>';
+  if (isRecursive) return isOptional ? 'Option<Value>' : 'Value';
+  return isOptional ? 'Option<String>' : 'String';
 }
 
 function emitHeader(schema: InferredSchema): string {
@@ -210,14 +274,38 @@ fn syntax_error(state: &State) -> String {
 // Per-production parse function
 // ---------------------------------------------------------------------------
 
-function emitProductionFn(schema: InferredSchema, production: Production, altIdx: number): string {
+function emitProductionFn(
+  schema: InferredSchema,
+  production: Production,
+  altIdx: number,
+  prefixCaps: PrefixCaptures | null,
+): string {
   const fnName = `parse_${rustIdent(production.nodeType)}__alt${altIdx}`;
   const lines: string[] = [];
-  lines.push(`fn ${fnName}(state: &mut State) -> Option<Value> {`);
-  lines.push(`    let entry_pos = state.pos;`);
+  if (prefixCaps !== null) {
+    // Tail-mode signature: dispatcher passes its `entry_pos` rewind boundary
+    // plus every prefix capture by value. The captures are typed by their
+    // span shape so the render body references them with the same syntax
+    // the non-tail-mode emit would have produced for the same name.
+    const paramList = [
+      `state: &mut State`,
+      `entry_pos: usize`,
+      ...prefixCaps.params.map((p) => `${rustIdent(p.name)}: ${p.ty}`),
+    ];
+    lines.push(`fn ${fnName}(${paramList.join(', ')}) -> Option<Value> {`);
+  } else {
+    lines.push(`fn ${fnName}(state: &mut State) -> Option<Value> {`);
+    lines.push(`    let entry_pos = state.pos;`);
+  }
 
-  for (let i = 0; i < production.spans.length; i++) {
+  const startIdx = prefixCaps ? prefixCaps.skipCount : 0;
+  for (let i = startIdx; i < production.spans.length; i++) {
     const span = production.spans[i]!;
+    // `if (i > 0)` includes the case i === skipCount in tail mode — the
+    // dispatcher leaves state.pos at the post-prefix position WITHOUT
+    // consuming the inter-span ws into the suffix, so the alt tail still
+    // needs to skip ws before its first own span. Matches the TS-backend
+    // emit/v2/production.ts loop shape.
     if (i > 0) lines.push(`    skip_ws(state);`);
     emitSpan(lines, span, schema);
   }
@@ -819,6 +907,114 @@ function lookupNamedSpan(production: Production, name: string): ResolvedSpan {
 // ---------------------------------------------------------------------------
 // Per-NodeType dispatcher: try each alt in order; first to succeed wins.
 // ---------------------------------------------------------------------------
+
+// Phase 6.5 follow-up #1 — Rust prefix-share dispatcher.
+//
+// Mirror of emit/v2/prefix-share-dispatch.ts::emitPrefixShareDispatcher,
+// reshaped for Rust's ownership model and the local byte-slice API:
+//
+//   1. skip_ws at entry — matches every other parse_NodeType entry.
+//   2. Inline-parse the shared prefix spans via emitSpan. This binds locals
+//      with the SAME names the alt tails declare as parameters (e.g.
+//      `columns: Vec<Value>`, `table: String`), so the alt-tail call sites
+//      can forward them positionally.
+//   3. Snapshot post-prefix state.pos into `__post_pos` and ws-skip-peek
+//      the next byte position without committing.
+//   4. For each distinct suffix-head literal (longer first when heads tie
+//      in starting byte), branch on `state.input[__peek..].starts_with(...)`
+//      and probe each alt with that head — longest-suffix alt first within
+//      a group (matches the speculation order in dispatch.ts).
+//   5. Fall through to the empty-suffix alt (at most one) by value-move; the
+//      preceding probes clone() each capture so the move-on-fallthrough is
+//      well-typed. When no empty alt exists, rewind to entry_pos and return
+//      None.
+//
+// Ownership note: each prefix capture is forwarded BY VALUE (not by
+// reference) so the alt body emits unchanged — `Value::String(table.clone())`
+// in the render body works whether `table` was a local or a parameter.
+// The dispatcher clones each capture for non-final probes; the final
+// fallthrough moves the originals.
+function emitPrefixShareDispatcherRust(
+  schema: InferredSchema,
+  info: NodeTypeInfo,
+  share: PrefixShare,
+  caps: PrefixCaptures,
+): string {
+  const fnName = `parse_${rustIdent(info.name)}`;
+  const prefixProd = info.productions[0]!;
+  const lines: string[] = [];
+  lines.push(`fn ${fnName}(state: &mut State) -> Option<Value> {`);
+  lines.push(`    let entry_pos = state.pos;`);
+  lines.push(`    skip_ws(state);`);
+
+  // Emit each prefix span using the standard emitter. emitSpan reads
+  // `entry_pos` from the enclosing scope for its failure-rewind paths;
+  // since we declared it as a local above, those paths return None from
+  // this dispatcher — the correct propagation for "this node didn't
+  // match anywhere".
+  for (let i = 0; i < share.prefixLen; i++) {
+    const span = prefixProd.spans[i]!;
+    if (i > 0) lines.push(`    skip_ws(state);`);
+    emitSpan(lines, span, schema);
+  }
+
+  lines.push(`    let __post_pos = state.pos;`);
+  // Read-only ws-skip-peek. We're looking for the first non-ws byte after
+  // the prefix; each branch tests startsWith against its suffix-head
+  // literal from that position.
+  lines.push(`    let mut __peek = state.pos;`);
+  lines.push(`    while __peek < state.input.len() {`);
+  lines.push(`        let b = state.input[__peek];`);
+  lines.push(`        if b == b' ' || b == b'\\t' || b == b'\\n' || b == b'\\r' { __peek += 1; continue; }`);
+  lines.push(`        break;`);
+  lines.push(`    }`);
+
+  // Group alts by suffix head (longest-suffix first within a group, like
+  // dispatch.ts's speculation order). Empty-suffix alt is the fallthrough.
+  const byHead = new Map<string, number[]>();
+  let emptyAltIdx: number | null = null;
+  for (const { altIdx, head } of share.suffixHeads) {
+    if (head === null) { emptyAltIdx = altIdx; continue; }
+    let bucket = byHead.get(head);
+    if (!bucket) { bucket = []; byHead.set(head, bucket); }
+    bucket.push(altIdx);
+  }
+  for (const bucket of byHead.values()) {
+    bucket.sort((a, b) => info.productions[b]!.spans.length - info.productions[a]!.spans.length);
+  }
+  // Emit longer heads first so e.g. "LIMITED" wins over "LIMIT". Within
+  // equal-length heads, Map insertion order is stable.
+  const headEntries = [...byHead.entries()].sort((a, b) => b[0].length - a[0].length);
+
+  // Forward args: every probe + the fallthrough need to pass entry_pos
+  // and the prefix captures. Probes clone() so the dispatcher retains
+  // ownership for the fallthrough.
+  const cloneArgs = ['state', 'entry_pos', ...caps.params.map((p) => `${rustIdent(p.name)}.clone()`)];
+  const moveArgs = ['state', 'entry_pos', ...caps.params.map((p) => rustIdent(p.name))];
+
+  for (const [head, altIdxs] of headEntries) {
+    const headBytes = `b${rustString(head)}`;
+    lines.push(`    if __peek <= state.input.len() && state.input[__peek..].starts_with(${headBytes}) {`);
+    for (const idx of altIdxs) {
+      const callFn = `parse_${rustIdent(info.name)}__alt${idx}`;
+      lines.push(`        state.pos = __post_pos;`);
+      lines.push(`        if let Some(v) = ${callFn}(${cloneArgs.join(', ')}) { return Some(v); }`);
+    }
+    lines.push(`    }`);
+  }
+
+  if (emptyAltIdx !== null) {
+    const callFn = `parse_${rustIdent(info.name)}__alt${emptyAltIdx}`;
+    lines.push(`    state.pos = __post_pos;`);
+    lines.push(`    ${callFn}(${moveArgs.join(', ')})`);
+  } else {
+    lines.push(`    state.pos = entry_pos;`);
+    lines.push(`    None`);
+  }
+
+  lines.push(`}`);
+  return lines.join('\n');
+}
 
 function emitNodeTypeDispatcher(nodeType: string, altCount: number): string {
   const fn = `parse_${rustIdent(nodeType)}`;

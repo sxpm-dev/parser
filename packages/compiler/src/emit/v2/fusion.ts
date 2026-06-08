@@ -963,6 +963,11 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
+    // Fusion emits a different return shape than the standard production
+    // body, so the Layer 1 raws-only capture isn't wired through here
+    // yet. Preserve schemas keep 'always' so iws sites in repeats spans
+    // continue to emit; standard schemas stay 'none'.
+    wsCaptureMode: schema.whitespace === 'preserve' ? 'always' : 'none',
     lineCommentMarkers,
     // Phase 5a — lazy capture on the Template-fused fast path. The
     // template emit's slot interleaver reads bindings.valueExpr; spans

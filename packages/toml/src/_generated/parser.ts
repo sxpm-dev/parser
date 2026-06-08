@@ -267,6 +267,8 @@ function parseValue__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -285,7 +287,7 @@ function parseValue__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Value#0", value: value };
+    const __captures: any = { __production: "Value#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -298,12 +300,14 @@ function parseValue__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Value#1" };
+    const __captures: any = { __production: "Value#1", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -316,12 +320,14 @@ function parseValue__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Value#2" };
+    const __captures: any = { __production: "Value#2", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -334,6 +340,8 @@ function parseValue__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -344,7 +352,7 @@ function parseValue__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Value#3", value: value };
+    const __captures: any = { __production: "Value#3", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -379,16 +387,22 @@ function parsePair(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __key_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
   const value = parseValue(state);
@@ -398,7 +412,7 @@ function parsePair(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Pair#0", key: key, value: value };
+    const __captures: any = { __production: "Pair#0", __ws: __ws, __litPres: __litPres, key: key, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -411,19 +425,27 @@ function parseTable(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __pairs_start = off;
   const pairs: unknown[] = [];
   while (true) {
@@ -440,7 +462,7 @@ function parseTable(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Table#0", name: name, pairs: pairs };
+    const __captures: any = { __production: "Table#0", __ws: __ws, __litPres: __litPres, name: name, pairs: pairs };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -453,6 +475,8 @@ function parseDocument(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
   while (true) {
@@ -484,7 +508,7 @@ function parseDocument(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Document#0", items: items };
+    const __captures: any = { __production: "Document#0", __ws: __ws, __litPres: __litPres, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

@@ -211,6 +211,13 @@ export function emitPrefixShareDispatcher(
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
+    // The prefix-share dispatcher emits prefix spans inline before
+    // dispatching to alt tails — it doesn't return a captures object
+    // with __ws / __litPres of its own. Preserve schemas keep their
+    // 'always' behavior so iws sites still emit; standard schemas
+    // stay at 'none' here (Layer 1 raws-only capture is opted in by
+    // emitProduction, not by this dispatcher).
+    wsCaptureMode: schema.whitespace === 'preserve' ? 'always' : 'none',
     lineCommentMarkers,
     referencedValueSpans,
   };

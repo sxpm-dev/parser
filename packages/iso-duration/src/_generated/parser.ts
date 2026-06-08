@@ -265,6 +265,8 @@ function parseDateUnit__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -272,13 +274,15 @@ function parseDateUnit__alt0(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 89)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "DateUnit#0", value: value };
+    const __captures: any = { __production: "DateUnit#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -291,6 +295,8 @@ function parseDateUnit__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -298,13 +304,15 @@ function parseDateUnit__alt1(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "DateUnit#1", value: value };
+    const __captures: any = { __production: "DateUnit#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -317,6 +325,8 @@ function parseDateUnit__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -324,13 +334,15 @@ function parseDateUnit__alt2(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 87)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "DateUnit#2", value: value };
+    const __captures: any = { __production: "DateUnit#2", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -343,6 +355,8 @@ function parseDateUnit__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -350,13 +364,15 @@ function parseDateUnit__alt3(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 68)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "DateUnit#3", value: value };
+    const __captures: any = { __production: "DateUnit#3", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -385,6 +401,8 @@ function parseTimeUnit__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -392,13 +410,15 @@ function parseTimeUnit__alt0(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 72)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "TimeUnit#0", value: value };
+    const __captures: any = { __production: "TimeUnit#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -411,6 +431,8 @@ function parseTimeUnit__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -418,13 +440,15 @@ function parseTimeUnit__alt1(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 77)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "TimeUnit#1", value: value };
+    const __captures: any = { __production: "TimeUnit#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -437,6 +461,8 @@ function parseTimeUnit__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -444,13 +470,15 @@ function parseTimeUnit__alt2(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 83)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "TimeUnit#2", value: value };
+    const __captures: any = { __production: "TimeUnit#2", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -478,9 +506,13 @@ function parseDuration__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
   while (true) {
@@ -498,7 +530,7 @@ function parseDuration__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Duration#0", date: date };
+    const __captures: any = { __production: "Duration#0", __ws: __ws, __litPres: __litPres, date: date };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -511,9 +543,13 @@ function parseDuration__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 80)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
   while (true) {
@@ -527,10 +563,14 @@ function parseDuration__alt1(state: State): unknown {
     if (off === __loopStart) break;
   }
   const __date_end = off;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 84)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __time_start = off;
   const time: unknown[] = [];
   while (true) {
@@ -548,7 +588,7 @@ function parseDuration__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Duration#1", date: date, time: time };
+    const __captures: any = { __production: "Duration#1", __ws: __ws, __litPres: __litPres, date: date, time: time };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

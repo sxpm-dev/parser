@@ -273,6 +273,8 @@ function parseYamlScalar(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let value: string = '';
   let __value_start = off;
   let __value_end = off;
@@ -347,7 +349,7 @@ function parseYamlScalar(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlScalar#0", value: value };
+    const __captures: any = { __production: "YamlScalar#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -360,18 +362,28 @@ function parseYamlMappingEntry(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __key_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
+  const __litPre_2 = off;
   if (input.charCodeAt(off) === 32) { off += 1; }
+  if (__litPres !== null) __litPres.push(off > __litPre_2);
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   state.pos = off;
   const __value_start = off;
   let value: unknown = null;
@@ -397,7 +409,7 @@ function parseYamlMappingEntry(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlMappingEntry#0", key: key, value: value };
+    const __captures: any = { __production: "YamlMappingEntry#0", __ws: __ws, __litPres: __litPres, key: key, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -410,6 +422,8 @@ function parseYamlMapping(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __entries_start = off;
   const entries: unknown[] = [];
   state.pos = off;
@@ -449,7 +463,7 @@ function parseYamlMapping(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlMapping#0", entries: entries };
+    const __captures: any = { __production: "YamlMapping#0", __ws: __ws, __litPres: __litPres, entries: entries };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -462,9 +476,13 @@ function parseYamlSequenceItem(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   state.pos = off;
   const __value_start = off;
   let value: unknown = null;
@@ -490,7 +508,7 @@ function parseYamlSequenceItem(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlSequenceItem#0", value: value };
+    const __captures: any = { __production: "YamlSequenceItem#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -503,6 +521,8 @@ function parseYamlSequence(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
   state.pos = off;
@@ -542,7 +562,7 @@ function parseYamlSequence(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlSequence#0", items: items };
+    const __captures: any = { __production: "YamlSequence#0", __ws: __ws, __litPres: __litPres, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -555,6 +575,8 @@ function parseYamlNode(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
   const __node_start = off;
   let node: unknown = null;
@@ -580,7 +602,7 @@ function parseYamlNode(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlNode#0", node: node };
+    const __captures: any = { __production: "YamlNode#0", __ws: __ws, __litPres: __litPres, node: node };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -593,6 +615,8 @@ function parseYamlBlock(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
   const __root_start = off;
   const root = parseYamlNode(state);
@@ -602,7 +626,7 @@ function parseYamlBlock(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlBlock#0", root: root };
+    const __captures: any = { __production: "YamlBlock#0", __ws: __ws, __litPres: __litPres, root: root };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

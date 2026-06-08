@@ -279,6 +279,8 @@ function parseComment(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __text_start = off;
   off += 2;
@@ -301,7 +303,7 @@ function parseComment(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Comment#0", text: text };
+    const __captures: any = { __production: "Comment#0", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -314,12 +316,14 @@ function parseJsonNull(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("null", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonNull#0" };
+    const __captures: any = { __production: "JsonNull#0", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -332,12 +336,14 @@ function parseJsonTrue(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("true", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonTrue#0" };
+    const __captures: any = { __production: "JsonTrue#0", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -350,12 +356,14 @@ function parseJsonFalse(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("false", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonFalse#0" };
+    const __captures: any = { __production: "JsonFalse#0", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -368,6 +376,8 @@ function parseJsonNumber(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -390,7 +400,7 @@ function parseJsonNumber(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonNumber#0", value: value };
+    const __captures: any = { __production: "JsonNumber#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -403,6 +413,8 @@ function parseJsonString__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -421,7 +433,7 @@ function parseJsonString__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonString#0", value: value };
+    const __captures: any = { __production: "JsonString#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -434,6 +446,8 @@ function parseJsonString__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -452,7 +466,7 @@ function parseJsonString__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonString#1", value: value };
+    const __captures: any = { __production: "JsonString#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -479,8 +493,11 @@ function parseJsonArray(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -498,10 +515,13 @@ function parseJsonArray(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __items_start = off;
   const items: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
+  const __items_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -547,14 +567,18 @@ function parseJsonArray(state: State): unknown {
     }
     }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseJsonValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__prevItemEnd, __itemStart));
     items.push(__cand);
+    __prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __items_end = off;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -572,12 +596,13 @@ function parseJsonArray(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonArray#0", items: items };
+    const __captures: any = { __production: "JsonArray#0", __ws: __ws, __litPres: __litPres, items_iws: __items_iws, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -590,6 +615,8 @@ function parseJsonMember__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __key_start = off;
   {
@@ -605,6 +632,7 @@ function parseJsonMember__alt0(state: State): unknown {
   }
   const __key_end = off;
   const key = decodeJsonString(input.slice(__key_start, __key_end));
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -622,8 +650,10 @@ function parseJsonMember__alt0(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -641,6 +671,7 @@ function parseJsonMember__alt0(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
   const value = parseJsonValue(state);
@@ -650,7 +681,7 @@ function parseJsonMember__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonMember#0", key: key, value: value };
+    const __captures: any = { __production: "JsonMember#0", __ws: __ws, __litPres: __litPres, key: key, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -663,12 +694,15 @@ function parseJsonMember__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __key_start = off;
   off++;
   while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
   const __key_end = off;
   const key = input.slice(__key_start, __key_end);
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -686,8 +720,10 @@ function parseJsonMember__alt1(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -705,6 +741,7 @@ function parseJsonMember__alt1(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __value_start = off;
   const value = parseJsonValue(state);
@@ -714,7 +751,7 @@ function parseJsonMember__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonMember#1", key: key, value: value };
+    const __captures: any = { __production: "JsonMember#1", __ws: __ws, __litPres: __litPres, key: key, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -743,8 +780,11 @@ function parseJsonObject(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -762,10 +802,13 @@ function parseJsonObject(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __entries_start = off;
   const entries: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
+  const __entries_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -811,14 +854,18 @@ function parseJsonObject(state: State): unknown {
     }
     }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseJsonMember(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__prevItemEnd >= 0 && __entries_iws !== null) __entries_iws.push(input.slice(__prevItemEnd, __itemStart));
     entries.push(__cand);
+    __prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __entries_end = off;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -836,12 +883,13 @@ function parseJsonObject(state: State): unknown {
     }
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonObject#0", entries: entries };
+    const __captures: any = { __production: "JsonObject#0", __ws: __ws, __litPres: __litPres, entries_iws: __entries_iws, entries: entries };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -854,6 +902,8 @@ function parseJsonValue(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
   const __node_start = off;
   let node: unknown = null;
@@ -899,7 +949,7 @@ function parseJsonValue(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "JsonValue#0", node: node };
+    const __captures: any = { __production: "JsonValue#0", __ws: __ws, __litPres: __litPres, node: node };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

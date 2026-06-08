@@ -268,6 +268,8 @@ function parseMarkdownDocument(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __children_start = off;
   const children: unknown[] = [];
   while (true) {
@@ -293,7 +295,7 @@ function parseMarkdownDocument(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownDocument#0", children: children };
+    const __captures: any = { __production: "MarkdownDocument#0", __ws: __ws, __litPres: __litPres, children: children };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -306,9 +308,13 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("######", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 6;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -339,7 +345,7 @@ function parseMarkdownLeaf__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#0", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#0", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -352,9 +358,13 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("#####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -385,7 +395,7 @@ function parseMarkdownLeaf__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#1", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#1", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -398,9 +408,13 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("####", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -431,7 +445,7 @@ function parseMarkdownLeaf__alt2(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#2", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#2", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -444,9 +458,13 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("###", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -477,7 +495,7 @@ function parseMarkdownLeaf__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#3", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#3", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -490,9 +508,13 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 35 && input.charCodeAt(off + 1) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -523,7 +545,7 @@ function parseMarkdownLeaf__alt4(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#4", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#4", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -536,9 +558,13 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -569,7 +595,7 @@ function parseMarkdownLeaf__alt5(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#5", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#5", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -582,6 +608,8 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -609,13 +637,15 @@ function parseMarkdownLeaf__alt6(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("===", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#6", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#6", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -628,6 +658,8 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -655,13 +687,15 @@ function parseMarkdownLeaf__alt7(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#7", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#7", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -674,12 +708,14 @@ function parseMarkdownLeaf__alt8(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("***", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#8" };
+    const __captures: any = { __production: "MarkdownLeaf#8", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -692,12 +728,14 @@ function parseMarkdownLeaf__alt9(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("___", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#9" };
+    const __captures: any = { __production: "MarkdownLeaf#9", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -710,12 +748,14 @@ function parseMarkdownLeaf__alt10(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#10" };
+    const __captures: any = { __production: "MarkdownLeaf#10", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -728,9 +768,13 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("- [x]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -761,7 +805,7 @@ function parseMarkdownLeaf__alt11(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#11", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#11", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -774,9 +818,13 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("- [ ]", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 5;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -807,7 +855,7 @@ function parseMarkdownLeaf__alt12(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#12", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#12", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -820,9 +868,13 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 43 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -853,7 +905,7 @@ function parseMarkdownLeaf__alt13(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#13", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#13", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -866,9 +918,13 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -899,7 +955,7 @@ function parseMarkdownLeaf__alt14(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#14", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#14", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -912,9 +968,13 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45 && input.charCodeAt(off + 1) === 32)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -945,7 +1005,7 @@ function parseMarkdownLeaf__alt15(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#15", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#15", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -958,6 +1018,8 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __index_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -965,10 +1027,14 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   while (off < len && isDigit(input.charCodeAt(off))) off++;
   const __index_end = off;
   const index = input.slice(__index_start, __index_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 46)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -999,7 +1065,7 @@ function parseMarkdownLeaf__alt16(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#16", index: index, text: text };
+    const __captures: any = { __production: "MarkdownLeaf#16", __ws: __ws, __litPres: __litPres, index: index, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1012,9 +1078,13 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -1045,7 +1115,7 @@ function parseMarkdownLeaf__alt17(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#17", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#17", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1058,16 +1128,22 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __lang_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __lang_end = off;
   const lang = input.slice(__lang_start, __lang_end);
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
@@ -1095,13 +1171,15 @@ function parseMarkdownLeaf__alt18(state: State): unknown {
     }
     __body_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#18", lang: lang, body: body };
+    const __captures: any = { __production: "MarkdownLeaf#18", __ws: __ws, __litPres: __litPres, lang: lang, body: body };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1114,9 +1192,13 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.startsWith("```\n", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 4;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
@@ -1144,13 +1226,15 @@ function parseMarkdownLeaf__alt19(state: State): unknown {
     }
     __body_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.startsWith("```", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#19", body: body };
+    const __captures: any = { __production: "MarkdownLeaf#19", __ws: __ws, __litPres: __litPres, body: body };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1163,9 +1247,13 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -1193,13 +1281,15 @@ function parseMarkdownLeaf__alt20(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#20", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#20", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1212,9 +1302,13 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -1242,13 +1336,15 @@ function parseMarkdownLeaf__alt21(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#21", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#21", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1261,9 +1357,13 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -1291,13 +1391,15 @@ function parseMarkdownLeaf__alt22(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 126 && input.charCodeAt(off + 1) === 126)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#22", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#22", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1310,9 +1412,13 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -1340,13 +1446,15 @@ function parseMarkdownLeaf__alt23(state: State): unknown {
     }
     __text_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 96)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#23", text: text };
+    const __captures: any = { __production: "MarkdownLeaf#23", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1359,9 +1467,13 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
@@ -1389,13 +1501,19 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     }
     __label_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
@@ -1423,13 +1541,15 @@ function parseMarkdownLeaf__alt24(state: State): unknown {
     }
     __url_end = off;
   }
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#24", label: label, url: url };
+    const __captures: any = { __production: "MarkdownLeaf#24", __ws: __ws, __litPres: __litPres, label: label, url: url };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1442,9 +1562,13 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let label: string = '';
   let __label_start = off;
   let __label_end = off;
@@ -1472,10 +1596,14 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     }
     __label_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
@@ -1503,13 +1631,15 @@ function parseMarkdownLeaf__alt25(state: State): unknown {
     }
     __id_end = off;
   }
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#25", label: label, id: id };
+    const __captures: any = { __production: "MarkdownLeaf#25", __ws: __ws, __litPres: __litPres, label: label, id: id };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1522,12 +1652,18 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
@@ -1555,13 +1691,19 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     }
     __alt_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
@@ -1589,13 +1731,15 @@ function parseMarkdownLeaf__alt26(state: State): unknown {
     }
     __url_end = off;
   }
+  const __wsStart_6 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#26", alt: alt, url: url };
+    const __captures: any = { __production: "MarkdownLeaf#26", __ws: __ws, __litPres: __litPres, alt: alt, url: url };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1608,12 +1752,18 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let alt: string = '';
   let __alt_start = off;
   let __alt_end = off;
@@ -1641,10 +1791,14 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     }
     __alt_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 93 && input.charCodeAt(off + 1) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
@@ -1672,13 +1826,15 @@ function parseMarkdownLeaf__alt27(state: State): unknown {
     }
     __id_end = off;
   }
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#27", alt: alt, id: id };
+    const __captures: any = { __production: "MarkdownLeaf#27", __ws: __ws, __litPres: __litPres, alt: alt, id: id };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1691,22 +1847,28 @@ function parseMarkdownLeaf__alt28(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 38)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 59)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#28", name: name };
+    const __captures: any = { __production: "MarkdownLeaf#28", __ws: __ws, __litPres: __litPres, name: name };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1719,24 +1881,34 @@ function parseMarkdownLeaf__alt29(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#29" };
+    const __captures: any = { __production: "MarkdownLeaf#29", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1749,30 +1921,44 @@ function parseMarkdownLeaf__alt30(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.startsWith("---", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 3;
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_6 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#30" };
+    const __captures: any = { __production: "MarkdownLeaf#30", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1785,9 +1971,13 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let first: string = '';
   let __first_start = off;
   let __first_end = off;
@@ -1815,10 +2005,14 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     }
     __first_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let second: string = '';
   let __second_start = off;
   let __second_end = off;
@@ -1846,13 +2040,15 @@ function parseMarkdownLeaf__alt31(state: State): unknown {
     }
     __second_end = off;
   }
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 124)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#31", first: first, second: second };
+    const __captures: any = { __production: "MarkdownLeaf#31", __ws: __ws, __litPres: __litPres, first: first, second: second };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1865,9 +2061,13 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
@@ -1895,13 +2095,19 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
     }
     __id_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
@@ -1932,7 +2138,7 @@ function parseMarkdownLeaf__alt32(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#32", id: id, url: url };
+    const __captures: any = { __production: "MarkdownLeaf#32", __ws: __ws, __litPres: __litPres, id: id, url: url };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1945,9 +2151,13 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
@@ -1975,13 +2185,19 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
     }
     __id_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -2012,7 +2228,7 @@ function parseMarkdownLeaf__alt33(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#33", id: id, text: text };
+    const __captures: any = { __production: "MarkdownLeaf#33", __ws: __ws, __litPres: __litPres, id: id, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2025,9 +2241,13 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 91 && input.charCodeAt(off + 1) === 94)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let id: string = '';
   let __id_start = off;
   let __id_end = off;
@@ -2055,13 +2275,15 @@ function parseMarkdownLeaf__alt34(state: State): unknown {
     }
     __id_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 93)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#34", id: id };
+    const __captures: any = { __production: "MarkdownLeaf#34", __ws: __ws, __litPres: __litPres, id: id };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2074,9 +2296,13 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __tag_start = off;
   off++;
@@ -2084,10 +2310,14 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
   const __tag_end = off;
   const tag = input.slice(__tag_start, __tag_end);
   if (!(tag.toLowerCase() === "div" || tag.toLowerCase() === "span" || tag.toLowerCase() === "p" || tag.toLowerCase() === "pre" || tag.toLowerCase() === "code" || tag.toLowerCase() === "blockquote" || tag.toLowerCase() === "a" || tag.toLowerCase() === "img" || tag.toLowerCase() === "br" || tag.toLowerCase() === "hr" || tag.toLowerCase() === "ul" || tag.toLowerCase() === "ol" || tag.toLowerCase() === "li" || tag.toLowerCase() === "dl" || tag.toLowerCase() === "dt" || tag.toLowerCase() === "dd" || tag.toLowerCase() === "table" || tag.toLowerCase() === "thead" || tag.toLowerCase() === "tbody" || tag.toLowerCase() === "tfoot" || tag.toLowerCase() === "tr" || tag.toLowerCase() === "td" || tag.toLowerCase() === "th" || tag.toLowerCase() === "caption" || tag.toLowerCase() === "figure" || tag.toLowerCase() === "figcaption" || tag.toLowerCase() === "section" || tag.toLowerCase() === "article" || tag.toLowerCase() === "header" || tag.toLowerCase() === "footer" || tag.toLowerCase() === "nav" || tag.toLowerCase() === "aside" || tag.toLowerCase() === "main" || tag.toLowerCase() === "address" || tag.toLowerCase() === "details" || tag.toLowerCase() === "summary" || tag.toLowerCase() === "h1" || tag.toLowerCase() === "h2" || tag.toLowerCase() === "h3" || tag.toLowerCase() === "h4" || tag.toLowerCase() === "h5" || tag.toLowerCase() === "h6" || tag.toLowerCase() === "em" || tag.toLowerCase() === "strong" || tag.toLowerCase() === "i" || tag.toLowerCase() === "b" || tag.toLowerCase() === "u" || tag.toLowerCase() === "s" || tag.toLowerCase() === "small" || tag.toLowerCase() === "sub" || tag.toLowerCase() === "sup" || tag.toLowerCase() === "kbd" || tag.toLowerCase() === "var" || tag.toLowerCase() === "samp" || tag.toLowerCase() === "cite" || tag.toLowerCase() === "q" || tag.toLowerCase() === "dfn" || tag.toLowerCase() === "abbr" || tag.toLowerCase() === "time" || tag.toLowerCase() === "mark" || tag.toLowerCase() === "ruby" || tag.toLowerCase() === "rt" || tag.toLowerCase() === "rp" || tag.toLowerCase() === "bdi" || tag.toLowerCase() === "bdo" || tag.toLowerCase() === "wbr" || tag.toLowerCase() === "form" || tag.toLowerCase() === "input" || tag.toLowerCase() === "button" || tag.toLowerCase() === "select" || tag.toLowerCase() === "option" || tag.toLowerCase() === "optgroup" || tag.toLowerCase() === "textarea" || tag.toLowerCase() === "label" || tag.toLowerCase() === "fieldset" || tag.toLowerCase() === "legend" || tag.toLowerCase() === "datalist" || tag.toLowerCase() === "output" || tag.toLowerCase() === "progress" || tag.toLowerCase() === "meter" || tag.toLowerCase() === "video" || tag.toLowerCase() === "audio" || tag.toLowerCase() === "source" || tag.toLowerCase() === "track" || tag.toLowerCase() === "canvas" || tag.toLowerCase() === "svg" || tag.toLowerCase() === "math" || tag.toLowerCase() === "iframe" || tag.toLowerCase() === "embed" || tag.toLowerCase() === "object" || tag.toLowerCase() === "param" || tag.toLowerCase() === "picture" || tag.toLowerCase() === "script" || tag.toLowerCase() === "style" || tag.toLowerCase() === "noscript" || tag.toLowerCase() === "template" || tag.toLowerCase() === "html" || tag.toLowerCase() === "head" || tag.toLowerCase() === "body" || tag.toLowerCase() === "title" || tag.toLowerCase() === "meta" || tag.toLowerCase() === "link" || tag.toLowerCase() === "base")) { state.pos = entryOff; return null; }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   let body: string = '';
   let __body_start = off;
   let __body_end = off;
@@ -2102,23 +2332,29 @@ function parseMarkdownLeaf__alt35(state: State): unknown {
     __body_end = off;
     body = input.slice(__body_start, __body_end);
   }
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 2;
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __closingTag_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __closingTag_end = off;
   const closingTag = input.slice(__closingTag_start, __closingTag_end);
+  const __wsStart_6 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_6, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#35", tag: tag, body: body, closingTag: closingTag };
+    const __captures: any = { __production: "MarkdownLeaf#35", __ws: __ws, __litPres: __litPres, tag: tag, body: body, closingTag: closingTag };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2131,9 +2367,13 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   let url: string = '';
   let __url_start = off;
   let __url_end = off;
@@ -2161,13 +2401,15 @@ function parseMarkdownLeaf__alt36(state: State): unknown {
     }
     __url_end = off;
   }
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownLeaf#36", url: url };
+    const __captures: any = { __production: "MarkdownLeaf#36", __ws: __ws, __litPres: __litPres, url: url };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2220,6 +2462,8 @@ function parseMarkdownParagraph(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let text: string = '';
   let __text_start = off;
   let __text_end = off;
@@ -2535,7 +2779,7 @@ function parseMarkdownParagraph(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownParagraph#0", text: text };
+    const __captures: any = { __production: "MarkdownParagraph#0", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

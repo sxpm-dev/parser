@@ -115,6 +115,12 @@ export type SpanContext = {
   // rebuild emit consults the same map and specializes the slot's
   // array-join to interleave items with the captured ws slices.
   readonly preserveWs: boolean;
+  // Layer 1 raws sidecar (2026-06-08-raws-sidecar.md). Controls whether
+  // the parser emits __ws / __litPres / *_iws capture sites, and how:
+  //   - 'always'    eager (preserve schemas; pre-raws behaviour)
+  //   - 'raws-only' lazy + runtime-gated on state.mode === 'raws'
+  //   - 'none'      no captures (tail-mode bodies)
+  readonly wsCaptureMode: 'always' | 'raws-only' | 'none';
   // Phase 4c v5: line comment markers declared via the `comment` token
   // class with a `line` refinement (`tokens: [{ class: 'comment',
   // refinements: [{ name: 'line', args: ['//'] }] }]`). When non-empty,
@@ -456,7 +462,12 @@ function emitRepeatsSpan(
   // repeats have no captures slot to attach iws to). Gated this tightly
   // because the non-sep case has no "between" content worth recording
   // (inter-item ws is what the parent's __ws already covers).
-  const captureIws = ctx.preserveWs && sep !== undefined && span.name !== undefined;
+  // iws capture fires whenever the production-level ws capture is on
+  // (preserve schemas eagerly; standard schemas lazily under raws mode).
+  // The actual array is `string[]` for eager and `string[] | null` for
+  // lazy — push sites are wrapped accordingly below.
+  const captureIws = ctx.wsCaptureMode !== 'none' && sep !== undefined && span.name !== undefined;
+  const iwsEager = ctx.wsCaptureMode === 'always';
   const iwsVar = captureIws ? `__${listVar}_iws` : '';
 
   if (span.name) {
@@ -631,7 +642,11 @@ while (${literalMatchExpr(sep, 'off')}) {
     // archive `input.slice(__prevItemEnd, off)` AFTER the sep-sweep
     // (i.e. after the parser has settled on where the next item
     // should start), capturing the full sep+ws region between items.
-    lines.push(`const ${iwsVar}: string[] = [];`);
+    if (iwsEager) {
+      lines.push(`const ${iwsVar}: string[] = [];`);
+    } else {
+      lines.push(`const ${iwsVar}: string[] | null = state.mode === 'raws' ? [] : null;`);
+    }
     lines.push(`let __prevItemEnd = -1;`);
   }
   if (isIndented) {
@@ -726,7 +741,13 @@ while (${literalMatchExpr(sep, 'off')}) {
   if (captureIws) {
     // Archive the slice between the previous item's end and this
     // item's start. Skip on the first item (__prevItemEnd === -1).
-    lines.push(`  if (__prevItemEnd >= 0) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+    // Raws-only mode further gates the push on the lazy-allocated array
+    // being non-null (fast mode leaves it null and skips entirely).
+    if (iwsEager) {
+      lines.push(`  if (__prevItemEnd >= 0) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+    } else {
+      lines.push(`  if (__prevItemEnd >= 0 && ${iwsVar} !== null) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+    }
   }
   lines.push(`  ${listVar}.push(__cand);`);
   if (captureIws) {

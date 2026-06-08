@@ -276,6 +276,8 @@ function __v0_parseCssColorValue__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   off++;
@@ -286,7 +288,7 @@ function __v0_parseCssColorValue__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#0", value: value };
+    const __captures: any = { __production: "CssColorValue#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -299,9 +301,13 @@ function __v0_parseCssColorValue__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 35)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && isHexDigit(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   off++;
@@ -312,7 +318,7 @@ function __v0_parseCssColorValue__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#1", value: value };
+    const __captures: any = { __production: "CssColorValue#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -325,6 +331,8 @@ function __v0_parseCssColorValue__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -332,10 +340,14 @@ function __v0_parseCssColorValue__alt2(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   if (!(name.toLowerCase() === "rgb" || name.toLowerCase() === "rgba")) { state.pos = entryOff; return null; }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
   while (true) {
@@ -350,13 +362,15 @@ function __v0_parseCssColorValue__alt2(state: State): unknown {
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
   const __args_end = off;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#2", name: name, args: args };
+    const __captures: any = { __production: "CssColorValue#2", __ws: __ws, __litPres: __litPres, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -369,6 +383,8 @@ function __v0_parseCssColorValue__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -376,10 +392,14 @@ function __v0_parseCssColorValue__alt3(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   if (!(name.toLowerCase() === "color" || name.toLowerCase() === "color-mix" || name.toLowerCase() === "hsl" || name.toLowerCase() === "hsla" || name.toLowerCase() === "hwb" || name.toLowerCase() === "lab" || name.toLowerCase() === "lch" || name.toLowerCase() === "light-dark" || name.toLowerCase() === "oklab" || name.toLowerCase() === "oklch")) { state.pos = entryOff; return null; }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
   while (true) {
@@ -394,13 +414,15 @@ function __v0_parseCssColorValue__alt3(state: State): unknown {
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
   const __args_end = off;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#3", name: name, args: args };
+    const __captures: any = { __production: "CssColorValue#3", __ws: __ws, __litPres: __litPres, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -413,6 +435,8 @@ function __v0_parseCssColorValue__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -420,10 +444,14 @@ function __v0_parseCssColorValue__alt4(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   if (!(name.toLowerCase() === "var")) { state.pos = entryOff; return null; }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let args: string = '';
   let __args_start = off;
   let __args_end = off;
@@ -516,13 +544,15 @@ function __v0_parseCssColorValue__alt4(state: State): unknown {
     __args_end = off;
     if (args.endsWith(",")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#4", name: name, args: args };
+    const __captures: any = { __production: "CssColorValue#4", __ws: __ws, __litPres: __litPres, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -554,6 +584,8 @@ function __v0_parseNumericColorFunctionToken__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -565,13 +597,15 @@ function __v0_parseNumericColorFunctionToken__alt0(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "NumericColorFunctionToken#0", value: value };
+    const __captures: any = { __production: "NumericColorFunctionToken#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -584,6 +618,8 @@ function __v0_parseNumericColorFunctionToken__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -598,7 +634,7 @@ function __v0_parseNumericColorFunctionToken__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "NumericColorFunctionToken#1", value: value };
+    const __captures: any = { __production: "NumericColorFunctionToken#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -611,12 +647,14 @@ function __v0_parseNumericColorFunctionToken__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "NumericColorFunctionToken#2" };
+    const __captures: any = { __production: "NumericColorFunctionToken#2", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -629,12 +667,14 @@ function __v0_parseNumericColorFunctionToken__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 44)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "NumericColorFunctionToken#3" };
+    const __captures: any = { __production: "NumericColorFunctionToken#3", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -667,6 +707,8 @@ function __v0_parseColorFunctionToken__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -678,13 +720,15 @@ function __v0_parseColorFunctionToken__alt0(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#0", value: value };
+    const __captures: any = { __production: "ColorFunctionToken#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -697,6 +741,8 @@ function __v0_parseColorFunctionToken__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -711,7 +757,7 @@ function __v0_parseColorFunctionToken__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#1", value: value };
+    const __captures: any = { __production: "ColorFunctionToken#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -724,6 +770,8 @@ function __v0_parseColorFunctionToken__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   off++;
@@ -733,7 +781,7 @@ function __v0_parseColorFunctionToken__alt2(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#2", value: value };
+    const __captures: any = { __production: "ColorFunctionToken#2", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -746,6 +794,8 @@ function __v0_parseColorFunctionToken__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   {
@@ -764,7 +814,7 @@ function __v0_parseColorFunctionToken__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#3", value: value };
+    const __captures: any = { __production: "ColorFunctionToken#3", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -777,12 +827,14 @@ function __v0_parseColorFunctionToken__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#4" };
+    const __captures: any = { __production: "ColorFunctionToken#4", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -795,12 +847,14 @@ function __v0_parseColorFunctionToken__alt5(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 44)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "ColorFunctionToken#5" };
+    const __captures: any = { __production: "ColorFunctionToken#5", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -839,6 +893,8 @@ function __v0_parseCssColor(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
   const __value_start = off;
   const value = __v0_parseCssColorValue(state);
@@ -848,7 +904,7 @@ function __v0_parseCssColor(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColor#0", value: value };
+    const __captures: any = { __production: "CssColor#0", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -863,6 +919,8 @@ function __v1_parseLengthPercentageItem__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -874,7 +932,9 @@ function __v1_parseLengthPercentageItem__alt0(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __unit_start = off;
   off++;
@@ -885,7 +945,7 @@ function __v1_parseLengthPercentageItem__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#0", value: value, unit: unit };
+    const __captures: any = { __production: "LengthPercentageItem#0", __ws: __ws, __litPres: __litPres, value: value, unit: unit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -898,9 +958,13 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -911,7 +975,9 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
   }
   const __value_end = off;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __unit_start = off;
   off++;
@@ -922,7 +988,7 @@ function __v1_parseLengthPercentageItem__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#1", unit: unit };
+    const __captures: any = { __production: "LengthPercentageItem#1", __ws: __ws, __litPres: __litPres, unit: unit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -935,6 +1001,8 @@ function __v1_parseLengthPercentageItem__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -946,13 +1014,15 @@ function __v1_parseLengthPercentageItem__alt2(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#2", value: value };
+    const __captures: any = { __production: "LengthPercentageItem#2", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -965,9 +1035,13 @@ function __v1_parseLengthPercentageItem__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -978,13 +1052,15 @@ function __v1_parseLengthPercentageItem__alt3(state: State): unknown {
     while (off < len && isDigit(input.charCodeAt(off))) off++;
   }
   const __value_end = off;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#3" };
+    const __captures: any = { __production: "LengthPercentageItem#3", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -997,6 +1073,8 @@ function __v1_parseLengthPercentageItem__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1008,7 +1086,7 @@ function __v1_parseLengthPercentageItem__alt4(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#4", value: value };
+    const __captures: any = { __production: "LengthPercentageItem#4", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1021,6 +1099,8 @@ function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -1028,10 +1108,14 @@ function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   if (!(name.toLowerCase() === "calc" || name.toLowerCase() === "clamp" || name.toLowerCase() === "max" || name.toLowerCase() === "min")) { state.pos = entryOff; return null; }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
   while (true) {
@@ -1046,13 +1130,15 @@ function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
   const __args_end = off;
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#5", name: name, args: args };
+    const __captures: any = { __production: "LengthPercentageItem#5", __ws: __ws, __litPres: __litPres, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1065,6 +1151,8 @@ function __v1_parseLengthPercentageItem__alt6(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -1072,10 +1160,14 @@ function __v1_parseLengthPercentageItem__alt6(state: State): unknown {
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
   if (!(name.toLowerCase() === "var")) { state.pos = entryOff; return null; }
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let args: string = '';
   let __args_start = off;
   let __args_end = off;
@@ -1168,13 +1260,15 @@ function __v1_parseLengthPercentageItem__alt6(state: State): unknown {
     __args_end = off;
     if (args.endsWith(",")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#6", name: name, args: args };
+    const __captures: any = { __production: "LengthPercentageItem#6", __ws: __ws, __litPres: __litPres, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1187,6 +1281,8 @@ function __v1_parseLengthPercentageItem__alt7(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   off++;
@@ -1197,7 +1293,7 @@ function __v1_parseLengthPercentageItem__alt7(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#7", value: value };
+    const __captures: any = { __production: "LengthPercentageItem#7", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1234,6 +1330,8 @@ function __v1_parseLengthFunctionToken__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1245,7 +1343,9 @@ function __v1_parseLengthFunctionToken__alt0(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __unit_start = off;
   off++;
@@ -1256,7 +1356,7 @@ function __v1_parseLengthFunctionToken__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#0", value: value, unit: unit };
+    const __captures: any = { __production: "LengthFunctionToken#0", __ws: __ws, __litPres: __litPres, value: value, unit: unit };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1269,6 +1369,8 @@ function __v1_parseLengthFunctionToken__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1280,13 +1382,15 @@ function __v1_parseLengthFunctionToken__alt1(state: State): unknown {
   }
   const __value_end = off;
   const value = input.slice(__value_start, __value_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 37)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#1", value: value };
+    const __captures: any = { __production: "LengthFunctionToken#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1299,6 +1403,8 @@ function __v1_parseLengthFunctionToken__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -1310,7 +1416,7 @@ function __v1_parseLengthFunctionToken__alt2(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#2", value: value };
+    const __captures: any = { __production: "LengthFunctionToken#2", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1323,12 +1429,14 @@ function __v1_parseLengthFunctionToken__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 45)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#3" };
+    const __captures: any = { __production: "LengthFunctionToken#3", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1341,12 +1449,14 @@ function __v1_parseLengthFunctionToken__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 43)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#4" };
+    const __captures: any = { __production: "LengthFunctionToken#4", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1359,12 +1469,14 @@ function __v1_parseLengthFunctionToken__alt5(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 42)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#5" };
+    const __captures: any = { __production: "LengthFunctionToken#5", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1377,12 +1489,14 @@ function __v1_parseLengthFunctionToken__alt6(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 47)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#6" };
+    const __captures: any = { __production: "LengthFunctionToken#6", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1395,12 +1509,14 @@ function __v1_parseLengthFunctionToken__alt7(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 44)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthFunctionToken#7" };
+    const __captures: any = { __production: "LengthFunctionToken#7", __ws: __ws, __litPres: __litPres };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1443,6 +1559,8 @@ function __v1_parseCssLengthPercentage(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
   while (true) {
@@ -1461,7 +1579,7 @@ function __v1_parseCssLengthPercentage(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssLengthPercentage#0", items: items };
+    const __captures: any = { __production: "CssLengthPercentage#0", __ws: __ws, __litPres: __litPres, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1511,6 +1629,8 @@ function parseComment(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off + 1 < len && input.charCodeAt(off) === 0x2f && input.charCodeAt(off + 1) === 0x2a)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __text_start = off;
   off += 2;
@@ -1533,7 +1653,7 @@ function parseComment(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Comment#0", text: text };
+    const __captures: any = { __production: "Comment#0", __ws: __ws, __litPres: __litPres, text: text };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1546,6 +1666,8 @@ function parseDeclaration__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let prop: string = '';
   let __prop_start = off;
   let __prop_end = off;
@@ -1674,6 +1796,7 @@ function parseDeclaration__alt0(state: State): unknown {
     }
     __prop_end = off;
   }
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -1686,8 +1809,10 @@ function parseDeclaration__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -1700,6 +1825,7 @@ function parseDeclaration__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let value: string = '';
   let __value_start = off;
   let __value_end = off;
@@ -1828,6 +1954,7 @@ function parseDeclaration__alt0(state: State): unknown {
     }
     __value_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -1840,8 +1967,10 @@ function parseDeclaration__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 33)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -1854,18 +1983,23 @@ function parseDeclaration__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __important_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __important_end = off;
   const important = input.slice(__important_start, __important_end);
+  const __wsStart_5 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
+  const __litPre_5 = off;
   if (input.charCodeAt(off) === 59) { off += 1; }
+  if (__litPres !== null) __litPres.push(off > __litPre_5);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Declaration#0", prop: prop, value: value, important: important };
+    const __captures: any = { __production: "Declaration#0", __ws: __ws, __litPres: __litPres, prop: prop, value: value, important: important };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1878,6 +2012,8 @@ function parseDeclaration__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let prop: string = '';
   let __prop_start = off;
   let __prop_end = off;
@@ -2006,6 +2142,7 @@ function parseDeclaration__alt1(state: State): unknown {
     }
     __prop_end = off;
   }
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2018,8 +2155,10 @@ function parseDeclaration__alt1(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 58)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2032,6 +2171,7 @@ function parseDeclaration__alt1(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let value: string = '';
   let __value_start = off;
   let __value_end = off;
@@ -2160,12 +2300,16 @@ function parseDeclaration__alt1(state: State): unknown {
     }
     __value_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
+  const __litPre_3 = off;
   if (input.charCodeAt(off) === 59) { off += 1; }
+  if (__litPres !== null) __litPres.push(off > __litPre_3);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Declaration#1", prop: prop, value: value };
+    const __captures: any = { __production: "Declaration#1", __ws: __ws, __litPres: __litPres, prop: prop, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2183,6 +2327,8 @@ function parseRule(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   let selector: string = '';
   let __selector_start = off;
   let __selector_end = off;
@@ -2313,6 +2459,7 @@ function parseRule(state: State): unknown {
     if (selector.endsWith(":") || selector.endsWith(",") || selector.endsWith(">") || selector.endsWith("+") || selector.endsWith("~")) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
     if (selector.length === 0) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   }
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2325,13 +2472,18 @@ function parseRule(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
+  const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -2345,6 +2497,7 @@ function parseRule(state: State): unknown {
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -2364,10 +2517,13 @@ function parseRule(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
     nodes.push(__cand);
+    __prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;
+  const __wsStart_3 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2380,12 +2536,13 @@ function parseRule(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Rule#0", selector: selector, nodes: nodes };
+    const __captures: any = { __production: "Rule#0", __ws: __ws, __litPres: __litPres, nodes_iws: __nodes_iws, selector: selector, nodes: nodes };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2398,8 +2555,11 @@ function parseAtRule__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 64)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2412,12 +2572,14 @@ function parseAtRule__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2430,6 +2592,7 @@ function parseAtRule__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let params: string = '';
   let __params_start = off;
   let __params_end = off;
@@ -2558,6 +2721,7 @@ function parseAtRule__alt0(state: State): unknown {
     }
     __params_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2570,13 +2734,18 @@ function parseAtRule__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   if (!(input.charCodeAt(off) === 123)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_4 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_4, off));
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
+  const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -2590,6 +2759,7 @@ function parseAtRule__alt0(state: State): unknown {
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -2609,10 +2779,13 @@ function parseAtRule__alt0(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
     nodes.push(__cand);
+    __prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;
+  const __wsStart_5 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2625,12 +2798,13 @@ function parseAtRule__alt0(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_5, off));
   if (!(input.charCodeAt(off) === 125)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "AtRule#0", name: name, params: params, nodes: nodes };
+    const __captures: any = { __production: "AtRule#0", __ws: __ws, __litPres: __litPres, nodes_iws: __nodes_iws, name: name, params: params, nodes: nodes };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2643,8 +2817,11 @@ function parseAtRule__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 64)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2657,12 +2834,14 @@ function parseAtRule__alt1(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && (isCssIdentStart(input.charCodeAt(off))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
   while (off < len && isCssIdentPart(input.charCodeAt(off))) off++;
   const __name_end = off;
   const name = input.slice(__name_start, __name_end);
+  const __wsStart_2 = off;
   while (off < len) {
     const c = input.charCodeAt(off);
     if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; }
@@ -2675,6 +2854,7 @@ function parseAtRule__alt1(state: State): unknown {
 
     break;
   }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   let params: string = '';
   let __params_start = off;
   let __params_end = off;
@@ -2803,12 +2983,16 @@ function parseAtRule__alt1(state: State): unknown {
     }
     __params_end = off;
   }
+  const __wsStart_3 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
+  const __litPre_3 = off;
   if (input.charCodeAt(off) === 59) { off += 1; }
+  if (__litPres !== null) __litPres.push(off > __litPre_3);
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "AtRule#1", name: name, params: params };
+    const __captures: any = { __production: "AtRule#1", __ws: __ws, __litPres: __litPres, name: name, params: params };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2835,10 +3019,14 @@ function parseStylesheet(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __nodes_start = off;
   const nodes: unknown[] = [];
   let __sepConsumed = false;
   let __preSweep = off;
+  const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -2852,6 +3040,7 @@ function parseStylesheet(state: State): unknown {
       while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -2871,14 +3060,16 @@ function parseStylesheet(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
     nodes.push(__cand);
+    __prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Stylesheet#0", nodes: nodes };
+    const __captures: any = { __production: "Stylesheet#0", __ws: __ws, __litPres: __litPres, nodes_iws: __nodes_iws, nodes: nodes };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

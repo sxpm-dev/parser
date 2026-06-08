@@ -260,6 +260,8 @@ function parseExpr__alt0(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __name_start = off;
   off++;
@@ -269,7 +271,7 @@ function parseExpr__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Expr#0", name: name };
+    const __captures: any = { __production: "Expr#0", __ws: __ws, __litPres: __litPres, name: name };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -282,6 +284,8 @@ function parseExpr__alt1(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __value_start = off;
   if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
@@ -292,7 +296,7 @@ function parseExpr__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Expr#1", value: value };
+    const __captures: any = { __production: "Expr#1", __ws: __ws, __litPres: __litPres, value: value };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -305,22 +309,28 @@ function parseExpr__alt2(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(input.charCodeAt(off) === 40)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   state.pos = off;
   const __inner_start = off;
   const inner = parseExpr(state);
   if (inner === null) { state.pos = entryOff; return null; }
   off = state.pos;
   const __inner_end = off;
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   if (!(input.charCodeAt(off) === 41)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   off += 1;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Expr#2", inner: inner };
+    const __captures: any = { __production: "Expr#2", __ws: __ws, __litPres: __litPres, inner: inner };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -333,12 +343,16 @@ function parseExpr__alt3(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   if (!(off < len && ((input.startsWith("!==", off)) || (input.startsWith("===", off)) || (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 38 && input.charCodeAt(off + 1) === 38) || (input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 61 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 124 && input.charCodeAt(off + 1) === 124) || (input.charCodeAt(off) === 33) || (input.charCodeAt(off) === 37) || (input.charCodeAt(off) === 42) || (input.charCodeAt(off) === 43) || (input.charCodeAt(off) === 45) || (input.charCodeAt(off) === 47) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 62) || (input.charCodeAt(off) === 126)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __op_start = off;
   if (input.startsWith("!==", off)) { off += 3; } else if (input.startsWith("===", off)) { off += 3; } else if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 38 && input.charCodeAt(off + 1) === 38) { off += 2; } else if (input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 61 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 124 && input.charCodeAt(off + 1) === 124) { off += 2; } else if (input.charCodeAt(off) === 33) { off += 1; } else if (input.charCodeAt(off) === 37) { off += 1; } else if (input.charCodeAt(off) === 42) { off += 1; } else if (input.charCodeAt(off) === 43) { off += 1; } else if (input.charCodeAt(off) === 45) { off += 1; } else if (input.charCodeAt(off) === 47) { off += 1; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; } else if (input.charCodeAt(off) === 126) { off += 1; }
   const __op_end = off;
   const op = input.slice(__op_start, __op_end);
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   state.pos = off;
   const __operand_start = off;
   const operand = parseExpr(state);
@@ -348,7 +362,7 @@ function parseExpr__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Expr#3", op: op, operand: operand };
+    const __captures: any = { __production: "Expr#3", __ws: __ws, __litPres: __litPres, op: op, operand: operand };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -361,19 +375,25 @@ function parseExpr__alt4(state: State): unknown {
   let off = state.pos;
   const entryOff = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
+  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   state.pos = off;
   const __left_start = off;
   const left = parseExpr(state);
   if (left === null) { state.pos = entryOff; return null; }
   off = state.pos;
   const __left_end = off;
+  const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   if (!(off < len && ((input.startsWith("!==", off)) || (input.startsWith("===", off)) || (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 38 && input.charCodeAt(off + 1) === 38) || (input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 61 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 124 && input.charCodeAt(off + 1) === 124) || (input.charCodeAt(off) === 33) || (input.charCodeAt(off) === 37) || (input.charCodeAt(off) === 42) || (input.charCodeAt(off) === 43) || (input.charCodeAt(off) === 45) || (input.charCodeAt(off) === 47) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 62) || (input.charCodeAt(off) === 126)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __op_start = off;
   if (input.startsWith("!==", off)) { off += 3; } else if (input.startsWith("===", off)) { off += 3; } else if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 38 && input.charCodeAt(off + 1) === 38) { off += 2; } else if (input.charCodeAt(off) === 42 && input.charCodeAt(off + 1) === 42) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 61 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 124 && input.charCodeAt(off + 1) === 124) { off += 2; } else if (input.charCodeAt(off) === 33) { off += 1; } else if (input.charCodeAt(off) === 37) { off += 1; } else if (input.charCodeAt(off) === 42) { off += 1; } else if (input.charCodeAt(off) === 43) { off += 1; } else if (input.charCodeAt(off) === 45) { off += 1; } else if (input.charCodeAt(off) === 47) { off += 1; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; } else if (input.charCodeAt(off) === 126) { off += 1; }
   const __op_end = off;
   const op = input.slice(__op_start, __op_end);
+  const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   state.pos = off;
   const __right_start = off;
   const right = parseExpr(state);
@@ -383,7 +403,7 @@ function parseExpr__alt4(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Expr#4", left: left, op: op, right: right };
+    const __captures: any = { __production: "Expr#4", __ws: __ws, __litPres: __litPres, left: left, op: op, right: right };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }

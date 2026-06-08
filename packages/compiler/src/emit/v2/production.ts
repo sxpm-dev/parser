@@ -125,6 +125,22 @@ export function emitProduction(
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
+    // Layer 1 of the raws-sidecar plan (2026-06-08-raws-sidecar.md).
+    // - 'always'    → preserve schemas: __ws / __litPres / *_iws allocated
+    //                 eagerly, pushes unconditional. Byte-identical to the
+    //                 pre-raws emit for those schemas.
+    // - 'raws-only' → standard schemas in non-tail-mode bodies: same
+    //                 capture sites emitted, but each allocation defers via
+    //                 `string[] | null` and each push is gated on
+    //                 `state.mode === 'raws'`. Fast mode pays a predicted
+    //                 branch per gap (~1 cycle, negligible) and skips the
+    //                 slice + array push entirely.
+    // - 'none'      → tail-mode bodies (shared-dispatch alts). Shared-
+    //                 dispatch consumes a literal prefix; raws semantics
+    //                 don't apply there. Matches the prior tail-mode rule.
+    wsCaptureMode: prefix
+      ? 'none'
+      : schema.whitespace === 'preserve' ? 'always' : 'raws-only',
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
     referencedValueSpans,
@@ -214,6 +230,15 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
   // capture: shared-dispatch alts always consume a literal prefix that
   // 'preserve' semantics don't make sense for.
   const preserveWs = schema.whitespace === 'preserve' && !prefix;
+  // Raws-only capture: emit the same __ws / __litPres machinery for
+  // 'standard'-whitespace schemas in non-tail-mode bodies, but defer
+  // allocation + each push behind a runtime check on state.mode. Fast
+  // mode pays a predicted branch per gap; raws mode populates the
+  // arrays so the AST builder (Layer 2 of the raws-sidecar plan) can
+  // attach them to nodes. See docs/superpowers/plans/2026-06-08-raws-
+  // sidecar.md.
+  const rawsCapture = !preserveWs && !prefix;
+  const wsCapture = preserveWs || rawsCapture;
   if (preserveWs) {
     lines.push(`const __ws: string[] = [];`);
     // Phase 4c v2: presence tracking for unnamed optional literal spans.
@@ -223,6 +248,12 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
     // post-check that pushes the bool into __litPres; the rebuild
     // reads __litPres[i] to gate the literal piece.
     lines.push(`const __litPres: boolean[] = [];`);
+  } else if (rawsCapture) {
+    // Lazy allocation: null in fast mode so V8 can stay monomorphic on
+    // the null branch. Allocation only kicks in when render is called
+    // with `mode: 'raws'`.
+    lines.push(`const __ws: string[] | null = state.mode === 'raws' ? [] : null;`);
+    lines.push(`const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;`);
   }
 
   const spans = production.spans;
@@ -250,12 +281,14 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
       const interSpanSkip = tokenClasses.has('comment') && !consumesData && !isOptional
         ? skipWsAndCommentsBlock(lineCommentMarkers)
         : skipWsBlock();
-      if (preserveWs) {
+      if (wsCapture) {
         lines.push(`const __wsStart_${i} = off;`);
       }
       lines.push(interSpanSkip);
       if (preserveWs) {
         lines.push(`__ws.push(input.slice(__wsStart_${i}, off));`);
+      } else if (rawsCapture) {
+        lines.push(`if (__ws !== null) __ws.push(input.slice(__wsStart_${i}, off));`);
       }
     }
     // Phase 4c v2: presence tracking for unnamed optional literals.
@@ -263,7 +296,7 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
     // their presence is implicitly always true. Named optionals carry
     // presence via their nullable captured value.
     const isUnnamedOptLit =
-      preserveWs &&
+      wsCapture &&
       span.name === undefined &&
       span.class === 'literal' &&
       hasModifier(span, 'optional');
@@ -272,7 +305,11 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
     }
     lines.push(emitSpan(span, ctx, bindings));
     if (isUnnamedOptLit) {
-      lines.push(`__litPres.push(off > __litPre_${i});`);
+      if (preserveWs) {
+        lines.push(`__litPres.push(off > __litPre_${i});`);
+      } else {
+        lines.push(`if (__litPres !== null) __litPres.push(off > __litPre_${i});`);
+      }
     }
   }
   // No trailing ws skip — a production owns its captured range. WS after
@@ -297,13 +334,15 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
   // here in fast mode via `omitRaws`. In raws mode we additionally attach
   // a `source` field used by the AST builder.
   const prodKey = productionRoutingKey(production, opts.prodIdx);
-  const withWs = (capt: string): string => {
-    if (!preserveWs) return capt;
-    // Inject `__ws: __ws` (Phase 4b), per-span `<name>_iws` entries
-    // (Phase 4c v2), and `__litPres` (Phase 4c v2 unnamed-optional-
-    // literal presence) immediately after `__production`. The
-    // emitCapturesExpr output always starts with `{ __production: "<key>"`
-    // so this regex is stable.
+  // Inject __ws / __litPres / *_iws into a captures expression. For
+  // preserve schemas the injection lands on both fast and raws payloads
+  // (the captures are populated unconditionally). For raws-only-capture
+  // standard schemas the injection lands on the RAWS payload only — the
+  // arrays exist as `string[] | null` in fast mode and the AST builder
+  // never reads them there.
+  const withWs = (capt: string, branch: 'fast' | 'raws'): string => {
+    const shouldInject = preserveWs || (rawsCapture && branch === 'raws');
+    if (!shouldInject) return capt;
     const iwsFields: string[] = [];
     for (const [name, expr] of bindings.iwsExpr) {
       iwsFields.push(`${name}_iws: ${expr}`);
@@ -312,8 +351,8 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
     const extras = `, ${fields.join(', ')}`;
     return capt.replace(/^\{ (__production: "[^"]+")/, `{ $1${extras}`);
   };
-  const fastCaptures = withWs(emitCapturesExpr(production, prodKey, toCapturesBindings(bindings), { omitRaws: true }));
-  const rawsCaptures = withWs(emitCapturesExpr(production, prodKey, toCapturesBindings(bindings), {}));
+  const fastCaptures = withWs(emitCapturesExpr(production, prodKey, toCapturesBindings(bindings), { omitRaws: true }), 'fast');
+  const rawsCaptures = withWs(emitCapturesExpr(production, prodKey, toCapturesBindings(bindings), {}), 'raws');
   const sameShape = fastCaptures === rawsCaptures;
   const returnBlock = sameShape
     ? `if (state.mode === 'raws') {

@@ -461,6 +461,11 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
     preserveWs: schema.whitespace === 'preserve',
+    // Structured-fusion emits a different return shape than the standard
+    // production body (Layer 1 raws-only capture is wired only through
+    // emitProduction today). Preserve schemas keep 'always'; standard
+    // schemas stay 'none' here.
+    wsCaptureMode: schema.whitespace === 'preserve' ? 'always' : 'none',
     lineCommentMarkers,
     // Phase 5a — lazy capture also applies on the structured-fused fast
     // path. The body walker in `emitStructuredBody` consults

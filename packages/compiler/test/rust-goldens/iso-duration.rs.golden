@@ -488,12 +488,12 @@ fn parse_Duration__alt1(state: &mut State) -> Option<Value> {
 
 fn parse_Duration(state: &mut State) -> Option<Value> {
     let snapshot = state.pos;
-    if let Some(v) = parse_Duration__alt0(state) {
+    if let Some(v) = parse_Duration__alt1(state) {
         return Some(v);
     }
     state.pos = snapshot;
     let snapshot = state.pos;
-    if let Some(v) = parse_Duration__alt1(state) {
+    if let Some(v) = parse_Duration__alt0(state) {
         return Some(v);
     }
     state.pos = snapshot;

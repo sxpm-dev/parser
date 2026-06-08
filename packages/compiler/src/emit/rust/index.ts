@@ -70,7 +70,7 @@ function emitRustParser(schema: InferredSchema): string {
     if (prefixShare !== null && prefixCaps !== null) {
       parts.push(emitPrefixShareDispatcherRust(schema, info, prefixShare, prefixCaps));
     } else {
-      parts.push(emitNodeTypeDispatcher(info.name, info.productions.length));
+      parts.push(emitNodeTypeDispatcher(info.name, info.productions));
     }
     // Phase 6.4 — per-production inverse + per-node dispatcher.
     for (let i = 0; i < info.productions.length; i++) {
@@ -1016,11 +1016,12 @@ function emitPrefixShareDispatcherRust(
   return lines.join('\n');
 }
 
-function emitNodeTypeDispatcher(nodeType: string, altCount: number): string {
+function emitNodeTypeDispatcher(nodeType: string, productions: ReadonlyArray<Production>): string {
   const fn = `parse_${rustIdent(nodeType)}`;
   const lines: string[] = [];
   lines.push(`fn ${fn}(state: &mut State) -> Option<Value> {`);
-  for (let i = 0; i < altCount; i++) {
+  const order = computeAltDispatchOrder(productions);
+  for (const i of order) {
     lines.push(`    let snapshot = state.pos;`);
     lines.push(`    if let Some(v) = parse_${rustIdent(nodeType)}__alt${i}(state) {`);
     lines.push(`        return Some(v);`);
@@ -1030,6 +1031,84 @@ function emitNodeTypeDispatcher(nodeType: string, altCount: number): string {
   lines.push(`    None`);
   lines.push(`}`);
   return lines.join('\n');
+}
+
+// Phase 6.5 follow-up — alt try-order within the speculation chain. Mirror
+// of the TS-backend rule in emit/v2/dispatch.ts::emitGroupSpeculation:
+// alts that share a first-token signature get sorted by span count
+// descending so the most-committed alt is tried first; otherwise the
+// declared order is preserved.
+//
+// Motivating cases:
+//   - iso-duration.Duration: alt0 = [P, date.repeats(min=1)], alt1 = [P,
+//     date.repeats(min=0), T, time.repeats(min=1)]. Both start with the
+//     literal P; the prefix-share factoring bails because the date span's
+//     `.repeats(min)` modifier differs across alts (strict equality). The
+//     legacy declared-order chain commits to alt0 on inputs like
+//     `P1Y2M3DT4H5M6S`, leaves state.pos at byte 7 (the T), and the
+//     top-level EOF check rejects.
+//   - cron.CronField: alt0 = [`*`], alt1 = [`*`, `/`, step], alt2 = [N],
+//     alt3 = [N, `-`, N]. The wildcard alts share first-byte `*`; the
+//     number alts share the digit-start predicate. Declared-order
+//     dispatch commits to the 1-span alt before the 3-span alt for the
+//     `*/5` and `1-5` inputs.
+//
+// Grouping key: literal first-bytes share a key; class-starting first
+// spans share a per-class key. Spans with first-position modifiers
+// (.optional / .until / .repeats) or recursive roles are non-comparable
+// — they get unique keys and stay in declared order.
+function computeAltDispatchOrder(productions: ReadonlyArray<Production>): number[] {
+  type Meta = { idx: number; key: string; spanCount: number };
+  const meta: Meta[] = productions.map((p, idx) => ({
+    idx,
+    key: firstTokenGroupKey(p, idx),
+    spanCount: p.spans.length,
+  }));
+  // Group by key, preserving the order in which each key first appears.
+  const groupOrder: string[] = [];
+  const groups = new Map<string, Meta[]>();
+  for (const m of meta) {
+    let g = groups.get(m.key);
+    if (!g) { g = []; groups.set(m.key, g); groupOrder.push(m.key); }
+    g.push(m);
+  }
+  // Within each group, descending span count, stable on declared order.
+  for (const g of groups.values()) {
+    g.sort((a, b) => (b.spanCount !== a.spanCount ? b.spanCount - a.spanCount : a.idx - b.idx));
+  }
+  // Rebuild the global order by walking the original declared order and
+  // substituting each alt with the next member of its sorted group. That
+  // keeps groups interleaved at the positions their first members declared,
+  // rather than collapsing all groups to the head/tail.
+  const consumed = new Map<string, number>();
+  const order: number[] = [];
+  for (const m of meta) {
+    const g = groups.get(m.key)!;
+    const k = consumed.get(m.key) ?? 0;
+    order.push(g[k]!.idx);
+    consumed.set(m.key, k + 1);
+  }
+  return order;
+}
+
+function firstTokenGroupKey(prod: Production, declaredIdx: number): string {
+  const s0 = prod.spans[0];
+  if (!s0) return `empty:${declaredIdx}`;
+  // First-position modifiers or recursive role: non-comparable. Give each
+  // such alt its own group so it stays in declared order relative to other
+  // alts (the per-group sort never moves a singleton).
+  const hasFirstPosMod =
+    s0.modifiers.some((m) => m.kind === 'optional' || m.kind === 'until' || m.kind === 'repeats' || m.kind === 'rawUntil');
+  if (hasFirstPosMod) return `nc:${declaredIdx}`;
+  if (s0.recursiveRoles.length > 0) return `nc:${declaredIdx}`;
+  if (s0.class === 'literal') {
+    if (s0.text === undefined || s0.text.length === 0) return `nc:${declaredIdx}`;
+    return `lit:${s0.text.charCodeAt(0)}`;
+  }
+  // Class-starting span: key by class + first-refinement signature so
+  // (e.g.) `.number()` and `.number().int()` group together (their digit-
+  // start predicates are identical for grouping purposes).
+  return `cls:${s0.class}`;
 }
 
 // ---------------------------------------------------------------------------

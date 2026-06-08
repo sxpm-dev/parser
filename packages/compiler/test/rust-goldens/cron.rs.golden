@@ -222,22 +222,22 @@ fn parse_CronField__alt3(state: &mut State) -> Option<Value> {
 
 fn parse_CronField(state: &mut State) -> Option<Value> {
     let snapshot = state.pos;
-    if let Some(v) = parse_CronField__alt0(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
     if let Some(v) = parse_CronField__alt1(state) {
         return Some(v);
     }
     state.pos = snapshot;
     let snapshot = state.pos;
-    if let Some(v) = parse_CronField__alt2(state) {
+    if let Some(v) = parse_CronField__alt0(state) {
         return Some(v);
     }
     state.pos = snapshot;
     let snapshot = state.pos;
     if let Some(v) = parse_CronField__alt3(state) {
+        return Some(v);
+    }
+    state.pos = snapshot;
+    let snapshot = state.pos;
+    if let Some(v) = parse_CronField__alt2(state) {
         return Some(v);
     }
     state.pos = snapshot;

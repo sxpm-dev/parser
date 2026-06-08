@@ -3344,31 +3344,39 @@ function __rebuild_Comment_0(captures: any): string {
 }
 
 function __rebuild_Declaration_0(captures: any): string {
-  return __rebuildSlot(captures.prop) + ":" + " " + __rebuildSlot(captures.value) + " " + "!" + __rebuildSlot(captures.important) + ";";
+  return __rebuildSlot(captures.prop) + ":" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.value) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "!" + __rebuildSlot(captures.important) + ";";
 }
 
 function __rebuild_Declaration_1(captures: any): string {
-  return __rebuildSlot(captures.prop) + ":" + " " + __rebuildSlot(captures.value) + ";";
+  return __rebuildSlot(captures.prop) + ":" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.value) + ";";
 }
 
 function __rebuild_Rule_0(captures: any): string {
-  return __rebuildSlot(captures.selector) + " " + "{" + (captures.nodes == null ? "" : " " + __rebuildSlot(captures.nodes, ";")) + " " + "}";
+  return __rebuildSlot(captures.selector) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "{" + (captures.nodes == null ? (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : "") : (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + "}";
 }
 
 function __rebuild_AtRule_0(captures: any): string {
-  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + " " + "{" + (captures.nodes == null ? "" : " " + __rebuildSlot(captures.nodes, ";")) + " " + "}";
+  return "@" + __rebuildSlot(captures.name) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.params) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "{" + (captures.nodes == null ? (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : "") : (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "}";
 }
 
 function __rebuild_AtRule_1(captures: any): string {
-  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + ";";
+  return "@" + __rebuildSlot(captures.name) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.params) + ";";
 }
 
 function __rebuild_Stylesheet_0(captures: any): string {
-  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
+  return String((captures.nodes == null ? "" : __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")));
 }
 
 function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3376,11 +3384,22 @@ function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"comment\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Comment_0(captures, __indentCol);
+  }
   return "/* " + __rebuildSlot(captures.text) + " */";
 }
 
 function __invert_Declaration_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3393,11 +3412,22 @@ function __invert_Declaration_0_ast(value: any, __indentCol: number = 0): string
     throw new Error("stringify: field \"important\" expected true, got " + JSON.stringify(value.important));
   }
   captures.important = __invertSlotLeaf_ast(value._important);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Declaration_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + " !" + __rebuildSlot(captures.important) + ";";
 }
 
 function __invert_Declaration_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3406,11 +3436,22 @@ function __invert_Declaration_1_ast(value: any, __indentCol: number = 0): string
   }
   captures.prop = __invertSlotLeaf_ast(value.prop);
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Declaration_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3419,11 +3460,22 @@ function __invert_Rule_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.selector = __invertSlotLeaf_ast(value.selector);
   captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Rule_0(captures, __indentCol);
+  }
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + "}";
 }
 
 function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3433,11 +3485,22 @@ function __invert_AtRule_0_ast(value: any, __indentCol: number = 0): string {
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
   captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_AtRule_0(captures, __indentCol);
+  }
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + "}";
 }
 
 function __invert_AtRule_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3446,11 +3509,22 @@ function __invert_AtRule_1_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.params = __invertSlotLeaf_ast(value.params);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_AtRule_1(captures, __indentCol);
+  }
   return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + ";";
 }
 
 function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3458,7 +3532,10 @@ function __invert_Stylesheet_0_ast(value: any, __indentCol: number = 0): string 
     throw new Error("stringify: field \"type\" expected \"root\", got " + JSON.stringify(value.type));
   }
   captures.nodes = ((Array.isArray(value.nodes) ? value.nodes : value.nodes.split(";").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __invertSlotMulti_Comment_AtRule_Rule_Declaration_ast(__e, __indentCol)));
-  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Stylesheet_0(captures, __indentCol);
+  }
+  return String((captures.nodes == null ? "" : __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")));
 }
 
 function __invert_Comment_0_json(value: any, __indentCol: number = 0): string {
@@ -3477,6 +3554,14 @@ function __invert_Declaration_0_json(value: any, __indentCol: number = 0): strin
 
 function __invert_Declaration_1_json(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected single-entry object for dynKey 'prop', got " + typeof value);
   }
@@ -3490,11 +3575,22 @@ function __invert_Declaration_1_json(value: any, __indentCol: number = 0): strin
     captures.prop = __dkKey;
   captures.value = __invertSlotLeaf_json(__dkVal);
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Declaration_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected single-entry object for dynKey 'selector', got " + typeof value);
   }
@@ -3521,7 +3617,10 @@ function __invert_Rule_0_json(value: any, __indentCol: number = 0): string {
     captures.nodes = __mArr;
   }
   }
-  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Rule_0(captures, __indentCol);
+  }
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + "}";
 }
 
 function __invert_AtRule_0_json(value: any, __indentCol: number = 0): string {
@@ -3540,6 +3639,14 @@ function __invert_AtRule_1_json(value: any, __indentCol: number = 0): string {
 
 function __invert_Stylesheet_0_json(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object for merge 'nodes', got " + typeof value);
   }
@@ -3554,11 +3661,22 @@ function __invert_Stylesheet_0_json(value: any, __indentCol: number = 0): string
     }
     captures.nodes = __mArr;
   }
-  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Stylesheet_0(captures, __indentCol);
+  }
+  return String((captures.nodes == null ? "" : __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")));
 }
 
 function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3579,11 +3697,22 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Comment_0(captures, __indentCol);
+  }
   return "/* " + __rebuildSlot(captures.text) + " */";
 }
 
 function __invert_Declaration_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3616,11 +3745,22 @@ function __invert_Declaration_0_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Declaration_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + " !" + __rebuildSlot(captures.important) + ";";
 }
 
 function __invert_Declaration_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3645,11 +3785,22 @@ function __invert_Declaration_1_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Declaration_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.prop) + ": " + __rebuildSlot(captures.value) + ";";
 }
 
 function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3677,11 +3828,22 @@ function __invert_Rule_0_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Rule_0(captures, __indentCol);
+  }
+  return __rebuildSlot(captures.selector) + (captures.nodes == null ? "" : " {" + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + "}";
 }
 
 function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3721,11 +3883,22 @@ function __invert_AtRule_0_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlot(captures.nodes, ";")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_AtRule_0(captures, __indentCol);
+  }
+  return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + (captures.nodes == null ? "" : " {" + __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")) + "}";
 }
 
 function __invert_AtRule_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3754,11 +3927,22 @@ function __invert_AtRule_1_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_AtRule_1(captures, __indentCol);
+  }
   return "@" + __rebuildSlot(captures.name) + " " + __rebuildSlot(captures.params) + ";";
 }
 
 function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3773,7 +3957,10 @@ function __invert_Stylesheet_0_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return String((captures.nodes == null ? "" : __rebuildSlot(captures.nodes, ";")));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Stylesheet_0(captures, __indentCol);
+  }
+  return String((captures.nodes == null ? "" : __rebuildSlotIws(captures.nodes, captures.nodes_iws, ";")));
 }
 
 function __dispatchInverse_Comment_ast(value: any, __indentCol: number = 0): string {

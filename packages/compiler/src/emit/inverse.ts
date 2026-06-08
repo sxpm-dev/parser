@@ -197,6 +197,23 @@ ${indent(assertion, 1)}
 }`;
   }
   const body = emitInverseBody(ir, 'value', target, production);
+  // Layer 3 raws sidecar (2026-06-08-raws-sidecar.md). When the input
+  // AST carries a `raws: { __ws, __litPres, <span>_iws… }` namespace
+  // (produced by Layer 2 for standard-whitespace schemas in raws mode,
+  // or any hand-built AST that wants byte-exact stringify), pre-populate
+  // `captures.__ws` / `captures.__litPres` / `captures.<name>_iws` so
+  // the rebuild's runtime reads find them. Preserve schemas expose the
+  // same fields at TOP LEVEL on the AST and the inverse-IR walk already
+  // copies them — this raws-prelude is only meaningful for standard
+  // schemas (preserve-schema ASTs will simply not have a `.raws` field).
+  const rawsPrelude = `if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+  const __r = (value as any).raws;
+  if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+  if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+  for (const __k in __r) {
+    if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+  }
+}`;
   // Task #18: stringify always produces SOURCE, regardless of which target's
   // value was passed in. The canonical source for a production is the
   // production's source-target body. When that body is a Template the
@@ -215,17 +232,28 @@ ${indent(assertion, 1)}
   // spans don't already describe.
   const sourceEntry = production.renders.get('source');
   const sourceIr = sourceEntry?.inverseDerived;
+  const rebuild = rebuildFnName(nodeName, prodIdx);
   if (sourceIr && sourceIr.kind === 'template') {
     const expr = emitTemplateRebuildExpr(sourceIr, production);
+    // Layer 3 raws sidecar — when the AST carries a `raws` namespace
+    // (Layer 2 attaches it on standard schemas in raws mode), prefer the
+    // shared __rebuild_<Node> path. The shared rebuild's wsSlot pieces
+    // read captures.__ws / *_iws and produce byte-exact output for
+    // inter-span trivia. Fast-mode / hand-built ASTs without `.raws`
+    // keep the inlined template expression (canonical formatter).
     return `function ${fnName}(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+${indent(rawsPrelude, 1)}
 ${indent(body, 1)}
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return ${rebuild}(captures, __indentCol);
+  }
   return ${expr};
 }`;
   }
-  const rebuild = rebuildFnName(nodeName, prodIdx);
   return `function ${fnName}(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+${indent(rawsPrelude, 1)}
 ${indent(body, 1)}
   return ${rebuild}(captures, __indentCol);
 }`;

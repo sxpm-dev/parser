@@ -3514,35 +3514,35 @@ function __rebuild_MarkdownDocument_0(captures: any): string {
 }
 
 function __rebuild_MarkdownLeaf_0(captures: any): string {
-  return "######" + " " + __rebuildSlot(captures.text);
+  return "######" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_1(captures: any): string {
-  return "#####" + " " + __rebuildSlot(captures.text);
+  return "#####" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_2(captures: any): string {
-  return "####" + " " + __rebuildSlot(captures.text);
+  return "####" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_3(captures: any): string {
-  return "###" + " " + __rebuildSlot(captures.text);
+  return "###" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_4(captures: any): string {
-  return "##" + " " + __rebuildSlot(captures.text);
+  return "##" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_5(captures: any): string {
-  return "#" + " " + __rebuildSlot(captures.text);
+  return "#" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_6(captures: any): string {
-  return __rebuildSlot(captures.text) + " " + "===";
+  return __rebuildSlot(captures.text) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "===";
 }
 
 function __rebuild_MarkdownLeaf_7(captures: any): string {
-  return __rebuildSlot(captures.text) + " " + "---";
+  return __rebuildSlot(captures.text) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "---";
 }
 
 function __rebuild_MarkdownLeaf_8(captures: any): string {
@@ -3558,11 +3558,11 @@ function __rebuild_MarkdownLeaf_10(captures: any): string {
 }
 
 function __rebuild_MarkdownLeaf_11(captures: any): string {
-  return "- [x]" + " " + __rebuildSlot(captures.text);
+  return "- [x]" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_12(captures: any): string {
-  return "- [ ]" + " " + __rebuildSlot(captures.text);
+  return "- [ ]" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_13(captures: any): string {
@@ -3578,19 +3578,19 @@ function __rebuild_MarkdownLeaf_15(captures: any): string {
 }
 
 function __rebuild_MarkdownLeaf_16(captures: any): string {
-  return __rebuildSlot(captures.index) + "." + " " + __rebuildSlot(captures.text);
+  return __rebuildSlot(captures.index) + "." + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_17(captures: any): string {
-  return ">" + " " + __rebuildSlot(captures.text);
+  return ">" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_18(captures: any): string {
-  return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " " + "```";
+  return "```" + __rebuildSlot(captures.lang) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.body) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "```";
 }
 
 function __rebuild_MarkdownLeaf_19(captures: any): string {
-  return "```\n" + __rebuildSlot(captures.body) + " " + "```";
+  return "```\n" + __rebuildSlot(captures.body) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "```";
 }
 
 function __rebuild_MarkdownLeaf_20(captures: any): string {
@@ -3630,7 +3630,7 @@ function __rebuild_MarkdownLeaf_28(captures: any): string {
 }
 
 function __rebuild_MarkdownLeaf_29(captures: any): string {
-  return "|" + " " + "---" + " " + "|" + " " + "---" + " " + "|";
+  return "|" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "---" + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "|" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + "---" + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "|";
 }
 
 function __rebuild_MarkdownLeaf_30(captures: any): string {
@@ -3638,15 +3638,15 @@ function __rebuild_MarkdownLeaf_30(captures: any): string {
 }
 
 function __rebuild_MarkdownLeaf_31(captures: any): string {
-  return "|" + " " + __rebuildSlot(captures.first) + " " + "|" + " " + __rebuildSlot(captures.second) + " " + "|";
+  return "|" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.first) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "|" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlot(captures.second) + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "|";
 }
 
 function __rebuild_MarkdownLeaf_32(captures: any): string {
-  return "[" + __rebuildSlot(captures.id) + "]" + ":" + " " + __rebuildSlot(captures.url);
+  return "[" + __rebuildSlot(captures.id) + "]" + ":" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.url);
 }
 
 function __rebuild_MarkdownLeaf_33(captures: any): string {
-  return "[^" + __rebuildSlot(captures.id) + "]" + ":" + " " + __rebuildSlot(captures.text);
+  return "[^" + __rebuildSlot(captures.id) + "]" + ":" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.text);
 }
 
 function __rebuild_MarkdownLeaf_34(captures: any): string {
@@ -3667,6 +3667,14 @@ function __rebuild_MarkdownParagraph_0(captures: any): string {
 
 function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3674,11 +3682,22 @@ function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): s
     throw new Error("stringify: field \"type\" expected \"document\", got " + JSON.stringify(value.type));
   }
   captures.children = ((Array.isArray(value.children) ? value.children : [value.children]).map((__e: any) => __invertSlotMulti_MarkdownLeaf_MarkdownParagraph_ast(__e, __indentCol)));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  }
   return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3689,11 +3708,22 @@ function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 6, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  }
   return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3704,11 +3734,22 @@ function __invert_MarkdownLeaf_1_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 5, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  }
   return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3719,11 +3760,22 @@ function __invert_MarkdownLeaf_2_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 4, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  }
   return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3734,11 +3786,22 @@ function __invert_MarkdownLeaf_3_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 3, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  }
   return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3749,11 +3812,22 @@ function __invert_MarkdownLeaf_4_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 2, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_4(captures, __indentCol);
+  }
   return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3764,11 +3838,22 @@ function __invert_MarkdownLeaf_5_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"depth\" expected 1, got " + JSON.stringify(value.depth));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_5(captures, __indentCol);
+  }
   return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3781,12 +3866,23 @@ function __invert_MarkdownLeaf_6_ast(value: any, __indentCol: number = 0): strin
   captures.text = __invertSlotLeaf_ast(value.text);
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_6(captures, __indentCol);
   }
   return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3800,11 +3896,22 @@ function __invert_MarkdownLeaf_7_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.style, "setext")) {
     throw new Error("stringify: field \"style\" expected \"setext\", got " + JSON.stringify(value.style));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  }
   return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3814,11 +3921,22 @@ function __invert_MarkdownLeaf_8_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.marker, "*")) {
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_8(captures, __indentCol);
+  }
   return "***";
 }
 
 function __invert_MarkdownLeaf_9_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3828,22 +3946,44 @@ function __invert_MarkdownLeaf_9_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.marker, "_")) {
     throw new Error("stringify: field \"marker\" expected \"_\", got " + JSON.stringify(value.marker));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_9(captures, __indentCol);
+  }
   return "___";
 }
 
 function __invert_MarkdownLeaf_10_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
   if (!Object.is(value.type, "thematic-break")) {
     throw new Error("stringify: field \"type\" expected \"thematic-break\", got " + JSON.stringify(value.type));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  }
   return "---";
 }
 
 function __invert_MarkdownLeaf_11_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3857,11 +3997,22 @@ function __invert_MarkdownLeaf_11_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"x\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  }
   return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3872,11 +4023,22 @@ function __invert_MarkdownLeaf_12_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"checked\" expected false, got " + JSON.stringify(value.checked));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  }
   return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3890,11 +4052,22 @@ function __invert_MarkdownLeaf_13_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"+\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_13(captures, __indentCol);
+  }
   return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3908,11 +4081,22 @@ function __invert_MarkdownLeaf_14_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"marker\" expected \"*\", got " + JSON.stringify(value.marker));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_14(captures, __indentCol);
+  }
   return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3923,11 +4107,22 @@ function __invert_MarkdownLeaf_15_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"ordered\" expected false, got " + JSON.stringify(value.ordered));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_15(captures, __indentCol);
+  }
   return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3939,11 +4134,22 @@ function __invert_MarkdownLeaf_16_ast(value: any, __indentCol: number = 0): stri
   }
   captures.index = __invertSlotLeaf_ast(value.index);
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  }
   return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3951,11 +4157,22 @@ function __invert_MarkdownLeaf_17_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"blockquote\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  }
   return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3964,11 +4181,22 @@ function __invert_MarkdownLeaf_18_ast(value: any, __indentCol: number = 0): stri
   }
   captures.lang = __invertSlotLeaf_ast(value.lang);
   captures.body = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  }
   return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3976,11 +4204,22 @@ function __invert_MarkdownLeaf_19_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"code-block\", got " + JSON.stringify(value.type));
   }
   captures.body = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  }
   return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -3988,11 +4227,22 @@ function __invert_MarkdownLeaf_20_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"bold\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  }
   return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4000,11 +4250,22 @@ function __invert_MarkdownLeaf_21_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"italic\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  }
   return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4012,11 +4273,22 @@ function __invert_MarkdownLeaf_22_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"strikethrough\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  }
   return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4024,11 +4296,22 @@ function __invert_MarkdownLeaf_23_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"inline-code\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  }
   return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4037,11 +4320,22 @@ function __invert_MarkdownLeaf_24_ast(value: any, __indentCol: number = 0): stri
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.url = __invertSlotLeaf_ast(value.url);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4050,11 +4344,22 @@ function __invert_MarkdownLeaf_25_ast(value: any, __indentCol: number = 0): stri
   }
   captures.label = __invertSlotLeaf_ast(value.label);
   captures.id = __invertSlotLeaf_ast(value.id);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4063,11 +4368,22 @@ function __invert_MarkdownLeaf_26_ast(value: any, __indentCol: number = 0): stri
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.url = __invertSlotLeaf_ast(value.url);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4076,11 +4392,22 @@ function __invert_MarkdownLeaf_27_ast(value: any, __indentCol: number = 0): stri
   }
   captures.alt = __invertSlotLeaf_ast(value.alt);
   captures.id = __invertSlotLeaf_ast(value.id);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4088,11 +4415,22 @@ function __invert_MarkdownLeaf_28_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"entity\", got " + JSON.stringify(value.type));
   }
   captures.name = __invertSlotLeaf_ast(value.name);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  }
   return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4111,11 +4449,22 @@ function __invert_MarkdownLeaf_29_ast(value: any, __indentCol: number = 0): stri
   if (!Object.is(value.align[1], "default")) {
     throw new Error("stringify: expected scalar \"default\", got " + JSON.stringify(value.align[1]));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_29(captures, __indentCol);
+  }
   return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4134,11 +4483,22 @@ function __invert_MarkdownLeaf_30_ast(value: any, __indentCol: number = 0): stri
   if (!Object.is(value.align[1], "right")) {
     throw new Error("stringify: expected scalar \"right\", got " + JSON.stringify(value.align[1]));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  }
   return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4150,11 +4510,22 @@ function __invert_MarkdownLeaf_31_ast(value: any, __indentCol: number = 0): stri
   }
   captures.first = __invertSlotLeaf_ast(value.cells[0]);
   captures.second = __invertSlotLeaf_ast(value.cells[1]);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  }
   return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4163,11 +4534,22 @@ function __invert_MarkdownLeaf_32_ast(value: any, __indentCol: number = 0): stri
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.url = __invertSlotLeaf_ast(value.url);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4176,11 +4558,22 @@ function __invert_MarkdownLeaf_33_ast(value: any, __indentCol: number = 0): stri
   }
   captures.id = __invertSlotLeaf_ast(value.id);
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4188,11 +4581,22 @@ function __invert_MarkdownLeaf_34_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"footnote-reference\", got " + JSON.stringify(value.type));
   }
   captures.id = __invertSlotLeaf_ast(value.id);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4202,11 +4606,22 @@ function __invert_MarkdownLeaf_35_ast(value: any, __indentCol: number = 0): stri
   captures.tag = __invertSlotLeaf_ast(value.tag);
   captures.body = __invertSlotLeaf_ast(value.text);
   captures.closingTag = __invertSlotLeaf_ast(value.closingTag);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4214,11 +4629,22 @@ function __invert_MarkdownLeaf_36_ast(value: any, __indentCol: number = 0): stri
     throw new Error("stringify: field \"type\" expected \"autolink\", got " + JSON.stringify(value.type));
   }
   captures.url = __invertSlotLeaf_ast(value.url);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -4226,11 +4652,22 @@ function __invert_MarkdownParagraph_0_ast(value: any, __indentCol: number = 0): 
     throw new Error("stringify: field \"type\" expected \"paragraph\", got " + JSON.stringify(value.type));
   }
   captures.text = __invertSlotLeaf_ast(value.text);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownParagraph_0(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.text));
 }
 
 function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4245,11 +4682,22 @@ function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  }
   return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4270,11 +4718,22 @@ function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  }
   return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4295,11 +4754,22 @@ function __invert_MarkdownLeaf_1_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  }
   return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4320,11 +4790,22 @@ function __invert_MarkdownLeaf_2_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  }
   return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4345,11 +4826,22 @@ function __invert_MarkdownLeaf_3_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  }
   return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4369,12 +4861,23 @@ function __invert_MarkdownLeaf_4_html(value: any, __indentCol: number = 0): stri
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_4(captures, __indentCol);
   }
   return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4394,12 +4897,23 @@ function __invert_MarkdownLeaf_5_html(value: any, __indentCol: number = 0): stri
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_5(captures, __indentCol);
   }
   return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4420,11 +4934,22 @@ function __invert_MarkdownLeaf_6_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_6(captures, __indentCol);
+  }
   return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4445,11 +4970,22 @@ function __invert_MarkdownLeaf_7_html(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  }
   return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4461,12 +4997,23 @@ function __invert_MarkdownLeaf_8_html(value: any, __indentCol: number = 0): stri
   __pos += 4;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_8(captures, __indentCol);
   }
   return "***";
 }
 
 function __invert_MarkdownLeaf_9_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4478,12 +5025,23 @@ function __invert_MarkdownLeaf_9_html(value: any, __indentCol: number = 0): stri
   __pos += 4;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_9(captures, __indentCol);
   }
   return "___";
 }
 
 function __invert_MarkdownLeaf_10_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4496,11 +5054,22 @@ function __invert_MarkdownLeaf_10_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  }
   return "---";
 }
 
 function __invert_MarkdownLeaf_11_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4521,11 +5090,22 @@ function __invert_MarkdownLeaf_11_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  }
   return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4546,11 +5126,22 @@ function __invert_MarkdownLeaf_12_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  }
   return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4570,12 +5161,23 @@ function __invert_MarkdownLeaf_13_html(value: any, __indentCol: number = 0): str
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_13(captures, __indentCol);
   }
   return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4595,12 +5197,23 @@ function __invert_MarkdownLeaf_14_html(value: any, __indentCol: number = 0): str
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_14(captures, __indentCol);
   }
   return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4620,12 +5233,23 @@ function __invert_MarkdownLeaf_15_html(value: any, __indentCol: number = 0): str
   }
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_15(captures, __indentCol);
   }
   return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4646,11 +5270,22 @@ function __invert_MarkdownLeaf_16_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  }
   return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4671,11 +5306,22 @@ function __invert_MarkdownLeaf_17_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  }
   return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4704,11 +5350,22 @@ function __invert_MarkdownLeaf_18_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  }
   return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4729,11 +5386,22 @@ function __invert_MarkdownLeaf_19_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  }
   return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4754,11 +5422,22 @@ function __invert_MarkdownLeaf_20_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  }
   return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4779,11 +5458,22 @@ function __invert_MarkdownLeaf_21_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  }
   return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4804,11 +5494,22 @@ function __invert_MarkdownLeaf_22_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  }
   return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4829,11 +5530,22 @@ function __invert_MarkdownLeaf_23_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  }
   return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4862,11 +5574,22 @@ function __invert_MarkdownLeaf_24_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4895,11 +5618,22 @@ function __invert_MarkdownLeaf_25_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4928,11 +5662,22 @@ function __invert_MarkdownLeaf_26_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4961,11 +5706,22 @@ function __invert_MarkdownLeaf_27_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4986,11 +5742,22 @@ function __invert_MarkdownLeaf_28_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  }
   return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -4998,12 +5765,23 @@ function __invert_MarkdownLeaf_29_html(value: any, __indentCol: number = 0): str
   let __pos = 0;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_29(captures, __indentCol);
   }
   return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5012,11 +5790,22 @@ function __invert_MarkdownLeaf_30_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  }
   return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5045,11 +5834,22 @@ function __invert_MarkdownLeaf_31_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  }
   return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5058,11 +5858,22 @@ function __invert_MarkdownLeaf_32_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5091,11 +5902,22 @@ function __invert_MarkdownLeaf_33_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5124,11 +5946,22 @@ function __invert_MarkdownLeaf_34_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5165,11 +5998,22 @@ function __invert_MarkdownLeaf_35_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5198,11 +6042,22 @@ function __invert_MarkdownLeaf_36_html(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_html(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5223,11 +6078,22 @@ function __invert_MarkdownParagraph_0_html(value: any, __indentCol: number = 0):
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownParagraph_0(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.text));
 }
 
 function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5242,11 +6108,22 @@ function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0)
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownDocument_0(captures, __indentCol);
+  }
   return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5261,11 +6138,22 @@ function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_0(captures, __indentCol);
+  }
   return "###### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5280,11 +6168,22 @@ function __invert_MarkdownLeaf_1_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_1(captures, __indentCol);
+  }
   return "##### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5299,11 +6198,22 @@ function __invert_MarkdownLeaf_2_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_2(captures, __indentCol);
+  }
   return "#### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5318,11 +6228,22 @@ function __invert_MarkdownLeaf_3_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_3(captures, __indentCol);
+  }
   return "### " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_4_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5337,11 +6258,22 @@ function __invert_MarkdownLeaf_4_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_4(captures, __indentCol);
+  }
   return "## " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_5_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5356,11 +6288,22 @@ function __invert_MarkdownLeaf_5_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_5(captures, __indentCol);
+  }
   return "# " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_6_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5377,11 +6320,22 @@ function __invert_MarkdownLeaf_6_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_6(captures, __indentCol);
+  }
   return __rebuildSlot(captures.text) + " ===";
 }
 
 function __invert_MarkdownLeaf_7_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5398,11 +6352,22 @@ function __invert_MarkdownLeaf_7_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_7(captures, __indentCol);
+  }
   return __rebuildSlot(captures.text) + " ---";
 }
 
 function __invert_MarkdownLeaf_8_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5415,11 +6380,22 @@ function __invert_MarkdownLeaf_8_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_8(captures, __indentCol);
+  }
   return "***";
 }
 
 function __invert_MarkdownLeaf_9_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5432,11 +6408,22 @@ function __invert_MarkdownLeaf_9_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_9(captures, __indentCol);
+  }
   return "___";
 }
 
 function __invert_MarkdownLeaf_10_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5449,11 +6436,22 @@ function __invert_MarkdownLeaf_10_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_10(captures, __indentCol);
+  }
   return "---";
 }
 
 function __invert_MarkdownLeaf_11_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5468,11 +6466,22 @@ function __invert_MarkdownLeaf_11_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_11(captures, __indentCol);
+  }
   return "- [x] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_12_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5487,11 +6496,22 @@ function __invert_MarkdownLeaf_12_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_12(captures, __indentCol);
+  }
   return "- [ ] " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_13_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5506,11 +6526,22 @@ function __invert_MarkdownLeaf_13_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_13(captures, __indentCol);
+  }
   return "+ " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_14_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5525,11 +6556,22 @@ function __invert_MarkdownLeaf_14_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_14(captures, __indentCol);
+  }
   return "* " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_15_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5544,11 +6586,22 @@ function __invert_MarkdownLeaf_15_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_15(captures, __indentCol);
+  }
   return "- " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_16_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5567,11 +6620,22 @@ function __invert_MarkdownLeaf_16_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_16(captures, __indentCol);
+  }
   return __rebuildSlot(captures.index) + ". " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_17_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5586,11 +6650,22 @@ function __invert_MarkdownLeaf_17_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_17(captures, __indentCol);
+  }
   return "> " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_18_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5619,11 +6694,22 @@ function __invert_MarkdownLeaf_18_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_18(captures, __indentCol);
+  }
   return "```" + __rebuildSlot(captures.lang) + " " + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_19_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5644,11 +6730,22 @@ function __invert_MarkdownLeaf_19_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_19(captures, __indentCol);
+  }
   return "```\n" + __rebuildSlot(captures.body) + " ```";
 }
 
 function __invert_MarkdownLeaf_20_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5669,11 +6766,22 @@ function __invert_MarkdownLeaf_20_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_20(captures, __indentCol);
+  }
   return "**" + __rebuildSlot(captures.text) + "**";
 }
 
 function __invert_MarkdownLeaf_21_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5694,11 +6802,22 @@ function __invert_MarkdownLeaf_21_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_21(captures, __indentCol);
+  }
   return "*" + __rebuildSlot(captures.text) + "*";
 }
 
 function __invert_MarkdownLeaf_22_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5719,11 +6838,22 @@ function __invert_MarkdownLeaf_22_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_22(captures, __indentCol);
+  }
   return "~~" + __rebuildSlot(captures.text) + "~~";
 }
 
 function __invert_MarkdownLeaf_23_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5744,11 +6874,22 @@ function __invert_MarkdownLeaf_23_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_23(captures, __indentCol);
+  }
   return "`" + __rebuildSlot(captures.text) + "`";
 }
 
 function __invert_MarkdownLeaf_24_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5777,11 +6918,22 @@ function __invert_MarkdownLeaf_24_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_24(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_25_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5810,11 +6962,22 @@ function __invert_MarkdownLeaf_25_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_25(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.label) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_26_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5843,11 +7006,22 @@ function __invert_MarkdownLeaf_26_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_26(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "](" + __rebuildSlot(captures.url) + ")";
 }
 
 function __invert_MarkdownLeaf_27_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5876,11 +7050,22 @@ function __invert_MarkdownLeaf_27_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_27(captures, __indentCol);
+  }
   return "![" + __rebuildSlot(captures.alt) + "][" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_28_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5901,11 +7086,22 @@ function __invert_MarkdownLeaf_28_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_28(captures, __indentCol);
+  }
   return "&" + __rebuildSlot(captures.name) + ";";
 }
 
 function __invert_MarkdownLeaf_29_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5918,11 +7114,22 @@ function __invert_MarkdownLeaf_29_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_29(captures, __indentCol);
+  }
   return "| --- | --- |";
 }
 
 function __invert_MarkdownLeaf_30_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5935,11 +7142,22 @@ function __invert_MarkdownLeaf_30_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_30(captures, __indentCol);
+  }
   return "|:---|---:|";
 }
 
 function __invert_MarkdownLeaf_31_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5968,11 +7186,22 @@ function __invert_MarkdownLeaf_31_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_31(captures, __indentCol);
+  }
   return "| " + __rebuildSlot(captures.first) + " | " + __rebuildSlot(captures.second) + " |";
 }
 
 function __invert_MarkdownLeaf_32_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -5995,11 +7224,22 @@ function __invert_MarkdownLeaf_32_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_32(captures, __indentCol);
+  }
   return "[" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.url);
 }
 
 function __invert_MarkdownLeaf_33_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -6022,11 +7262,22 @@ function __invert_MarkdownLeaf_33_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_33(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]: " + __rebuildSlot(captures.text);
 }
 
 function __invert_MarkdownLeaf_34_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -6047,11 +7298,22 @@ function __invert_MarkdownLeaf_34_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_34(captures, __indentCol);
+  }
   return "[^" + __rebuildSlot(captures.id) + "]";
 }
 
 function __invert_MarkdownLeaf_35_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -6088,11 +7350,22 @@ function __invert_MarkdownLeaf_35_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_35(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.body) + "</" + __rebuildSlot(captures.closingTag) + ">";
 }
 
 function __invert_MarkdownLeaf_36_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -6113,11 +7386,22 @@ function __invert_MarkdownLeaf_36_source(value: any, __indentCol: number = 0): s
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownLeaf_36(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.url) + ">";
 }
 
 function __invert_MarkdownParagraph_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -6127,6 +7411,9 @@ function __invert_MarkdownParagraph_0_source(value: any, __indentCol: number = 0
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_MarkdownParagraph_0(captures, __indentCol);
   }
   return String(__rebuildSlot(captures.text));
 }

@@ -629,11 +629,19 @@ function __rebuild_Expr_3(captures: any): string {
 }
 
 function __rebuild_Expr_4(captures: any): string {
-  return __rebuildSlot(captures.left) + " " + __rebuildSlot(captures.op) + " " + __rebuildSlot(captures.right);
+  return __rebuildSlot(captures.left) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.op) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + __rebuildSlot(captures.right);
 }
 
 function __invert_Expr_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -646,6 +654,14 @@ function __invert_Expr_0_ast(value: any, __indentCol: number = 0): string {
 
 function __invert_Expr_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }

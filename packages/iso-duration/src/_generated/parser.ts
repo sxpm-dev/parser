@@ -852,6 +852,14 @@ function __rebuild_Duration_1(captures: any): string {
 
 function __invert_DateUnit_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -859,11 +867,22 @@ function __invert_DateUnit_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"years\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "Y";
 }
 
 function __invert_DateUnit_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -871,11 +890,22 @@ function __invert_DateUnit_1_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"months\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "M";
 }
 
 function __invert_DateUnit_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -883,11 +913,22 @@ function __invert_DateUnit_2_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"weeks\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "W";
 }
 
 function __invert_DateUnit_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -895,11 +936,22 @@ function __invert_DateUnit_3_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"days\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_3(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "D";
 }
 
 function __invert_TimeUnit_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -907,11 +959,22 @@ function __invert_TimeUnit_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"hours\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "H";
 }
 
 function __invert_TimeUnit_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -919,11 +982,22 @@ function __invert_TimeUnit_1_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"minutes\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "M";
 }
 
 function __invert_TimeUnit_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -931,11 +1005,22 @@ function __invert_TimeUnit_2_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"seconds\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "S";
 }
 
 function __invert_Duration_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -943,11 +1028,22 @@ function __invert_Duration_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"duration\", got " + JSON.stringify(value.type));
   }
   captures.date = ((Array.isArray(value.date) ? value.date : [value.date]).map((__e: any) => __dispatchInverse_DateUnit_ast(__e, __indentCol)));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Duration_0(captures, __indentCol);
+  }
   return "P" + __rebuildSlot(captures.date, " ");
 }
 
 function __invert_Duration_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -956,11 +1052,22 @@ function __invert_Duration_1_ast(value: any, __indentCol: number = 0): string {
   }
   captures.date = ((Array.isArray(value.date) ? value.date : [value.date]).map((__e: any) => __dispatchInverse_DateUnit_ast(__e, __indentCol)));
   captures.time = ((Array.isArray(value.time) ? value.time : [value.time]).map((__e: any) => __dispatchInverse_TimeUnit_ast(__e, __indentCol)));
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Duration_1(captures, __indentCol);
+  }
   return (captures.date == null ? "" : "P" + __rebuildSlot(captures.date, " ")) + "T" + __rebuildSlot(captures.time, " ");
 }
 
 function __invert_DateUnit_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -977,11 +1084,22 @@ function __invert_DateUnit_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "Y";
 }
 
 function __invert_DateUnit_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -998,11 +1116,22 @@ function __invert_DateUnit_1_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "M";
 }
 
 function __invert_DateUnit_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1019,11 +1148,22 @@ function __invert_DateUnit_2_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "W";
 }
 
 function __invert_DateUnit_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1040,11 +1180,22 @@ function __invert_DateUnit_3_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_DateUnit_3(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "D";
 }
 
 function __invert_TimeUnit_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1061,11 +1212,22 @@ function __invert_TimeUnit_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "H";
 }
 
 function __invert_TimeUnit_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1082,11 +1244,22 @@ function __invert_TimeUnit_1_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "M";
 }
 
 function __invert_TimeUnit_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1103,11 +1276,22 @@ function __invert_TimeUnit_2_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TimeUnit_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.value) + "S";
 }
 
 function __invert_Duration_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1122,11 +1306,22 @@ function __invert_Duration_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Duration_0(captures, __indentCol);
+  }
   return "P" + __rebuildSlot(captures.date, " ");
 }
 
 function __invert_Duration_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1148,6 +1343,9 @@ function __invert_Duration_1_source(value: any, __indentCol: number = 0): string
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Duration_1(captures, __indentCol);
   }
   return (captures.date == null ? "" : "P" + __rebuildSlot(captures.date, " ")) + "T" + __rebuildSlot(captures.time, " ");
 }

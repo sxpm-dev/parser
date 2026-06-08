@@ -1230,7 +1230,7 @@ function __rebuild_JsonString_1(captures: any): string {
 }
 
 function __rebuild_JsonArray_0(captures: any): string {
-  return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
+  return (captures.items == null ? "" : "[" + __rebuildSlotIws(captures.items, captures.items_iws, ",")) + "]";
 }
 
 function __rebuild_JsonMember_0(captures: any): string {
@@ -1242,7 +1242,7 @@ function __rebuild_JsonMember_1(captures: any): string {
 }
 
 function __rebuild_JsonObject_0(captures: any): string {
-  return (captures.entries == null ? "" : "{" + __rebuildSlot(captures.entries, ",")) + "}";
+  return (captures.entries == null ? "" : "{" + __rebuildSlotIws(captures.entries, captures.entries_iws, ",")) + "}";
 }
 
 function __rebuild_JsonValue_0(captures: any): string {
@@ -1279,24 +1279,59 @@ function __invert_JsonFalse_0_ast(value: any, __indentCol: number = 0): string {
 
 function __invert_JsonNumber_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.value = __invertSlotLeaf_ast(value);
   return __rebuild_JsonNumber_0(captures, __indentCol);
 }
 
 function __invert_JsonString_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.value = __invertSlotLeaf_ast(value);
   return __rebuild_JsonString_0(captures, __indentCol);
 }
 
 function __invert_JsonArray_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.items = ((Array.isArray(value) ? value : value.split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_JsonValue_ast(__e, __indentCol)));
-  return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonArray_0(captures, __indentCol);
+  }
+  return (captures.items == null ? "" : "[" + __rebuildSlotIws(captures.items, captures.items_iws, ",")) + "]";
 }
 
 function __invert_JsonMember_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected single-entry object for dynKey 'key', got " + typeof value);
   }
@@ -1310,11 +1345,22 @@ function __invert_JsonMember_0_ast(value: any, __indentCol: number = 0): string 
     captures.key = __dkKey;
   captures.value = __invertSlotFor_JsonValue_ast(__dkVal, __indentCol);
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonMember_0(captures, __indentCol);
+  }
   return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonObject_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object for merge 'entries', got " + typeof value);
   }
@@ -1329,17 +1375,36 @@ function __invert_JsonObject_0_ast(value: any, __indentCol: number = 0): string 
     }
     captures.entries = __mArr;
   }
-  return (captures.entries == null ? "" : "{" + __rebuildSlot(captures.entries, ",")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonObject_0(captures, __indentCol);
+  }
+  return (captures.entries == null ? "" : "{" + __rebuildSlotIws(captures.entries, captures.entries_iws, ",")) + "}";
 }
 
 function __invert_JsonValue_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.node = __invertSlotMulti_JsonObject_JsonArray_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_ast(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }
 
 function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1349,6 +1414,9 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Comment_0(captures, __indentCol);
   }
   return String(__rebuildSlot(captures.text));
 }
@@ -1376,18 +1444,42 @@ function __invert_JsonFalse_0_source(value: any, __indentCol: number = 0): strin
 
 function __invert_JsonNumber_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.value = __invertSlotLeaf_source(value);
   return __rebuild_JsonNumber_0(captures, __indentCol);
 }
 
 function __invert_JsonString_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.value = decodeJsonString(value);
   return __rebuild_JsonString_0(captures, __indentCol);
 }
 
 function __invert_JsonArray_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1408,11 +1500,22 @@ function __invert_JsonArray_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return (captures.items == null ? "" : "[" + __rebuildSlot(captures.items, ",")) + "]";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonArray_0(captures, __indentCol);
+  }
+  return (captures.items == null ? "" : "[" + __rebuildSlotIws(captures.items, captures.items_iws, ",")) + "]";
 }
 
 function __invert_JsonMember_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1431,11 +1534,22 @@ function __invert_JsonMember_0_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonMember_0(captures, __indentCol);
+  }
   return __rebuildSlot((typeof captures.key === "string" ? encodeJsonString(captures.key) : captures.key)) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonMember_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1454,11 +1568,22 @@ function __invert_JsonMember_1_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonMember_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.key) + ":" + __rebuildSlot(captures.value);
 }
 
 function __invert_JsonObject_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1479,11 +1604,22 @@ function __invert_JsonObject_0_source(value: any, __indentCol: number = 0): stri
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return (captures.entries == null ? "" : "{" + __rebuildSlot(captures.entries, ",")) + "}";
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_JsonObject_0(captures, __indentCol);
+  }
+  return (captures.entries == null ? "" : "{" + __rebuildSlotIws(captures.entries, captures.entries_iws, ",")) + "}";
 }
 
 function __invert_JsonValue_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   captures.node = __invertSlotMulti_JsonObject_JsonArray_JsonString_JsonNumber_JsonTrue_JsonFalse_JsonNull_source(value, __indentCol);
   return __rebuild_JsonValue_0(captures, __indentCol);
 }

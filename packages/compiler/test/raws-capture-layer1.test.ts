@@ -36,7 +36,10 @@ const standardSchema = defineSchema({
   punctuators: { eq: '=' },
   examples: [
     relation('Pair', {
-      input: 'a=b',
+      // Example uses whitespace so the canonical separator (used as the
+      // fast-mode wsSlot fallback) is ' ' — keeps the Layer 3 round-trip
+      // test's assertion well-defined.
+      input: 'a = b',
       encodings: {
         src: parse([
           span('k', 'a').ident(),
@@ -156,4 +159,40 @@ test('layer 2: preserve schema keeps top-level __ws attach (no behaviour change)
   assert.match(code, /Object\.assign\(/);
   assert.match(code, /\{ __ws: captures\.__ws, __litPres: captures\.__litPres/);
   assert.doesNotMatch(code, /raws: \{ __ws: captures\.__ws/);
+});
+
+test('layer 3: stringify round-trips byte-exact in raws mode for standard schemas', async () => {
+  // End-to-end. Acceptance criterion from the raws-sidecar plan: the
+  // captured trivia on a raws-mode AST flows back through stringify so
+  // the source byte-equals the original parse input.
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname, resolve } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const outDir = resolve(here, '.raws-layer3-tmp');
+  mkdirSync(outDir, { recursive: true });
+  const code = generateParser(standardSchema);
+  const outPath = resolve(outDir, 'parser.ts');
+  writeFileSync(outPath, code);
+  const mod = (await import(outPath)) as {
+    render: (input: string, opts: { target: string; mode?: string }) => unknown;
+    stringify: (value: unknown, opts: { target: string }) => string;
+  };
+
+  // Non-canonical whitespace must round-trip byte-exact in raws mode.
+  // Canonical input round-trips both modes; the meaningful difference is
+  // that raws mode preserves the user's chosen separator (' ' here is
+  // canonical, so we explicitly test with extra whitespace to surface
+  // any regression in the captures-driven path).
+  for (const input of ['a = b', 'a=b', 'a  =  b', 'a\t=\tb']) {
+    const ast = mod.render(input, { target: 'ast', mode: 'raws' });
+    const out = mod.stringify(ast, { target: 'ast' });
+    assert.equal(out, input, `raws round-trip lost trivia for ${JSON.stringify(input)}`);
+  }
+
+  // Fast-mode AST has no .raws field → stringify falls back to the
+  // canonical formatter and produces the schema's canonical separator.
+  const astFast = mod.render('a  =  b', { target: 'ast', mode: 'fast' });
+  const outFast = mod.stringify(astFast, { target: 'ast' });
+  assert.equal(outFast, 'a = b', 'fast mode must canonicalise inter-token whitespace');
 });

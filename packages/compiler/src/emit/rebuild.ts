@@ -98,13 +98,18 @@ export type Piece =
       readonly join: SlotJoin;
       readonly encode: SlotEncode;
     }
-  // Phase 4b — `whitespace: 'preserve'`. Emitted between consecutive
-  // production spans when the schema opts into preserve. At codegen time
-  // the inter-span gap is unknown (parse may see arbitrary ws); the slot
-  // resolves to `captures.__ws[index]` at runtime, falling back to ""
-  // (the captures-payload guarantees __ws is populated for preserve
-  // schemas, so the fallback is just defense-in-depth).
-  | { readonly kind: 'wsSlot'; readonly index: number }
+  // Phase 4b — `whitespace: 'preserve'` AND Layer 3 raws sidecar
+  // (2026-06-08-raws-sidecar.md). Emitted between consecutive production
+  // spans. At codegen time the inter-span gap is unknown (parse may see
+  // arbitrary ws); the slot resolves to `captures.__ws[index]` at
+  // runtime when populated. `fallback` is the canonical separator the
+  // schema would emit absent any captured trivia — used when:
+  //   - the captures payload doesn't carry __ws (fast-mode stringify, or
+  //     a hand-built AST without a raws sidecar)
+  //   - or the specific index slot is undefined (length mismatch).
+  // Preserve schemas always populate __ws (eagerly), so the fallback is
+  // exercised on standard schemas only.
+  | { readonly kind: 'wsSlot'; readonly index: number; readonly fallback: string }
   // Phase 4c v2 — unnamed optional literal piece for preserve schemas.
   // The parser tracks per-span presence in `__litPres`; rebuild emits
   // the literal only when `captures.__litPres[litIdx]` is truthy.
@@ -163,14 +168,23 @@ export function synthesizePieces(
       );
     }
     const sepText = input.slice(cursor, startOffset);
-    if (preserveWs && spanIdx > 0) {
-      // Always emit a ws-slot for preserve schemas, regardless of whether
-      // the example happened to have ws there. Parse-time may have seen
-      // arbitrary ws; the captured slice (possibly empty) is replayed.
-      pieces.push({ kind: 'wsSlot', index: gapIdx });
-      gapIdx++;
-    } else if (sepText.length > 0) {
-      pieces.push({ kind: 'literal', text: canonicalSeparator(sepText) });
+    if (spanIdx > 0) {
+      // Layer 3 raws sidecar — every inter-span gap becomes a ws-slot
+      // with a canonical-sep fallback. Preserve schemas already populate
+      // __ws unconditionally so the runtime read always wins; standard
+      // schemas populate __ws only in raws mode, so fast-mode stringify
+      // falls through to `fallback` (the same canonical separator the
+      // old literal-piece emit produced).
+      const fallback = preserveWs ? '' : canonicalSeparator(sepText);
+      // Only emit the ws-slot when there was either ws in the example
+      // (so a canonical separator would have been emitted) OR the schema
+      // is preserve (which always emits one regardless of example). This
+      // keeps cron-style `*/5` adjacent-span shapes from acquiring a
+      // spurious gap fallback that would re-insert whitespace.
+      if (preserveWs || sepText.length > 0) {
+        pieces.push({ kind: 'wsSlot', index: gapIdx, fallback });
+        gapIdx++;
+      }
     }
     // Phase 4c v2 — unnamed optional literal becomes an optLit piece
     // that consults `captures.__litPres[litIdx]` at stringify time.
@@ -241,12 +255,16 @@ export function joinOf(span: ResolvedSpan, preserveWs: boolean = false): SlotJoi
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
       if (hasIndent) return { kind: 'indent' };
-      // Phase 4c v2: when preserve is on AND the repeats has a sep AND
-      // the span is named (anonymous spans have no captures slot), the
-      // captures payload carries `<spanName>_iws`. Tag the join with
-      // iwsRef so piecesToConcat emits an inline-interleave instead of
-      // the static __rebuildSlot join.
-      if (preserveWs && m.sep !== undefined && span.name !== undefined) {
+      // Phase 4c v2 + Layer 3 raws sidecar: when the repeats has a sep
+      // AND the span is named (anonymous spans have no captures slot to
+      // attach iws to), the captures payload may carry `<spanName>_iws`.
+      // Tag the join with iwsRef so piecesToConcat emits an inline
+      // interleave via __rebuildSlotIws — it falls back to the static
+      // sep when captures.<name>_iws is missing (hand-built AST or
+      // fast-mode standard schema), so this is safe to emit for all
+      // schemas. `preserveWs` no longer gates it.
+      void preserveWs;
+      if (m.sep !== undefined && span.name !== undefined) {
         return { kind: 'sep', sep: m.sep, iwsRef: `${span.name}_iws` };
       }
       return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
@@ -265,11 +283,19 @@ export function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       continue;
     }
     if (p.kind === 'wsSlot') {
-      // Read the captured inter-span ws from captures.__ws[index]. Empty
-      // fallback when the captures payload was constructed by a path that
-      // didn't populate __ws (e.g. a hand-built AST or a non-preserve
-      // parent merging in a preserve child).
-      parts.push(`((captures.__ws && captures.__ws[${p.index}]) || "")`);
+      // Read the captured inter-span ws from captures.__ws[index]. Fall
+      // back to the schema's canonical separator when the captures payload
+      // didn't populate __ws (fast-mode stringify of a standard schema,
+      // hand-built AST, non-preserve parent merging in a preserve child).
+      // Preserve schemas always populate __ws so they take the captured
+      // path; standard schemas in raws mode take it too (the AST builder
+      // copies value.raws.__ws into captures.__ws); fast-mode standard
+      // stringify hits the fallback and the output matches the pre-Layer-3
+      // canonical shape byte-for-byte.
+      const fallback = jsString(p.fallback);
+      parts.push(
+        `(captures.__ws && captures.__ws[${p.index}] !== undefined ? captures.__ws[${p.index}] : ${fallback})`,
+      );
       continue;
     }
     if (p.kind === 'optLit') {
@@ -325,13 +351,43 @@ export function piecesToConcat(pieces: ReadonlyArray<Piece>): string {
       // stream (pieces[i-1]) AND make sure we haven't already consumed it
       // (parts has the same prefix as pieces — easy to check by length).
       const prevPiece = i > 0 ? pieces[i - 1] : undefined;
-      if (prevPiece && prevPiece.kind === 'literal' && parts.length > 0) {
-        // Drop the just-pushed literal from `parts` and fuse it into the
-        // conditional. Use the slot value (not the rebuilt slot) for the
-        // null test — recursive children may rebuild to "" but still be
-        // present, and we should keep the separator in that case.
+      // Optional-slot fusion. Two flavours, since the preceding piece may
+      // be either a static literal separator (pre-Layer 3 behaviour) or
+      // a Layer-3 wsSlot (captured ws OR canonical-sep fallback).
+      //
+      //   prev = literal — same as before: when slot is absent, drop
+      //     both the literal and the slot. (verb-subject test: 'hi'
+      //     must stringify as 'hi', not 'hi ').
+      //
+      //   prev = wsSlot — runtime-conditional. When `captures.__ws[i]`
+      //     is defined the parser actually captured a slice of input
+      //     there, and the user expects that text back regardless of
+      //     whether the optional span is present (preserve-schema test:
+      //     'a b' with absent ',' between, must round-trip as 'a b'
+      //     not 'ab'). When `captures.__ws[i]` is undefined the wsSlot
+      //     would fall back to a canonical separator — and an orphan
+      //     canonical sep should be dropped when the slot is absent
+      //     (same shape as the literal-fusion case).
+      const isFusableLit =
+        prevPiece && prevPiece.kind === 'literal' && parts.length > 0;
+      const isFusableWs =
+        prevPiece && prevPiece.kind === 'wsSlot' && parts.length > 0;
+      if (isFusableLit) {
         const sepLiteral = parts.pop()!;
         parts.push(`(${slotAccess} == null ? "" : ${sepLiteral} + ${slotExpr})`);
+      } else if (isFusableWs) {
+        // Replace the last-pushed wsSlot expr with a fusion that picks
+        // the right branch at runtime. The captured-ws read is duplicated
+        // (once in each branch) so the slot-present branch keeps its
+        // canonical fallback while the slot-absent branch falls back to
+        // empty rather than the canonical sep.
+        const wsP = prevPiece as { index: number; fallback: string };
+        parts.pop();
+        const captured = `captures.__ws[${wsP.index}]`;
+        const hasCap = `captures.__ws && ${captured} !== undefined`;
+        const sepWhenAbsent = `(${hasCap} ? ${captured} : "")`;
+        const sepWhenPresent = `(${hasCap} ? ${captured} : ${jsString(wsP.fallback)})`;
+        parts.push(`(${slotAccess} == null ? ${sepWhenAbsent} : ${sepWhenPresent} + ${slotExpr})`);
       } else {
         // No preceding literal to fuse — emit a plain slot read with
         // null-coalesce so we don't stringify null/undefined as "null".

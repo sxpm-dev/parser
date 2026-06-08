@@ -462,13 +462,14 @@ function concatPieces(
     }
     if (p.kind === 'wsSlot') {
       // Mirror emit/rebuild.ts piecesToConcat: read captures.__ws[index]
-      // when present, fall back to "" when the captures payload doesn't
-      // carry __ws (e.g. a hand-built AST or a non-preserve sub-schema).
+      // when present, fall back to the canonical separator (Layer 3 raws
+      // sidecar — p.fallback carries it; preserve schemas emit '' since
+      // their captures always populate __ws).
       const wsList = captures.__ws;
       const wsVal =
         Array.isArray(wsList) && typeof wsList[p.index] === 'string'
           ? (wsList[p.index] as string)
-          : '';
+          : p.fallback;
       built.push(wsVal);
       continue;
     }
@@ -486,8 +487,25 @@ function concatPieces(
       raw = encodeJsonStringInterp(raw);
     }
     if (p.optional && (raw === null || raw === undefined)) {
-      if (built.length > 0 && pieces[i - 1] && pieces[i - 1]!.kind === 'literal') {
-        built.pop();
+      // Optional-slot fusion: drop a preceding literal separator (and
+      // pre-Layer-3 wsSlot-as-canonical-only fallback) so an absent
+      // optional doesn't leave a dangling separator. For wsSlot whose
+      // captures.__ws actually carried captured text, keep the captured
+      // text (real user input — same logic as emit/rebuild.ts).
+      if (built.length > 0 && pieces[i - 1]) {
+        const prev = pieces[i - 1]!;
+        if (prev.kind === 'literal') {
+          built.pop();
+        } else if (prev.kind === 'wsSlot') {
+          const wsList = captures.__ws;
+          const hasCaptured =
+            Array.isArray(wsList) && typeof wsList[prev.index] === 'string';
+          if (!hasCaptured) {
+            // The fallback canonical separator was pushed — drop it.
+            built.pop();
+          }
+          // else: keep the captured ws (it's real input text).
+        }
       }
       continue;
     }

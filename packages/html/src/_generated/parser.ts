@@ -2360,11 +2360,11 @@ function __rebuild_HtmlDocument_0(captures: any): string {
 }
 
 function __rebuild_Doctype_0(captures: any): string {
-  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name) + ">";
+  return "<!" + __rebuildSlot(captures.keyword) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.name) + ">";
 }
 
 function __rebuild_Doctype_1(captures: any): string {
-  return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name);
+  return "<!" + __rebuildSlot(captures.keyword) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.name);
 }
 
 function __rebuild_Comment_0(captures: any): string {
@@ -2380,7 +2380,7 @@ function __rebuild_HtmlElement_1(captures: any): string {
 }
 
 function __rebuild_HtmlElement_2(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + " " + "/>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "/>";
 }
 
 function __rebuild_HtmlElement_3(captures: any): string {
@@ -2461,6 +2461,14 @@ function __rebuild_Attribute_3(captures: any): string {
 
 function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2474,11 +2482,22 @@ function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlDocument_0(captures, __indentCol);
+  }
   return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2499,11 +2518,22 @@ function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Doctype_0(captures, __indentCol);
+  }
   return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name) + ">";
 }
 
 function __invert_Doctype_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2524,11 +2554,22 @@ function __invert_Doctype_1_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Doctype_1(captures, __indentCol);
+  }
   return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name);
 }
 
 function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2539,11 +2580,22 @@ function __invert_Comment_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Comment_0(captures, __indentCol);
+  }
   return "<!--" + __rebuildSlot(captures.data) + "-->";
 }
 
 function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2573,11 +2625,22 @@ function __invert_HtmlElement_0_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_0(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2596,11 +2659,22 @@ function __invert_HtmlElement_1_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_1(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">";
 }
 
 function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2619,11 +2693,22 @@ function __invert_HtmlElement_2_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_2(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + " />";
 }
 
 function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2642,11 +2727,22 @@ function __invert_HtmlElement_3_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_3(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + "/>";
 }
 
 function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2663,11 +2759,22 @@ function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_4(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2684,11 +2791,22 @@ function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_5(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2705,11 +2823,22 @@ function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_6(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2726,11 +2855,22 @@ function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_7(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2747,11 +2887,22 @@ function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_8(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2768,11 +2919,22 @@ function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_9(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2789,11 +2951,22 @@ function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_10(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2810,11 +2983,22 @@ function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_11(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2831,11 +3015,22 @@ function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_12(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2852,11 +3047,22 @@ function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_13(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2873,11 +3079,22 @@ function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_14(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2894,11 +3111,22 @@ function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_15(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2916,11 +3144,22 @@ function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): strin
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_16(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2931,11 +3170,22 @@ function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.parentNode, null)) {
     throw new Error("stringify: field \"parentNode\" expected null, got " + JSON.stringify(value.parentNode));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TextNode_0(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.value));
 }
 
 function __invert_Attribute_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2944,11 +3194,22 @@ function __invert_Attribute_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "=\"" + __rebuildSlot(captures.value) + "\"";
 }
 
 function __invert_Attribute_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2957,11 +3218,22 @@ function __invert_Attribute_1_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "='" + __rebuildSlot(captures.value) + "'";
 }
 
 function __invert_Attribute_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2970,11 +3242,22 @@ function __invert_Attribute_2_ast(value: any, __indentCol: number = 0): string {
   }
   captures.name = __invertSlotLeaf_ast(value.name);
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "=" + __rebuildSlot(captures.value);
 }
 
 function __invert_Attribute_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -2982,11 +3265,22 @@ function __invert_Attribute_3_ast(value: any, __indentCol: number = 0): string {
   if (!Object.is(value.value, "")) {
     throw new Error("stringify: field \"value\" expected \"\", got " + JSON.stringify(value.value));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_3(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.name));
 }
 
 function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3001,11 +3295,22 @@ function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlDocument_0(captures, __indentCol);
+  }
   return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
 }
 
 function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3034,11 +3339,22 @@ function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Doctype_0(captures, __indentCol);
+  }
   return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name) + ">";
 }
 
 function __invert_Doctype_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3061,11 +3377,22 @@ function __invert_Doctype_1_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Doctype_1(captures, __indentCol);
+  }
   return "<!" + __rebuildSlot(captures.keyword) + " " + __rebuildSlot(captures.name);
 }
 
 function __invert_Comment_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3086,11 +3413,22 @@ function __invert_Comment_0_source(value: any, __indentCol: number = 0): string 
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Comment_0(captures, __indentCol);
+  }
   return "<!--" + __rebuildSlot(captures.data) + "-->";
 }
 
 function __invert_HtmlElement_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3127,11 +3465,22 @@ function __invert_HtmlElement_0_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_0(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_HtmlElement_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3152,11 +3501,22 @@ function __invert_HtmlElement_1_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_1(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + ">";
 }
 
 function __invert_HtmlElement_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3177,11 +3537,22 @@ function __invert_HtmlElement_2_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_2(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + " />";
 }
 
 function __invert_HtmlElement_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3202,11 +3573,22 @@ function __invert_HtmlElement_3_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_3(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + "/>";
 }
 
 function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3238,11 +3620,22 @@ function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_4(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3274,11 +3667,22 @@ function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_5(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3310,11 +3714,22 @@ function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_6(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3346,11 +3761,22 @@ function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_7(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3382,11 +3808,22 @@ function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_8(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3418,11 +3855,22 @@ function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): str
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_9(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3454,11 +3902,22 @@ function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_10(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3490,11 +3949,22 @@ function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_11(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3526,11 +3996,22 @@ function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_12(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3562,11 +4043,22 @@ function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_13(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3598,11 +4090,22 @@ function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_14(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3634,11 +4137,22 @@ function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_15(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3675,11 +4189,22 @@ function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_HtmlElement_16(captures, __indentCol);
+  }
   return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3690,11 +4215,22 @@ function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_TextNode_0(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.value));
 }
 
 function __invert_Attribute_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3719,11 +4255,22 @@ function __invert_Attribute_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "=\"" + __rebuildSlot(captures.value) + "\"";
 }
 
 function __invert_Attribute_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3748,11 +4295,22 @@ function __invert_Attribute_1_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_1(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "='" + __rebuildSlot(captures.value) + "'";
 }
 
 function __invert_Attribute_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3771,11 +4329,22 @@ function __invert_Attribute_2_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_2(captures, __indentCol);
+  }
   return __rebuildSlot(captures.name) + "=" + __rebuildSlot(captures.value);
 }
 
 function __invert_Attribute_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -3785,6 +4354,9 @@ function __invert_Attribute_3_source(value: any, __indentCol: number = 0): strin
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Attribute_3(captures, __indentCol);
   }
   return String(__rebuildSlot(captures.name));
 }

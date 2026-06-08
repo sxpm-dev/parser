@@ -1062,38 +1062,57 @@ function __rebuild_Operator_5(captures: any): string {
 }
 
 function __rebuild_Predicate_0(captures: any): string {
-  return __rebuildSlot(captures.col) + " " + __rebuildSlot(captures.op) + " " + __rebuildSlot(captures.val);
+  return __rebuildSlot(captures.col) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.op) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + __rebuildSlot(captures.val);
 }
 
 function __rebuild_Select_0(captures: any): string {
-  return "SELECT" + " " + __rebuildSlot(captures.columns, ",") + " " + "FROM" + " " + __rebuildSlot(captures.table);
+  return "SELECT" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "FROM" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlot(captures.table);
 }
 
 function __rebuild_Select_1(captures: any): string {
-  return "SELECT" + " " + __rebuildSlot(captures.columns, ",") + " " + "FROM" + " " + __rebuildSlot(captures.table) + " " + "WHERE" + " " + __rebuildSlot(captures.where);
+  return "SELECT" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "FROM" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlot(captures.table) + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "WHERE" + (captures.__ws && captures.__ws[4] !== undefined ? captures.__ws[4] : " ") + __rebuildSlot(captures.where);
 }
 
 function __rebuild_Select_2(captures: any): string {
-  return "SELECT" + " " + __rebuildSlot(captures.columns, ",") + " " + "FROM" + " " + __rebuildSlot(captures.table) + " " + "LIMIT" + " " + __rebuildSlot(captures.limit);
+  return "SELECT" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "FROM" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlot(captures.table) + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "LIMIT" + (captures.__ws && captures.__ws[4] !== undefined ? captures.__ws[4] : " ") + __rebuildSlot(captures.limit);
 }
 
 function __rebuild_Select_3(captures: any): string {
-  return "SELECT" + " " + __rebuildSlot(captures.columns, ",") + " " + "FROM" + " " + __rebuildSlot(captures.table) + " " + "WHERE" + " " + __rebuildSlot(captures.where) + " " + "LIMIT" + " " + __rebuildSlot(captures.limit);
+  return "SELECT" + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + "FROM" + (captures.__ws && captures.__ws[2] !== undefined ? captures.__ws[2] : " ") + __rebuildSlot(captures.table) + (captures.__ws && captures.__ws[3] !== undefined ? captures.__ws[3] : " ") + "WHERE" + (captures.__ws && captures.__ws[4] !== undefined ? captures.__ws[4] : " ") + __rebuildSlot(captures.where) + (captures.__ws && captures.__ws[5] !== undefined ? captures.__ws[5] : " ") + "LIMIT" + (captures.__ws && captures.__ws[6] !== undefined ? captures.__ws[6] : " ") + __rebuildSlot(captures.limit);
 }
 
 function __invert_ColumnRef_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
   if (!Object.is(value.type, "wildcard")) {
     throw new Error("stringify: field \"type\" expected \"wildcard\", got " + JSON.stringify(value.type));
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_ColumnRef_0(captures, __indentCol);
+  }
   return "*";
 }
 
 function __invert_ColumnRef_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1101,11 +1120,22 @@ function __invert_ColumnRef_1_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"column\", got " + JSON.stringify(value.type));
   }
   captures.name = __invertSlotLeaf_ast(value.name);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_ColumnRef_1(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.name));
 }
 
 function __invert_LiteralValue_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1113,11 +1143,22 @@ function __invert_LiteralValue_0_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"type\" expected \"number\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_LiteralValue_0(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.value));
 }
 
 function __invert_LiteralValue_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1125,6 +1166,9 @@ function __invert_LiteralValue_1_ast(value: any, __indentCol: number = 0): strin
     throw new Error("stringify: field \"type\" expected \"string\", got " + JSON.stringify(value.type));
   }
   captures.value = __invertSlotLeaf_ast(value.value);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_LiteralValue_1(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.value));
 }
 
@@ -1172,6 +1216,14 @@ function __invert_Operator_5_ast(value: any, __indentCol: number = 0): string {
 
 function __invert_Predicate_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1181,11 +1233,22 @@ function __invert_Predicate_0_ast(value: any, __indentCol: number = 0): string {
   captures.col = __invertSlotFor_ColumnRef_ast(value.col, __indentCol);
   captures.op = __invertSlotFor_Operator_ast(value.op, __indentCol);
   captures.val = __invertSlotFor_LiteralValue_ast(value.val, __indentCol);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Predicate_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.col) + " " + __rebuildSlot(captures.op) + " " + __rebuildSlot(captures.val);
 }
 
 function __invert_Select_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1194,11 +1257,22 @@ function __invert_Select_0_ast(value: any, __indentCol: number = 0): string {
   }
   captures.columns = ((Array.isArray(value.columns) ? value.columns : value.columns.split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_ColumnRef_ast(__e, __indentCol)));
   captures.table = __invertSlotLeaf_ast(value.table);
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_0(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table);
 }
 
 function __invert_Select_1_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1208,11 +1282,22 @@ function __invert_Select_1_ast(value: any, __indentCol: number = 0): string {
   captures.columns = ((Array.isArray(value.columns) ? value.columns : value.columns.split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_ColumnRef_ast(__e, __indentCol)));
   captures.table = __invertSlotLeaf_ast(value.table);
   captures.where = __invertSlotFor_Predicate_ast(value.where, __indentCol);
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_1(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where);
 }
 
 function __invert_Select_2_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1222,11 +1307,22 @@ function __invert_Select_2_ast(value: any, __indentCol: number = 0): string {
   captures.columns = ((Array.isArray(value.columns) ? value.columns : value.columns.split(",").map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0)).map((__e: any) => __dispatchInverse_ColumnRef_ast(__e, __indentCol)));
   captures.table = __invertSlotLeaf_ast(value.table);
   captures.limit = __invertSlotLeaf_ast(value.limit);
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " LIMIT " + __rebuildSlot(captures.limit);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_2(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " LIMIT " + __rebuildSlot(captures.limit);
 }
 
 function __invert_Select_3_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("stringify: expected object value, got " + typeof value);
   }
@@ -1237,11 +1333,22 @@ function __invert_Select_3_ast(value: any, __indentCol: number = 0): string {
   captures.table = __invertSlotLeaf_ast(value.table);
   captures.where = __invertSlotFor_Predicate_ast(value.where, __indentCol);
   captures.limit = __invertSlotLeaf_ast(value.limit);
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where) + " LIMIT " + __rebuildSlot(captures.limit);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_3(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where) + " LIMIT " + __rebuildSlot(captures.limit);
 }
 
 function __invert_ColumnRef_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1254,11 +1361,22 @@ function __invert_ColumnRef_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_ColumnRef_0(captures, __indentCol);
+  }
   return "*";
 }
 
 function __invert_ColumnRef_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1269,11 +1387,22 @@ function __invert_ColumnRef_1_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_ColumnRef_1(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.name));
 }
 
 function __invert_LiteralValue_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1283,12 +1412,23 @@ function __invert_LiteralValue_0_source(value: any, __indentCol: number = 0): st
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
+  }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_LiteralValue_0(captures, __indentCol);
   }
   return String(__rebuildSlot(captures.value));
 }
 
 function __invert_LiteralValue_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1299,11 +1439,22 @@ function __invert_LiteralValue_1_source(value: any, __indentCol: number = 0): st
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_LiteralValue_1(captures, __indentCol);
+  }
   return String(__rebuildSlot(captures.value));
 }
 
 function __invert_Operator_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1316,11 +1467,22 @@ function __invert_Operator_0_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_0(captures, __indentCol);
+  }
   return "!=";
 }
 
 function __invert_Operator_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1333,11 +1495,22 @@ function __invert_Operator_1_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_1(captures, __indentCol);
+  }
   return "<=";
 }
 
 function __invert_Operator_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1350,11 +1523,22 @@ function __invert_Operator_2_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_2(captures, __indentCol);
+  }
   return ">=";
 }
 
 function __invert_Operator_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1367,11 +1551,22 @@ function __invert_Operator_3_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_3(captures, __indentCol);
+  }
   return "=";
 }
 
 function __invert_Operator_4_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1384,11 +1579,22 @@ function __invert_Operator_4_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_4(captures, __indentCol);
+  }
   return "<";
 }
 
 function __invert_Operator_5_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1401,11 +1607,22 @@ function __invert_Operator_5_source(value: any, __indentCol: number = 0): string
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Operator_5(captures, __indentCol);
+  }
   return ">";
 }
 
 function __invert_Predicate_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1432,11 +1649,22 @@ function __invert_Predicate_0_source(value: any, __indentCol: number = 0): strin
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Predicate_0(captures, __indentCol);
+  }
   return __rebuildSlot(captures.col) + " " + __rebuildSlot(captures.op) + " " + __rebuildSlot(captures.val);
 }
 
 function __invert_Select_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1459,11 +1687,22 @@ function __invert_Select_0_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_0(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table);
 }
 
 function __invert_Select_1_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1494,11 +1733,22 @@ function __invert_Select_1_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_1(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where);
 }
 
 function __invert_Select_2_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1529,11 +1779,22 @@ function __invert_Select_2_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " LIMIT " + __rebuildSlot(captures.limit);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_2(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " LIMIT " + __rebuildSlot(captures.limit);
 }
 
 function __invert_Select_3_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    const __r = (value as any).raws;
+    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
+    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
+    for (const __k in __r) {
+      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
+    }
+  }
   if (typeof value !== "string") {
     throw new Error("stringify: expected string value for template body, got " + typeof value);
   }
@@ -1572,7 +1833,10 @@ function __invert_Select_3_source(value: any, __indentCol: number = 0): string {
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
   }
-  return "SELECT " + __rebuildSlot(captures.columns, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where) + " LIMIT " + __rebuildSlot(captures.limit);
+  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
+    return __rebuild_Select_3(captures, __indentCol);
+  }
+  return "SELECT " + __rebuildSlotIws(captures.columns, captures.columns_iws, ",") + " FROM " + __rebuildSlot(captures.table) + " WHERE " + __rebuildSlot(captures.where) + " LIMIT " + __rebuildSlot(captures.limit);
 }
 
 function __dispatchInverse_ColumnRef_ast(value: any, __indentCol: number = 0): string {

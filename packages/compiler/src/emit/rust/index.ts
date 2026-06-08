@@ -536,9 +536,61 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
     emitQuotedStringSpan(lines, span, quote);
     return;
   }
+  if (span.class === 'operator') {
+    emitOperatorSpan(lines, span, schema);
+    return;
+  }
   throw new CompilerError(
     `rust backend (Phase 6.0): span class '${span.class}' not yet supported`,
   );
+}
+
+// .operator() scan — longest-match dispatch over schema.operatorLiterals
+// (pre-sorted longest-first). Mirrors the TS backend at
+// emit/v2/span.ts:1006+ so cross-backend captures stay byte-identical.
+// The captured value is the matched literal as a String.
+function emitOperatorSpan(
+  lines: string[],
+  span: ResolvedSpan,
+  schema: InferredSchema,
+): void {
+  const ops = schema.operatorLiterals;
+  if (ops.length === 0) {
+    throw new CompilerError(
+      `rust backend: .operator() span '${span.name ?? '<unnamed>'}' has no operators declared on the schema; add an \`operators:\` map to defineSchema(...)`,
+    );
+  }
+  const name = span.name ?? 'anon';
+  const startVar = `__${rustIdent(name)}_start`;
+  const endVar = `__${rustIdent(name)}_end`;
+  // Build the predicate: state.input[state.pos..].starts_with("<op>") OR'd
+  // across all literals. ops is sorted longest-first so longest-match wins.
+  const predicate = ops
+    .map((op) => `state.input[state.pos..].starts_with(${rustString(op)}.as_bytes())`)
+    .join(' || ');
+  // Advance step: try each literal longest-first via if/else-if; the first
+  // match wins. We're guaranteed at least one matches (the predicate
+  // succeeded) so no final else.
+  const advance = ops
+    .map((op, i) => {
+      const head = i === 0 ? 'if' : 'else if';
+      return `        ${head} state.input[state.pos..].starts_with(${rustString(op)}.as_bytes()) { state.pos += ${op.length}; }`;
+    })
+    .join('\n');
+  lines.push(
+    `    let ${startVar} = state.pos;\n` +
+      `    if !(state.pos < state.input.len() && (${predicate})) {\n` +
+      `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
+      `        state.pos = entry_pos;\n` +
+      `        return None;\n` +
+      `    }\n` +
+      `${advance}\n` +
+      `    let ${endVar} = state.pos;`,
+  );
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    lines.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
+  }
 }
 
 // Shared emitter for class spans that scan `start` then `cont*`. Optionally

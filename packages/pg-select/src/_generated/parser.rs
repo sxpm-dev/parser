@@ -273,152 +273,6 @@ fn stringify_LiteralValue(value: &Value) -> String {
     String::new()
 }
 
-fn parse_Operator__alt0(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, "!=") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String("!=".to_string()))
-}
-
-fn parse_Operator__alt1(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, "<=") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String("<=".to_string()))
-}
-
-fn parse_Operator__alt2(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, ">=") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String(">=".to_string()))
-}
-
-fn parse_Operator__alt3(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, "=") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String("=".to_string()))
-}
-
-fn parse_Operator__alt4(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, "<") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String("<".to_string()))
-}
-
-fn parse_Operator__alt5(state: &mut State) -> Option<Value> {
-    let entry_pos = state.pos;
-    if !match_literal(state, ">") {
-        if state.pos > state.max_pos { state.max_pos = state.pos; }
-        state.pos = entry_pos;
-        return None;
-    }
-    Some(Value::String(">".to_string()))
-}
-
-fn parse_Operator(state: &mut State) -> Option<Value> {
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt0(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt1(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt2(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt3(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt4(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    let snapshot = state.pos;
-    if let Some(v) = parse_Operator__alt5(state) {
-        return Some(v);
-    }
-    state.pos = snapshot;
-    None
-}
-
-fn stringify_Operator__alt0(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "!=" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str("!=");
-    Some(__out)
-}
-
-fn stringify_Operator__alt1(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "<=" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str("<=");
-    Some(__out)
-}
-
-fn stringify_Operator__alt2(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != ">=" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str(">=");
-    Some(__out)
-}
-
-fn stringify_Operator__alt3(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "=" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str("=");
-    Some(__out)
-}
-
-fn stringify_Operator__alt4(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != "<" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str("<");
-    Some(__out)
-}
-
-fn stringify_Operator__alt5(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { if s != ">" { return None; } } else { return None; }
-    let mut __out = String::new();
-    __out.push_str(">");
-    Some(__out)
-}
-
-fn stringify_Operator(value: &Value) -> String {
-    if let Some(out) = stringify_Operator__alt0(value) { return out; }
-    if let Some(out) = stringify_Operator__alt1(value) { return out; }
-    if let Some(out) = stringify_Operator__alt2(value) { return out; }
-    if let Some(out) = stringify_Operator__alt3(value) { return out; }
-    if let Some(out) = stringify_Operator__alt4(value) { return out; }
-    if let Some(out) = stringify_Operator__alt5(value) { return out; }
-    String::new()
-}
-
 fn parse_Predicate__alt0(state: &mut State) -> Option<Value> {
     let entry_pos = state.pos;
     let col: Value = match parse_ColumnRef(state) {
@@ -426,16 +280,26 @@ fn parse_Predicate__alt0(state: &mut State) -> Option<Value> {
         None => { state.pos = entry_pos; return None; }
     };
     skip_ws(state);
-    let op: Value = match parse_Operator(state) {
-        Some(v) => v,
-        None => { state.pos = entry_pos; return None; }
-    };
+    let __op_start = state.pos;
+    if !(state.pos < state.input.len() && (state.input[state.pos..].starts_with("!=".as_bytes()) || state.input[state.pos..].starts_with("<=".as_bytes()) || state.input[state.pos..].starts_with(">=".as_bytes()) || state.input[state.pos..].starts_with("<".as_bytes()) || state.input[state.pos..].starts_with("=".as_bytes()) || state.input[state.pos..].starts_with(">".as_bytes()))) {
+        if state.pos > state.max_pos { state.max_pos = state.pos; }
+        state.pos = entry_pos;
+        return None;
+    }
+        if state.input[state.pos..].starts_with("!=".as_bytes()) { state.pos += 2; }
+        else if state.input[state.pos..].starts_with("<=".as_bytes()) { state.pos += 2; }
+        else if state.input[state.pos..].starts_with(">=".as_bytes()) { state.pos += 2; }
+        else if state.input[state.pos..].starts_with("<".as_bytes()) { state.pos += 1; }
+        else if state.input[state.pos..].starts_with("=".as_bytes()) { state.pos += 1; }
+        else if state.input[state.pos..].starts_with(">".as_bytes()) { state.pos += 1; }
+    let __op_end = state.pos;
+    let op: String = state.src[__op_start..__op_end].to_string();
     skip_ws(state);
     let val: Value = match parse_LiteralValue(state) {
         Some(v) => v,
         None => { state.pos = entry_pos; return None; }
     };
-    Some(Value::Object(vec![("type".to_string(), Value::String("predicate".to_string())), ("col".to_string(), col.clone()), ("op".to_string(), op.clone()), ("val".to_string(), val.clone())]))
+    Some(Value::Object(vec![("type".to_string(), Value::String("predicate".to_string())), ("col".to_string(), col.clone()), ("op".to_string(), Value::String(op.clone())), ("val".to_string(), val.clone())]))
 }
 
 fn parse_Predicate(state: &mut State) -> Option<Value> {
@@ -453,7 +317,7 @@ fn stringify_Predicate__alt0(value: &Value) -> Option<String> {
     let op = value.obj_get("op");
     let val = value.obj_get("val");
     let __s0: String = if let Some(inner) = col { stringify_ColumnRef(inner) } else { String::new() };
-    let __s1: String = if let Some(inner) = op { stringify_Operator(inner) } else { String::new() };
+    let __s1: String = if let Some(Value::String(s)) = op { s.clone() } else { String::new() };
     let __s2: String = if let Some(inner) = val { stringify_LiteralValue(inner) } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);

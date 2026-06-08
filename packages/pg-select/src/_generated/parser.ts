@@ -256,9 +256,7 @@ export type ColumnRef_ast = { type: "wildcard" } | { type: "column"; name: strin
 export type ColumnRef_source = string;
 export type LiteralValue_ast = { type: "number"; value: string } | { type: "string"; value: string };
 export type LiteralValue_source = string;
-export type Operator_ast = "!=" | "<=" | ">=" | "=" | "<" | ">";
-export type Operator_source = string;
-export type Predicate_ast = { type: "predicate"; col: ColumnRef_ast; op: Operator_ast; val: LiteralValue_ast };
+export type Predicate_ast = { type: "predicate"; col: ColumnRef_ast; op: "!=" | "<=" | ">=" | "<" | "=" | ">"; val: LiteralValue_ast };
 export type Predicate_source = string;
 export type Select_ast = { type: "select"; columns: ColumnRef_ast[]; table: string } | { type: "select"; columns: ColumnRef_ast[]; table: string; where: Predicate_ast } | { type: "select"; columns: ColumnRef_ast[]; table: string; limit: string } | { type: "select"; columns: ColumnRef_ast[]; table: string; where: Predicate_ast; limit: string };
 export type Select_source = string;
@@ -397,156 +395,6 @@ state.pos = off;
   return null;
 }
 
-function parseOperator__alt0(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 2;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#0", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#0" };
-}
-
-function parseOperator__alt1(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 2;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#1", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#1" };
-}
-
-function parseOperator__alt2(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 2;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#2", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#2" };
-}
-
-function parseOperator__alt3(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#3", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#3" };
-}
-
-function parseOperator__alt4(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#4", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#4" };
-}
-
-function parseOperator__alt5(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  const entryOff = off;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-  const __ws: string[] | null = state.mode === 'raws' ? [] : null;
-  const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
-  if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-  off += 1;
-  state.pos = off;
-  if (off > state.maxOff) state.maxOff = off;
-  if (state.mode === 'raws') {
-    const __captures: any = { __production: "Operator#5", __ws: __ws, __litPres: __litPres };
-    if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
-    return __captures;
-  }
-  return { __production: "Operator#5" };
-}
-
-function parseOperator(state: State): unknown {
-  const input = state.input;
-  const len = state.len;
-  let off = state.pos;
-  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-state.pos = off;
-  if (off >= len) return null;
-  if (input.charCodeAt(off) === 33) {
-  return parseOperator__alt0(state);
-}
-  if (input.charCodeAt(off) === 60) {
-  if (off + 1 < len && input.charCodeAt(off + 1) === 61) {
-    return parseOperator__alt1(state);
-  }
-  if (off + 1 <= len) { return parseOperator__alt4(state); }
-  return null;
-}
-  if (input.charCodeAt(off) === 62) {
-  if (off + 1 < len && input.charCodeAt(off + 1) === 61) {
-    return parseOperator__alt2(state);
-  }
-  if (off + 1 <= len) { return parseOperator__alt5(state); }
-  return null;
-}
-  if (input.charCodeAt(off) === 61) {
-  return parseOperator__alt3(state);
-}
-  return null;
-}
-
 function parsePredicate(state: State): unknown {
   const input = state.input;
   const len = state.len;
@@ -564,12 +412,11 @@ function parsePredicate(state: State): unknown {
   const __wsStart_1 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
-  state.pos = off;
+  if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
   const __op_start = off;
-  const op = parseOperator(state);
-  if (op === null) { state.pos = entryOff; return null; }
-  off = state.pos;
+  if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 61) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; }
   const __op_end = off;
+  const op = input.slice(__op_start, __op_end);
   const __wsStart_2 = off;
   while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
@@ -820,54 +667,6 @@ function __build_LiteralValue_1_source(captures: any, __indentCol: number = 0): 
   return String((__renderSlot_source(captures.value, __indentCol) ?? ""));
 }
 
-function __build_Operator_0_ast(captures: any, __indentCol: number = 0): any {
-  return "!=";
-}
-
-function __build_Operator_0_source(captures: any, __indentCol: number = 0): any {
-  return String("!=");
-}
-
-function __build_Operator_1_ast(captures: any, __indentCol: number = 0): any {
-  return "<=";
-}
-
-function __build_Operator_1_source(captures: any, __indentCol: number = 0): any {
-  return String("<=");
-}
-
-function __build_Operator_2_ast(captures: any, __indentCol: number = 0): any {
-  return ">=";
-}
-
-function __build_Operator_2_source(captures: any, __indentCol: number = 0): any {
-  return String(">=");
-}
-
-function __build_Operator_3_ast(captures: any, __indentCol: number = 0): any {
-  return "=";
-}
-
-function __build_Operator_3_source(captures: any, __indentCol: number = 0): any {
-  return String("=");
-}
-
-function __build_Operator_4_ast(captures: any, __indentCol: number = 0): any {
-  return "<";
-}
-
-function __build_Operator_4_source(captures: any, __indentCol: number = 0): any {
-  return String("<");
-}
-
-function __build_Operator_5_ast(captures: any, __indentCol: number = 0): any {
-  return ">";
-}
-
-function __build_Operator_5_source(captures: any, __indentCol: number = 0): any {
-  return String(">");
-}
-
 function __build_Predicate_0_ast(captures: any, __indentCol: number = 0): any {
   return (captures.__ws != null ? Object.assign({ type: "predicate", col: __renderSlot_ast(captures.col, __indentCol), op: __renderSlot_ast(captures.op, __indentCol), val: __renderSlot_ast(captures.val, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "predicate", col: __renderSlot_ast(captures.col, __indentCol), op: __renderSlot_ast(captures.op, __indentCol), val: __renderSlot_ast(captures.val, __indentCol) });
 }
@@ -917,12 +716,6 @@ function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {
     case "ColumnRef#1": return __build_ColumnRef_1_ast(captures, __indentCol);
     case "LiteralValue#0": return __build_LiteralValue_0_ast(captures, __indentCol);
     case "LiteralValue#1": return __build_LiteralValue_1_ast(captures, __indentCol);
-    case "Operator#0": return __build_Operator_0_ast(captures, __indentCol);
-    case "Operator#1": return __build_Operator_1_ast(captures, __indentCol);
-    case "Operator#2": return __build_Operator_2_ast(captures, __indentCol);
-    case "Operator#3": return __build_Operator_3_ast(captures, __indentCol);
-    case "Operator#4": return __build_Operator_4_ast(captures, __indentCol);
-    case "Operator#5": return __build_Operator_5_ast(captures, __indentCol);
     case "Predicate#0": return __build_Predicate_0_ast(captures, __indentCol);
     case "Select#0": return __build_Select_0_ast(captures, __indentCol);
     case "Select#1": return __build_Select_1_ast(captures, __indentCol);
@@ -941,12 +734,6 @@ function __dispatchRender_source(captures: any, __indentCol: number = 0): any {
     case "ColumnRef#1": return __build_ColumnRef_1_source(captures, __indentCol);
     case "LiteralValue#0": return __build_LiteralValue_0_source(captures, __indentCol);
     case "LiteralValue#1": return __build_LiteralValue_1_source(captures, __indentCol);
-    case "Operator#0": return __build_Operator_0_source(captures, __indentCol);
-    case "Operator#1": return __build_Operator_1_source(captures, __indentCol);
-    case "Operator#2": return __build_Operator_2_source(captures, __indentCol);
-    case "Operator#3": return __build_Operator_3_source(captures, __indentCol);
-    case "Operator#4": return __build_Operator_4_source(captures, __indentCol);
-    case "Operator#5": return __build_Operator_5_source(captures, __indentCol);
     case "Predicate#0": return __build_Predicate_0_source(captures, __indentCol);
     case "Select#0": return __build_Select_0_source(captures, __indentCol);
     case "Select#1": return __build_Select_1_source(captures, __indentCol);
@@ -1067,30 +854,6 @@ function __rebuild_LiteralValue_1(captures: any): string {
   return String(__rebuildSlot(captures.value));
 }
 
-function __rebuild_Operator_0(captures: any): string {
-  return "!=";
-}
-
-function __rebuild_Operator_1(captures: any): string {
-  return "<=";
-}
-
-function __rebuild_Operator_2(captures: any): string {
-  return ">=";
-}
-
-function __rebuild_Operator_3(captures: any): string {
-  return "=";
-}
-
-function __rebuild_Operator_4(captures: any): string {
-  return "<";
-}
-
-function __rebuild_Operator_5(captures: any): string {
-  return ">";
-}
-
 function __rebuild_Predicate_0(captures: any): string {
   return __rebuildSlot(captures.col) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.op) + (captures.__ws && captures.__ws[1] !== undefined ? captures.__ws[1] : " ") + __rebuildSlot(captures.val);
 }
@@ -1202,48 +965,6 @@ function __invert_LiteralValue_1_ast(value: any, __indentCol: number = 0): strin
   return String(__rebuildSlot(captures.value));
 }
 
-function __invert_Operator_0_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, "!=")) {
-    throw new Error("stringify: expected scalar \"!=\", got " + JSON.stringify(value));
-  }
-  return "!=";
-}
-
-function __invert_Operator_1_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, "<=")) {
-    throw new Error("stringify: expected scalar \"<=\", got " + JSON.stringify(value));
-  }
-  return "<=";
-}
-
-function __invert_Operator_2_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, ">=")) {
-    throw new Error("stringify: expected scalar \">=\", got " + JSON.stringify(value));
-  }
-  return ">=";
-}
-
-function __invert_Operator_3_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, "=")) {
-    throw new Error("stringify: expected scalar \"=\", got " + JSON.stringify(value));
-  }
-  return "=";
-}
-
-function __invert_Operator_4_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, "<")) {
-    throw new Error("stringify: expected scalar \"<\", got " + JSON.stringify(value));
-  }
-  return "<";
-}
-
-function __invert_Operator_5_ast(value: any, __indentCol: number = 0): string {
-  if (!Object.is(value, ">")) {
-    throw new Error("stringify: expected scalar \">\", got " + JSON.stringify(value));
-  }
-  return ">";
-}
-
 function __invert_Predicate_0_ast(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
@@ -1261,7 +982,7 @@ function __invert_Predicate_0_ast(value: any, __indentCol: number = 0): string {
     throw new Error("stringify: field \"type\" expected \"predicate\", got " + JSON.stringify(value.type));
   }
   captures.col = __invertSlotFor_ColumnRef_ast(value.col, __indentCol);
-  captures.op = __invertSlotFor_Operator_ast(value.op, __indentCol);
+  captures.op = __invertSlotLeaf_ast(value.op);
   captures.val = __invertSlotFor_LiteralValue_ast(value.val, __indentCol);
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Predicate_0(captures, __indentCol);
@@ -1475,174 +1196,6 @@ function __invert_LiteralValue_1_source(value: any, __indentCol: number = 0): st
   return String(__rebuildSlot(captures.value));
 }
 
-function __invert_Operator_0_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf("!=", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \"!=\" in template body");
-  }
-  __pos += 2;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_0(captures, __indentCol);
-  }
-  return "!=";
-}
-
-function __invert_Operator_1_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf("<=", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \"<=\" in template body");
-  }
-  __pos += 2;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_1(captures, __indentCol);
-  }
-  return "<=";
-}
-
-function __invert_Operator_2_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf(">=", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \">=\" in template body");
-  }
-  __pos += 2;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_2(captures, __indentCol);
-  }
-  return ">=";
-}
-
-function __invert_Operator_3_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf("=", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \"=\" in template body");
-  }
-  __pos += 1;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_3(captures, __indentCol);
-  }
-  return "=";
-}
-
-function __invert_Operator_4_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf("<", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \"<\" in template body");
-  }
-  __pos += 1;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_4(captures, __indentCol);
-  }
-  return "<";
-}
-
-function __invert_Operator_5_source(value: any, __indentCol: number = 0): string {
-  const captures: any = {};
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    const __r = (value as any).raws;
-    if (Array.isArray(__r.__ws)) captures.__ws = __r.__ws;
-    if (Array.isArray(__r.__litPres)) captures.__litPres = __r.__litPres;
-    for (const __k in __r) {
-      if (__k.endsWith('_iws') && Array.isArray(__r[__k])) captures[__k] = __r[__k];
-    }
-  }
-  if (typeof value !== "string") {
-    throw new Error("stringify: expected string value for template body, got " + typeof value);
-  }
-  const __s: string = value;
-  let __pos = 0;
-  if (__s.indexOf(">", __pos) !== __pos) {
-    throw new Error("stringify: expected leading literal \">\" in template body");
-  }
-  __pos += 1;
-  if (__pos !== __s.length) {
-    throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
-  }
-  if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
-    return __rebuild_Operator_5(captures, __indentCol);
-  }
-  return ">";
-}
-
 function __invert_Predicate_0_source(value: any, __indentCol: number = 0): string {
   const captures: any = {};
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
@@ -1671,7 +1224,7 @@ function __invert_Predicate_0_source(value: any, __indentCol: number = 0): strin
     if (__end < 0) {
       throw new Error("stringify: expected separator \" \" after capture op");
     }
-    captures.op = __invertSlotFor_Operator_source(__s.slice(__pos, __end), __indentCol);
+    captures.op = __invertSlotLeaf_source(__s.slice(__pos, __end));
     __pos = __end + 1;
   }
   captures.val = __invertSlotFor_LiteralValue_source(__s.slice(__pos), __indentCol);
@@ -1885,16 +1438,6 @@ function __dispatchInverse_LiteralValue_ast(value: any, __indentCol: number = 0)
   throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
 }
 
-function __dispatchInverse_Operator_ast(value: any, __indentCol: number = 0): string {
-  if (Object.is(value, "!=")) return __invert_Operator_0_ast(value, __indentCol);
-  if (Object.is(value, "<=")) return __invert_Operator_1_ast(value, __indentCol);
-  if (Object.is(value, ">=")) return __invert_Operator_2_ast(value, __indentCol);
-  if (Object.is(value, "=")) return __invert_Operator_3_ast(value, __indentCol);
-  if (Object.is(value, "<")) return __invert_Operator_4_ast(value, __indentCol);
-  if (Object.is(value, ">")) return __invert_Operator_5_ast(value, __indentCol);
-  throw new Error("stringify: no production matches for target 'ast' (value: " + JSON.stringify(value) + ")");
-}
-
 function __dispatchInverse_Predicate_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     if (Object.is(value.type, "predicate")) return __invert_Predicate_0_ast(value, __indentCol);
@@ -1927,18 +1470,6 @@ function __dispatchInverse_ColumnRef_source(value: any, __indentCol: number = 0)
 function __dispatchInverse_LiteralValue_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
     try { return __invert_LiteralValue_0_source(value, __indentCol); } catch (_e) { /* try next */ }
-  }
-  throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
-}
-
-function __dispatchInverse_Operator_source(value: any, __indentCol: number = 0): string {
-  if (typeof value === "string") {
-    if (value.startsWith("!=")) return __invert_Operator_0_source(value, __indentCol);
-    if (value.startsWith("<=")) return __invert_Operator_1_source(value, __indentCol);
-    if (value.startsWith(">=")) return __invert_Operator_2_source(value, __indentCol);
-    if (value.startsWith("=")) return __invert_Operator_3_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_Operator_4_source(value, __indentCol);
-    if (value.startsWith(">")) return __invert_Operator_5_source(value, __indentCol);
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -2028,39 +1559,6 @@ function __invertSlotFor_LiteralValue_ast(v: any, __indentCol: number = 0): any 
   if (typeof v === "object") return __dispatchInverse_LiteralValue_ast(v, __indentCol);
   // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
   try { return __dispatchInverse_LiteralValue_ast(v, __indentCol); } catch (_e) { return String(v); }
-}
-
-function __invertSlotFor_Operator_ast(v: any, __indentCol: number = 0): any {
-  if (v === undefined) return null;
-  // Arrays are ambiguous between "list of values to recurse" (.repeats()
-  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
-  // child dispatcher first; if it accepts arrays (its accept-condition
-  // includes Array.isArray) the dispatch returns a source string for the
-  // array as a whole. Otherwise fall back to element-wise recursion so
-  // the rebuild can join with the per-repeats separator.
-  if (Array.isArray(v)) {
-    try { return __dispatchInverse_Operator_ast(v, __indentCol); } catch (_e) {
-      const out: any[] = [];
-      for (let i = 0; i < v.length; i++) {
-        const r = __invertSlotFor_Operator_ast(v[i], __indentCol);
-        if (r != null) out.push(r);
-      }
-      return out;
-    }
-  }
-  // null can be either an absent optional capture or an intentional null
-  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
-  // absent (preserves optional-slot semantics for callers like rebuild's
-  // optional-slot ternary).
-  if (v === null) {
-    try { return __dispatchInverse_Operator_ast(v, __indentCol); } catch (_e) { return null; }
-  }
-  if (typeof v === "string") {
-    try { return __dispatchInverse_Operator_ast(v, __indentCol); } catch (_e) { return v; }
-  }
-  if (typeof v === "object") return __dispatchInverse_Operator_ast(v, __indentCol);
-  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
-  try { return __dispatchInverse_Operator_ast(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Predicate_ast(v: any, __indentCol: number = 0): any {
@@ -2213,39 +1711,6 @@ function __invertSlotFor_LiteralValue_source(v: any, __indentCol: number = 0): a
   if (typeof v === "object") return __dispatchInverse_LiteralValue_source(v, __indentCol);
   // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
   try { return __dispatchInverse_LiteralValue_source(v, __indentCol); } catch (_e) { return String(v); }
-}
-
-function __invertSlotFor_Operator_source(v: any, __indentCol: number = 0): any {
-  if (v === undefined) return null;
-  // Arrays are ambiguous between "list of values to recurse" (.repeats()
-  // capture) and "an array-shaped node value" (e.g. JsonArray). Try the
-  // child dispatcher first; if it accepts arrays (its accept-condition
-  // includes Array.isArray) the dispatch returns a source string for the
-  // array as a whole. Otherwise fall back to element-wise recursion so
-  // the rebuild can join with the per-repeats separator.
-  if (Array.isArray(v)) {
-    try { return __dispatchInverse_Operator_source(v, __indentCol); } catch (_e) {
-      const out: any[] = [];
-      for (let i = 0; i < v.length; i++) {
-        const r = __invertSlotFor_Operator_source(v[i], __indentCol);
-        if (r != null) out.push(r);
-      }
-      return out;
-    }
-  }
-  // null can be either an absent optional capture or an intentional null
-  // value (e.g. JsonNull). Try the dispatcher first; on throw, treat as
-  // absent (preserves optional-slot semantics for callers like rebuild's
-  // optional-slot ternary).
-  if (v === null) {
-    try { return __dispatchInverse_Operator_source(v, __indentCol); } catch (_e) { return null; }
-  }
-  if (typeof v === "string") {
-    try { return __dispatchInverse_Operator_source(v, __indentCol); } catch (_e) { return v; }
-  }
-  if (typeof v === "object") return __dispatchInverse_Operator_source(v, __indentCol);
-  // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
-  try { return __dispatchInverse_Operator_source(v, __indentCol); } catch (_e) { return String(v); }
 }
 
 function __invertSlotFor_Predicate_source(v: any, __indentCol: number = 0): any {
@@ -2439,108 +1904,6 @@ function __fusedRender_LiteralValue_1_source(state: State, out: string[]): boole
     state.pos = off;
     if (off > state.maxOff) state.maxOff = off;
     out.push(String(value ?? ""));
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_0_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 2;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push("!=");
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_1_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 2;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push("<=");
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_2_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 2;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push(">=");
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_3_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 61)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 1;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push("=");
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_4_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 60)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 1;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push("<");
-    return true;
-  })();
-  return __ok === true;
-}
-
-function __fusedRender_Operator_5_source(state: State, out: string[]): boolean {
-  const __ok = ((): unknown => {
-    const input = state.input;
-    const len = state.len;
-    let off = state.pos;
-    const entryOff = off;
-    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    if (!(input.charCodeAt(off) === 62)) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
-    off += 1;
-    state.pos = off;
-    if (off > state.maxOff) state.maxOff = off;
-    out.push(">");
     return true;
   })();
   return __ok === true;
@@ -2951,56 +2314,11 @@ function __fusedRender_Predicate_0_source(state: State, out: string[]): boolean 
       if (!__slotMatched_col) { state.pos = entryOff; return null; }
     }
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
-    const __slotBuf_op: string[] = [];
-    let __slotMatched_op = false;
-    // recursive span (Operator) — fused dispatch
-    {
-      const __offBefore = off;
-      state.pos = off;
-      if (off < len) {
-        const __c0 = input.charCodeAt(off);
-        if (__c0 === 33) {
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_0_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 60) {
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_1_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_4_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 61) {
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_3_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-        }
-        else if (__c0 === 62) {
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_2_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-          if (!__slotMatched_op) {
-            state.pos = __offBefore;
-            __slotBuf_op.length = 0;
-            if (__fusedRender_Operator_5_source(state, __slotBuf_op)) { __slotMatched_op = true; off = state.pos; }
-          }
-        }
-      }
-      if (!__slotMatched_op) __slotBuf_op.length = 0;
-      if (!__slotMatched_op) { state.pos = entryOff; return null; }
-    }
+    if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+    const __op_start = off;
+    if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 61) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; }
+    const __op_end = off;
+    const op = input.slice(__op_start, __op_end);
     while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
     const __slotBuf_val: string[] = [];
     let __slotMatched_val = false;
@@ -3109,7 +2427,7 @@ function __fusedRender_Predicate_0_source(state: State, out: string[]): boolean 
     if (off > state.maxOff) state.maxOff = off;
     for (let __i = 0; __i < __slotBuf_col.length; __i++) out.push(__slotBuf_col[__i]);
     out.push(" ");
-    for (let __i = 0; __i < __slotBuf_op.length; __i++) out.push(__slotBuf_op[__i]);
+    out.push(String(op ?? ""));
     out.push(" ");
     for (let __i = 0; __i < __slotBuf_val.length; __i++) out.push(__slotBuf_val[__i]);
     return true;
@@ -5762,12 +5080,6 @@ const __fusedRenderDispatch_source: Record<string, (state: State, out: string[])
   "ColumnRef#1": __fusedRender_ColumnRef_1_source,
   "LiteralValue#0": __fusedRender_LiteralValue_0_source,
   "LiteralValue#1": __fusedRender_LiteralValue_1_source,
-  "Operator#0": __fusedRender_Operator_0_source,
-  "Operator#1": __fusedRender_Operator_1_source,
-  "Operator#2": __fusedRender_Operator_2_source,
-  "Operator#3": __fusedRender_Operator_3_source,
-  "Operator#4": __fusedRender_Operator_4_source,
-  "Operator#5": __fusedRender_Operator_5_source,
   "Predicate#0": __fusedRender_Predicate_0_source,
   "Select#0": __fusedRender_Select_0_source,
   "Select#1": __fusedRender_Select_1_source,
@@ -5847,6 +5159,122 @@ function __fusedRenderStructured_LiteralValue_1_ast(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   return { type: "string", value: value };
+}
+
+function __fusedRenderStructured_Predicate_0_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let col: unknown = null;
+  {
+    const __before = off;
+    state.pos = off;
+    let __cand: unknown = null;
+    const __c0 = input.charCodeAt(off);
+    switch (__c0) {
+      case 36:
+      case 42:
+      case 65:
+      case 66:
+      case 67:
+      case 68:
+      case 69:
+      case 70:
+      case 71:
+      case 72:
+      case 73:
+      case 74:
+      case 75:
+      case 76:
+      case 77:
+      case 78:
+      case 79:
+      case 80:
+      case 81:
+      case 82:
+      case 83:
+      case 84:
+      case 85:
+      case 86:
+      case 87:
+      case 88:
+      case 89:
+      case 90:
+      case 95:
+      case 97:
+      case 98:
+      case 99:
+      case 100:
+      case 101:
+      case 102:
+      case 103:
+      case 104:
+      case 105:
+      case 106:
+      case 107:
+      case 108:
+      case 109:
+      case 110:
+      case 111:
+      case 112:
+      case 113:
+      case 114:
+      case 115:
+      case 116:
+      case 117:
+      case 118:
+      case 119:
+      case 120:
+      case 121:
+      case 122:
+      {
+      __cand = __fusedRenderStructuredDispatch_ColumnRef_ast(state);
+        break;
+      }
+    }
+    col = __cand;
+    if (col === null) { off = __before; state.pos = __before; } else { off = state.pos; }
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && ((input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) || (input.charCodeAt(off) === 60) || (input.charCodeAt(off) === 61) || (input.charCodeAt(off) === 62)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __op_start = off;
+  if (input.charCodeAt(off) === 33 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 62 && input.charCodeAt(off + 1) === 61) { off += 2; } else if (input.charCodeAt(off) === 60) { off += 1; } else if (input.charCodeAt(off) === 61) { off += 1; } else if (input.charCodeAt(off) === 62) { off += 1; }
+  const __op_end = off;
+  const op = input.slice(__op_start, __op_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let val: unknown = null;
+  {
+    const __before = off;
+    state.pos = off;
+    let __cand: unknown = null;
+    const __c0 = input.charCodeAt(off);
+    switch (__c0) {
+      case 39:
+      case 43:
+      case 45:
+      case 48:
+      case 49:
+      case 50:
+      case 51:
+      case 52:
+      case 53:
+      case 54:
+      case 55:
+      case 56:
+      case 57:
+      {
+      __cand = __fusedRenderStructuredDispatch_LiteralValue_ast(state);
+        break;
+      }
+    }
+    val = __cand;
+    if (val === null) { off = __before; state.pos = __before; } else { off = state.pos; }
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "predicate", col: col, op: op, val: val };
 }
 
 function __fusedRenderStructured_Select_0_ast(state: State): unknown {
@@ -5960,6 +5388,193 @@ function __fusedRenderStructured_Select_0_ast(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   return { type: "select", columns: columns, table: table };
+}
+
+function __fusedRenderStructured_Select_1_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 6;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const columns: unknown[] = [];
+  let __sepConsumed = false;
+  let __preSweep = off;
+  while (true) {
+    const __loopStart = off;
+    __preSweep = off;
+    __sepConsumed = false;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 44) {
+      __sepConsumed = true;
+      off += 1;
+      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 70 && input.startsWith("FROM", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 36:
+        case 42:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_ColumnRef_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    columns.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  if (columns.length < 1) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __table_start = off;
+  off++;
+  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
+  const __table_end = off;
+  const table = input.slice(__table_start, __table_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let where: unknown = null;
+  {
+    const __before = off;
+    state.pos = off;
+    let __cand: unknown = null;
+    const __c0 = input.charCodeAt(off);
+    switch (__c0) {
+      case 36:
+      case 42:
+      case 65:
+      case 66:
+      case 67:
+      case 68:
+      case 69:
+      case 70:
+      case 71:
+      case 72:
+      case 73:
+      case 74:
+      case 75:
+      case 76:
+      case 77:
+      case 78:
+      case 79:
+      case 80:
+      case 81:
+      case 82:
+      case 83:
+      case 84:
+      case 85:
+      case 86:
+      case 87:
+      case 88:
+      case 89:
+      case 90:
+      case 95:
+      case 97:
+      case 98:
+      case 99:
+      case 100:
+      case 101:
+      case 102:
+      case 103:
+      case 104:
+      case 105:
+      case 106:
+      case 107:
+      case 108:
+      case 109:
+      case 110:
+      case 111:
+      case 112:
+      case 113:
+      case 114:
+      case 115:
+      case 116:
+      case 117:
+      case 118:
+      case 119:
+      case 120:
+      case 121:
+      case 122:
+      {
+      __cand = __fusedRenderStructuredDispatch_Predicate_ast(state);
+        break;
+      }
+    }
+    where = __cand;
+    if (where === null) { off = __before; state.pos = __before; } else { off = state.pos; }
+  }
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "select", columns: columns, table: table, where: where };
 }
 
 function __fusedRenderStructured_Select_2_ast(state: State): unknown {
@@ -6086,9 +5701,218 @@ function __fusedRenderStructured_Select_2_ast(state: State): unknown {
   return { type: "select", columns: columns, table: table, limit: limit };
 }
 
+function __fusedRenderStructured_Select_3_ast(state: State): unknown {
+  const input = state.input;
+  const len = state.len;
+  let off = state.pos;
+  const entryOff = off;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("SELECT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 6;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  const columns: unknown[] = [];
+  let __sepConsumed = false;
+  let __preSweep = off;
+  while (true) {
+    const __loopStart = off;
+    __preSweep = off;
+    __sepConsumed = false;
+    while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    while (input.charCodeAt(off) === 44) {
+      __sepConsumed = true;
+      off += 1;
+      while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+    }
+    if (off < len) {
+      const __sb = input.charCodeAt(off);
+      if (__sb === 70 && input.startsWith("FROM", off)) break;
+    }
+    state.pos = off;
+    let __cand: unknown = null;
+    if (off < len) {
+      const __c0 = input.charCodeAt(off);
+      switch (__c0) {
+        case 36:
+        case 42:
+        case 65:
+        case 66:
+        case 67:
+        case 68:
+        case 69:
+        case 70:
+        case 71:
+        case 72:
+        case 73:
+        case 74:
+        case 75:
+        case 76:
+        case 77:
+        case 78:
+        case 79:
+        case 80:
+        case 81:
+        case 82:
+        case 83:
+        case 84:
+        case 85:
+        case 86:
+        case 87:
+        case 88:
+        case 89:
+        case 90:
+        case 95:
+        case 97:
+        case 98:
+        case 99:
+        case 100:
+        case 101:
+        case 102:
+        case 103:
+        case 104:
+        case 105:
+        case 106:
+        case 107:
+        case 108:
+        case 109:
+        case 110:
+        case 111:
+        case 112:
+        case 113:
+        case 114:
+        case 115:
+        case 116:
+        case 117:
+        case 118:
+        case 119:
+        case 120:
+        case 121:
+        case 122:
+        {
+        __cand = __fusedRenderStructuredDispatch_ColumnRef_ast(state);
+          break;
+        }
+      }
+    }
+    if (__cand === null) break;
+    columns.push(__cand);
+    off = state.pos;
+    if (off === __loopStart) break;
+  }
+  if (columns.length < 1) { state.pos = entryOff; return null; }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("FROM", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 4;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && isJsIdentStart(input.charCodeAt(off)))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __table_start = off;
+  off++;
+  while (off < len && isJsIdentPart(input.charCodeAt(off))) off++;
+  const __table_end = off;
+  const table = input.slice(__table_start, __table_end);
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("WHERE", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  let where: unknown = null;
+  {
+    const __before = off;
+    state.pos = off;
+    let __cand: unknown = null;
+    const __c0 = input.charCodeAt(off);
+    switch (__c0) {
+      case 36:
+      case 42:
+      case 65:
+      case 66:
+      case 67:
+      case 68:
+      case 69:
+      case 70:
+      case 71:
+      case 72:
+      case 73:
+      case 74:
+      case 75:
+      case 76:
+      case 77:
+      case 78:
+      case 79:
+      case 80:
+      case 81:
+      case 82:
+      case 83:
+      case 84:
+      case 85:
+      case 86:
+      case 87:
+      case 88:
+      case 89:
+      case 90:
+      case 95:
+      case 97:
+      case 98:
+      case 99:
+      case 100:
+      case 101:
+      case 102:
+      case 103:
+      case 104:
+      case 105:
+      case 106:
+      case 107:
+      case 108:
+      case 109:
+      case 110:
+      case 111:
+      case 112:
+      case 113:
+      case 114:
+      case 115:
+      case 116:
+      case 117:
+      case 118:
+      case 119:
+      case 120:
+      case 121:
+      case 122:
+      {
+      __cand = __fusedRenderStructuredDispatch_Predicate_ast(state);
+        break;
+      }
+    }
+    where = __cand;
+    if (where === null) { off = __before; state.pos = __before; } else { off = state.pos; }
+  }
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(input.startsWith("LIMIT", off))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  off += 5;
+  while (off < len) { const c = input.charCodeAt(off); if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) { off++; continue; } break; }
+  if (!(off < len && (isDigit(input.charCodeAt(off)) || ((input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) && off + 1 < len && isDigit(input.charCodeAt(off + 1)))))) { if (off > state.maxOff) state.maxOff = off; state.pos = entryOff; return null; }
+  const __limit_start = off;
+  if (input.charCodeAt(off) === 0x2d || input.charCodeAt(off) === 0x2b) off++;
+  off++;
+  while (off < len && isDigit(input.charCodeAt(off))) off++;
+  const __limit_end = off;
+  const limit = input.slice(__limit_start, __limit_end);
+  state.pos = off;
+  if (off > state.maxOff) state.maxOff = off;
+  return { type: "select", columns: columns, table: table, where: where, limit: limit };
+}
+
 function __fusedRenderStructuredDispatch_ColumnRef_ast(state: State): unknown {
   const r0 = __fusedRenderStructured_ColumnRef_0_ast(state); if (r0 !== null) return r0;
   const r1 = __fusedRenderStructured_ColumnRef_1_ast(state); if (r1 !== null) return r1;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_LiteralValue_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_LiteralValue_0_ast(state); if (r0 !== null) return r0;
+  const r1 = __fusedRenderStructured_LiteralValue_1_ast(state); if (r1 !== null) return r1;
+  return null;
+}
+
+function __fusedRenderStructuredDispatch_Predicate_ast(state: State): unknown {
+  const r0 = __fusedRenderStructured_Predicate_0_ast(state); if (r0 !== null) return r0;
   return null;
 }
 
@@ -6097,8 +5921,11 @@ const __fusedRenderStructuredTable_ast: Record<string, (state: State) => unknown
   "ColumnRef#1": __fusedRenderStructured_ColumnRef_1_ast,
   "LiteralValue#0": __fusedRenderStructured_LiteralValue_0_ast,
   "LiteralValue#1": __fusedRenderStructured_LiteralValue_1_ast,
+  "Predicate#0": __fusedRenderStructured_Predicate_0_ast,
   "Select#0": __fusedRenderStructured_Select_0_ast,
+  "Select#1": __fusedRenderStructured_Select_1_ast,
   "Select#2": __fusedRenderStructured_Select_2_ast,
+  "Select#3": __fusedRenderStructured_Select_3_ast,
 };
 
 const __rootProductionKey: string = "Select#0";

@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, litEnum, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
 
 // Postgres SELECT — a small but useful subset. Grammar:
 //
@@ -20,6 +20,12 @@ import { $, defineSchema, literal, litEnum, parse, relation, span, tpl } from '@
 //     and AST-shaped inputs work; multi-column source-target stringify
 //     receives the whole comma-joined string as one chunk.
 //
+// The predicate operator uses `.operator()` against a schema-level
+// `operators:` pool. No Operator node — the captured `op` is a plain
+// string. Earlier rounds carried a six-production `litEnum('Operator',
+// […])` workaround when v2 didn't implement `.operator()` yet; that's
+// retired here.
+//
 // Targets:
 //   ast    — { type:'select', columns:[...], table:..., where?:..., limit?:... }
 //   source — canonical Postgres SELECT string with single-space separators
@@ -27,21 +33,19 @@ import { $, defineSchema, literal, litEnum, parse, relation, span, tpl } from '@
 export default defineSchema({
   rootType: 'Select',
   defaultTarget: 'ast',
-  // The v2 backend doesn't implement `.operator()` yet, so comparison
-  // operators are declared as plain punctuators here. Each comparison
-  // form is a separate `Operator` production below, and multi-char
-  // operators (`!=`, `<=`, `>=`) are listed so tokenizer longest-match
-  // routes correctly.
   punctuators: {
     comma: ',',
     semicolon: ';',
     star: '*',
-    ne: '!=',
-    le: '<=',
-    ge: '>=',
-    eq: '=',
-    lt: '<',
-    gt: '>',
+  },
+  // Comparison operators declared as a single precedence layer so the
+  // .operator() scanner picks them up with longest-match dispatch
+  // (`!=` / `<=` / `>=` beat their single-char prefixes). No binary
+  // production matches the [recursive(self), operator, recursive(self)]
+  // shape, so Pratt parsing stays off — `operators` here is purely a
+  // literal pool for the predicate operator span.
+  operators: {
+    comparison: ['!=', '<=', '>=', '=', '<', '>'],
   },
   tokens: ['number', 'string'],
   examples: [
@@ -81,18 +85,17 @@ export default defineSchema({
       },
     }),
 
-    // ---- Operator ----------------------------------------------------
-    // Multi-production node; longest forms declared first so the
-    // inverse dispatcher's startsWith ladder picks the longest match.
-    ...litEnum('Operator', ['!=', '<=', '>=', '=', '<', '>']),
-
     // ---- Predicate ---------------------------------------------------
+    // `.operator()` scans the schema-level operator pool with longest-
+    // match dispatch, replacing the prior `litEnum('Operator', […])` +
+    // `.of('Operator')` six-production workaround. The capture is a
+    // plain string (the matched operator literal) — no Operator node.
     relation('Predicate', {
       input: 'name = 42',
       encodings: {
         parse: parse([
           span('col', 'name').of('ColumnRef'),
-          span('op', '=').of('Operator'),
+          span('op', '=').operator(),
           span('val', '42').of('LiteralValue'),
         ]),
         ast: { type: 'predicate', col: $.col, op: $.op, val: $.val },

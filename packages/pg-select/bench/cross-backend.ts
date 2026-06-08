@@ -1,10 +1,13 @@
-// Cross-backend bench — TS vs bcode vs Rust(wasm), same harness +
-// inputs as `bench/parse.ts`.
+// Cross-backend bench — TS vs Rust(wasm), same harness + inputs as
+// `bench/parse.ts`. Bcode is intentionally omitted: pg-select uses
+// `.operator()`, which the bytecode encoder doesn't yet support (the
+// bcode VM only covers cron's primitives — see emit/bytecode/encoder
+// .ts:mapClassKind). Once the bcode backend gains operator support, a
+// `parser.bcode.ts` import + contestant entry can be added back here.
 
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { render as renderTs } from '../src/_generated/parser.ts';
-import { render as renderBcode } from '../src/_generated/parser.bcode.ts';
 import { type BenchResult, type Contestant, countRows, runBenchTable } from './common.ts';
 import {
   filterContestants,
@@ -37,12 +40,6 @@ const contestants: ReadonlyArray<Contestant | null> = [
     fn: (input: string): BenchResult =>
       countRows(input, (row) => { renderTs(row, { target: 'ast' }); }),
   },
-  {
-    label: 'parser2 pg-select parse (bcode)',
-    unit: 'rows',
-    fn: (input: string): BenchResult =>
-      countRows(input, (row) => { renderBcode(row, { target: 'ast' }); }),
-  },
   rustWasm === null ? null : {
     label: 'parser2 pg-select parse (rust-wasm)',
     unit: 'rows',
@@ -52,6 +49,6 @@ const contestants: ReadonlyArray<Contestant | null> = [
 ];
 
 await runBenchTable(
-  'pg-select cross-backend — ts | bcode | rust(wasm)',
+  'pg-select cross-backend — ts | rust(wasm)',
   filterContestants(contestants, only),
 );

@@ -13,7 +13,7 @@
     "fuzz:60s": "npm run fuzz:60s -w @parser2/compiler",
     "generate": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/css/src/schema.ts && tsx packages/compiler/src/cli.ts packages/html/src/schema.ts",
     "generate:all": "npm run build:tools && tsx packages/compiler/src/cli.ts packages/rrule/src/schema.ts --ts --rs --bcode && tsx packages/compiler/src/cli.ts packages/iso-duration/src/schema.ts --ts --rs --bcode && tsx packages/compiler/src/cli.ts packages/pg-select/src/schema.ts --ts --rs --bcode && tsx packages/compiler/src/cli.ts packages/cron/src/schema.ts --ts --rs --bcode && tsx packages/compiler/src/cli.ts packages/toml/src/schema.ts --ts --rs",
-    "bench:cross-backend": "npm run generate:all && tsx scripts/bench-cross-backend.ts",
+    "bench:cross-backend": "npm run bench:cross-backend -w @parser2/rrule && npm run bench:cross-backend -w @parser2/iso-duration && npm run bench:cross-backend -w @parser2/pg-select && npm run bench:cross-backend -w @parser2/cron && npm run bench:cross-backend -w @parser2/toml",
     "test": "npm run generate && npm run test --workspaces --if-present",
     "conformance:fetch": "npm run fetch -w @parser2/css",
     "test:conformance": "PARSER2_CONFORMANCE=1 npm test",

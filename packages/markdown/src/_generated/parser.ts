@@ -2789,7 +2789,7 @@ function parseMarkdownParagraph(state: State): unknown {
 const __defaultTarget: string | undefined = undefined;
 
 function __build_MarkdownDocument_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "document", children: __renderSlot_ast(captures.children, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "document", children: __renderSlot_ast(captures.children, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "document", children: __renderSlot_ast(captures.children, __indentCol) });
 }
 
 function __build_MarkdownDocument_0_html(captures: any, __indentCol: number = 0): any {
@@ -2801,7 +2801,7 @@ function __build_MarkdownDocument_0_source(captures: any, __indentCol: number = 
 }
 
 function __build_MarkdownLeaf_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 6, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 6, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 6, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_0_html(captures: any, __indentCol: number = 0): any {
@@ -2813,7 +2813,7 @@ function __build_MarkdownLeaf_0_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 5, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 5, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 5, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_1_html(captures: any, __indentCol: number = 0): any {
@@ -2825,7 +2825,7 @@ function __build_MarkdownLeaf_1_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 4, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 4, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 4, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_2_html(captures: any, __indentCol: number = 0): any {
@@ -2837,7 +2837,7 @@ function __build_MarkdownLeaf_2_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 3, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 3, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 3, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_3_html(captures: any, __indentCol: number = 0): any {
@@ -2849,7 +2849,7 @@ function __build_MarkdownLeaf_3_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_4_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_4_html(captures: any, __indentCol: number = 0): any {
@@ -2861,7 +2861,7 @@ function __build_MarkdownLeaf_4_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_5_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_5_html(captures: any, __indentCol: number = 0): any {
@@ -2873,7 +2873,7 @@ function __build_MarkdownLeaf_5_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_6_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 1, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" });
 }
 
 function __build_MarkdownLeaf_6_html(captures: any, __indentCol: number = 0): any {
@@ -2885,7 +2885,7 @@ function __build_MarkdownLeaf_6_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_7_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" };
+  return (captures.__ws != null ? Object.assign({ type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "heading", depth: 2, text: __renderSlot_ast(captures.text, __indentCol), style: "setext" });
 }
 
 function __build_MarkdownLeaf_7_html(captures: any, __indentCol: number = 0): any {
@@ -2897,7 +2897,7 @@ function __build_MarkdownLeaf_7_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_8_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "thematic-break", marker: "*" };
+  return (captures.__ws != null ? Object.assign({ type: "thematic-break", marker: "*" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "thematic-break", marker: "*" });
 }
 
 function __build_MarkdownLeaf_8_html(captures: any, __indentCol: number = 0): any {
@@ -2909,7 +2909,7 @@ function __build_MarkdownLeaf_8_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_9_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "thematic-break", marker: "_" };
+  return (captures.__ws != null ? Object.assign({ type: "thematic-break", marker: "_" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "thematic-break", marker: "_" });
 }
 
 function __build_MarkdownLeaf_9_html(captures: any, __indentCol: number = 0): any {
@@ -2921,7 +2921,7 @@ function __build_MarkdownLeaf_9_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_MarkdownLeaf_10_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "thematic-break" };
+  return (captures.__ws != null ? Object.assign({ type: "thematic-break" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "thematic-break" });
 }
 
 function __build_MarkdownLeaf_10_html(captures: any, __indentCol: number = 0): any {
@@ -2933,7 +2933,7 @@ function __build_MarkdownLeaf_10_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_11_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "task-list-item", checked: true, marker: "x", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_11_html(captures: any, __indentCol: number = 0): any {
@@ -2945,7 +2945,7 @@ function __build_MarkdownLeaf_11_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_12_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "task-list-item", checked: false, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_12_html(captures: any, __indentCol: number = 0): any {
@@ -2957,7 +2957,7 @@ function __build_MarkdownLeaf_12_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_13_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "list-item", ordered: false, marker: "+", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_13_html(captures: any, __indentCol: number = 0): any {
@@ -2969,7 +2969,7 @@ function __build_MarkdownLeaf_13_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_14_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "list-item", ordered: false, marker: "*", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_14_html(captures: any, __indentCol: number = 0): any {
@@ -2981,7 +2981,7 @@ function __build_MarkdownLeaf_14_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_15_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "list-item", ordered: false, text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "list-item", ordered: false, text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "list-item", ordered: false, text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_15_html(captures: any, __indentCol: number = 0): any {
@@ -2993,7 +2993,7 @@ function __build_MarkdownLeaf_15_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_16_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "list-item", ordered: true, index: __renderSlot_ast(captures.index, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "list-item", ordered: true, index: __renderSlot_ast(captures.index, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "list-item", ordered: true, index: __renderSlot_ast(captures.index, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_16_html(captures: any, __indentCol: number = 0): any {
@@ -3005,7 +3005,7 @@ function __build_MarkdownLeaf_16_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_17_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "blockquote", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "blockquote", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "blockquote", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_17_html(captures: any, __indentCol: number = 0): any {
@@ -3017,7 +3017,7 @@ function __build_MarkdownLeaf_17_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_18_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "code-block", lang: __renderSlot_ast(captures.lang, __indentCol), text: __renderSlot_ast(captures.body, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "code-block", lang: __renderSlot_ast(captures.lang, __indentCol), text: __renderSlot_ast(captures.body, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "code-block", lang: __renderSlot_ast(captures.lang, __indentCol), text: __renderSlot_ast(captures.body, __indentCol) });
 }
 
 function __build_MarkdownLeaf_18_html(captures: any, __indentCol: number = 0): any {
@@ -3029,7 +3029,7 @@ function __build_MarkdownLeaf_18_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_19_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "code-block", text: __renderSlot_ast(captures.body, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "code-block", text: __renderSlot_ast(captures.body, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "code-block", text: __renderSlot_ast(captures.body, __indentCol) });
 }
 
 function __build_MarkdownLeaf_19_html(captures: any, __indentCol: number = 0): any {
@@ -3041,7 +3041,7 @@ function __build_MarkdownLeaf_19_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_20_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "bold", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "bold", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "bold", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_20_html(captures: any, __indentCol: number = 0): any {
@@ -3053,7 +3053,7 @@ function __build_MarkdownLeaf_20_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_21_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "italic", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "italic", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "italic", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_21_html(captures: any, __indentCol: number = 0): any {
@@ -3065,7 +3065,7 @@ function __build_MarkdownLeaf_21_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_22_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "strikethrough", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "strikethrough", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "strikethrough", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_22_html(captures: any, __indentCol: number = 0): any {
@@ -3077,7 +3077,7 @@ function __build_MarkdownLeaf_22_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_23_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "inline-code", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "inline-code", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "inline-code", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_23_html(captures: any, __indentCol: number = 0): any {
@@ -3089,7 +3089,7 @@ function __build_MarkdownLeaf_23_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_24_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "link", label: __renderSlot_ast(captures.label, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "link", label: __renderSlot_ast(captures.label, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "link", label: __renderSlot_ast(captures.label, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) });
 }
 
 function __build_MarkdownLeaf_24_html(captures: any, __indentCol: number = 0): any {
@@ -3101,7 +3101,7 @@ function __build_MarkdownLeaf_24_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_25_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "reference-link", label: __renderSlot_ast(captures.label, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "reference-link", label: __renderSlot_ast(captures.label, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "reference-link", label: __renderSlot_ast(captures.label, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) });
 }
 
 function __build_MarkdownLeaf_25_html(captures: any, __indentCol: number = 0): any {
@@ -3113,7 +3113,7 @@ function __build_MarkdownLeaf_25_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_26_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "image", alt: __renderSlot_ast(captures.alt, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "image", alt: __renderSlot_ast(captures.alt, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "image", alt: __renderSlot_ast(captures.alt, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) });
 }
 
 function __build_MarkdownLeaf_26_html(captures: any, __indentCol: number = 0): any {
@@ -3125,7 +3125,7 @@ function __build_MarkdownLeaf_26_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_27_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "reference-image", alt: __renderSlot_ast(captures.alt, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "reference-image", alt: __renderSlot_ast(captures.alt, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "reference-image", alt: __renderSlot_ast(captures.alt, __indentCol), id: __renderSlot_ast(captures.id, __indentCol) });
 }
 
 function __build_MarkdownLeaf_27_html(captures: any, __indentCol: number = 0): any {
@@ -3137,7 +3137,7 @@ function __build_MarkdownLeaf_27_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_28_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "entity", name: __renderSlot_ast(captures.name, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "entity", name: __renderSlot_ast(captures.name, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "entity", name: __renderSlot_ast(captures.name, __indentCol) });
 }
 
 function __build_MarkdownLeaf_28_html(captures: any, __indentCol: number = 0): any {
@@ -3149,7 +3149,7 @@ function __build_MarkdownLeaf_28_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_29_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "table-delimiter", variant: "plain", align: ["default", "default"] };
+  return (captures.__ws != null ? Object.assign({ type: "table-delimiter", variant: "plain", align: ["default", "default"] }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "table-delimiter", variant: "plain", align: ["default", "default"] });
 }
 
 function __build_MarkdownLeaf_29_html(captures: any, __indentCol: number = 0): any {
@@ -3161,7 +3161,7 @@ function __build_MarkdownLeaf_29_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_30_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "table-delimiter", variant: "aligned", align: ["left", "right"] };
+  return (captures.__ws != null ? Object.assign({ type: "table-delimiter", variant: "aligned", align: ["left", "right"] }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "table-delimiter", variant: "aligned", align: ["left", "right"] });
 }
 
 function __build_MarkdownLeaf_30_html(captures: any, __indentCol: number = 0): any {
@@ -3173,7 +3173,7 @@ function __build_MarkdownLeaf_30_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_31_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "table-row", cells: [__renderSlot_ast(captures.first, __indentCol), __renderSlot_ast(captures.second, __indentCol)] };
+  return (captures.__ws != null ? Object.assign({ type: "table-row", cells: [__renderSlot_ast(captures.first, __indentCol), __renderSlot_ast(captures.second, __indentCol)] }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "table-row", cells: [__renderSlot_ast(captures.first, __indentCol), __renderSlot_ast(captures.second, __indentCol)] });
 }
 
 function __build_MarkdownLeaf_31_html(captures: any, __indentCol: number = 0): any {
@@ -3185,7 +3185,7 @@ function __build_MarkdownLeaf_31_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_32_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "definition", id: __renderSlot_ast(captures.id, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "definition", id: __renderSlot_ast(captures.id, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "definition", id: __renderSlot_ast(captures.id, __indentCol), url: __renderSlot_ast(captures.url, __indentCol) });
 }
 
 function __build_MarkdownLeaf_32_html(captures: any, __indentCol: number = 0): any {
@@ -3197,7 +3197,7 @@ function __build_MarkdownLeaf_32_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_33_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "footnote-definition", id: __renderSlot_ast(captures.id, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "footnote-definition", id: __renderSlot_ast(captures.id, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "footnote-definition", id: __renderSlot_ast(captures.id, __indentCol), text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownLeaf_33_html(captures: any, __indentCol: number = 0): any {
@@ -3209,7 +3209,7 @@ function __build_MarkdownLeaf_33_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_34_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "footnote-reference", id: __renderSlot_ast(captures.id, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "footnote-reference", id: __renderSlot_ast(captures.id, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "footnote-reference", id: __renderSlot_ast(captures.id, __indentCol) });
 }
 
 function __build_MarkdownLeaf_34_html(captures: any, __indentCol: number = 0): any {
@@ -3221,7 +3221,7 @@ function __build_MarkdownLeaf_34_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_35_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "html", tag: __renderSlot_ast(captures.tag, __indentCol), text: __renderSlot_ast(captures.body, __indentCol), closingTag: __renderSlot_ast(captures.closingTag, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "html", tag: __renderSlot_ast(captures.tag, __indentCol), text: __renderSlot_ast(captures.body, __indentCol), closingTag: __renderSlot_ast(captures.closingTag, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "html", tag: __renderSlot_ast(captures.tag, __indentCol), text: __renderSlot_ast(captures.body, __indentCol), closingTag: __renderSlot_ast(captures.closingTag, __indentCol) });
 }
 
 function __build_MarkdownLeaf_35_html(captures: any, __indentCol: number = 0): any {
@@ -3233,7 +3233,7 @@ function __build_MarkdownLeaf_35_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownLeaf_36_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "autolink", url: __renderSlot_ast(captures.url, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "autolink", url: __renderSlot_ast(captures.url, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "autolink", url: __renderSlot_ast(captures.url, __indentCol) });
 }
 
 function __build_MarkdownLeaf_36_html(captures: any, __indentCol: number = 0): any {
@@ -3245,7 +3245,7 @@ function __build_MarkdownLeaf_36_source(captures: any, __indentCol: number = 0):
 }
 
 function __build_MarkdownParagraph_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "paragraph", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "paragraph", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "paragraph", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_MarkdownParagraph_0_html(captures: any, __indentCol: number = 0): any {

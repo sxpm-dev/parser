@@ -518,7 +518,7 @@ function parseDocument(state: State): unknown {
 const __defaultTarget: string | undefined = "ast";
 
 function __build_Value_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "string", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "string", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "string", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Value_0_source(captures: any, __indentCol: number = 0): any {
@@ -526,7 +526,7 @@ function __build_Value_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Value_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "boolean", value: true };
+  return (captures.__ws != null ? Object.assign({ type: "boolean", value: true }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "boolean", value: true });
 }
 
 function __build_Value_1_source(captures: any, __indentCol: number = 0): any {
@@ -534,7 +534,7 @@ function __build_Value_1_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Value_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "boolean", value: false };
+  return (captures.__ws != null ? Object.assign({ type: "boolean", value: false }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "boolean", value: false });
 }
 
 function __build_Value_2_source(captures: any, __indentCol: number = 0): any {
@@ -542,7 +542,7 @@ function __build_Value_2_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Value_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "integer", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "integer", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "integer", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Value_3_source(captures: any, __indentCol: number = 0): any {
@@ -550,7 +550,7 @@ function __build_Value_3_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Pair_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "pair", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "pair", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "pair", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Pair_0_source(captures: any, __indentCol: number = 0): any {
@@ -558,7 +558,7 @@ function __build_Pair_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Table_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) });
 }
 
 function __build_Table_0_source(captures: any, __indentCol: number = 0): any {
@@ -566,7 +566,7 @@ function __build_Table_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Document_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "document", items: __renderSlot_ast(captures.items, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "document", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "document", items: __renderSlot_ast(captures.items, __indentCol) });
 }
 
 function __build_Document_0_source(captures: any, __indentCol: number = 0): any {

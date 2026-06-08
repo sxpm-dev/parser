@@ -107,13 +107,23 @@ function emitBuilder(
 ): string {
   const fnName = builderName(nodeName, prodIdx, target);
   const expr = emitBodyExpr(body, target, production);
-  // Phase 4c v1 — auto-attach `__ws` to the top-level AST object for
-  // preserve schemas. The auto-attach is target-scoped to 'ast' (other
-  // targets are typically string-shaped Templates or non-object
-  // projections where __ws has no place to land) and shape-scoped to
-  // object bodies (scalar/ref/template/array bodies have no fields to
-  // extend). Schema authors can still surface __ws explicitly via
-  // `__ws: $.__ws` for other targets if they need to.
+  // AST trivia attach. Two flavours kept separate so neither one breaks
+  // the other's existing consumers:
+  //
+  //   preserve schemas (Phase 4c v1+v2) — __ws / __litPres / *_iws are
+  //     attached as TOP-LEVEL fields on every object 'ast' body. Always
+  //     fires (captures.__ws is eagerly populated). Existing rebuild +
+  //     stringify path reads from those top-level fields.
+  //
+  //   standard schemas (Layer 2 raws sidecar, 2026-06-08-raws-sidecar.md)
+  //     — the same data is now available when raws mode runs over a
+  //     standard schema, but exposing it as top-level fields would
+  //     collide with arbitrary schema-defined ast keys (and breaks
+  //     downstream fixture-equality tests that don't strip those names).
+  //     Wrap under a single `raws: { … }` namespace instead. Gate at
+  //     runtime on `captures.__ws != null` so fast mode pays nothing.
+  //     PostCSS / postcss-class downstream tooling already keys off a
+  //     `raws` field by convention — this aligns.
   const isObjectBody =
     body !== null &&
     typeof body === 'object' &&
@@ -122,29 +132,39 @@ function emitBuilder(
     !isTemplate(body) &&
     !isDynKey(body) &&
     !isMerge(body);
-  // Phase 4c v2: in addition to `__ws`, every named `.repeats({ sep })`
-  // span contributes a per-iteration ws array under `<spanName>_iws` in
-  // the captures payload. Forward each one to the AST so stringify can
-  // reconstruct the inter-iteration content byte-exactly.
+  // Per-iteration ws fields: every named `.repeats({ sep })` span on this
+  // production contributes a `<spanName>_iws` slot. Discovery is
+  // unconditional at codegen time; whether each one fires at runtime is
+  // determined by the captures-payload presence check.
   const iwsFields: string[] = [];
-  if (preserveWs) {
-    for (const span of production.spans) {
-      if (!span.name) continue;
-      for (const m of span.modifiers) {
-        if (m.kind === 'repeats' && m.sep !== undefined) {
-          const key = `${span.name}_iws`;
-          iwsFields.push(`${key}: captures.${key}`);
-          break;
-        }
+  for (const span of production.spans) {
+    if (!span.name) continue;
+    for (const m of span.modifiers) {
+      if (m.kind === 'repeats' && m.sep !== undefined) {
+        const key = `${span.name}_iws`;
+        iwsFields.push(`${key}: captures.${key}`);
+        break;
       }
     }
   }
   const baseFields = ['__ws: captures.__ws', '__litPres: captures.__litPres'];
   const extras = [...baseFields, ...iwsFields].join(', ');
-  const finalExpr =
-    preserveWs && isObjectBody && target === 'ast'
-      ? `Object.assign(${expr}, { ${extras} })`
-      : expr;
+  let finalExpr: string;
+  if (isObjectBody && target === 'ast') {
+    if (preserveWs) {
+      // Preserve schemas: top-level attach, unconditional (matches the
+      // pre-Layer-2 behaviour byte-for-byte).
+      finalExpr = `Object.assign(${expr}, { ${extras} })`;
+    } else {
+      // Standard schemas: namespaced attach under `raws`, gated on the
+      // captures-payload carrying the lazy-allocated arrays. Layer 1
+      // emits `string[] | null = state.mode === 'raws' ? [] : null` for
+      // these fields, so fast mode sees null and the attach is skipped.
+      finalExpr = `(captures.__ws != null ? Object.assign(${expr}, { raws: { ${extras} } }) : ${expr})`;
+    }
+  } else {
+    finalExpr = expr;
+  }
   // `__indentCol` is the column at which THIS production's indent-modified
   // children's join lands. Default 0 keeps top-level entry points (the
   // public `render()` wrapper, the dispatcher, the dispatch table) calling

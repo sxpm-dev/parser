@@ -612,7 +612,7 @@ state.pos = off;
 const __defaultTarget: string | undefined = "ast";
 
 function __build_DateUnit_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "years", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "years", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "years", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_DateUnit_0_source(captures: any, __indentCol: number = 0): any {
@@ -620,7 +620,7 @@ function __build_DateUnit_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_DateUnit_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "months", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "months", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "months", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_DateUnit_1_source(captures: any, __indentCol: number = 0): any {
@@ -628,7 +628,7 @@ function __build_DateUnit_1_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_DateUnit_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "weeks", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "weeks", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "weeks", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_DateUnit_2_source(captures: any, __indentCol: number = 0): any {
@@ -636,7 +636,7 @@ function __build_DateUnit_2_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_DateUnit_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "days", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "days", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "days", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_DateUnit_3_source(captures: any, __indentCol: number = 0): any {
@@ -644,7 +644,7 @@ function __build_DateUnit_3_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_TimeUnit_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "hours", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "hours", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "hours", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_TimeUnit_0_source(captures: any, __indentCol: number = 0): any {
@@ -652,7 +652,7 @@ function __build_TimeUnit_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_TimeUnit_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "minutes", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "minutes", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "minutes", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_TimeUnit_1_source(captures: any, __indentCol: number = 0): any {
@@ -660,7 +660,7 @@ function __build_TimeUnit_1_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_TimeUnit_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "seconds", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "seconds", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "seconds", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_TimeUnit_2_source(captures: any, __indentCol: number = 0): any {
@@ -668,7 +668,7 @@ function __build_TimeUnit_2_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Duration_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "duration", date: __renderSlot_ast(captures.date, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol) });
 }
 
 function __build_Duration_0_source(captures: any, __indentCol: number = 0): any {
@@ -676,7 +676,7 @@ function __build_Duration_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Duration_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) });
 }
 
 function __build_Duration_1_source(captures: any, __indentCol: number = 0): any {

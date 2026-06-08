@@ -3079,7 +3079,7 @@ function parseStylesheet(state: State): unknown {
 const __defaultTarget: string | undefined = undefined;
 
 function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "comment", text: __renderSlot_ast(captures.text, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "comment", text: __renderSlot_ast(captures.text, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "comment", text: __renderSlot_ast(captures.text, __indentCol) });
 }
 
 function __build_Comment_0_json(captures: any, __indentCol: number = 0): any {
@@ -3091,7 +3091,7 @@ function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Declaration_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol), important: true, _important: __renderSlot_ast(captures.important, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol), important: true, _important: __renderSlot_ast(captures.important, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol), important: true, _important: __renderSlot_ast(captures.important, __indentCol) });
 }
 
 function __build_Declaration_0_json(captures: any, __indentCol: number = 0): any {
@@ -3103,7 +3103,7 @@ function __build_Declaration_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_Declaration_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "decl", prop: __renderSlot_ast(captures.prop, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Declaration_1_json(captures: any, __indentCol: number = 0): any {
@@ -3115,7 +3115,7 @@ function __build_Declaration_1_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_Rule_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "rule", selector: __renderSlot_ast(captures.selector, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "rule", selector: __renderSlot_ast(captures.selector, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, nodes_iws: captures.nodes_iws } }) : { type: "rule", selector: __renderSlot_ast(captures.selector, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) });
 }
 
 function __build_Rule_0_json(captures: any, __indentCol: number = 0): any {
@@ -3137,7 +3137,7 @@ function __build_Rule_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_AtRule_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, nodes_iws: captures.nodes_iws } }) : { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol), nodes: __renderSlot_ast(captures.nodes, __indentCol) });
 }
 
 function __build_AtRule_0_json(captures: any, __indentCol: number = 0): any {
@@ -3149,7 +3149,7 @@ function __build_AtRule_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_AtRule_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "atrule", name: __renderSlot_ast(captures.name, __indentCol), params: __renderSlot_ast(captures.params, __indentCol) });
 }
 
 function __build_AtRule_1_json(captures: any, __indentCol: number = 0): any {
@@ -3161,7 +3161,7 @@ function __build_AtRule_1_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Stylesheet_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "root", nodes: __renderSlot_ast(captures.nodes, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "root", nodes: __renderSlot_ast(captures.nodes, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, nodes_iws: captures.nodes_iws } }) : { type: "root", nodes: __renderSlot_ast(captures.nodes, __indentCol) });
 }
 
 function __build_Stylesheet_0_json(captures: any, __indentCol: number = 0): any {

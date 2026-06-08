@@ -1984,7 +1984,7 @@ state.pos = off;
 const __defaultTarget: string | undefined = undefined;
 
 function __build_HtmlDocument_0_ast(captures: any, __indentCol: number = 0): any {
-  return { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlDocument_0_source(captures: any, __indentCol: number = 0): any {
@@ -1992,7 +1992,7 @@ function __build_HtmlDocument_0_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_Doctype_0_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "doctype", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "doctype", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "doctype", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null });
 }
 
 function __build_Doctype_0_source(captures: any, __indentCol: number = 0): any {
@@ -2000,7 +2000,7 @@ function __build_Doctype_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Doctype_1_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "doctype-incomplete", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "doctype-incomplete", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "doctype-incomplete", _keyword: __renderSlot_ast(captures.keyword, __indentCol), nodeName: "#documentType", name: __renderSlot_ast(captures.name, __indentCol), publicId: "", systemId: "", parentNode: null });
 }
 
 function __build_Doctype_1_source(captures: any, __indentCol: number = 0): any {
@@ -2008,7 +2008,7 @@ function __build_Doctype_1_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Comment_0_ast(captures: any, __indentCol: number = 0): any {
-  return { nodeName: "#comment", data: __renderSlot_ast(captures.data, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ nodeName: "#comment", data: __renderSlot_ast(captures.data, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { nodeName: "#comment", data: __renderSlot_ast(captures.data, __indentCol), parentNode: null });
 }
 
 function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
@@ -2016,7 +2016,7 @@ function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_HtmlElement_0_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null });
 }
 
 function __build_HtmlElement_0_source(captures: any, __indentCol: number = 0): any {
@@ -2024,7 +2024,7 @@ function __build_HtmlElement_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_1_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_1_source(captures: any, __indentCol: number = 0): any {
@@ -2032,7 +2032,7 @@ function __build_HtmlElement_1_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_2_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_2_source(captures: any, __indentCol: number = 0): any {
@@ -2040,7 +2040,7 @@ function __build_HtmlElement_2_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_3_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_3_source(captures: any, __indentCol: number = 0): any {
@@ -2048,7 +2048,7 @@ function __build_HtmlElement_3_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_4_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_4_source(captures: any, __indentCol: number = 0): any {
@@ -2056,7 +2056,7 @@ function __build_HtmlElement_4_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_5_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_5_source(captures: any, __indentCol: number = 0): any {
@@ -2064,7 +2064,7 @@ function __build_HtmlElement_5_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_6_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_6_source(captures: any, __indentCol: number = 0): any {
@@ -2072,7 +2072,7 @@ function __build_HtmlElement_6_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_7_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_7_source(captures: any, __indentCol: number = 0): any {
@@ -2080,7 +2080,7 @@ function __build_HtmlElement_7_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_8_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_8_source(captures: any, __indentCol: number = 0): any {
@@ -2088,7 +2088,7 @@ function __build_HtmlElement_8_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_9_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_9_source(captures: any, __indentCol: number = 0): any {
@@ -2096,7 +2096,7 @@ function __build_HtmlElement_9_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_10_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_10_source(captures: any, __indentCol: number = 0): any {
@@ -2104,7 +2104,7 @@ function __build_HtmlElement_10_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_11_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_11_source(captures: any, __indentCol: number = 0): any {
@@ -2112,7 +2112,7 @@ function __build_HtmlElement_11_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_12_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_12_source(captures: any, __indentCol: number = 0): any {
@@ -2120,7 +2120,7 @@ function __build_HtmlElement_12_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_13_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_13_source(captures: any, __indentCol: number = 0): any {
@@ -2128,7 +2128,7 @@ function __build_HtmlElement_13_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_14_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_14_source(captures: any, __indentCol: number = 0): any {
@@ -2136,7 +2136,7 @@ function __build_HtmlElement_14_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_15_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_15_source(captures: any, __indentCol: number = 0): any {
@@ -2144,7 +2144,7 @@ function __build_HtmlElement_15_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_16_ast(captures: any, __indentCol: number = 0): any {
-  return { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_16_source(captures: any, __indentCol: number = 0): any {
@@ -2152,7 +2152,7 @@ function __build_HtmlElement_16_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_TextNode_0_ast(captures: any, __indentCol: number = 0): any {
-  return { nodeName: "#text", value: __renderSlot_ast(captures.value, __indentCol), parentNode: null };
+  return (captures.__ws != null ? Object.assign({ nodeName: "#text", value: __renderSlot_ast(captures.value, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { nodeName: "#text", value: __renderSlot_ast(captures.value, __indentCol), parentNode: null });
 }
 
 function __build_TextNode_0_source(captures: any, __indentCol: number = 0): any {
@@ -2160,7 +2160,7 @@ function __build_TextNode_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Attribute_0_ast(captures: any, __indentCol: number = 0): any {
-  return { _quote: "double", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ _quote: "double", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _quote: "double", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Attribute_0_source(captures: any, __indentCol: number = 0): any {
@@ -2168,7 +2168,7 @@ function __build_Attribute_0_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_Attribute_1_ast(captures: any, __indentCol: number = 0): any {
-  return { _quote: "single", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ _quote: "single", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _quote: "single", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Attribute_1_source(captures: any, __indentCol: number = 0): any {
@@ -2176,7 +2176,7 @@ function __build_Attribute_1_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_Attribute_2_ast(captures: any, __indentCol: number = 0): any {
-  return { _quote: "none", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ _quote: "none", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _quote: "none", name: __renderSlot_ast(captures.name, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Attribute_2_source(captures: any, __indentCol: number = 0): any {
@@ -2184,7 +2184,7 @@ function __build_Attribute_2_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_Attribute_3_ast(captures: any, __indentCol: number = 0): any {
-  return { name: __renderSlot_ast(captures.name, __indentCol), value: "" };
+  return (captures.__ws != null ? Object.assign({ name: __renderSlot_ast(captures.name, __indentCol), value: "" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { name: __renderSlot_ast(captures.name, __indentCol), value: "" });
 }
 
 function __build_Attribute_3_source(captures: any, __indentCol: number = 0): any {

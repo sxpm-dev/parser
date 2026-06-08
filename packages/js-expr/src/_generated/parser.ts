@@ -499,11 +499,11 @@ function parseExpr(state: State): unknown {
 const __defaultTarget: string | undefined = "ast";
 
 function __build_Expr_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "Identifier", name: __renderSlot_ast(captures.name, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "Identifier", name: __renderSlot_ast(captures.name, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "Identifier", name: __renderSlot_ast(captures.name, __indentCol) });
 }
 
 function __build_Expr_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "NumericLiteral", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "NumericLiteral", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "NumericLiteral", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Expr_2_ast(captures: any, __indentCol: number = 0): any {
@@ -511,11 +511,11 @@ function __build_Expr_2_ast(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Expr_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "UnaryExpression", op: __renderSlot_ast(captures.op, __indentCol), operand: __renderSlot_ast(captures.operand, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "UnaryExpression", op: __renderSlot_ast(captures.op, __indentCol), operand: __renderSlot_ast(captures.operand, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "UnaryExpression", op: __renderSlot_ast(captures.op, __indentCol), operand: __renderSlot_ast(captures.operand, __indentCol) });
 }
 
 function __build_Expr_4_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "BinaryExpression", op: __renderSlot_ast(captures.op, __indentCol), left: __renderSlot_ast(captures.left, __indentCol), right: __renderSlot_ast(captures.right, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "BinaryExpression", op: __renderSlot_ast(captures.op, __indentCol), left: __renderSlot_ast(captures.left, __indentCol), right: __renderSlot_ast(captures.right, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "BinaryExpression", op: __renderSlot_ast(captures.op, __indentCol), left: __renderSlot_ast(captures.left, __indentCol), right: __renderSlot_ast(captures.right, __indentCol) });
 }
 
 function __dispatchRender_ast(captures: any, __indentCol: number = 0): any {

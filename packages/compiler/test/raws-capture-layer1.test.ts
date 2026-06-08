@@ -115,17 +115,45 @@ test('layer 1: preserve schema keeps eager __ws allocation (no perf regression)'
   );
 });
 
-test('layer 1: runtime — standard schema in raws mode populates __ws', async () => {
-  // End-to-end: generate, eval the parser, parse a small input in raws
-  // mode, and verify the inter-span gap appears in the captures payload.
-  // We probe by walking the AST returned by `render(..., { mode: 'raws' })`
-  // — Layer 2 will attach `__ws` as a `.raws` field; until then it lives
-  // on the internal captures payload only. To assert *now* (before Layer
-  // 2) we eval the emitted code and call the private __build entry that
-  // returns captures verbatim.
-  //
-  // Skip the fragile-eval approach in this test slice. The earlier
-  // emit-pattern tests already prove the parser writes the gated push;
-  // a runtime end-to-end assertion lands with Layer 2 when the AST
-  // builder exposes the field.
+test('layer 2: standard schema in raws mode attaches .raws to ast nodes', async () => {
+  // End-to-end. Generate, write to a temp file (tsx import needs a file
+  // path), import dynamically, parse a small input, and verify the ast
+  // root carries `.raws.__ws` populated from the inter-span gaps.
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname, resolve } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const outDir = resolve(here, '.raws-layer2-tmp');
+  mkdirSync(outDir, { recursive: true });
+  const code = generateParser(standardSchema);
+  const outPath = resolve(outDir, 'parser.ts');
+  writeFileSync(outPath, code);
+  const mod = (await import(outPath)) as {
+    render: (input: string, opts: { target: string; mode: string }) => unknown;
+  };
+
+  const ast = mod.render('a=b', { target: 'ast', mode: 'raws' }) as { raws?: { __ws: string[] } };
+  assert.ok(ast.raws, 'standard schema in raws mode must attach .raws');
+  assert.ok(Array.isArray(ast.raws.__ws), '.raws.__ws must be an array');
+  assert.equal(ast.raws.__ws.length, 2, 'two inter-span gaps for [k, "=", v]');
+
+  // Fast mode: same input, no .raws.
+  const astFast = mod.render('a=b', { target: 'ast', mode: 'fast' }) as { raws?: unknown };
+  assert.equal(astFast.raws, undefined, 'fast mode must not attach .raws');
+});
+
+test('layer 2: standard schema emits gated raws-attach with namespaced payload', () => {
+  const code = generateParser(standardSchema);
+  // Runtime gate + namespaced `raws: { __ws, __litPres, … }` wrapper.
+  assert.match(code, /captures\.__ws != null \? Object\.assign\(/);
+  assert.match(code, /\{ raws: \{ __ws: captures\.__ws, __litPres: captures\.__litPres/);
+});
+
+test('layer 2: preserve schema keeps top-level __ws attach (no behaviour change)', () => {
+  const code = generateParser(preserveSchema);
+  // Preserve schemas: unconditional Object.assign, top-level keys, NO
+  // `raws: {` namespace.
+  assert.match(code, /Object\.assign\(/);
+  assert.match(code, /\{ __ws: captures\.__ws, __litPres: captures\.__litPres/);
+  assert.doesNotMatch(code, /raws: \{ __ws: captures\.__ws/);
 });

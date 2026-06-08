@@ -527,7 +527,7 @@ function parseCron(state: State): unknown {
 const __defaultTarget: string | undefined = undefined;
 
 function __build_CronField_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "wildcard" };
+  return (captures.__ws != null ? Object.assign({ type: "wildcard" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "wildcard" });
 }
 
 function __build_CronField_0_source(captures: any, __indentCol: number = 0): any {
@@ -535,7 +535,7 @@ function __build_CronField_0_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_CronField_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "step", step: __renderSlot_ast(captures.step, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "step", step: __renderSlot_ast(captures.step, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "step", step: __renderSlot_ast(captures.step, __indentCol) });
 }
 
 function __build_CronField_1_source(captures: any, __indentCol: number = 0): any {
@@ -543,7 +543,7 @@ function __build_CronField_1_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_CronField_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "value", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "value", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "value", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_CronField_2_source(captures: any, __indentCol: number = 0): any {
@@ -551,7 +551,7 @@ function __build_CronField_2_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_CronField_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "range", start: __renderSlot_ast(captures.start, __indentCol), end: __renderSlot_ast(captures.end, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "range", start: __renderSlot_ast(captures.start, __indentCol), end: __renderSlot_ast(captures.end, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "range", start: __renderSlot_ast(captures.start, __indentCol), end: __renderSlot_ast(captures.end, __indentCol) });
 }
 
 function __build_CronField_3_source(captures: any, __indentCol: number = 0): any {
@@ -567,7 +567,7 @@ function __build_CommandWord_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_Command_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "command", words: __renderSlot_ast(captures.words, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "command", words: __renderSlot_ast(captures.words, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "command", words: __renderSlot_ast(captures.words, __indentCol) });
 }
 
 function __build_Command_0_source(captures: any, __indentCol: number = 0): any {
@@ -575,7 +575,7 @@ function __build_Command_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Cron_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "cron", minute: __renderSlot_ast(captures.minute, __indentCol), hour: __renderSlot_ast(captures.hour, __indentCol), dayOfMonth: __renderSlot_ast(captures.dayOfMonth, __indentCol), month: __renderSlot_ast(captures.month, __indentCol), dayOfWeek: __renderSlot_ast(captures.dayOfWeek, __indentCol), command: __renderSlot_ast(captures.command, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "cron", minute: __renderSlot_ast(captures.minute, __indentCol), hour: __renderSlot_ast(captures.hour, __indentCol), dayOfMonth: __renderSlot_ast(captures.dayOfMonth, __indentCol), month: __renderSlot_ast(captures.month, __indentCol), dayOfWeek: __renderSlot_ast(captures.dayOfWeek, __indentCol), command: __renderSlot_ast(captures.command, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "cron", minute: __renderSlot_ast(captures.minute, __indentCol), hour: __renderSlot_ast(captures.hour, __indentCol), dayOfMonth: __renderSlot_ast(captures.dayOfMonth, __indentCol), month: __renderSlot_ast(captures.month, __indentCol), dayOfWeek: __renderSlot_ast(captures.dayOfWeek, __indentCol), command: __renderSlot_ast(captures.command, __indentCol) });
 }
 
 function __build_Cron_0_source(captures: any, __indentCol: number = 0): any {

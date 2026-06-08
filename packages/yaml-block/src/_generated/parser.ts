@@ -644,7 +644,7 @@ function __build_YamlScalar_0_source(captures: any, __indentCol: number = 0): an
 }
 
 function __build_YamlMappingEntry_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "entry", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "entry", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "entry", key: __renderSlot_ast(captures.key, __indentCol), value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_YamlMappingEntry_0_source(captures: any, __indentCol: number = 0): any {
@@ -652,7 +652,7 @@ function __build_YamlMappingEntry_0_source(captures: any, __indentCol: number = 
 }
 
 function __build_YamlMapping_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) });
 }
 
 function __build_YamlMapping_0_source(captures: any, __indentCol: number = 0): any {
@@ -660,7 +660,7 @@ function __build_YamlMapping_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_YamlSequenceItem_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "item", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "item", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "item", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_YamlSequenceItem_0_source(captures: any, __indentCol: number = 0): any {
@@ -668,7 +668,7 @@ function __build_YamlSequenceItem_0_source(captures: any, __indentCol: number = 
 }
 
 function __build_YamlSequence_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) });
 }
 
 function __build_YamlSequence_0_source(captures: any, __indentCol: number = 0): any {

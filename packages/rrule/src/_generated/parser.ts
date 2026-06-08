@@ -1326,7 +1326,7 @@ function __build_NumValue_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Part_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "bymonthday", days: __renderSlot_ast(captures.days, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "bymonthday", days: __renderSlot_ast(captures.days, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, days_iws: captures.days_iws } }) : { type: "bymonthday", days: __renderSlot_ast(captures.days, __indentCol) });
 }
 
 function __build_Part_0_source(captures: any, __indentCol: number = 0): any {
@@ -1334,7 +1334,7 @@ function __build_Part_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "bymonth", months: __renderSlot_ast(captures.months, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "bymonth", months: __renderSlot_ast(captures.months, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, months_iws: captures.months_iws } }) : { type: "bymonth", months: __renderSlot_ast(captures.months, __indentCol) });
 }
 
 function __build_Part_1_source(captures: any, __indentCol: number = 0): any {
@@ -1342,7 +1342,7 @@ function __build_Part_1_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "byminute", minutes: __renderSlot_ast(captures.minutes, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "byminute", minutes: __renderSlot_ast(captures.minutes, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, minutes_iws: captures.minutes_iws } }) : { type: "byminute", minutes: __renderSlot_ast(captures.minutes, __indentCol) });
 }
 
 function __build_Part_2_source(captures: any, __indentCol: number = 0): any {
@@ -1350,7 +1350,7 @@ function __build_Part_2_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "byhour", hours: __renderSlot_ast(captures.hours, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "byhour", hours: __renderSlot_ast(captures.hours, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, hours_iws: captures.hours_iws } }) : { type: "byhour", hours: __renderSlot_ast(captures.hours, __indentCol) });
 }
 
 function __build_Part_3_source(captures: any, __indentCol: number = 0): any {
@@ -1358,7 +1358,7 @@ function __build_Part_3_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_4_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "byday", days: __renderSlot_ast(captures.days, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "byday", days: __renderSlot_ast(captures.days, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, days_iws: captures.days_iws } }) : { type: "byday", days: __renderSlot_ast(captures.days, __indentCol) });
 }
 
 function __build_Part_4_source(captures: any, __indentCol: number = 0): any {
@@ -1366,7 +1366,7 @@ function __build_Part_4_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_5_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "freq", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "freq", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "freq", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Part_5_source(captures: any, __indentCol: number = 0): any {
@@ -1374,7 +1374,7 @@ function __build_Part_5_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_6_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "count", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "count", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "count", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Part_6_source(captures: any, __indentCol: number = 0): any {
@@ -1382,7 +1382,7 @@ function __build_Part_6_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_7_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "interval", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "interval", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "interval", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Part_7_source(captures: any, __indentCol: number = 0): any {
@@ -1390,7 +1390,7 @@ function __build_Part_7_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_8_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "until", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "until", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "until", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Part_8_source(captures: any, __indentCol: number = 0): any {
@@ -1398,7 +1398,7 @@ function __build_Part_8_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Part_9_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "wkst", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "wkst", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "wkst", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_Part_9_source(captures: any, __indentCol: number = 0): any {
@@ -1406,7 +1406,7 @@ function __build_Part_9_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Rule_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "rule", parts: __renderSlot_ast(captures.parts, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "rule", parts: __renderSlot_ast(captures.parts, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, parts_iws: captures.parts_iws } }) : { type: "rule", parts: __renderSlot_ast(captures.parts, __indentCol) });
 }
 
 function __build_Rule_0_source(captures: any, __indentCol: number = 0): any {

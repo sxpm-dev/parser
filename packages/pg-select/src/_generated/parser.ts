@@ -759,7 +759,7 @@ function parseSelect(state: State): unknown {
 const __defaultTarget: string | undefined = "ast";
 
 function __build_ColumnRef_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "wildcard" };
+  return (captures.__ws != null ? Object.assign({ type: "wildcard" }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "wildcard" });
 }
 
 function __build_ColumnRef_0_source(captures: any, __indentCol: number = 0): any {
@@ -767,7 +767,7 @@ function __build_ColumnRef_0_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_ColumnRef_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "column", name: __renderSlot_ast(captures.name, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "column", name: __renderSlot_ast(captures.name, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "column", name: __renderSlot_ast(captures.name, __indentCol) });
 }
 
 function __build_ColumnRef_1_source(captures: any, __indentCol: number = 0): any {
@@ -775,7 +775,7 @@ function __build_ColumnRef_1_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_LiteralValue_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "number", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "number", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "number", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_LiteralValue_0_source(captures: any, __indentCol: number = 0): any {
@@ -783,7 +783,7 @@ function __build_LiteralValue_0_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_LiteralValue_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "string", value: __renderSlot_ast(captures.value, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "string", value: __renderSlot_ast(captures.value, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "string", value: __renderSlot_ast(captures.value, __indentCol) });
 }
 
 function __build_LiteralValue_1_source(captures: any, __indentCol: number = 0): any {
@@ -839,7 +839,7 @@ function __build_Operator_5_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Predicate_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "predicate", col: __renderSlot_ast(captures.col, __indentCol), op: __renderSlot_ast(captures.op, __indentCol), val: __renderSlot_ast(captures.val, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "predicate", col: __renderSlot_ast(captures.col, __indentCol), op: __renderSlot_ast(captures.op, __indentCol), val: __renderSlot_ast(captures.val, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "predicate", col: __renderSlot_ast(captures.col, __indentCol), op: __renderSlot_ast(captures.op, __indentCol), val: __renderSlot_ast(captures.val, __indentCol) });
 }
 
 function __build_Predicate_0_source(captures: any, __indentCol: number = 0): any {
@@ -847,7 +847,7 @@ function __build_Predicate_0_source(captures: any, __indentCol: number = 0): any
 }
 
 function __build_Select_0_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, columns_iws: captures.columns_iws } }) : { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol) });
 }
 
 function __build_Select_0_source(captures: any, __indentCol: number = 0): any {
@@ -855,7 +855,7 @@ function __build_Select_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Select_1_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, columns_iws: captures.columns_iws } }) : { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol) });
 }
 
 function __build_Select_1_source(captures: any, __indentCol: number = 0): any {
@@ -863,7 +863,7 @@ function __build_Select_1_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Select_2_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, columns_iws: captures.columns_iws } }) : { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) });
 }
 
 function __build_Select_2_source(captures: any, __indentCol: number = 0): any {
@@ -871,7 +871,7 @@ function __build_Select_2_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Select_3_ast(captures: any, __indentCol: number = 0): any {
-  return { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) };
+  return (captures.__ws != null ? Object.assign({ type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, columns_iws: captures.columns_iws } }) : { type: "select", columns: __renderSlot_ast(captures.columns, __indentCol), table: __renderSlot_ast(captures.table, __indentCol), where: __renderSlot_ast(captures.where, __indentCol), limit: __renderSlot_ast(captures.limit, __indentCol) });
 }
 
 function __build_Select_3_source(captures: any, __indentCol: number = 0): any {

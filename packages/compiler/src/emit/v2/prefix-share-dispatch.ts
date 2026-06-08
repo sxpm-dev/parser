@@ -120,8 +120,18 @@ export function detectPrefixShare(info: NodeTypeInfo): PrefixShare | null {
  *  arbitrary skipCount instead of shared-dispatch's discriminatorIdx + 1.
  *  Produces the EmitProductionOptions.prefix payload that makes a production
  *  body emit as a TAIL (skipCount spans dropped from its head, the named
- *  captures forwarded as parameters). */
-export function buildPrefixShareOption(production: Production, skipCount: number) {
+ *  captures forwarded as parameters).
+ *
+ *  Phase 4c v5 (roadmap leftover #2): when the schema would emit ws/litPres
+ *  capture for a full-body production, the dispatcher pre-allocates them and
+ *  the tail receives them by parameter so its inter-suffix-span gaps land
+ *  in the same array. `wsCaptureMode` is set to the same value SpanContext
+ *  would have chosen, so the tail's pushes use the matching gating. */
+export function buildPrefixShareOption(
+  production: Production,
+  skipCount: number,
+  schema: InferredSchema,
+) {
   const valueParams = new Map<string, string>();
   const startOffParams = new Map<string, string>();
   const endOffParams = new Map<string, string>();
@@ -132,11 +142,14 @@ export function buildPrefixShareOption(production: Production, skipCount: number
     startOffParams.set(span.name, `${span.name}__start`);
     endOffParams.set(span.name, `${span.name}__end`);
   }
+  const wsCaptureMode: 'always' | 'raws-only' =
+    schema.whitespace === 'preserve' ? 'always' : 'raws-only';
   return {
     skipCount,
     valueParams,
     startOffParams,
     endOffParams,
+    wsCaptureMode,
   } as const;
 }
 
@@ -200,6 +213,14 @@ export function emitPrefixShareDispatcher(
     const s = prefixProd.spans[i]!;
     if (s.name) referencedValueSpans.add(s.name);
   }
+  const preserveWs = schema.whitespace === 'preserve';
+  const rawsCapture = !preserveWs;
+  // Phase 4c v5 (roadmap leftover #2). The dispatcher now matches the
+  // full-body production's wsCaptureMode so inter-prefix-span trivia
+  // is captured. The alt tails receive the partial arrays and continue
+  // pushing into them, so the rebuild sees one contiguous __ws array
+  // spanning prefix + suffix.
+  const wsCaptureMode: 'always' | 'raws-only' = preserveWs ? 'always' : 'raws-only';
   const ctx: SpanContext = {
     entryOffVar: 'entryOff',
     raws: false,
@@ -210,14 +231,8 @@ export function emitPrefixShareDispatcher(
     knownBytes: computeKnownLeadingBytes(schema),
     symbolPrefix: schema.symbolPrefix,
     operatorLiterals: schema.operatorLiterals,
-    preserveWs: schema.whitespace === 'preserve',
-    // The prefix-share dispatcher emits prefix spans inline before
-    // dispatching to alt tails — it doesn't return a captures object
-    // with __ws / __litPres of its own. Preserve schemas keep their
-    // 'always' behavior so iws sites still emit; standard schemas
-    // stay at 'none' here (Layer 1 raws-only capture is opted in by
-    // emitProduction, not by this dispatcher).
-    wsCaptureMode: schema.whitespace === 'preserve' ? 'always' : 'none',
+    preserveWs,
+    wsCaptureMode,
     lineCommentMarkers,
     referencedValueSpans,
   };
@@ -235,6 +250,17 @@ export function emitPrefixShareDispatcher(
   lines.push(`let off = state.pos;`);
   lines.push(`const entryOff = off;`);
   lines.push(_skipWsBlock());
+  // Phase 4c v5: declare the partial __ws / __litPres arrays. The
+  // dispatcher pushes inter-prefix-span gaps into them; the alt tails
+  // receive them as parameters and continue pushing inter-suffix-span
+  // gaps, so the rebuild reads a single concatenated trivia array.
+  if (preserveWs) {
+    lines.push(`const __ws: string[] = [];`);
+    lines.push(`const __litPres: boolean[] = [];`);
+  } else {
+    lines.push(`const __ws: string[] | null = state.mode === 'raws' ? [] : null;`);
+    lines.push(`const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;`);
+  }
 
   for (let i = 0; i < share.prefixLen; i++) {
     const span = prefixProd.spans[i]!;
@@ -244,10 +270,36 @@ export function emitPrefixShareDispatcher(
       const interSpanSkip = tokenClasses.has('comment') && !consumesData && !isOptional
         ? skipWsAndCommentsBlock(lineCommentMarkers)
         : _skipWsBlock();
+      // Snapshot the offset before the gap and push the slice after.
+      // Mirrors production.ts's full-body emit so the resulting __ws
+      // array shape is indistinguishable from the unfactored path.
+      lines.push(`const __wsStart_${i} = off;`);
       lines.push(interSpanSkip);
+      if (preserveWs) {
+        lines.push(`__ws.push(input.slice(__wsStart_${i}, off));`);
+      } else {
+        lines.push(`if (__ws !== null) __ws.push(input.slice(__wsStart_${i}, off));`);
+      }
+    }
+    // Unnamed optional literals contribute a __litPres entry. Rare in
+    // prefix-share but mirror the production.ts shape for parity.
+    const isUnnamedOptLit =
+      span.name === undefined &&
+      span.class === 'literal' &&
+      hasModifier(span, 'optional');
+    if (isUnnamedOptLit) {
+      lines.push(`const __litPre_${i} = off;`);
     }
     lines.push(emitSpan(span, ctx, bindings));
+    if (isUnnamedOptLit) {
+      if (preserveWs) {
+        lines.push(`__litPres.push(off > __litPre_${i});`);
+      } else {
+        lines.push(`if (__litPres !== null) __litPres.push(off > __litPre_${i});`);
+      }
+    }
   }
+  void rawsCapture;
 
   lines.push(`state.pos = off;`);
   lines.push(`if (off > state.maxOff) state.maxOff = off;`);
@@ -307,6 +359,10 @@ export function emitPrefixShareDispatcher(
     }
     tailArgList.push(endLocal);
   }
+  // Pass the partial trivia arrays last. Order MUST match the parameter
+  // order emitted by emitProduction (production.ts) when its prefix opt
+  // carries wsCaptureMode.
+  tailArgList.push('__ws', '__litPres');
   const tailArgs = tailArgList.join(', ');
 
   // Group alts by suffix head. Within a group, longest-suffix (most spans)

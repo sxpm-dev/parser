@@ -1306,8 +1306,14 @@ function parseRepeatsSpan(
 
   if (indentPushed) state.indentStack.pop();
 
-  // Trailing-separator policy.
+  // Trailing-separator policy. Phase 4c v5: when the final sep-sweep
+  // consumed only ws (no sep), the trailing ws belongs to the parent's
+  // inter-span gap. Rewinding here keeps state.pos at the end of the
+  // last consumed item; the parent's next-span leading ws-skip eats the
+  // same bytes (fast-mode parity) and captures.__ws records them
+  // accurately (raws-mode byte-exactness).
   const trailing = repeats.trailing ?? 'allowed';
+  if (sep !== undefined && !sepConsumed) state.pos = preSweep;
   if (sep !== undefined && trailing === 'forbidden') {
     if (sepConsumed) state.pos = preSweep;
   }

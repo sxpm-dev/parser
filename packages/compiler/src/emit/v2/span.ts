@@ -593,6 +593,18 @@ while (${literalMatchExpr(sep, 'off')}) {
   //     before exit did NOT consume a sep, the last item lacks its required
   //     trailing sep → fail the production.
   const trailingChecks: string[] = [];
+  // Phase 4c v5 (roadmap leftover #2 follow-up): when the loop exits
+  // and the most recent sep-sweep consumed only whitespace (no sep, no
+  // item followed), the consumed ws belongs to the parent's inter-span
+  // gap — not to this repeats span. Without the rewind, captures.__ws
+  // for that gap is the empty string and raws-mode stringify loses
+  // bytes. Fast mode is unaffected: off only shifts BACK, so the next
+  // span's leading ws-skip eats the same bytes; the canonical-sep
+  // fallback already produces the right output. Sep-bearing path only;
+  // sep-less repeats don't have the __preSweep/__sepConsumed locals.
+  if (sep !== undefined) {
+    trailingChecks.push(`if (!__sepConsumed) { off = __preSweep; }`);
+  }
   if (sep !== undefined && trailing === 'forbidden') {
     trailingChecks.push(`if (__sepConsumed) { off = __preSweep; }`);
   }

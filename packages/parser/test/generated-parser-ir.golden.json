@@ -4,11 +4,11 @@
   "packages": {
     "css": {
       "path": "packages/css/src/_generated/parser.ts",
-      "sha256": "f91845aebb010ffc9a5dbbd42c80f3fa95ea9f6eba497e6333a788e1efff7d3d"
+      "sha256": "027618a1fd809f176333ecf1190fc70233386138d09b7dd7c9ad6fa81dc0e047"
     },
     "html": {
       "path": "packages/html/src/_generated/parser.ts",
-      "sha256": "8bad3111201026bd7860c005a10c7354ca374f99372a388175f971bc57855dc0"
+      "sha256": "21f4fafe0f687ada6ee51ddba55bf7f92fe95b4a0493d48f4db5e777cca8b3ee"
     },
     "markdown": {
       "path": "packages/markdown/src/_generated/parser.ts",

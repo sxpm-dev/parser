@@ -686,6 +686,7 @@ function parsePart__alt0(state: State): unknown {
     __days_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (days.length < 1) { state.pos = entryOff; return null; }
   const __days_end = off;
   state.pos = off;
@@ -745,6 +746,7 @@ function parsePart__alt1(state: State): unknown {
     __months_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (months.length < 1) { state.pos = entryOff; return null; }
   const __months_end = off;
   state.pos = off;
@@ -804,6 +806,7 @@ function parsePart__alt2(state: State): unknown {
     __minutes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (minutes.length < 1) { state.pos = entryOff; return null; }
   const __minutes_end = off;
   state.pos = off;
@@ -863,6 +866,7 @@ function parsePart__alt3(state: State): unknown {
     __hours_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (hours.length < 1) { state.pos = entryOff; return null; }
   const __hours_end = off;
   state.pos = off;
@@ -922,6 +926,7 @@ function parsePart__alt4(state: State): unknown {
     __days_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (days.length < 1) { state.pos = entryOff; return null; }
   const __days_end = off;
   state.pos = off;
@@ -1191,6 +1196,7 @@ function parseRule(state: State): unknown {
     __parts_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   if (parts.length < 1) { state.pos = entryOff; return null; }
   const __parts_end = off;
   state.pos = off;

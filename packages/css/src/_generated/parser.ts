@@ -2546,6 +2546,7 @@ function parseRule(state: State): unknown {
     __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   const __nodes_end = off;
   const __wsStart_3 = off;
   while (off < len) {
@@ -2808,6 +2809,7 @@ function parseAtRule__alt0(state: State): unknown {
     __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   const __nodes_end = off;
   const __wsStart_5 = off;
   while (off < len) {
@@ -3089,6 +3091,7 @@ function parseStylesheet(state: State): unknown {
     __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   const __nodes_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;

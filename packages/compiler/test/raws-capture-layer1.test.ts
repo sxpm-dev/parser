@@ -196,3 +196,72 @@ test('layer 3: stringify round-trips byte-exact in raws mode for standard schema
   const outFast = mod.stringify(astFast, { target: 'ast' });
   assert.equal(outFast, 'a = b', 'fast mode must canonicalise inter-token whitespace');
 });
+
+// Phase 4c v5 — raws sidecar for productions that route through the
+// prefix-share dispatcher (detectPrefixShare). The dispatcher emits the
+// shared prefix spans inline before tail-dispatching to each alt; until
+// now those inter-prefix-span ws gaps were not captured because the
+// dispatcher ran with `wsCaptureMode: 'none'`. Roadmap leftover #2.
+const prefixShareSchema = defineSchema({
+  rootType: 'Q',
+  punctuators: { from: 'FROM', where: 'WHERE' },
+  examples: [
+    relation('Q', {
+      input: 'SELECT a FROM t',
+      encodings: {
+        src: parse([
+          literal('SELECT'),
+          span('cols', 'a').ident(),
+          literal('FROM'),
+          span('table', 't').ident(),
+        ]),
+        ast: { type: 'q', cols: $.cols, table: $.table },
+      },
+    }),
+    relation('Q', {
+      input: 'SELECT a FROM t WHERE x',
+      encodings: {
+        src: parse([
+          literal('SELECT'),
+          span('cols', 'a').ident(),
+          literal('FROM'),
+          span('table', 't').ident(),
+          literal('WHERE'),
+          span('pred', 'x').ident(),
+        ]),
+        ast: { type: 'q', cols: $.cols, table: $.table, pred: $.pred },
+      },
+    }),
+  ],
+});
+
+test('layer 3+prefix-share: standard schema in raws mode round-trips inter-prefix-span trivia byte-exact', async () => {
+  const { writeFileSync, mkdirSync } = await import('node:fs');
+  const { dirname, resolve } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = dirname(fileURLToPath(import.meta.url));
+  const outDir = resolve(here, '.raws-prefix-share-tmp');
+  mkdirSync(outDir, { recursive: true });
+  const code = generateParser(prefixShareSchema);
+  const outPath = resolve(outDir, 'parser.ts');
+  writeFileSync(outPath, code);
+  const mod = (await import(outPath)) as {
+    render: (input: string, opts: { target: string; mode?: string }) => unknown;
+    stringify: (value: unknown, opts: { target: string }) => string;
+  };
+
+  // Empty-suffix alt: every gap belongs to the prefix path.
+  // WHERE-suffix alt: the first gap is the inter-prefix-suffix ws,
+  // owned by the tail body but its index lives in the same __ws array.
+  for (const input of [
+    'SELECT a FROM t',
+    'SELECT  a  FROM  t',
+    'SELECT\ta\tFROM\tt',
+    'SELECT a FROM t WHERE x',
+    'SELECT  a  FROM  t  WHERE  x',
+  ]) {
+    const ast = mod.render(input, { target: 'ast', mode: 'raws' });
+    const out = mod.stringify(ast, { target: 'ast' });
+    assert.equal(out, input, `prefix-share raws round-trip lost trivia for ${JSON.stringify(input)}`);
+  }
+});

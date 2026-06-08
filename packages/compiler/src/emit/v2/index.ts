@@ -435,7 +435,7 @@ function emitNodeType(info: NodeTypeInfo, schema: InferredSchema): string {
     if (shared !== null) {
       prefixOpt = buildPrefixOption(info.productions[i]!, shared);
     } else if (prefixShare !== null) {
-      prefixOpt = buildPrefixShareOption(info.productions[i]!, prefixShare.prefixLen);
+      prefixOpt = buildPrefixShareOption(info.productions[i]!, prefixShare.prefixLen, schema);
     }
     altFns.push(emitProduction(info.name, info.productions[i]!, schema, {
       fnName: `${parseFnName(schema, info.name)}__alt${i}`,

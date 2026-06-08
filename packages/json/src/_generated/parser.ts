@@ -577,6 +577,7 @@ function parseJsonArray(state: State): unknown {
     __items_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   const __items_end = off;
   const __wsStart_2 = off;
   while (off < len) {
@@ -864,6 +865,7 @@ function parseJsonObject(state: State): unknown {
     __entries_prevItemEnd = off;
     if (off === __loopStart) break;
   }
+  if (!__sepConsumed) { off = __preSweep; }
   const __entries_end = off;
   const __wsStart_2 = off;
   while (off < len) {

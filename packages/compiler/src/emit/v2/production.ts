@@ -54,6 +54,18 @@ export type EmitProductionOptions = {
     readonly startOffParams: ReadonlyMap<string, string>;
     /** Captured-name → parameter expression for source-end offsets. */
     readonly endOffParams: ReadonlyMap<string, string>;
+    /** When defined, the dispatcher has already emitted (and partially
+     *  populated) `__ws` and `__litPres` arrays for the inter-prefix-span
+     *  gaps and is passing them in as additional parameters. The tail body
+     *  must NOT re-declare them — it continues pushing into the same
+     *  arrays for its own inter-suffix-span gaps so the rebuild reads a
+     *  single concatenated trivia array spanning prefix+suffix.
+     *  Mode mirrors SpanContext.wsCaptureMode:
+     *    - 'always' → preserve schemas (eager push)
+     *    - 'raws-only' → standard schemas (lazy alloc, gated push)
+     *  Undefined means the dispatcher elected not to capture (e.g. tail-
+     *  mode-only legacy paths). */
+    readonly wsCaptureMode?: 'always' | 'raws-only';
   };
 };
 
@@ -135,11 +147,14 @@ export function emitProduction(
     //                 `state.mode === 'raws'`. Fast mode pays a predicted
     //                 branch per gap (~1 cycle, negligible) and skips the
     //                 slice + array push entirely.
-    // - 'none'      → tail-mode bodies (shared-dispatch alts). Shared-
-    //                 dispatch consumes a literal prefix; raws semantics
-    //                 don't apply there. Matches the prior tail-mode rule.
+    // - 'none'      → tail-mode bodies (shared-dispatch K=1 alts) when the
+    //                 dispatcher did NOT pre-allocate ws arrays. Prefix-
+    //                 share dispatchers DO pre-allocate (Phase 4c v5,
+    //                 roadmap leftover #2): the tail's wsCaptureMode then
+    //                 mirrors what the dispatcher chose so push sites stay
+    //                 consistent across the dispatcher → tail boundary.
     wsCaptureMode: prefix
-      ? 'none'
+      ? (prefix.wsCaptureMode ?? 'none')
       : schema.whitespace === 'preserve' ? 'always' : 'raws-only',
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
@@ -227,9 +242,15 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
   // `__ws` so the rebuild emit can re-emit the exact bytes between
   // pieces (instead of the canonical single-space separator used for
   // 'standard'). Tail-mode bodies (prefix !== undefined) skip __ws
-  // capture: shared-dispatch alts always consume a literal prefix that
-  // 'preserve' semantics don't make sense for.
-  const preserveWs = schema.whitespace === 'preserve' && !prefix;
+  // capture: shared-dispatch K=1 alts (no inherited ws arrays) always
+  // consume a literal prefix that 'preserve' semantics don't make sense
+  // for. Prefix-share alts inherit the dispatcher's arrays via
+  // `prefix.wsCaptureMode` and keep the same capture mode the dispatcher
+  // chose, so their inter-suffix pushes append into the parent arrays.
+  const inheritedWsMode = prefix?.wsCaptureMode;
+  const preserveWs =
+    inheritedWsMode === 'always' ||
+    (schema.whitespace === 'preserve' && !prefix);
   // Raws-only capture: emit the same __ws / __litPres machinery for
   // 'standard'-whitespace schemas in non-tail-mode bodies, but defer
   // allocation + each push behind a runtime check on state.mode. Fast
@@ -237,23 +258,30 @@ ${indent(lines.filter((l) => l !== '').join('\n'), 1)}
   // arrays so the AST builder (Layer 2 of the raws-sidecar plan) can
   // attach them to nodes. See docs/superpowers/plans/2026-06-08-raws-
   // sidecar.md.
-  const rawsCapture = !preserveWs && !prefix;
+  const rawsCapture =
+    inheritedWsMode === 'raws-only' ||
+    (!preserveWs && !prefix);
   const wsCapture = preserveWs || rawsCapture;
-  if (preserveWs) {
-    lines.push(`const __ws: string[] = [];`);
-    // Phase 4c v2: presence tracking for unnamed optional literal spans.
-    // Their `if (match) off += len` emit doesn't expose a JS-visible
-    // presence bit anywhere, so the rebuild can't tell whether to
-    // re-emit the literal. We wrap each one with an off snapshot +
-    // post-check that pushes the bool into __litPres; the rebuild
-    // reads __litPres[i] to gate the literal piece.
-    lines.push(`const __litPres: boolean[] = [];`);
-  } else if (rawsCapture) {
-    // Lazy allocation: null in fast mode so V8 can stay monomorphic on
-    // the null branch. Allocation only kicks in when render is called
-    // with `mode: 'raws'`.
-    lines.push(`const __ws: string[] | null = state.mode === 'raws' ? [] : null;`);
-    lines.push(`const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;`);
+  // Re-declare the local arrays ONLY for the full-body path. Tail
+  // bodies with inherited ws arrays receive them as parameters and
+  // continue pushing into the same instance.
+  if (!inheritedWsMode) {
+    if (preserveWs) {
+      lines.push(`const __ws: string[] = [];`);
+      // Phase 4c v2: presence tracking for unnamed optional literal spans.
+      // Their `if (match) off += len` emit doesn't expose a JS-visible
+      // presence bit anywhere, so the rebuild can't tell whether to
+      // re-emit the literal. We wrap each one with an off snapshot +
+      // post-check that pushes the bool into __litPres; the rebuild
+      // reads __litPres[i] to gate the literal piece.
+      lines.push(`const __litPres: boolean[] = [];`);
+    } else if (rawsCapture) {
+      // Lazy allocation: null in fast mode so V8 can stay monomorphic on
+      // the null branch. Allocation only kicks in when render is called
+      // with `mode: 'raws'`.
+      lines.push(`const __ws: string[] | null = state.mode === 'raws' ? [] : null;`);
+      lines.push(`const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;`);
+    }
   }
 
   const spans = production.spans;
@@ -369,12 +397,22 @@ return ${fastCaptures};`
 return ${fastCaptures};`;
   lines.push(returnBlock);
 
+  // When the dispatcher provided pre-allocated __ws / __litPres arrays
+  // (prefix.wsCaptureMode set), append them as the final two parameters.
+  // The dispatcher-side argument list (in prefix-share-dispatch.ts) must
+  // match this order verbatim.
+  const wsArrayParams = inheritedWsMode
+    ? inheritedWsMode === 'always'
+      ? ', __ws: string[], __litPres: boolean[]'
+      : ', __ws: string[] | null, __litPres: boolean[] | null'
+    : '';
   const extraParams = prefix
     ? [
         ', entryOff: number',
         ...[...prefix.valueParams.keys()].map((name) => `, ${name}: string`),
         ...[...prefix.startOffParams.keys()].map((name) => `, ${startOffParamName(name)}: number`),
         ...[...prefix.endOffParams.keys()].map((name) => `, ${endOffParamName(name)}: number`),
+        wsArrayParams,
       ].join('')
     : '';
   let body = indent(lines.filter((l) => l !== '').join('\n'), 1);

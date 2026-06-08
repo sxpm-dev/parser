@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { render, stringify, validate } from '../src/index.ts';
+import { render as renderRaws } from '../src/_generated/parser.ts';
 
 function strip(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(strip);
@@ -137,6 +138,29 @@ test('stringify(ast) rebuilds a SELECT for single-column ASTs', () => {
   ]) {
     const value = render(input, { target: 'ast' });
     assert.equal(stringify(value, { target: 'ast' }), input);
+  }
+});
+
+test('raws-mode round-trip preserves inter-prefix-span trivia byte-exactly', () => {
+  // pg-select's Select node routes through the prefix-share dispatcher
+  // (shared `[SELECT, columns, FROM, table]` prefix across the four
+  // WHERE/LIMIT alts). Before roadmap leftover #2, the dispatcher
+  // emitted those inter-prefix-span ws-skips without capturing the
+  // bytes, so 'SELECT  *  FROM  users' lost its multi-space gaps in
+  // raws mode. After: __ws is allocated in the dispatcher, partially
+  // filled across the prefix, threaded into the alt tail by parameter,
+  // and the tail extends it for suffix gaps.
+  for (const input of [
+    'SELECT * FROM users',
+    'SELECT  *  FROM  users',
+    'SELECT\t*\tFROM\tusers',
+    'SELECT * FROM users WHERE id = 42',
+    'SELECT  *  FROM  users  WHERE  id  =  42',
+    'SELECT * FROM users LIMIT 10',
+    'SELECT * FROM users WHERE id = 42 LIMIT 10',
+  ]) {
+    const value = renderRaws(input, { target: 'ast', mode: 'raws' });
+    assert.equal(stringify(value, { target: 'ast' }), input, `raws round-trip lost trivia for ${JSON.stringify(input)}`);
   }
 });
 

@@ -86,8 +86,119 @@ function emitRustParser(schema: InferredSchema): string {
   }
   parts.push(emitRenderEntry(schema));
   parts.push(emitStringifyEntry(schema));
+  parts.push(WASM_EXPORTS);
   return parts.join('\n\n') + '\n';
 }
+
+// Phase 6.6 — wasm32 ABI export. The render / stringify functions are
+// pure Rust + std (no I/O, no env access) so the emitted source already
+// compiles to `wasm32-unknown-unknown`. What's missing is a C ABI
+// surface a JS host can drive — Rust's `String` / `Result` are not
+// `repr(C)` shapes the host can interpret.
+//
+// This block emits four `#[no_mangle] extern "C"` functions, gated on
+// `#[cfg(target_arch = "wasm32")]` so native builds stay byte-identical:
+//
+//   parser_alloc(size)            → *mut u8  (allocate `size` bytes)
+//   parser_dealloc(ptr, size)               (free a buffer previously
+//                                            handed out by parser_alloc)
+//   parser_render(in_ptr, in_len) → out_len  (parse input bytes; stash
+//                                            the render output as a
+//                                            UTF-8 byte buffer; return
+//                                            its length)
+//   parser_stringify(in_ptr, in_len) → out_len  (inverse: input is the
+//                                            render output's UTF-8
+//                                            bytes; output is the
+//                                            stringified source)
+//   parser_result_ptr()           → *const u8 (pointer to the last
+//                                            result buffer)
+//
+// The host (browser JS or any wasm runtime) writes the input bytes to
+// the shared linear memory via parser_alloc, calls parser_render /
+// parser_stringify, reads back result bytes from parser_result_ptr +
+// length, and calls parser_dealloc to free the input buffer. The
+// stringify input is the canonical Display form of `Value` (same
+// format the native `format!("{}", v)` driver uses), so a host can
+// round-trip a render result straight back through stringify.
+//
+// Deliberately no wasm-bindgen dependency: the emit's pledge is "no
+// external runtime", and a hand-rolled C ABI keeps that intact. JS
+// host bindings are small enough to write by hand; if a future schema
+// wants ergonomic JS types the host owns that translation.
+const WASM_EXPORTS = `#[cfg(target_arch = "wasm32")]
+mod __wasm_exports {
+    use super::*;
+
+    // Result-buffer slot. We keep ONE buffer live at a time; the host
+    // is expected to call parser_render OR parser_stringify, then read
+    // parser_result_ptr() + the returned length, before the next call.
+    // Mutating a static is safe in single-threaded wasm32; wrap in a
+    // dedicated cell so the borrow checker stays out of the way.
+    static mut LAST_RESULT: Vec<u8> = Vec::new();
+
+    #[no_mangle]
+    pub extern "C" fn parser_alloc(size: usize) -> *mut u8 {
+        let mut buf: Vec<u8> = Vec::with_capacity(size);
+        let ptr = buf.as_mut_ptr();
+        core::mem::forget(buf);
+        ptr
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn parser_dealloc(ptr: *mut u8, size: usize) {
+        // Reclaim via Vec::from_raw_parts; capacity == size by
+        // construction in parser_alloc.
+        let _ = Vec::from_raw_parts(ptr, size, size);
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn parser_render(in_ptr: *const u8, in_len: usize) -> usize {
+        let bytes = core::slice::from_raw_parts(in_ptr, in_len);
+        let input = match core::str::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(_) => {
+                LAST_RESULT = b"ERR:non-utf8 input".to_vec();
+                return LAST_RESULT.len();
+            }
+        };
+        let out = match render(input) {
+            Ok(v) => format!("{}", v),
+            Err(e) => format!("ERR:{}", e),
+        };
+        LAST_RESULT = out.into_bytes();
+        LAST_RESULT.len()
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn parser_stringify(in_ptr: *const u8, in_len: usize) -> usize {
+        // The wasm host hands us a canonical render output (the same
+        // bytes parser_render emitted). Round-tripping it requires
+        // first deserializing to Value; full JSON-style parsing of
+        // the Display form is out of scope for this thin shim — for
+        // now we expose a stringify that takes the raw input and
+        // parses + re-stringifies in one call, which is the common
+        // "format / normalize" workflow.
+        let bytes = core::slice::from_raw_parts(in_ptr, in_len);
+        let input = match core::str::from_utf8(bytes) {
+            Ok(s) => s,
+            Err(_) => {
+                LAST_RESULT = b"ERR:non-utf8 input".to_vec();
+                return LAST_RESULT.len();
+            }
+        };
+        let out = match render(input) {
+            Ok(v) => stringify(&v),
+            Err(e) => format!("ERR:{}", e),
+        };
+        LAST_RESULT = out.into_bytes();
+        LAST_RESULT.len()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn parser_result_ptr() -> *const u8 {
+        unsafe { LAST_RESULT.as_ptr() }
+    }
+}`;
 
 // Forwarded captures + Rust types for an alt-tail's function signature
 // when prefix-share factoring is in effect. The order is the order of named

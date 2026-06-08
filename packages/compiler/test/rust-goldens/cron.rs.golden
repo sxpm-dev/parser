@@ -245,41 +245,53 @@ fn parse_CronField(state: &mut State) -> Option<Value> {
 }
 
 fn stringify_CronField__alt0(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "wildcard" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "wildcard" => (), _ => return None }
+    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
     let mut __out = String::new();
     __out.push_str("*");
     Some(__out)
 }
 
 fn stringify_CronField__alt1(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "step" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "step" => (), _ => return None }
+    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
     let step = value.obj_get("step");
+    let __s0: String = if let Some(Value::String(s)) = step { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("*/");
-    if let Some(Value::String(s)) = step { __out.push_str(s); }
+    __out.push_str(&__s0);
     Some(__out)
 }
 
 fn stringify_CronField__alt2(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "value" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "value" => (), _ => return None }
+    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
     let value = value.obj_get("value");
+    let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
-    if let Some(Value::String(s)) = value { __out.push_str(s); }
+    __out.push_str(&__s0);
     Some(__out)
 }
 
 fn stringify_CronField__alt3(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "range" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "range" => (), _ => return None }
+    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
     let start = value.obj_get("start");
     let end = value.obj_get("end");
+    let __s0: String = if let Some(Value::String(s)) = start { s.clone() } else { String::new() };
+    let __s1: String = if let Some(Value::String(s)) = end { s.clone() } else { String::new() };
     let mut __out = String::new();
-    if let Some(Value::String(s)) = start { __out.push_str(s); }
+    __out.push_str(&__s0);
     __out.push_str("-");
-    if let Some(Value::String(s)) = end { __out.push_str(s); }
+    __out.push_str(&__s1);
     Some(__out)
 }
 
@@ -356,16 +368,11 @@ fn parse_Command(state: &mut State) -> Option<Value> {
 }
 
 fn stringify_Command__alt0(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "command" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "command" => (), _ => return None }
     let words = value.obj_get("words");
+    let __s0: String = if let Some(Value::Array(items)) = words { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_CommandWord(item)); } __t } else { String::new() };
     let mut __out = String::new();
-    if let Some(Value::Array(items)) = words {
-        for (i, item) in items.iter().enumerate() {
-            if i > 0 { __out.push_str(" "); }
-            __out.push_str(&stringify_CommandWord(item));
-        }
-    }
+    __out.push_str(&__s0);
     Some(__out)
 }
 
@@ -421,26 +428,31 @@ fn parse_Cron(state: &mut State) -> Option<Value> {
 }
 
 fn stringify_Cron__alt0(value: &Value) -> Option<String> {
-    let ty = value.obj_get("type")?;
-    if let Value::String(s) = ty { if s != "cron" { return None; } } else { return None; }
+    match value.obj_get("type") { Some(Value::String(s)) if s == "cron" => (), _ => return None }
     let minute = value.obj_get("minute");
     let hour = value.obj_get("hour");
     let dayOfMonth = value.obj_get("dayOfMonth");
     let month = value.obj_get("month");
     let dayOfWeek = value.obj_get("dayOfWeek");
     let command = value.obj_get("command");
+    let __s0: String = if let Some(inner) = minute { stringify_CronField(inner) } else { String::new() };
+    let __s1: String = if let Some(inner) = hour { stringify_CronField(inner) } else { String::new() };
+    let __s2: String = if let Some(inner) = dayOfMonth { stringify_CronField(inner) } else { String::new() };
+    let __s3: String = if let Some(inner) = month { stringify_CronField(inner) } else { String::new() };
+    let __s4: String = if let Some(inner) = dayOfWeek { stringify_CronField(inner) } else { String::new() };
+    let __s5: String = if let Some(inner) = command { if !matches!(inner, Value::Null) { stringify_Command(inner) } else { String::new() } } else { String::new() };
     let mut __out = String::new();
-    if let Some(inner) = minute { __out.push_str(&stringify_CronField(inner)); }
+    __out.push_str(&__s0);
     __out.push_str(" ");
-    if let Some(inner) = hour { __out.push_str(&stringify_CronField(inner)); }
+    __out.push_str(&__s1);
     __out.push_str(" ");
-    if let Some(inner) = dayOfMonth { __out.push_str(&stringify_CronField(inner)); }
+    __out.push_str(&__s2);
     __out.push_str(" ");
-    if let Some(inner) = month { __out.push_str(&stringify_CronField(inner)); }
+    __out.push_str(&__s3);
     __out.push_str(" ");
-    if let Some(inner) = dayOfWeek { __out.push_str(&stringify_CronField(inner)); }
-    __out.push_str(" ");
-    if let Some(inner) = command { if !matches!(inner, Value::Null) { __out.push_str(&stringify_Command(inner)); } }
+    __out.push_str(&__s4);
+    if !__s5.is_empty() { __out.push_str(" "); }
+    __out.push_str(&__s5);
     Some(__out)
 }
 

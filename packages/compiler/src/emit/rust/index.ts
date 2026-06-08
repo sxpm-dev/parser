@@ -73,8 +73,13 @@ function emitRustParser(schema: InferredSchema): string {
       parts.push(emitNodeTypeDispatcher(info.name, info.productions));
     }
     // Phase 6.4 — per-production inverse + per-node dispatcher.
+    // Collect every sibling alt's render body up-front so each alt's
+    // stringify can compute "fields present in other alts but absent
+    // here" and emit a must-be-absent discriminator (closes the
+    // pg-select / iso-duration alt-over-match stringify mismatches).
+    const siblingBodies = info.productions.map((p) => pickRenderBody(p));
     for (let i = 0; i < info.productions.length; i++) {
-      const fn = emitStringifyAltFn(schema, info.productions[i]!, i);
+      const fn = emitStringifyAltFn(schema, info.productions[i]!, i, siblingBodies, i);
       if (fn !== null) parts.push(fn);
     }
     parts.push(emitStringifyDispatcher(info.name, info.productions.length));
@@ -1139,6 +1144,8 @@ function emitStringifyAltFn(
   schema: InferredSchema,
   production: Production,
   altIdx: number,
+  siblingBodies: ReadonlyArray<RenderBody | undefined>,
+  myIdx: number,
 ): string | null {
   const renderBody = pickRenderBody(production);
   if (renderBody === undefined) return null;
@@ -1165,10 +1172,22 @@ function emitStringifyAltFn(
     return null;
   }
   const obj = renderBody as Record<string, RenderBody>;
-  // Find the type-literal discriminator (any string-valued top-level
-  // field qualifies; pick the first one). Most ASTs in this repo use
-  // `type:` by convention.
-  const discrim = pickDiscriminator(obj);
+  // Build every applicable discriminator for this alt: scalar-equality on
+  // each literal field, plus must-be-absent on every field that some
+  // sibling alt declares but this one does not. Closes the alt-over-match
+  // class of stringify mismatches surfaced by rust-diff:
+  //   - toml.Value: alt1 (`{type:'boolean', value:true}`) and alt2
+  //     (`{type:'boolean', value:false}`) both have `type === 'boolean'`;
+  //     the original single-`type`-check let alt1 swallow false-valued
+  //     inputs and emit "true". Boolean-equality on `value` separates them.
+  //   - iso-duration.Duration: alt0 has fields {type, date}; alt1 adds
+  //     `time`. Old discrim let alt0 match time-bearing inputs and emit
+  //     just `P + date`. Must-be-absent on `time` for alt0 forces routing
+  //     to alt1.
+  //   - pg-select.Select: the four `{type:'select', ...}` alts differ only
+  //     in which of {where, limit} they declare. Each alt rejects values
+  //     containing fields outside its declared set.
+  const discrimLines = buildDiscriminatorChecks(obj, siblingBodies, myIdx);
 
   // Prefer the inverse direction: when the production declares a source
   // template (e.g. `source: tpl\`${$.key} = ${$.value}\``), drive the emit
@@ -1178,15 +1197,12 @@ function emitStringifyAltFn(
   // for toml `key= value`, pg-select `SELECT *FROM`, rrule `FREQ= DAILY`).
   const sourceTpl = findSourceTemplate(production);
   if (sourceTpl !== null) {
-    return emitTemplateStringifyBody(fnName, obj, production, sourceTpl, discrim);
+    return emitTemplateStringifyBody(fnName, obj, production, sourceTpl, discrimLines);
   }
 
   const lines: string[] = [];
   lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
-  if (discrim !== null) {
-    lines.push(`    let ty = value.obj_get(${rustString(discrim.field)})?;`);
-    lines.push(`    if let Value::String(s) = ty { if s != ${rustString(discrim.value)} { return None; } } else { return None; }`);
-  }
+  for (const dl of discrimLines) lines.push(`    ${dl}`);
   // Extract each named-span capture as a local binding.
   const extracted = new Set<string>();
   for (const span of production.spans) {
@@ -1233,14 +1249,11 @@ function emitTemplateStringifyBody(
   astBody: Record<string, RenderBody>,
   production: Production,
   tpl: import('@parser2/parser').Template,
-  discrim: ReturnType<typeof pickDiscriminator>,
+  discrimLines: ReadonlyArray<string>,
 ): string {
   const lines: string[] = [];
   lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
-  if (discrim !== null) {
-    lines.push(`    let ty = value.obj_get(${rustString(discrim.field)})?;`);
-    lines.push(`    if let Value::String(s) = ty { if s != ${rustString(discrim.value)} { return None; } } else { return None; }`);
-  }
+  for (const dl of discrimLines) lines.push(`    ${dl}`);
   // Bind every slot's ast field once. Slots may reuse the same capture; only
   // emit the local once per unique name.
   const bound = new Set<string>();
@@ -1259,17 +1272,42 @@ function emitTemplateStringifyBody(
       lines.push(`    let ${v} = value.obj_get(${rustString(fieldKey)});`);
     }
   }
+  // Materialize each slot into a positional String local (`__s0`, `__s1`,
+  // …). Doing this BEFORE the walk lets the inter-slot literal `parts[i]`
+  // gate on `!__sj.is_empty()` for the slots in its tail — fixes the
+  // trailing-empty-slot bug (cron `${...} ${cmd}` produced "... " when
+  // cmd was null because parts[5] was pushed before slot[5] without
+  // checking that anything would follow).
+  for (let i = 0; i < tpl.slots.length; i++) {
+    const slot = tpl.slots[i]!;
+    const span = slot.kind === 'capture'
+      ? production.spans.find((s) => s.name === slot.ref)
+      : undefined;
+    const expr = slot.kind === 'capture' && span !== undefined
+      ? buildSlotExpr(span, slot.ref)
+      : 'String::new()';
+    lines.push(`    let __s${i}: String = ${expr};`);
+  }
   lines.push(`    let mut __out = String::new();`);
-  // Walk parts[0], slot[0], parts[1], slot[1], … parts[last].
+  // Walk parts[0], slot[0], parts[1], slot[1], … parts[last]. parts[i]
+  // for i >= 1 is gated when its tail (slots[i..] + parts[i+1..]) might
+  // be entirely empty at runtime.
   for (let i = 0; i < tpl.parts.length; i++) {
     const part = tpl.parts[i]!;
-    if (part) lines.push(`    __out.push_str(${rustString(part)});`);
+    if (part) {
+      const gate = i === 0 ? null : computeTailPresenceGate(tpl, i, production);
+      if (gate === null) {
+        // Statically required (leading part OR some required slot / non-
+        // empty literal in the tail) — always emit.
+        lines.push(`    __out.push_str(${rustString(part)});`);
+      } else if (gate === 'never') {
+        // Statically empty tail — skip the literal entirely.
+      } else {
+        lines.push(`    if ${gate} { __out.push_str(${rustString(part)}); }`);
+      }
+    }
     if (i < tpl.slots.length) {
-      const slot = tpl.slots[i]!;
-      if (slot.kind !== 'capture') continue;
-      const span = production.spans.find((s) => s.name === slot.ref);
-      if (!span) continue;
-      lines.push(...emitTemplateSlot(span, slot.ref).map((l) => `    ${l}`));
+      lines.push(`    __out.push_str(&__s${i});`);
     }
   }
   lines.push(`    Some(__out)`);
@@ -1277,7 +1315,12 @@ function emitTemplateStringifyBody(
   return lines.join('\n');
 }
 
-function emitTemplateSlot(span: ResolvedSpan, captureName: string): string[] {
+// Expression form of the emitTemplateSlot logic — returns a Rust
+// EXPRESSION (no semicolons, no __out.push_str) that evaluates to the
+// String contribution of one template slot. Used by
+// emitTemplateStringifyBody to pre-materialize each slot into a `__sN`
+// local so subsequent inter-slot literal gating can ask `__sN.is_empty()`.
+function buildSlotExpr(span: ResolvedSpan, captureName: string): string {
   const v = rustIdent(captureName);
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
@@ -1286,45 +1329,84 @@ function emitTemplateSlot(span: ResolvedSpan, captureName: string): string[] {
   if (repeatsMod !== undefined) {
     const sep = (repeatsMod as RepeatsModifier).sep ?? ' ';
     const role = isRecursive ? rustIdent(span.recursiveRoles[0]!) : null;
-    if (role === null) {
-      // repeats over a class — not common in tested schemas; output the
-      // raw slot's array as best-effort.
-      return [
-        `if let Some(Value::Array(items)) = ${v} {`,
-        `    for (i, item) in items.iter().enumerate() {`,
-        `        if i > 0 { __out.push_str(${rustString(sep)}); }`,
-        `        if let Value::String(s) = item { __out.push_str(s); }`,
-        `    }`,
-        `}`,
-      ];
-    }
-    return [
-      `if let Some(Value::Array(items)) = ${v} {`,
-      `    for (i, item) in items.iter().enumerate() {`,
-      `        if i > 0 { __out.push_str(${rustString(sep)}); }`,
-      `        __out.push_str(&stringify_${role}(item));`,
-      `    }`,
-      `}`,
-    ];
+    const inner = role === null
+      ? `if let Value::String(s) = item { __t.push_str(s); }`
+      : `__t.push_str(&stringify_${role}(item));`;
+    return `if let Some(Value::Array(items)) = ${v} { ` +
+      `let mut __t = String::new(); ` +
+      `for (i, item) in items.iter().enumerate() { ` +
+      `if i > 0 { __t.push_str(${rustString(sep)}); } ${inner} ` +
+      `} __t ` +
+      `} else { String::new() }`;
   }
-
   if (isRecursive) {
     const role = rustIdent(span.recursiveRoles[0]!);
     if (isOptional) {
-      return [
-        `if let Some(inner) = ${v} { if !matches!(inner, Value::Null) { __out.push_str(&stringify_${role}(inner)); } }`,
-      ];
+      return `if let Some(inner) = ${v} { ` +
+        `if !matches!(inner, Value::Null) { stringify_${role}(inner) } else { String::new() } ` +
+        `} else { String::new() }`;
     }
-    return [
-      `if let Some(inner) = ${v} { __out.push_str(&stringify_${role}(inner)); }`,
-    ];
+    return `if let Some(inner) = ${v} { stringify_${role}(inner) } else { String::new() }`;
   }
+  // Class capture (string-valued in the ast). Optional and required share
+  // the same expression — Option<&Value> + matching pattern handles both.
+  return `if let Some(Value::String(s)) = ${v} { s.clone() } else { String::new() }`;
+}
 
-  // Class capture (string-valued in the ast).
-  if (isOptional) {
-    return [`if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`];
+// Compute the Rust expression that must be true for parts[i] to be
+// emitted, where i in [1, parts.length-1] (parts[0] is the leading
+// literal — handled unconditionally by the caller).
+//
+// Two roles for non-leading parts:
+//   - INTER-SLOT (1 <= i < slots.length): parts[i] is the bridge between
+//     slot[i-1] and slot[i]. Its presence depends on whether content
+//     FOLLOWS it — gate on slot[i] producing output. (cron's ' '
+//     between dow and the optional cmd: when cmd is empty, the trailing
+//     space is orphan and must be skipped.)
+//   - TRAILING (i === slots.length): parts[i] is the literal AFTER the
+//     last slot. It anchors to slot[i-1] (the preceding slot) — when
+//     the slot is empty the trailing literal is orphan. (iso-duration's
+//     `${value}Y` template: parts[1] = 'Y' anchors to slot[0]=value;
+//     value is required so Y always emits.)
+//
+// In both cases the "anchor" slot is checked: required → always emit
+// (return null); optional → runtime gate on `!__sN.is_empty()`. The
+// 'never' branch returns when the anchor slot is optional and also has
+// a downstream gate that's statically false (rare; bail safely).
+function computeTailPresenceGate(
+  tpl: import('@parser2/parser').Template,
+  i: number,
+  production: Production,
+): string | null | 'never' {
+  // Pick the slot this literal anchors to.
+  const anchorIdx = i < tpl.slots.length ? i : tpl.slots.length - 1;
+  if (anchorIdx < 0 || anchorIdx >= tpl.slots.length) return null;
+  const slot = tpl.slots[anchorIdx]!;
+  if (slot.kind !== 'capture') return null; // unknown shape — emit defensively
+  const span = production.spans.find((s) => s.name === slot.ref);
+  if (!span) return null;
+  const isOptional = span.modifiers.some((m) => m.kind === 'optional');
+  const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
+  const minRepeats = repeatsMod ? ((repeatsMod as RepeatsModifier).min ?? 0) : null;
+  const isRepeatsMin0 = repeatsMod !== undefined && minRepeats === 0;
+  // For inter-slot parts: we ALSO need to consider whether a required
+  // slot deeper in the tail (slots[i+1..]) anchors the literal. If
+  // slot[i] is optional but slot[i+1] is required, the literal still
+  // bridges into required content and should always emit. Quick scan.
+  if (isOptional || isRepeatsMin0) {
+    for (let j = anchorIdx + 1; j < tpl.slots.length; j++) {
+      const s = tpl.slots[j]!;
+      if (s.kind !== 'capture') return null;
+      const sp = production.spans.find((x) => x.name === s.ref);
+      if (!sp) continue;
+      const opt = sp.modifiers.some((m) => m.kind === 'optional');
+      const rep = sp.modifiers.find((m) => m.kind === 'repeats');
+      const repMin0 = rep !== undefined && ((rep as RepeatsModifier).min ?? 0) === 0;
+      if (!opt && !repMin0) return null; // downstream required slot — always emit
+    }
+    return `!__s${anchorIdx}.is_empty()`;
   }
-  return [`if let Some(Value::String(s)) = ${v} { __out.push_str(s); }`];
+  return null; // anchor slot is required — always emit
 }
 
 /** Stringify a production whose `ast` body is a scalar (string, boolean,
@@ -1487,6 +1569,78 @@ function pickDiscriminator(obj: Record<string, RenderBody>): { field: string; va
     if (typeof v === 'string') return { field: k, value: v };
   }
   return null;
+}
+
+// Phase 6.5 follow-up — build every discriminator check the alt's body
+// implies, as Rust source lines. Two flavours, both emitted as `match`
+// arms returning None on mismatch:
+//
+//   1. EQUALITY: every top-level scalar (string / boolean / number / null)
+//      field declared by this alt. Mandatory match — `match` on `obj_get`
+//      returning that scalar with a guard.
+//
+//   2. ABSENCE: every field name that appears in some sibling alt's body
+//      but NOT in this alt's body. Mandatory absent / null. Without this,
+//      a 4-alt node like pg-select.Select whose alts differ only in which
+//      of {where, limit} they declare would have its first alt match any
+//      `{type:'select', …}` ast — the alts would never get the chance to
+//      decide based on field presence.
+//
+// Ref-valued fields (StructureRef payloads) and nested object / array /
+// template fields are deliberately NOT discriminators: those are slots
+// the parse fills in, and their presence is what the absence check on
+// siblings reads. The discriminator stays at the top-level scalar layer.
+function buildDiscriminatorChecks(
+  altBody: Record<string, RenderBody>,
+  siblingBodies: ReadonlyArray<RenderBody | undefined>,
+  myIdx: number,
+): string[] {
+  const lines: string[] = [];
+
+  // 1. Per-field scalar equality.
+  for (const [k, v] of Object.entries(altBody)) {
+    const key = rustString(k);
+    if (typeof v === 'string') {
+      lines.push(
+        `match value.obj_get(${key}) { Some(Value::String(s)) if s == ${rustString(v)} => (), _ => return None }`,
+      );
+    } else if (typeof v === 'boolean') {
+      lines.push(
+        `match value.obj_get(${key}) { Some(Value::Bool(b)) if *b == ${v} => (), _ => return None }`,
+      );
+    } else if (typeof v === 'number') {
+      lines.push(
+        `match value.obj_get(${key}) { Some(Value::Number(n)) if *n == ${v}_f64 => (), _ => return None }`,
+      );
+    } else if (v === null) {
+      lines.push(
+        `match value.obj_get(${key}) { None | Some(Value::Null) => (), _ => return None }`,
+      );
+    }
+    // Refs / nested objects / arrays / templates: not scalar discrim, skip.
+  }
+
+  // 2. Absence checks. Collect every field name some other alt declares
+  // that this alt does NOT, then assert it's absent or null at runtime.
+  const myFields = new Set(Object.keys(altBody));
+  const mustBeAbsent = new Set<string>();
+  for (let i = 0; i < siblingBodies.length; i++) {
+    if (i === myIdx) continue;
+    const sib = siblingBodies[i];
+    if (sib === undefined || sib === null || typeof sib !== 'object') continue;
+    if (Array.isArray(sib)) continue;
+    if (isStructureRef(sib)) continue;
+    if (isTemplate(sib)) continue;
+    for (const k of Object.keys(sib as Record<string, RenderBody>)) {
+      if (!myFields.has(k)) mustBeAbsent.add(k);
+    }
+  }
+  for (const k of mustBeAbsent) {
+    lines.push(
+      `match value.obj_get(${rustString(k)}) { None | Some(Value::Null) => (), _ => return None }`,
+    );
+  }
+  return lines;
 }
 
 function findFieldForCapture(obj: Record<string, RenderBody>, captureName: string): string | null {

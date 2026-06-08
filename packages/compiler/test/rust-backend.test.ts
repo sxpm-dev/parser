@@ -458,9 +458,10 @@ test('rust backend (6.4): per-production stringify fn + dispatcher + public entr
   assert.match(code, /fn stringify_X__alt0\(value: &Value\) -> Option<String> \{/);
   assert.match(code, /fn stringify_X\(value: &Value\) -> String \{/);
   assert.match(code, /pub fn stringify\(value: &Value\) -> String \{/);
-  // Type discriminator check.
-  assert.match(code, /let ty = value\.obj_get\("type"\)\?;/);
-  assert.match(code, /if s != "x" \{ return None; \}/);
+  // Type discriminator check (match-based since the discriminator
+  // strengthening pass — equality on every scalar field, absence on
+  // sibling-only fields).
+  assert.match(code, /match value\.obj_get\("type"\) \{ Some\(Value::String\(s\)\) if s == "x" => \(\), _ => return None \}/);
   // Capture extraction.
   assert.match(code, /let name = value\.obj_get\("name"\);/);
   // String emission.

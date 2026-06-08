@@ -220,9 +220,23 @@ function writeAtomic(path: string, content: string): void {
 }
 
 async function main(): Promise<void> {
+  // Positional args filter the schema list. Zero args ⇒ run them all.
+  // Unknown names abort early so a typo doesn't silently no-op.
+  const argv = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  let schemas = CASES;
+  if (argv.length > 0) {
+    const want = new Set(argv);
+    const known = new Set(CASES.map((c) => c.name));
+    for (const name of want) {
+      if (!known.has(name)) {
+        throw new Error(`Unknown schema '${name}'. Available: ${CASES.map((c) => c.name).join(', ')}`);
+      }
+    }
+    schemas = CASES.filter((c) => want.has(c.name));
+  }
   // Per-fixture column width — labels + ops/s fit in 24 chars comfortably.
   const colWidth = 22;
-  for (const schema of CASES) {
+  for (const schema of schemas) {
     console.log(`\n=== ${schema.name} ===`);
     const backends = await loadBackends(schema.name);
     const labels = backends.map((b, i) => b?.label ?? `slot${i}-unavailable`);

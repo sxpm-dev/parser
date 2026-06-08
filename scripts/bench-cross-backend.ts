@@ -67,6 +67,17 @@ const CASES: ReadonlyArray<SchemaCase> = [
       { label: 'mixed', input: '0 9 7 8 1-5' },
     ],
   },
+  // toml is TS + Rust only; its bcode emit hits a multi-role recursive
+  // stringify gap. Per-package `bench:bcode` is not wired for toml; the
+  // generic `--only rust` / `--only ts` paths still work here.
+  {
+    name: 'toml',
+    fixtures: [
+      { label: 'string', input: 'title = "parser benchmark"' },
+      { label: 'integer', input: 'count = 42' },
+      { label: 'bool', input: 'active = true' },
+    ],
+  },
 ];
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -222,10 +233,25 @@ function writeAtomic(path: string, content: string): void {
 async function main(): Promise<void> {
   // Positional args filter the schema list. Zero args ⇒ run them all.
   // Unknown names abort early so a typo doesn't silently no-op.
-  const argv = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  const rawArgs = process.argv.slice(2);
+  const positional: string[] = [];
+  let onlyArg: string | undefined;
+  for (let i = 0; i < rawArgs.length; i++) {
+    const a = rawArgs[i]!;
+    if (a === '--only') {
+      onlyArg = rawArgs[++i];
+      if (onlyArg === undefined) throw new Error('--only requires a value (csv of: ts, bcode, rust)');
+    } else if (a.startsWith('--only=')) {
+      onlyArg = a.slice('--only='.length);
+    } else if (!a.startsWith('--')) {
+      positional.push(a);
+    } else {
+      throw new Error(`Unknown flag: ${a}`);
+    }
+  }
   let schemas = CASES;
-  if (argv.length > 0) {
-    const want = new Set(argv);
+  if (positional.length > 0) {
+    const want = new Set(positional);
     const known = new Set(CASES.map((c) => c.name));
     for (const name of want) {
       if (!known.has(name)) {
@@ -234,12 +260,36 @@ async function main(): Promise<void> {
     }
     schemas = CASES.filter((c) => want.has(c.name));
   }
+  // --only ts,bcode,rust filters which backend columns appear. Empty / unset
+  // ⇒ all three. Aliases: "rs" ≡ "rust", "bytecode" ≡ "bcode".
+  const knownBackends = new Set(['ts', 'bcode', 'rust']);
+  const aliasMap: Record<string, string> = { rs: 'rust', bytecode: 'bcode' };
+  let onlyBackends: Set<string> | null = null;
+  if (onlyArg) {
+    onlyBackends = new Set();
+    for (const raw of onlyArg.split(',').map((s) => s.trim()).filter(Boolean)) {
+      const normalized = aliasMap[raw] ?? raw;
+      if (!knownBackends.has(normalized)) {
+        throw new Error(`Unknown backend '${raw}'. Choices: ts, bcode, rust (aliases rs / bytecode).`);
+      }
+      onlyBackends.add(normalized);
+    }
+    if (onlyBackends.size === 0) onlyBackends = null;
+  }
   // Per-fixture column width — labels + ops/s fit in 24 chars comfortably.
   const colWidth = 22;
   for (const schema of schemas) {
     console.log(`\n=== ${schema.name} ===`);
-    const backends = await loadBackends(schema.name);
-    const labels = backends.map((b, i) => b?.label ?? `slot${i}-unavailable`);
+    const allBackends = await loadBackends(schema.name);
+    // When --only filters, drop the un-selected slots from the table
+    // entirely (rather than rendering them as "N/A" placeholders). When
+    // no filter is set, keep every slot so missing backends still show
+    // up as "N/A" — that visibility is important when bench coverage
+    // varies across schemas.
+    const keptBackends = onlyBackends === null
+      ? allBackends
+      : allBackends.filter((_, i) => onlyBackends!.has(backendKeyFor(i)));
+    const labels = keptBackends.map((b, i) => b?.label ?? `slot${i}-unavailable`);
 
     // Header row
     console.log('fixture'.padEnd(18) + labels.map((l) => l.padStart(colWidth)).join(''));
@@ -247,7 +297,7 @@ async function main(): Promise<void> {
 
     for (const { label, input } of schema.fixtures) {
       const bench = new Bench({ time: 200, warmupIterations: 50, iterations: 1 });
-      for (const b of backends) {
+      for (const b of keptBackends) {
         if (!b) continue;
         bench.add(b.label, () => b.render(input));
       }
@@ -257,12 +307,22 @@ async function main(): Promise<void> {
         const hz = task.result?.hz;
         opsByLabel.set(task.name, hz === undefined ? 'err' : formatOps(hz));
       }
-      const cells = backends.map((b) =>
+      const cells = keptBackends.map((b) =>
         b === null ? 'N/A' : (opsByLabel.get(b.label) ?? 'err'),
       );
       console.log(label.padEnd(18) + cells.map((c) => c.padStart(colWidth)).join(''));
     }
   }
+}
+
+// Stable index → backend-key mapping. loadBackends always returns the
+// three slots in this order (TS first, bcode second, rust third); the
+// --only filter uses this map to decide which slot to keep.
+function backendKeyFor(index: number): string {
+  if (index === 0) return 'ts';
+  if (index === 1) return 'bcode';
+  if (index === 2) return 'rust';
+  return `slot${index}`;
 }
 
 function formatOps(hz: number): string {

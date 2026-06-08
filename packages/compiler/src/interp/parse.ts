@@ -1186,9 +1186,9 @@ function parseRepeatsSpan(
   const list: unknown[] = [];
   let sepConsumed = false;
   let preSweep = state.pos;
-  // Phase 4c v2: per-iteration ws capture for preserve schemas.
-  // Gated on (preserve + sep + named span) to match v2's emit.
-  const captureIws = schema.whitespace === 'preserve' && sep !== undefined && span.name !== undefined;
+  // Phase 4c v5: per-iteration ws capture for preserve schemas — every
+  // named .repeats(), sep-bearing OR sep-less. Mirrors emit/v2/span.ts.
+  const captureIws = schema.whitespace === 'preserve' && span.name !== undefined;
   const iws: string[] = captureIws ? [] : (undefined as unknown as string[]);
   let prevItemEnd = -1;
 
@@ -1265,6 +1265,15 @@ function parseRepeatsSpan(
       const required = state.indentStack[state.indentStack.length - 1]!;
       if (col < required) break;  // dedent — exit cleanly
       if (col > required) break;  // unexpected over-indent — exit cleanly
+    }
+    // Phase 4c v5: sep-less captureIws needs an explicit ws-skip BEFORE
+    // beforeAttempt so the slice prevItemEnd..beforeAttempt covers the
+    // inter-item whitespace. dispatchRoles' internal skipWs advances
+    // state.pos but does it AFTER beforeAttempt is read. Mirrors the
+    // ws-skip emitted by emit/v2/span.ts for the sep-less captureIws
+    // case.
+    if (sep === undefined && captureIws) {
+      skipWs(state);
     }
     if (stopBefore && stopBefore.length > 0) {
       let stop = false;
@@ -1564,13 +1573,14 @@ function renderSlotAst(schema: InferredSchema, value: unknown): unknown {
         const o = out as Record<string, unknown>;
         o.__ws = c.__ws;
         o.__litPres = c.__litPres;
-        // Phase 4c v2 — forward each named .repeats({sep}) span's
-        // per-iteration ws array under `<name>_iws`. Mirrors the
-        // emit/render.ts iwsFields auto-attach.
+        // Phase 4c v5 — forward each named .repeats() span's per-
+        // iteration ws array under `<name>_iws`. Mirrors the
+        // emit/render.ts iwsFields auto-attach. Sep-bearing AND
+        // sep-less both contribute an iws array.
         for (const span of production.spans) {
           if (!span.name) continue;
           for (const m of span.modifiers) {
-            if (m.kind === 'repeats' && m.sep !== undefined) {
+            if (m.kind === 'repeats') {
               const key = `${span.name}_iws`;
               o[key] = c[key];
               break;

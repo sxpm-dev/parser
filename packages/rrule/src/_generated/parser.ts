@@ -662,7 +662,7 @@ function parsePart__alt0(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __days_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __days_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -681,9 +681,9 @@ function parsePart__alt0(state: State): unknown {
     __cand = parseNumValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __days_iws !== null) __days_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__days_prevItemEnd >= 0 && __days_iws !== null) __days_iws.push(input.slice(__days_prevItemEnd, __itemStart));
     days.push(__cand);
-    __prevItemEnd = off;
+    __days_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (days.length < 1) { state.pos = entryOff; return null; }
@@ -721,7 +721,7 @@ function parsePart__alt1(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __months_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __months_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -740,9 +740,9 @@ function parsePart__alt1(state: State): unknown {
     __cand = parseNumValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __months_iws !== null) __months_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__months_prevItemEnd >= 0 && __months_iws !== null) __months_iws.push(input.slice(__months_prevItemEnd, __itemStart));
     months.push(__cand);
-    __prevItemEnd = off;
+    __months_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (months.length < 1) { state.pos = entryOff; return null; }
@@ -780,7 +780,7 @@ function parsePart__alt2(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __minutes_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __minutes_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -799,9 +799,9 @@ function parsePart__alt2(state: State): unknown {
     __cand = parseNumValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __minutes_iws !== null) __minutes_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__minutes_prevItemEnd >= 0 && __minutes_iws !== null) __minutes_iws.push(input.slice(__minutes_prevItemEnd, __itemStart));
     minutes.push(__cand);
-    __prevItemEnd = off;
+    __minutes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (minutes.length < 1) { state.pos = entryOff; return null; }
@@ -839,7 +839,7 @@ function parsePart__alt3(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __hours_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __hours_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -858,9 +858,9 @@ function parsePart__alt3(state: State): unknown {
     __cand = parseNumValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __hours_iws !== null) __hours_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__hours_prevItemEnd >= 0 && __hours_iws !== null) __hours_iws.push(input.slice(__hours_prevItemEnd, __itemStart));
     hours.push(__cand);
-    __prevItemEnd = off;
+    __hours_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (hours.length < 1) { state.pos = entryOff; return null; }
@@ -898,7 +898,7 @@ function parsePart__alt4(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __days_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __days_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -917,9 +917,9 @@ function parsePart__alt4(state: State): unknown {
     __cand = parseWeekday(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __days_iws !== null) __days_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__days_prevItemEnd >= 0 && __days_iws !== null) __days_iws.push(input.slice(__days_prevItemEnd, __itemStart));
     days.push(__cand);
-    __prevItemEnd = off;
+    __days_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (days.length < 1) { state.pos = entryOff; return null; }
@@ -1167,7 +1167,7 @@ function parseRule(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __parts_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __parts_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -1186,9 +1186,9 @@ function parseRule(state: State): unknown {
     __cand = parsePart(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __parts_iws !== null) __parts_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__parts_prevItemEnd >= 0 && __parts_iws !== null) __parts_iws.push(input.slice(__parts_prevItemEnd, __itemStart));
     parts.push(__cand);
-    __prevItemEnd = off;
+    __parts_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (parts.length < 1) { state.pos = entryOff; return null; }

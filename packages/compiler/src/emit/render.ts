@@ -132,15 +132,16 @@ function emitBuilder(
     !isTemplate(body) &&
     !isDynKey(body) &&
     !isMerge(body);
-  // Per-iteration ws fields: every named `.repeats({ sep })` span on this
-  // production contributes a `<spanName>_iws` slot. Discovery is
-  // unconditional at codegen time; whether each one fires at runtime is
-  // determined by the captures-payload presence check.
+  // Per-iteration ws fields: every named `.repeats()` span on this
+  // production contributes a `<spanName>_iws` slot — sep-bearing AND
+  // sep-less (Phase 4c v5). Discovery is unconditional at codegen time;
+  // whether each one fires at runtime is determined by the captures-
+  // payload presence check.
   const iwsFields: string[] = [];
   for (const span of production.spans) {
     if (!span.name) continue;
     for (const m of span.modifiers) {
-      if (m.kind === 'repeats' && m.sep !== undefined) {
+      if (m.kind === 'repeats') {
         const key = `${span.name}_iws`;
         iwsFields.push(`${key}: captures.${key}`);
         break;

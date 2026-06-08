@@ -426,6 +426,8 @@ function parseYamlMapping(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __entries_start = off;
   const entries: unknown[] = [];
+  const __entries_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __entries_prevItemEnd = -1;
   state.pos = off;
   skipBlankLines(state);
   skipHorizontalWs(state);
@@ -449,12 +451,16 @@ function parseYamlMapping(state: State): unknown {
       const __col = columnAt(state, off);
       if (__col !== __indentCol) break;
     }
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseYamlMappingEntry(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__entries_prevItemEnd >= 0 && __entries_iws !== null) __entries_iws.push(input.slice(__entries_prevItemEnd, __itemStart));
     entries.push(__cand);
+    __entries_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (__indentPushed) state.indentStackTop--;
@@ -463,7 +469,7 @@ function parseYamlMapping(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlMapping#0", __ws: __ws, __litPres: __litPres, entries: entries };
+    const __captures: any = { __production: "YamlMapping#0", __ws: __ws, __litPres: __litPres, entries_iws: __entries_iws, entries: entries };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -525,6 +531,8 @@ function parseYamlSequence(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
+  const __items_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __items_prevItemEnd = -1;
   state.pos = off;
   skipBlankLines(state);
   skipHorizontalWs(state);
@@ -548,12 +556,16 @@ function parseYamlSequence(state: State): unknown {
       const __col = columnAt(state, off);
       if (__col !== __indentCol) break;
     }
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseYamlSequenceItem(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__items_prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__items_prevItemEnd, __itemStart));
     items.push(__cand);
+    __items_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (__indentPushed) state.indentStackTop--;
@@ -562,7 +574,7 @@ function parseYamlSequence(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "YamlSequence#0", __ws: __ws, __litPres: __litPres, items: items };
+    const __captures: any = { __production: "YamlSequence#0", __ws: __ws, __litPres: __litPres, items_iws: __items_iws, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -652,7 +664,7 @@ function __build_YamlMappingEntry_0_source(captures: any, __indentCol: number = 
 }
 
 function __build_YamlMapping_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, entries_iws: captures.entries_iws } }) : { type: "mapping", entries: __renderSlot_ast(captures.entries, __indentCol) });
 }
 
 function __build_YamlMapping_0_source(captures: any, __indentCol: number = 0): any {
@@ -668,7 +680,7 @@ function __build_YamlSequenceItem_0_source(captures: any, __indentCol: number = 
 }
 
 function __build_YamlSequence_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, items_iws: captures.items_iws } }) : { type: "sequence", items: __renderSlot_ast(captures.items, __indentCol) });
 }
 
 function __build_YamlSequence_0_source(captures: any, __indentCol: number = 0): any {

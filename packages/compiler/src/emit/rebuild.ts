@@ -255,19 +255,20 @@ export function joinOf(span: ResolvedSpan, preserveWs: boolean = false): SlotJoi
   for (const m of span.modifiers) {
     if (m.kind === 'repeats') {
       if (hasIndent) return { kind: 'indent' };
-      // Phase 4c v2 + Layer 3 raws sidecar: when the repeats has a sep
-      // AND the span is named (anonymous spans have no captures slot to
-      // attach iws to), the captures payload may carry `<spanName>_iws`.
-      // Tag the join with iwsRef so piecesToConcat emits an inline
-      // interleave via __rebuildSlotIws — it falls back to the static
-      // sep when captures.<name>_iws is missing (hand-built AST or
-      // fast-mode standard schema), so this is safe to emit for all
-      // schemas. `preserveWs` no longer gates it.
+      // Phase 4c v5 + Layer 3 raws sidecar: when the span is named
+      // (anonymous spans have no captures slot to attach iws to), the
+      // captures payload may carry `<spanName>_iws` — for both sep-
+      // bearing AND sep-less repeats. Tag the join with iwsRef so
+      // piecesToConcat emits an inline interleave via __rebuildSlotIws
+      // — it falls back to the static sep when captures.<name>_iws is
+      // missing (hand-built AST or fast-mode standard schema), so this
+      // is safe to emit for all schemas. `preserveWs` no longer gates it.
       void preserveWs;
-      if (m.sep !== undefined && span.name !== undefined) {
-        return { kind: 'sep', sep: m.sep, iwsRef: `${span.name}_iws` };
+      const staticSep = m.sep === undefined ? ' ' : m.sep;
+      if (span.name !== undefined) {
+        return { kind: 'sep', sep: staticSep, iwsRef: `${span.name}_iws` };
       }
-      return { kind: 'sep', sep: m.sep === undefined ? ' ' : m.sep };
+      return { kind: 'sep', sep: staticSep };
     }
   }
   return { kind: 'none' };

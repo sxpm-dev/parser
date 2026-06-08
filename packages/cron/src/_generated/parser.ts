@@ -433,14 +433,20 @@ function parseCommand(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __words_start = off;
   const words: unknown[] = [];
+  const __words_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __words_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseCommandWord(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__words_prevItemEnd >= 0 && __words_iws !== null) __words_iws.push(input.slice(__words_prevItemEnd, __itemStart));
     words.push(__cand);
+    __words_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (words.length < 1) { state.pos = entryOff; return null; }
@@ -448,7 +454,7 @@ function parseCommand(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Command#0", __ws: __ws, __litPres: __litPres, words: words };
+    const __captures: any = { __production: "Command#0", __ws: __ws, __litPres: __litPres, words_iws: __words_iws, words: words };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -567,7 +573,7 @@ function __build_CommandWord_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_Command_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "command", words: __renderSlot_ast(captures.words, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "command", words: __renderSlot_ast(captures.words, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "command", words: __renderSlot_ast(captures.words, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, words_iws: captures.words_iws } }) : { type: "command", words: __renderSlot_ast(captures.words, __indentCol) });
 }
 
 function __build_Command_0_source(captures: any, __indentCol: number = 0): any {
@@ -729,7 +735,7 @@ function __rebuild_CommandWord_0(captures: any): string {
 }
 
 function __rebuild_Command_0(captures: any): string {
-  return String(__rebuildSlot(captures.words, " "));
+  return String(__rebuildSlotIws(captures.words, captures.words_iws, " "));
 }
 
 function __rebuild_Cron_0(captures: any): string {
@@ -865,7 +871,7 @@ function __invert_Command_0_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Command_0(captures, __indentCol);
   }
-  return String(__rebuildSlot(captures.words, " "));
+  return String(__rebuildSlotIws(captures.words, captures.words_iws, " "));
 }
 
 function __invert_Cron_0_ast(value: any, __indentCol: number = 0): string {
@@ -1063,7 +1069,7 @@ function __invert_Command_0_source(value: any, __indentCol: number = 0): string 
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Command_0(captures, __indentCol);
   }
-  return String(__rebuildSlot(captures.words, " "));
+  return String(__rebuildSlotIws(captures.words, captures.words_iws, " "));
 }
 
 function __invert_Cron_0_source(value: any, __indentCol: number = 0): string {

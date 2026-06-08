@@ -275,9 +275,13 @@ function parseHtmlDocument(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __children_start = off;
   const children: unknown[] = [];
+  const __children_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __children_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -303,14 +307,16 @@ function parseHtmlDocument(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__children_prevItemEnd >= 0 && __children_iws !== null) __children_iws.push(input.slice(__children_prevItemEnd, __itemStart));
     children.push(__cand);
+    __children_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __children_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "HtmlDocument#0", __ws: __ws, __litPres: __litPres, children: children };
+    const __captures: any = { __production: "HtmlDocument#0", __ws: __ws, __litPres: __litPres, children_iws: __children_iws, children: children };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1984,7 +1990,7 @@ state.pos = off;
 const __defaultTarget: string | undefined = undefined;
 
 function __build_HtmlDocument_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, children_iws: captures.children_iws } }) : { nodeName: "#document", mode: "no-quirks", childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlDocument_0_source(captures: any, __indentCol: number = 0): any {
@@ -2016,7 +2022,7 @@ function __build_Comment_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_HtmlElement_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws } }) : { _kind: "element-rawtext", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [{ nodeName: "#text", value: __renderSlot_ast(captures.children, __indentCol), parentNode: null }], parentNode: null });
 }
 
 function __build_HtmlElement_0_source(captures: any, __indentCol: number = 0): any {
@@ -2024,7 +2030,7 @@ function __build_HtmlElement_0_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_1_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws } }) : { _kind: "element-void", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_1_source(captures: any, __indentCol: number = 0): any {
@@ -2032,7 +2038,7 @@ function __build_HtmlElement_1_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_2_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws } }) : { _kind: "element-void-selfclose", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_2_source(captures: any, __indentCol: number = 0): any {
@@ -2040,7 +2046,7 @@ function __build_HtmlElement_2_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_3_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws } }) : { _kind: "element-selfclose-recovery", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: [], parentNode: null });
 }
 
 function __build_HtmlElement_3_source(captures: any, __indentCol: number = 0): any {
@@ -2048,7 +2054,7 @@ function __build_HtmlElement_3_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_4_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-li", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_4_source(captures: any, __indentCol: number = 0): any {
@@ -2056,7 +2062,7 @@ function __build_HtmlElement_4_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_5_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-dt-dd", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_5_source(captures: any, __indentCol: number = 0): any {
@@ -2064,7 +2070,7 @@ function __build_HtmlElement_5_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_6_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-tr", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_6_source(captures: any, __indentCol: number = 0): any {
@@ -2072,7 +2078,7 @@ function __build_HtmlElement_6_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_7_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-td-th", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_7_source(captures: any, __indentCol: number = 0): any {
@@ -2080,7 +2086,7 @@ function __build_HtmlElement_7_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_8_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-p", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_8_source(captures: any, __indentCol: number = 0): any {
@@ -2088,7 +2094,7 @@ function __build_HtmlElement_8_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_9_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-option", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_9_source(captures: any, __indentCol: number = 0): any {
@@ -2096,7 +2102,7 @@ function __build_HtmlElement_9_source(captures: any, __indentCol: number = 0): a
 }
 
 function __build_HtmlElement_10_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-html", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_10_source(captures: any, __indentCol: number = 0): any {
@@ -2104,7 +2110,7 @@ function __build_HtmlElement_10_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_11_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-head", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_11_source(captures: any, __indentCol: number = 0): any {
@@ -2112,7 +2118,7 @@ function __build_HtmlElement_11_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_12_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-tbody", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_12_source(captures: any, __indentCol: number = 0): any {
@@ -2120,7 +2126,7 @@ function __build_HtmlElement_12_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_13_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-thead", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_13_source(captures: any, __indentCol: number = 0): any {
@@ -2128,7 +2134,7 @@ function __build_HtmlElement_13_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_14_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-tfoot", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_14_source(captures: any, __indentCol: number = 0): any {
@@ -2136,7 +2142,7 @@ function __build_HtmlElement_14_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_15_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element-body", nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_15_source(captures: any, __indentCol: number = 0): any {
@@ -2144,7 +2150,7 @@ function __build_HtmlElement_15_source(captures: any, __indentCol: number = 0): 
 }
 
 function __build_HtmlElement_16_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
+  return (captures.__ws != null ? Object.assign({ _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, attrs_iws: captures.attrs_iws, children_iws: captures.children_iws } }) : { _kind: "element", _closeTag: __renderSlot_ast(captures.closeTag, __indentCol), nodeName: __renderSlot_ast(captures.tag, __indentCol), tagName: __renderSlot_ast(captures.tag, __indentCol), namespaceURI: "http://www.w3.org/1999/xhtml", attrs: __renderSlot_ast(captures.attrs, __indentCol), childNodes: __renderSlot_ast(captures.children, __indentCol), parentNode: null });
 }
 
 function __build_HtmlElement_16_source(captures: any, __indentCol: number = 0): any {
@@ -2356,7 +2362,7 @@ function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
 }
 
 function __rebuild_HtmlDocument_0(captures: any): string {
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __rebuild_Doctype_0(captures: any): string {
@@ -2372,71 +2378,71 @@ function __rebuild_Comment_0(captures: any): string {
 }
 
 function __rebuild_HtmlElement_0(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + ">" + __rebuildSlot(captures.children) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __rebuild_HtmlElement_1(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + ">";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + ">";
 }
 
 function __rebuild_HtmlElement_2(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "/>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + "/>";
 }
 
 function __rebuild_HtmlElement_3(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + "/>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + "/>";
 }
 
 function __rebuild_HtmlElement_4(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</li>";
 }
 
 function __rebuild_HtmlElement_5(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>" + "</dd>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</dt>" + "</dd>";
 }
 
 function __rebuild_HtmlElement_6(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tr>";
 }
 
 function __rebuild_HtmlElement_7(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>" + "</th>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</td>" + "</th>";
 }
 
 function __rebuild_HtmlElement_8(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</p>";
 }
 
 function __rebuild_HtmlElement_9(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>" + "</optgroup>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</option>" + "</optgroup>";
 }
 
 function __rebuild_HtmlElement_10(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</html>";
 }
 
 function __rebuild_HtmlElement_11(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</head>";
 }
 
 function __rebuild_HtmlElement_12(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tbody>";
 }
 
 function __rebuild_HtmlElement_13(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</thead>";
 }
 
 function __rebuild_HtmlElement_14(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tfoot>";
 }
 
 function __rebuild_HtmlElement_15(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</body>";
 }
 
 function __rebuild_HtmlElement_16(captures: any): string {
-  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlot(captures.attrs, " ")) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
+  return "<" + __rebuildSlot(captures.tag) + (captures.attrs == null ? "" : __rebuildSlotIws(captures.attrs, captures.attrs_iws, " ")) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __rebuild_TextNode_0(captures: any): string {
@@ -2485,7 +2491,7 @@ function __invert_HtmlDocument_0_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlDocument_0(captures, __indentCol);
   }
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __invert_Doctype_0_ast(value: any, __indentCol: number = 0): string {
@@ -2762,7 +2768,7 @@ function __invert_HtmlElement_4_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_4(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string {
@@ -2794,7 +2800,7 @@ function __invert_HtmlElement_5_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_5(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string {
@@ -2826,7 +2832,7 @@ function __invert_HtmlElement_6_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_6(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string {
@@ -2858,7 +2864,7 @@ function __invert_HtmlElement_7_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_7(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string {
@@ -2890,7 +2896,7 @@ function __invert_HtmlElement_8_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_8(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string {
@@ -2922,7 +2928,7 @@ function __invert_HtmlElement_9_ast(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_9(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): string {
@@ -2954,7 +2960,7 @@ function __invert_HtmlElement_10_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_10(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): string {
@@ -2986,7 +2992,7 @@ function __invert_HtmlElement_11_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_11(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): string {
@@ -3018,7 +3024,7 @@ function __invert_HtmlElement_12_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_12(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): string {
@@ -3050,7 +3056,7 @@ function __invert_HtmlElement_13_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_13(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): string {
@@ -3082,7 +3088,7 @@ function __invert_HtmlElement_14_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_14(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): string {
@@ -3114,7 +3120,7 @@ function __invert_HtmlElement_15_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_15(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): string {
@@ -3147,7 +3153,7 @@ function __invert_HtmlElement_16_ast(value: any, __indentCol: number = 0): strin
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_16(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_ast(value: any, __indentCol: number = 0): string {
@@ -3298,7 +3304,7 @@ function __invert_HtmlDocument_0_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlDocument_0(captures, __indentCol);
   }
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __invert_Doctype_0_source(value: any, __indentCol: number = 0): string {
@@ -3623,7 +3629,7 @@ function __invert_HtmlElement_4_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_4(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</li>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</li>";
 }
 
 function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): string {
@@ -3670,7 +3676,7 @@ function __invert_HtmlElement_5_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_5(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</dt>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</dt>";
 }
 
 function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): string {
@@ -3717,7 +3723,7 @@ function __invert_HtmlElement_6_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_6(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tr>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tr>";
 }
 
 function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): string {
@@ -3764,7 +3770,7 @@ function __invert_HtmlElement_7_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_7(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</td>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</td>";
 }
 
 function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): string {
@@ -3811,7 +3817,7 @@ function __invert_HtmlElement_8_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_8(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</p>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</p>";
 }
 
 function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): string {
@@ -3858,7 +3864,7 @@ function __invert_HtmlElement_9_source(value: any, __indentCol: number = 0): str
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_9(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</option>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</option>";
 }
 
 function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): string {
@@ -3905,7 +3911,7 @@ function __invert_HtmlElement_10_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_10(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</html>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</html>";
 }
 
 function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): string {
@@ -3952,7 +3958,7 @@ function __invert_HtmlElement_11_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_11(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</head>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</head>";
 }
 
 function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): string {
@@ -3999,7 +4005,7 @@ function __invert_HtmlElement_12_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_12(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tbody>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tbody>";
 }
 
 function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): string {
@@ -4046,7 +4052,7 @@ function __invert_HtmlElement_13_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_13(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</thead>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</thead>";
 }
 
 function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): string {
@@ -4093,7 +4099,7 @@ function __invert_HtmlElement_14_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_14(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</tfoot>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</tfoot>";
 }
 
 function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): string {
@@ -4140,7 +4146,7 @@ function __invert_HtmlElement_15_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_15(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</body>";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</body>";
 }
 
 function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): string {
@@ -4192,7 +4198,7 @@ function __invert_HtmlElement_16_source(value: any, __indentCol: number = 0): st
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_HtmlElement_16(captures, __indentCol);
   }
-  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlot(captures.children, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
+  return "<" + __rebuildSlot(captures.tag) + (captures.children == null ? "" : ">" + __rebuildSlotIws(captures.children, captures.children_iws, " ")) + "</" + __rebuildSlot(captures.closeTag) + ">";
 }
 
 function __invert_TextNode_0_source(value: any, __indentCol: number = 0): string {

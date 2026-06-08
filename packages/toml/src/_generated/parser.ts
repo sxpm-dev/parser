@@ -448,21 +448,27 @@ function parseTable(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __pairs_start = off;
   const pairs: unknown[] = [];
+  const __pairs_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __pairs_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parsePair(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__pairs_prevItemEnd >= 0 && __pairs_iws !== null) __pairs_iws.push(input.slice(__pairs_prevItemEnd, __itemStart));
     pairs.push(__cand);
+    __pairs_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __pairs_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Table#0", __ws: __ws, __litPres: __litPres, name: name, pairs: pairs };
+    const __captures: any = { __production: "Table#0", __ws: __ws, __litPres: __litPres, pairs_iws: __pairs_iws, name: name, pairs: pairs };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -479,9 +485,13 @@ function parseDocument(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
+  const __items_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __items_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -501,14 +511,16 @@ function parseDocument(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__items_prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__items_prevItemEnd, __itemStart));
     items.push(__cand);
+    __items_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __items_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Document#0", __ws: __ws, __litPres: __litPres, items: items };
+    const __captures: any = { __production: "Document#0", __ws: __ws, __litPres: __litPres, items_iws: __items_iws, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -558,7 +570,7 @@ function __build_Pair_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Table_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, pairs_iws: captures.pairs_iws } }) : { type: "table", name: __renderSlot_ast(captures.name, __indentCol), pairs: __renderSlot_ast(captures.pairs, __indentCol) });
 }
 
 function __build_Table_0_source(captures: any, __indentCol: number = 0): any {
@@ -566,7 +578,7 @@ function __build_Table_0_source(captures: any, __indentCol: number = 0): any {
 }
 
 function __build_Document_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "document", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "document", items: __renderSlot_ast(captures.items, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "document", items: __renderSlot_ast(captures.items, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, items_iws: captures.items_iws } }) : { type: "document", items: __renderSlot_ast(captures.items, __indentCol) });
 }
 
 function __build_Document_0_source(captures: any, __indentCol: number = 0): any {
@@ -721,11 +733,11 @@ function __rebuild_Pair_0(captures: any): string {
 }
 
 function __rebuild_Table_0(captures: any): string {
-  return "[" + __rebuildSlot(captures.name) + "]" + (captures.pairs == null ? (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : "") : (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlot(captures.pairs, " "));
+  return "[" + __rebuildSlot(captures.name) + "]" + (captures.pairs == null ? (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : "") : (captures.__ws && captures.__ws[0] !== undefined ? captures.__ws[0] : " ") + __rebuildSlotIws(captures.pairs, captures.pairs_iws, " "));
 }
 
 function __rebuild_Document_0(captures: any): string {
-  return String((captures.items == null ? "" : __rebuildSlot(captures.items, " ")));
+  return String((captures.items == null ? "" : __rebuildSlotIws(captures.items, captures.items_iws, " ")));
 }
 
 function __invert_Value_0_ast(value: any, __indentCol: number = 0): string {
@@ -869,7 +881,7 @@ function __invert_Table_0_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Table_0(captures, __indentCol);
   }
-  return "[" + __rebuildSlot(captures.name) + (captures.pairs == null ? "" : "] " + __rebuildSlot(captures.pairs, " "));
+  return "[" + __rebuildSlot(captures.name) + (captures.pairs == null ? "" : "] " + __rebuildSlotIws(captures.pairs, captures.pairs_iws, " "));
 }
 
 function __invert_Document_0_ast(value: any, __indentCol: number = 0): string {
@@ -892,7 +904,7 @@ function __invert_Document_0_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Document_0(captures, __indentCol);
   }
-  return String((captures.items == null ? "" : __rebuildSlot(captures.items, " ")));
+  return String((captures.items == null ? "" : __rebuildSlotIws(captures.items, captures.items_iws, " ")));
 }
 
 function __invert_Value_0_source(value: any, __indentCol: number = 0): string {
@@ -1079,7 +1091,7 @@ function __invert_Table_0_source(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Table_0(captures, __indentCol);
   }
-  return "[" + __rebuildSlot(captures.name) + (captures.pairs == null ? "" : "] " + __rebuildSlot(captures.pairs, " "));
+  return "[" + __rebuildSlot(captures.name) + (captures.pairs == null ? "" : "] " + __rebuildSlotIws(captures.pairs, captures.pairs_iws, " "));
 }
 
 function __invert_Document_0_source(value: any, __indentCol: number = 0): string {
@@ -1109,7 +1121,7 @@ function __invert_Document_0_source(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Document_0(captures, __indentCol);
   }
-  return String((captures.items == null ? "" : __rebuildSlot(captures.items, " ")));
+  return String((captures.items == null ? "" : __rebuildSlotIws(captures.items, captures.items_iws, " ")));
 }
 
 function __dispatchInverse_Value_ast(value: any, __indentCol: number = 0): string {

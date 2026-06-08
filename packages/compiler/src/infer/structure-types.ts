@@ -101,12 +101,13 @@ export function inferStructureTypes(schema: InferredSchema): StructureTypes {
         if (preserveWs && target === 'ast' && ts.kind === 'object') {
           // Mirror emit/render.ts iwsFields: type the per-repeats-span
           // `<name>_iws` array fields as `string[]` so consumers see
-          // them at the type level too.
+          // them at the type level too. Phase 4c v5: sep-bearing AND
+          // sep-less repeats both contribute an iws field.
           const iwsTsFields: Array<{ name: string; type: TsType }> = [];
           for (const span of production.spans) {
             if (!span.name) continue;
             for (const m of span.modifiers) {
-              if (m.kind === 'repeats' && m.sep !== undefined) {
+              if (m.kind === 'repeats') {
                 iwsTsFields.push({
                   name: `${span.name}_iws`,
                   type: { kind: 'array', element: { kind: 'string' } },

@@ -515,14 +515,20 @@ function parseDuration__alt0(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
+  const __date_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __date_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseDateUnit(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__date_prevItemEnd >= 0 && __date_iws !== null) __date_iws.push(input.slice(__date_prevItemEnd, __itemStart));
     date.push(__cand);
+    __date_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (date.length < 1) { state.pos = entryOff; return null; }
@@ -530,7 +536,7 @@ function parseDuration__alt0(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Duration#0", __ws: __ws, __litPres: __litPres, date: date };
+    const __captures: any = { __production: "Duration#0", __ws: __ws, __litPres: __litPres, date_iws: __date_iws, date: date };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -552,14 +558,20 @@ function parseDuration__alt1(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_1, off));
   const __date_start = off;
   const date: unknown[] = [];
+  const __date_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __date_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseDateUnit(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__date_prevItemEnd >= 0 && __date_iws !== null) __date_iws.push(input.slice(__date_prevItemEnd, __itemStart));
     date.push(__cand);
+    __date_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __date_end = off;
@@ -573,14 +585,20 @@ function parseDuration__alt1(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_3, off));
   const __time_start = off;
   const time: unknown[] = [];
+  const __time_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __time_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = parseTimeUnit(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__time_prevItemEnd >= 0 && __time_iws !== null) __time_iws.push(input.slice(__time_prevItemEnd, __itemStart));
     time.push(__cand);
+    __time_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (time.length < 1) { state.pos = entryOff; return null; }
@@ -588,7 +606,7 @@ function parseDuration__alt1(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "Duration#1", __ws: __ws, __litPres: __litPres, date: date, time: time };
+    const __captures: any = { __production: "Duration#1", __ws: __ws, __litPres: __litPres, date_iws: __date_iws, time_iws: __time_iws, date: date, time: time };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -668,7 +686,7 @@ function __build_TimeUnit_2_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Duration_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, date_iws: captures.date_iws } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol) });
 }
 
 function __build_Duration_0_source(captures: any, __indentCol: number = 0): any {
@@ -676,7 +694,7 @@ function __build_Duration_0_source(captures: any, __indentCol: number = 0): any 
 }
 
 function __build_Duration_1_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, date_iws: captures.date_iws, time_iws: captures.time_iws } }) : { type: "duration", date: __renderSlot_ast(captures.date, __indentCol), time: __renderSlot_ast(captures.time, __indentCol) });
 }
 
 function __build_Duration_1_source(captures: any, __indentCol: number = 0): any {
@@ -843,11 +861,11 @@ function __rebuild_TimeUnit_2(captures: any): string {
 }
 
 function __rebuild_Duration_0(captures: any): string {
-  return "P" + __rebuildSlot(captures.date, " ");
+  return "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ");
 }
 
 function __rebuild_Duration_1(captures: any): string {
-  return (captures.date == null ? "" : "P" + __rebuildSlot(captures.date, " ")) + "T" + __rebuildSlot(captures.time, " ");
+  return (captures.date == null ? "" : "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ")) + "T" + __rebuildSlotIws(captures.time, captures.time_iws, " ");
 }
 
 function __invert_DateUnit_0_ast(value: any, __indentCol: number = 0): string {
@@ -1031,7 +1049,7 @@ function __invert_Duration_0_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Duration_0(captures, __indentCol);
   }
-  return "P" + __rebuildSlot(captures.date, " ");
+  return "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ");
 }
 
 function __invert_Duration_1_ast(value: any, __indentCol: number = 0): string {
@@ -1055,7 +1073,7 @@ function __invert_Duration_1_ast(value: any, __indentCol: number = 0): string {
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Duration_1(captures, __indentCol);
   }
-  return (captures.date == null ? "" : "P" + __rebuildSlot(captures.date, " ")) + "T" + __rebuildSlot(captures.time, " ");
+  return (captures.date == null ? "" : "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ")) + "T" + __rebuildSlotIws(captures.time, captures.time_iws, " ");
 }
 
 function __invert_DateUnit_0_source(value: any, __indentCol: number = 0): string {
@@ -1309,7 +1327,7 @@ function __invert_Duration_0_source(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Duration_0(captures, __indentCol);
   }
-  return "P" + __rebuildSlot(captures.date, " ");
+  return "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ");
 }
 
 function __invert_Duration_1_source(value: any, __indentCol: number = 0): string {
@@ -1347,7 +1365,7 @@ function __invert_Duration_1_source(value: any, __indentCol: number = 0): string
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_Duration_1(captures, __indentCol);
   }
-  return (captures.date == null ? "" : "P" + __rebuildSlot(captures.date, " ")) + "T" + __rebuildSlot(captures.time, " ");
+  return (captures.date == null ? "" : "P" + __rebuildSlotIws(captures.date, captures.date_iws, " ")) + "T" + __rebuildSlotIws(captures.time, captures.time_iws, " ");
 }
 
 function __dispatchInverse_DateUnit_ast(value: any, __indentCol: number = 0): string {

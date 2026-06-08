@@ -272,9 +272,13 @@ function parseMarkdownDocument(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __children_start = off;
   const children: unknown[] = [];
+  const __children_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __children_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     while (off < len) {
       const __wc = input.charCodeAt(off);
       if (__wc === 0x20 || __wc === 0x09 || __wc === 0x0a || __wc === 0x0d) { off++; continue; }
@@ -288,14 +292,16 @@ function parseMarkdownDocument(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__children_prevItemEnd >= 0 && __children_iws !== null) __children_iws.push(input.slice(__children_prevItemEnd, __itemStart));
     children.push(__cand);
+    __children_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __children_end = off;
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "MarkdownDocument#0", __ws: __ws, __litPres: __litPres, children: children };
+    const __captures: any = { __production: "MarkdownDocument#0", __ws: __ws, __litPres: __litPres, children_iws: __children_iws, children: children };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2789,7 +2795,7 @@ function parseMarkdownParagraph(state: State): unknown {
 const __defaultTarget: string | undefined = undefined;
 
 function __build_MarkdownDocument_0_ast(captures: any, __indentCol: number = 0): any {
-  return (captures.__ws != null ? Object.assign({ type: "document", children: __renderSlot_ast(captures.children, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres } }) : { type: "document", children: __renderSlot_ast(captures.children, __indentCol) });
+  return (captures.__ws != null ? Object.assign({ type: "document", children: __renderSlot_ast(captures.children, __indentCol) }, { raws: { __ws: captures.__ws, __litPres: captures.__litPres, children_iws: captures.children_iws } }) : { type: "document", children: __renderSlot_ast(captures.children, __indentCol) });
 }
 
 function __build_MarkdownDocument_0_html(captures: any, __indentCol: number = 0): any {
@@ -3510,7 +3516,7 @@ function __rebuildSlotIws(v: any, iws: any, fallbackSep: string): string {
 }
 
 function __rebuild_MarkdownDocument_0(captures: any): string {
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __rebuild_MarkdownLeaf_0(captures: any): string {
@@ -3685,7 +3691,7 @@ function __invert_MarkdownDocument_0_ast(value: any, __indentCol: number = 0): s
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_MarkdownDocument_0(captures, __indentCol);
   }
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __invert_MarkdownLeaf_0_ast(value: any, __indentCol: number = 0): string {
@@ -4685,7 +4691,7 @@ function __invert_MarkdownDocument_0_html(value: any, __indentCol: number = 0): 
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_MarkdownDocument_0(captures, __indentCol);
   }
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __invert_MarkdownLeaf_0_html(value: any, __indentCol: number = 0): string {
@@ -6111,7 +6117,7 @@ function __invert_MarkdownDocument_0_source(value: any, __indentCol: number = 0)
   if (value !== null && typeof value === 'object' && (value as any).raws !== null && typeof (value as any).raws === 'object') {
     return __rebuild_MarkdownDocument_0(captures, __indentCol);
   }
-  return String((captures.children == null ? "" : __rebuildSlot(captures.children, " ")));
+  return String((captures.children == null ? "" : __rebuildSlotIws(captures.children, captures.children_iws, " ")));
 }
 
 function __invert_MarkdownLeaf_0_source(value: any, __indentCol: number = 0): string {

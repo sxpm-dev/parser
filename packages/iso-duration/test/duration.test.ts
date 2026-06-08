@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { render, stringify, validate } from '../src/index.ts';
+import { render as renderRaws } from '../src/_generated/parser.ts';
 
 // Strip auto-attached `source` metadata so structural asserts stay terse.
 function strip(value: unknown): unknown {
@@ -126,6 +127,25 @@ test('stringify(ast) reconstructs a value-stable source string', () => {
 
   const dtValue = render('P1DT1H', { target: 'ast' });
   assert.equal(stringify(dtValue, { target: 'ast' }), 'P1DT1H');
+});
+
+test('raws-mode round-trip is byte-exact for multi-unit durations', () => {
+  // iso-duration uses `.repeats()` without a `sep` (the interp loops
+  // on zero-length sep sweeps). Standard whitespace policy means the
+  // fast-mode canonical formatter inserts a single space between
+  // adjacent unit children, so 'P1Y2M3D' round-trips as 'P1Y 2M 3D'
+  // through fast stringify (the source/target tests above confirm
+  // this is the value-stable contract).
+  //
+  // Raws mode captures the actual inter-item bytes into a per-span
+  // `<name>_iws` array stashed on the AST's `.raws` sidecar; stringify
+  // reads them back and produces byte-exact output. This was the
+  // missing piece for grammars that can't use `sep: ''`.
+  for (const input of ['P1Y2M3D', 'P1Y2M3DT4H5M6S', 'PT1H2M3S', 'P1DT1H']) {
+    const ast = renderRaws(input, { target: 'ast', mode: 'raws' });
+    const out = stringify(ast, { target: 'ast' });
+    assert.equal(out, input, `raws-mode round-trip lost trivia for ${JSON.stringify(input)}`);
+  }
 });
 
 test('validate accepts well-formed durations and rejects malformed ones', () => {

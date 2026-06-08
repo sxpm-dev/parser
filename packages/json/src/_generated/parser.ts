@@ -521,7 +521,7 @@ function parseJsonArray(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __items_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __items_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -572,9 +572,9 @@ function parseJsonArray(state: State): unknown {
     __cand = parseJsonValue(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__items_prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__items_prevItemEnd, __itemStart));
     items.push(__cand);
-    __prevItemEnd = off;
+    __items_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __items_end = off;
@@ -808,7 +808,7 @@ function parseJsonObject(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __entries_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __entries_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -859,9 +859,9 @@ function parseJsonObject(state: State): unknown {
     __cand = parseJsonMember(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __entries_iws !== null) __entries_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__entries_prevItemEnd >= 0 && __entries_iws !== null) __entries_iws.push(input.slice(__entries_prevItemEnd, __itemStart));
     entries.push(__cand);
-    __prevItemEnd = off;
+    __entries_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __entries_end = off;

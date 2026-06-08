@@ -350,14 +350,20 @@ function __v0_parseCssColorValue__alt2(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
+  const __args_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __args_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = __v0_parseNumericColorFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__args_prevItemEnd >= 0 && __args_iws !== null) __args_iws.push(input.slice(__args_prevItemEnd, __itemStart));
     args.push(__cand);
+    __args_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
@@ -370,7 +376,7 @@ function __v0_parseCssColorValue__alt2(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#2", __ws: __ws, __litPres: __litPres, name: name, args: args };
+    const __captures: any = { __production: "CssColorValue#2", __ws: __ws, __litPres: __litPres, args_iws: __args_iws, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -402,14 +408,20 @@ function __v0_parseCssColorValue__alt3(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
+  const __args_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __args_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = __v0_parseColorFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__args_prevItemEnd >= 0 && __args_iws !== null) __args_iws.push(input.slice(__args_prevItemEnd, __itemStart));
     args.push(__cand);
+    __args_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
@@ -422,7 +434,7 @@ function __v0_parseCssColorValue__alt3(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssColorValue#3", __ws: __ws, __litPres: __litPres, name: name, args: args };
+    const __captures: any = { __production: "CssColorValue#3", __ws: __ws, __litPres: __litPres, args_iws: __args_iws, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1118,14 +1130,20 @@ function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   if (__ws !== null) __ws.push(input.slice(__wsStart_2, off));
   const __args_start = off;
   const args: unknown[] = [];
+  const __args_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __args_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = __v1_parseLengthFunctionToken(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__args_prevItemEnd >= 0 && __args_iws !== null) __args_iws.push(input.slice(__args_prevItemEnd, __itemStart));
     args.push(__cand);
+    __args_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (args.length < 1) { state.pos = entryOff; return null; }
@@ -1138,7 +1156,7 @@ function __v1_parseLengthPercentageItem__alt5(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "LengthPercentageItem#5", __ws: __ws, __litPres: __litPres, name: name, args: args };
+    const __captures: any = { __production: "LengthPercentageItem#5", __ws: __ws, __litPres: __litPres, args_iws: __args_iws, name: name, args: args };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -1563,14 +1581,20 @@ function __v1_parseCssLengthPercentage(state: State): unknown {
   const __litPres: boolean[] | null = state.mode === 'raws' ? [] : null;
   const __items_start = off;
   const items: unknown[] = [];
+  const __items_iws: string[] | null = state.mode === 'raws' ? [] : null;
+  let __items_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
+    while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }
     let __cand: unknown = null;
+    const __itemStart = off;
     state.pos = off;
     __cand = __v1_parseLengthPercentageItem(state);
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
+    if (__items_prevItemEnd >= 0 && __items_iws !== null) __items_iws.push(input.slice(__items_prevItemEnd, __itemStart));
     items.push(__cand);
+    __items_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   if (items.length < 1) { state.pos = entryOff; return null; }
@@ -1579,7 +1603,7 @@ function __v1_parseCssLengthPercentage(state: State): unknown {
   state.pos = off;
   if (off > state.maxOff) state.maxOff = off;
   if (state.mode === 'raws') {
-    const __captures: any = { __production: "CssLengthPercentage#0", __ws: __ws, __litPres: __litPres, items: items };
+    const __captures: any = { __production: "CssLengthPercentage#0", __ws: __ws, __litPres: __litPres, items_iws: __items_iws, items: items };
     if (__captures && typeof __captures === 'object' && !Array.isArray(__captures)) __captures.source = makeSource(state, entryOff, off);
     return __captures;
   }
@@ -2483,7 +2507,7 @@ function parseRule(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __nodes_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -2517,9 +2541,9 @@ function parseRule(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__nodes_prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__nodes_prevItemEnd, __itemStart));
     nodes.push(__cand);
-    __prevItemEnd = off;
+    __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;
@@ -2745,7 +2769,7 @@ function parseAtRule__alt0(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __nodes_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -2779,9 +2803,9 @@ function parseAtRule__alt0(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__nodes_prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__nodes_prevItemEnd, __itemStart));
     nodes.push(__cand);
-    __prevItemEnd = off;
+    __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;
@@ -3026,7 +3050,7 @@ function parseStylesheet(state: State): unknown {
   let __sepConsumed = false;
   let __preSweep = off;
   const __nodes_iws: string[] | null = state.mode === 'raws' ? [] : null;
-  let __prevItemEnd = -1;
+  let __nodes_prevItemEnd = -1;
   while (true) {
     const __loopStart = off;
     __preSweep = off;
@@ -3060,9 +3084,9 @@ function parseStylesheet(state: State): unknown {
     }
     if (__cand !== null) { off = state.pos; }
     if (__cand === null) break;
-    if (__prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__prevItemEnd, __itemStart));
+    if (__nodes_prevItemEnd >= 0 && __nodes_iws !== null) __nodes_iws.push(input.slice(__nodes_prevItemEnd, __itemStart));
     nodes.push(__cand);
-    __prevItemEnd = off;
+    __nodes_prevItemEnd = off;
     if (off === __loopStart) break;
   }
   const __nodes_end = off;

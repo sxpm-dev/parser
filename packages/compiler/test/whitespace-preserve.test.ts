@@ -308,6 +308,76 @@ test('v2: whitespace:preserve preserves leading/trailing root whitespace', async
   }
 });
 
+// Phase 4c v5 — sep-less .repeats() should also capture per-iteration
+// trivia. Schemas that need byte-exact round-trip but can't use sep:''
+// (the interp loops on zero-length sep sweeps) currently lose the
+// inter-item whitespace because captureIws was gated on sep !== undefined.
+// Without iws, the rebuild interleaves items with the schema's canonical
+// separator (a single space for standard policy / empty for preserve),
+// so 'P1Y\t2M' round-trips as 'P1Y2M' (preserve) or 'P1Y 2M' (standard)
+// — both wrong. Drop the sep gate so iws fires for ALL named repeats.
+test('v2: whitespace:preserve gives byte-exact round-trip for sep-less .repeats()', async () => {
+  const schema = defineSchema({
+    rootType: 'Bag',
+    whitespace: 'preserve',
+    examples: [
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          parse: parse([span('name', 'x').ident()]),
+          ast: { type: 'atom', name: $.name },
+        },
+      }),
+      relation('Bag', {
+        input: 'a b',
+        encodings: {
+          parse: parse([
+            span('items', 'a').of('Atom').repeats({ min: 1 }),
+          ]),
+          ast: { type: 'bag', items: $.items },
+        },
+      }),
+    ],
+  });
+  const { render, stringify } = await loadV2(schema);
+  for (const input of ['a b', 'a  b', 'a\tb', 'ab', 'a b c', 'a  b\tc']) {
+    const ast = render(input, { target: 'ast' });
+    const out = stringify(ast, { target: 'ast' });
+    assert.equal(out, input, `sep-less repeats round-trip failed for ${JSON.stringify(input)}; got ${JSON.stringify(out)}`);
+  }
+});
+
+test('interp: whitespace:preserve gives byte-exact round-trip for sep-less .repeats()', () => {
+  const schema = defineSchema({
+    rootType: 'Bag',
+    whitespace: 'preserve',
+    examples: [
+      relation('Atom', {
+        input: 'x',
+        encodings: {
+          parse: parse([span('name', 'x').ident()]),
+          ast: { type: 'atom', name: $.name },
+        },
+      }),
+      relation('Bag', {
+        input: 'a b',
+        encodings: {
+          parse: parse([
+            span('items', 'a').of('Atom').repeats({ min: 1 }),
+          ]),
+          ast: { type: 'bag', items: $.items },
+        },
+      }),
+    ],
+  });
+  const inferred = inferSchema(schema);
+  for (const input of ['a b', 'a  b', 'a\tb', 'ab', 'a b c', 'a  b\tc']) {
+    const ast = interpretParse(inferred, input);
+    const out = interpretStringify(inferred, ast, 'ast');
+    assert.equal(out, input, `interp sep-less repeats round-trip failed for ${JSON.stringify(input)}; got ${JSON.stringify(out)}`);
+  }
+});
+
 test('v2: whitespace:standard schema still canonicalizes ws to single space', async () => {
   // Baseline: ensure default schemas behavior is unchanged.
   const schema = defineSchema({

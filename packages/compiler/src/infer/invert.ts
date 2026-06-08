@@ -91,14 +91,15 @@ export function deriveInverses(
           entry.target === 'ast' &&
           derived.kind === 'object'
         ) {
-          // Phase 4c v2: per-`<name>_iws` field for every named
-          // .repeats({sep}) span. Mirror emit/render.ts's iwsFields
-          // forwarding so the inverse reads them back into captures.
+          // Phase 4c v5: per-`<name>_iws` field for every named
+          // .repeats() span — sep-bearing AND sep-less. Mirror emit/
+          // render.ts's iwsFields forwarding so the inverse reads them
+          // back into captures.
           const iwsFields = [];
           for (const span of production.spans) {
             if (!span.name) continue;
             for (const m of span.modifiers) {
-              if (m.kind === 'repeats' && m.sep !== undefined) {
+              if (m.kind === 'repeats') {
                 const key = `${span.name}_iws`;
                 iwsFields.push({ kind: 'inverse' as const, name: key, inverse: { kind: 'ref' as const, capture: key } });
                 break;

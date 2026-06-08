@@ -457,18 +457,22 @@ function emitRepeatsSpan(
   const trailing = repeats.trailing ?? 'allowed';
   const listVar = span.name ? jsIdent(span.name) : '__repeated';
   const startVar = `__${listVar}_start`, endVar = `__${listVar}_end`;
-  // Phase 4c v2: per-iteration ws capture. Only when the schema is
-  // preserve, the span has a sep, and the span is named (anonymous
-  // repeats have no captures slot to attach iws to). Gated this tightly
-  // because the non-sep case has no "between" content worth recording
-  // (inter-item ws is what the parent's __ws already covers).
+  // Phase 4c v5: per-iteration ws capture for every named .repeats() —
+  // sep-bearing AND sep-less. The sep-less case fires when callers need
+  // byte-exact round-trip on grammars that can't use `sep: ''` (the
+  // interp loops on zero-length sweeps). The captured slice is the
+  // inter-item region the loop body's leading ws-skip just consumed.
   // iws capture fires whenever the production-level ws capture is on
   // (preserve schemas eagerly; standard schemas lazily under raws mode).
   // The actual array is `string[]` for eager and `string[] | null` for
   // lazy — push sites are wrapped accordingly below.
-  const captureIws = ctx.wsCaptureMode !== 'none' && sep !== undefined && span.name !== undefined;
+  const captureIws = ctx.wsCaptureMode !== 'none' && span.name !== undefined;
   const iwsEager = ctx.wsCaptureMode === 'always';
   const iwsVar = captureIws ? `__${listVar}_iws` : '';
+  // Scope-uniquify __prevItemEnd by the listVar so two .repeats() spans
+  // in the same production (e.g. iso-duration's `date` + `time`) don't
+  // redeclare the same `let` binding at the production function scope.
+  const prevItemEndVar = captureIws ? `__${listVar}_prevItemEnd` : '';
 
   if (span.name) {
     bindings.valueExpr.set(span.name, listVar);
@@ -647,7 +651,7 @@ while (${literalMatchExpr(sep, 'off')}) {
     } else {
       lines.push(`const ${iwsVar}: string[] | null = state.mode === 'raws' ? [] : null;`);
     }
-    lines.push(`let __prevItemEnd = -1;`);
+    lines.push(`let ${prevItemEndVar} = -1;`);
   }
   if (isIndented) {
     // Indent prologue: skip blank lines + horizontal ws to find first item's
@@ -713,20 +717,27 @@ while (${literalMatchExpr(sep, 'off')}) {
     // sep cannot be "trailing").
     lines.push(indent(sepBlock, 1));
   }
+  if (sep === undefined && (stopBeforeCheck || captureIws)) {
+    // Inter-iteration ws-skip. Two reasons it must run BEFORE the rest of
+    // the loop body:
+    //   1. stopBeforeCheck — tryItemBlock's own ws-skip (via emitRoleLadder)
+    //      runs AFTER the stop check, so without this line a whitespace-
+    //      prefixed stop trigger (e.g. `</code> <tr>`) would miss the
+    //      check; the dispatch would then match the trigger as a child.
+    //      When that child is itself a stopBefore-bearing repeats span
+    //      (HTML's `<tr>` inside a `<td>`), every sibling row drives one
+    //      extra recursion frame and the stack blows on large documents.
+    //   2. captureIws — `__itemStart` is snapshotted below before
+    //      tryItemBlock runs, and tryItemBlock's internal ws-skip
+    //      advances state.pos past leading ws BEFORE we observe it. So
+    //      without this line `input.slice(__prevItemEnd, __itemStart)`
+    //      would be empty even when there IS inter-item whitespace.
+    // The fused-render path in fusion.ts emits the same skip in the same
+    // spot for byte-equivalence. When `sep` is defined, sepBlock already
+    // lands us on the post-ws byte and this skip would be redundant.
+    lines.push(`  while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
+  }
   if (stopBeforeCheck) {
-    if (sep === undefined) {
-      // Inter-iteration ws-skip BEFORE the stop check. tryItemBlock's own
-      // ws-skip (via emitRoleLadder) runs AFTER this check, so without this
-      // line a whitespace-prefixed stop trigger (e.g. `</code> <tr>`) would
-      // miss the check; the dispatch would then match the trigger as a
-      // child. When that child is itself a stopBefore-bearing repeats span
-      // (HTML's `<tr>` inside a `<td>`), every sibling row drives one extra
-      // recursion frame and the stack blows on large documents. The fused-
-      // render path in fusion.ts emits the same skip in the same spot for
-      // byte-equivalence. When `sep` is defined, sepBlock already lands us
-      // on the post-ws byte and this skip would be redundant.
-      lines.push(`  while (off < len) { const __ws = input.charCodeAt(off); if (__ws === 0x20 || __ws === 0x09 || __ws === 0x0a || __ws === 0x0d) { off++; continue; } break; }`);
-    }
     lines.push(indent(stopBeforeCheck, 1));
   }
   lines.push(`  let __cand: unknown = null;`);
@@ -740,18 +751,18 @@ while (${literalMatchExpr(sep, 'off')}) {
   lines.push(`  if (__cand === null) break;`);
   if (captureIws) {
     // Archive the slice between the previous item's end and this
-    // item's start. Skip on the first item (__prevItemEnd === -1).
+    // item's start. Skip on the first item (prevItemEnd === -1).
     // Raws-only mode further gates the push on the lazy-allocated array
     // being non-null (fast mode leaves it null and skips entirely).
     if (iwsEager) {
-      lines.push(`  if (__prevItemEnd >= 0) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+      lines.push(`  if (${prevItemEndVar} >= 0) ${iwsVar}.push(input.slice(${prevItemEndVar}, __itemStart));`);
     } else {
-      lines.push(`  if (__prevItemEnd >= 0 && ${iwsVar} !== null) ${iwsVar}.push(input.slice(__prevItemEnd, __itemStart));`);
+      lines.push(`  if (${prevItemEndVar} >= 0 && ${iwsVar} !== null) ${iwsVar}.push(input.slice(${prevItemEndVar}, __itemStart));`);
     }
   }
   lines.push(`  ${listVar}.push(__cand);`);
   if (captureIws) {
-    lines.push(`  __prevItemEnd = off;`);
+    lines.push(`  ${prevItemEndVar} = off;`);
   }
   lines.push(`  if (off === __loopStart) break;`);
   lines.push(`}`);

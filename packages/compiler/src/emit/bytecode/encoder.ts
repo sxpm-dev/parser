@@ -77,6 +77,10 @@ export type EncodedSchema = {
   // schema did not declare one. The generated `render()` / `stringify()`
   // entries use this when the caller omits `options.type`.
   readonly defaultTarget?: string;
+  // Operator literals from `schema.operatorLiterals` — sorted longest-
+  // first by the inference pass. Consumed by SCAN_CLASS / OPERATOR at
+  // runtime. Empty for schemas without an `operators:` declaration.
+  readonly operatorLiterals: ReadonlyArray<string>;
 };
 
 // Internal: mutable encoder state. Kept out of EncodedSchema (which is the
@@ -267,6 +271,7 @@ export function encodeSchema(schema: InferredSchema): EncodedSchema {
     rootProductionKey: rootKey,
     targets,
     defaultTarget: schema.defaultTarget,
+    operatorLiterals: schema.operatorLiterals,
   };
 }
 
@@ -1402,6 +1407,7 @@ function mapClassKind(cls: string): ScanClassKind {
     case 'hex': return ScanClassKind.HEX;
     case 'string': return ScanClassKind.STRING;
     case 'comment': return ScanClassKind.COMMENT;
+    case 'operator': return ScanClassKind.OPERATOR;
     default:
       throw new Error(`bytecode encoder: SCAN_CLASS does not yet support class '${cls}' (Task 6.2 covers cron primitives only)`);
   }

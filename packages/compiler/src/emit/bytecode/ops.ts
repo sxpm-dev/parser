@@ -179,13 +179,23 @@ export const INVERSE_TEMPLATE_ROLE_NONE = 0xffffffff;
 
 // Class-kind enum values for SCAN_CLASS's first operand byte. Kept small
 // (u8) so the operand fits in a single byte. The runtime maps these to its
-// existing class scanners (ident / number / hex / string / comment).
+// existing class scanners (ident / number / hex / string / comment /
+// operator).
+//
+// OPERATOR: longest-match dispatch over the schema's `operators:` pool
+// (encoded once in EncodedSchema.operatorLiterals, sorted longest-first).
+// The SCAN_CLASS operand stream still carries a refinement key u32 — for
+// operator spans it's the unused empty string. The runtime reads the
+// operator literal list off RuntimeState (populated by decodeSchema from
+// the EncodedSchema preamble), tries each in declaration order, and
+// advances `off` by the matched literal's length.
 export enum ScanClassKind {
   IDENT = 1,
   NUMBER = 2,
   HEX = 3,
   STRING = 4,
   COMMENT = 5,
+  OPERATOR = 6,
 }
 
 // Per-opcode operand-byte widths. Each entry is the list of operand sizes in

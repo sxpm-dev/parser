@@ -42,3 +42,69 @@ test('bytecode backend: cron emits a runnable parser', async () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('bytecode backend: .operator() longest-match scan + capture end-to-end', async () => {
+  // Synthetic minimal schema covering the SCAN_CLASS OPERATOR path:
+  // `<lhs> <op> <rhs>` where `<op>` is one of `!=` / `<=` / `>=` / `=`
+  // / `<` / `>`. The longest-match dispatch must pick `!=` over `!`
+  // etc., and the captured `op` value must equal the matched literal.
+  //
+  // pg-select itself uses additional primitives (sep-bearing repeats,
+  // stopBefore, prefix-share dispatcher) that the bytecode runtime
+  // doesn't yet support, so the end-to-end test uses this trimmed
+  // shape instead — but the .operator() path it exercises is the same
+  // one pg-select would hit once those primitives land.
+  const {
+    $: dsl,
+    defineSchema,
+    parse,
+    relation,
+    span,
+    tpl,
+  } = await import('@parser2/parser');
+  const schemaInput = defineSchema({
+    rootType: 'Compare',
+    operators: {
+      cmp: ['!=', '<=', '>=', '=', '<', '>'],
+    },
+    examples: [
+      relation('Compare', {
+        input: 'a = b',
+        encodings: {
+          parse: parse([
+            span('lhs', 'a').ident(),
+            span('op', '=').operator(),
+            span('rhs', 'b').ident(),
+          ]),
+          ast: { type: 'cmp', lhs: dsl.lhs, op: dsl.op, rhs: dsl.rhs },
+          source: tpl`${dsl.lhs} ${dsl.op} ${dsl.rhs}`,
+        },
+      }),
+    ],
+  });
+  const schema = inferSchema(schemaInput);
+  const source = BYTECODE_BACKEND.emit(schema);
+  const here = dirname(fileURLToPath(import.meta.url));
+  const dir = mkdtempSync(join(here, '.bcode-operator-'));
+  const file = join(dir, 'compare.bcode.ts');
+  writeFileSync(file, source);
+  try {
+    const mod = await import(pathToFileURL(file).href);
+    const cases: Array<[string, string]> = [
+      ['a = b', '='],
+      ['a != b', '!='],
+      ['a <= b', '<='],
+      ['a >= b', '>='],
+      ['a < b', '<'],
+      ['a > b', '>'],
+    ];
+    for (const [input, op] of cases) {
+      const ast = mod.render(input, { target: 'ast' }) as { op: string };
+      assert.equal(ast.op, op, `expected op ${op} for ${input}`);
+      const back = mod.stringify(ast, { target: 'ast' });
+      assert.equal(back, input, `round-trip failed for ${input}`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

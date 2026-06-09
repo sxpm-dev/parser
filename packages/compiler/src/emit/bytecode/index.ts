@@ -83,6 +83,7 @@ ${preamble}  const state = {
     pc: 0,
     maxOff: 0,
     valueStack: [] as unknown[],
+    operatorLiterals: __DECODED.operatorLiterals,
   };
   const rootOffset = __DECODED.productionOffsets.get(__DECODED.rootProductionKey);
   if (rootOffset === undefined) {
@@ -129,6 +130,7 @@ function serializeSchemaJson(encoded: EncodedSchema): string {
     rootProductionKey: encoded.rootProductionKey,
     targets: encoded.targets,
     defaultTarget: encoded.defaultTarget,
+    operatorLiterals: encoded.operatorLiterals,
   });
 }
 

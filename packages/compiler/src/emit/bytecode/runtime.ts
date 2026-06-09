@@ -36,6 +36,12 @@ export type RuntimeState = {
   // RENDER_DISPATCH / STRINGIFY_DISPATCH throw if missing at dispatch time.
   renderOffsets?: ReadonlyMap<string, number>;
   stringifyOffsetsByNodeType?: ReadonlyMap<string, ReadonlyArray<number>>;
+  // Schema-level operator literal pool — consumed by SCAN_CLASS / OPERATOR.
+  // Pre-sorted longest-first by the inference pass; empty for schemas
+  // without an `operators:` declaration. The runtime treats `undefined`
+  // as empty for backward compat with state objects built by callers
+  // that predate operator-class support.
+  readonly operatorLiterals?: ReadonlyArray<string>;
 };
 
 // Per-production locals. Allocated when a CALL_PRODUCTION (or the top-level
@@ -801,6 +807,7 @@ export function runRender(
     maxOff: 0,
     valueStack: [],
     renderOffsets: encoded.renderOffsets,
+    operatorLiterals: encoded.operatorLiterals,
   };
   const frames: Frame[] = [];
   frames.push({
@@ -844,6 +851,7 @@ export function runStringify(
     valueStack: [],
     renderOffsets: encoded.renderOffsets,
     stringifyOffsetsByNodeType: encoded.stringifyOffsetsByNodeType,
+    operatorLiterals: encoded.operatorLiterals,
   };
 
   const result = stringifySlot(state, value, rootNodeType, target);
@@ -902,6 +910,20 @@ function scanClass(state: RuntimeState, kind: number): void {
       state.off++;
       while (state.off < len && isDigit(state.input.charCodeAt(state.off))) state.off++;
       return;
+    }
+    case 6: { // OPERATOR
+      // Longest-match dispatch over schema.operatorLiterals. The list is
+      // pre-sorted longest-first by the inference pass, so the first
+      // matching literal wins (e.g. `!=` beats `!` if both were declared).
+      const ops = state.operatorLiterals;
+      if (!ops || ops.length === 0) return; // no-op; SCAN_CLASS will fail-rewind
+      for (const op of ops) {
+        if (state.input.startsWith(op, state.off)) {
+          state.off += op.length;
+          return;
+        }
+      }
+      return; // no match; SCAN_CLASS will fail-rewind
     }
     default:
       throw new Error(`bytecode runtime: SCAN_CLASS kind ${kind} not yet implemented (Task 6.3 covers cron primitives only)`);
@@ -973,6 +995,11 @@ export type DecodedSchemaJson = {
   readonly rootProductionKey: string;
   readonly targets: ReadonlyArray<string>;
   readonly defaultTarget?: string;
+  // Optional for backward compatibility with .bcode.ts artifacts
+  // generated before SCAN_CLASS gained OPERATOR support. Missing →
+  // empty list (any .operator() use would have failed at encode time
+  // before this field was emitted).
+  readonly operatorLiterals?: ReadonlyArray<string>;
 };
 
 export function decodeSchema(schemaJson: string, opsB64: string): EncodedSchema {
@@ -992,6 +1019,7 @@ export function decodeSchema(schemaJson: string, opsB64: string): EncodedSchema 
     rootProductionKey: json.rootProductionKey,
     targets: json.targets,
     defaultTarget: json.defaultTarget,
+    operatorLiterals: json.operatorLiterals ?? [],
   };
 }
 

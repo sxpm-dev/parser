@@ -136,28 +136,6 @@ test('relation: span.hex() sets class', () => {
   assert.equal(def.spans[0]!.class, 'hex');
 });
 
-test('relation: span.regex() sets class', () => {
-  const def = relation('T', {
-    input: '/foo/',
-    encodings: {
-      src: parse([span('r', '/foo/').regex()]),
-      ast: {},
-    },
-  });
-  assert.equal(def.spans[0]!.class, 'regex');
-});
-
-test('relation: span.template() sets class', () => {
-  const def = relation('T', {
-    input: '`hi`',
-    encodings: {
-      src: parse([span('t', '`hi`').template()]),
-      ast: {},
-    },
-  });
-  assert.equal(def.spans[0]!.class, 'template');
-});
-
 test('relation: span.comment() sets class', () => {
   const def = relation('T', {
     input: '// hi',
@@ -169,22 +147,10 @@ test('relation: span.comment() sets class', () => {
   assert.equal(def.spans[0]!.class, 'comment');
 });
 
-test('relation: span.whitespace() sets class', () => {
-  const def = relation('T', {
-    input: ' ',
-    encodings: {
-      src: parse([span('w', ' ').whitespace()]),
-      ast: {},
-    },
-  });
-  assert.equal(def.spans[0]!.class, 'whitespace');
-});
-
-// Note: `.keyword(text)` was removed from the DSL surface during Phase 1
-// cleanup — no shipped schema used it and it didn't meet the admission
-// policy (functionally equivalent to `literal(text)` or `span('kw',
-// text)`). The two prior tests for it were removed alongside the method
-// itself.
+// Note: `.keyword(text)`, `.regex()`, `.template()`, and `.whitespace()`
+// were removed from the DSL surface during Phase 1 cleanup — no shipped
+// schema used them and the matrix policy ("remove when zero users")
+// applied. The prior tests for each were removed alongside the methods.
 
 test('relation: span.operator() sets class', () => {
   const def = relation('T', {

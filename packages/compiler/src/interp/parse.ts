@@ -895,12 +895,6 @@ function scanClass(schema: InferredSchema, span: ResolvedSpan, state: State): bo
     return true;
   }
 
-  if (cls === 'whitespace') {
-    if (state.pos >= len || !isWs(input.charCodeAt(state.pos))) return false;
-    while (state.pos < len && isWs(input.charCodeAt(state.pos))) state.pos++;
-    return true;
-  }
-
   throw new Error(`interp: class '${cls}' not yet supported`);
 }
 

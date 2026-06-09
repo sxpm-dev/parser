@@ -28,7 +28,7 @@ import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, typ
 // legitimately appear at depth 0, so the guard would over-reject; gate on
 // at least one of these.
 const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
-  'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+  'ident', 'number', 'hex', 'string', 'operator',
 ]);
 
 export type EmitProductionOptions = {

@@ -270,56 +270,9 @@ const rows: ReadonlyArray<ParityRow> = [
     expected: { interp: 'impl', v2: 'impl' },
   },
 
-  {
-    name: 'class:regex',
-    category: 'class',
-    schema: () =>
-      defineSchema({
-        rootType: 'X',
-        examples: [
-          relation('X', {
-            input: '/abc/',
-            encodings: {
-              src: parse([span('value', '/abc/').regex()]),
-              ast: { type: 'regex', value: $.value },
-            },
-          }),
-        ],
-      }),
-    input: '/foo/i',
-    expectedAst: { type: 'regex', value: '/foo/i' },
-    // Phase 1 gap: both backends throw `class 'regex' not yet supported`
-    // at codegen. Zero shipped schemas use `.regex()`. Per Phase 1 policy
-    // (bias to implement, but remove when zero users), the next session
-    // either lands a regex-literal scanner in both backends OR removes
-    // `regex` from SpanClass + the SpanNode .regex() method.
-    expected: { interp: 'gap', v2: 'gap' },
-  },
-
-  {
-    name: 'class:template',
-    category: 'class',
-    schema: () =>
-      defineSchema({
-        rootType: 'X',
-        examples: [
-          relation('X', {
-            input: '`hello`',
-            encodings: {
-              src: parse([span('value', '`hello`').template()]),
-              ast: { type: 'tpl', value: $.value },
-            },
-          }),
-        ],
-      }),
-    input: '`world`',
-    expectedAst: { type: 'tpl', value: '`world`' },
-    // Phase 1 gap (mirror of class:regex): both backends throw
-    // `class 'template' not yet supported`. Zero shipped schemas use
-    // `.template()`. Same decision pending: implement a backtick-bounded
-    // template-literal scanner OR remove from SpanClass + SpanNode.
-    expected: { interp: 'gap', v2: 'gap' },
-  },
+  // Note: class:regex and class:template were removed from the DSL during
+  // Phase 1 (no shipped schema used them; per the roadmap policy "remove
+  // when zero users"). The removal cleared their feature-parity rows.
 
   {
     name: 'class:comment',
@@ -346,31 +299,9 @@ const rows: ReadonlyArray<ParityRow> = [
     expected: { interp: 'gap', v2: 'impl' },
   },
 
-  {
-    name: 'class:whitespace',
-    category: 'class',
-    schema: () =>
-      defineSchema({
-        rootType: 'X',
-        examples: [
-          relation('X', {
-            input: '   ',
-            encodings: {
-              src: parse([span('ws', '   ').whitespace()]),
-              ast: { type: 'ws', value: $.ws },
-            },
-          }),
-        ],
-      }),
-    input: '\t \t',
-    expectedAst: { type: 'ws', value: '\t \t' },
-    // Phase 1 gap (mirror of class:regex / template): v2 throws
-    // `class 'whitespace' not yet supported`; interp throws too.
-    // Zero shipped schemas use `.whitespace()` — the schema-level
-    // `whitespace: 'preserve'` declaration is a separate feature.
-    // Implement explicit-whitespace span scan OR remove.
-    expected: { interp: 'gap', v2: 'gap' },
-  },
+  // Note: class:whitespace was removed from the DSL during Phase 1
+  // (no shipped schema used it; the schema-level `whitespace: 'preserve'`
+  // declaration is a different feature). The removal cleared its row.
 
   // --- Modifiers -----------------------------------------------------------
 

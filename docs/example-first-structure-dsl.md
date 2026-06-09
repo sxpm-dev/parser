@@ -443,10 +443,7 @@ documented in `packages/compiler/README.md`.
 | `number` | number | Numeric literal, coerced to JS number. |
 | `string` | string | Quoted string literal. |
 | `hex` | string | Hex literal (CSS `#fff`, JS `0xff`). |
-| `regex` | `{ pattern, flags }` | JS regex literal. |
-| `template` | structured | JS template literal. |
 | `comment` | string | Comment token; usually ignored. |
-| `whitespace` | (none) | Whitespace token; usually ignored. |
 | `operator` | string (union of declared) | Matches any operator declared in `operators`. |
 
 ### Refinements (closed, scoped per class)

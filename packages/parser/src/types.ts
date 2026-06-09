@@ -65,10 +65,7 @@ export type SpanClass =
   | 'number'
   | 'string'
   | 'hex'
-  | 'regex'
-  | 'template'
   | 'comment'
-  | 'whitespace'
   | 'operator';
 
 export type Refinement = {

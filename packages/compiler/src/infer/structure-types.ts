@@ -301,7 +301,6 @@ function baseSpanType(
     case 'ident':
     case 'hex':
     case 'comment':
-    case 'whitespace':
       return { kind: 'string' };
     case 'number': {
       const hasCoerce = span.refinements.some((r) => r.name === 'coerce');
@@ -325,18 +324,6 @@ function baseSpanType(
       );
       return mergeTypes(members);
     }
-    case 'regex':
-      return {
-        kind: 'object',
-        fields: [
-          { name: 'pattern', type: { kind: 'string' } },
-          { name: 'flags', type: { kind: 'string' } },
-        ],
-      };
-    case 'template':
-      // Template captures decode to a structured shape; without a closed
-      // model for it today, fall back to unknown.
-      return { kind: 'unknown' };
   }
 }
 

@@ -436,7 +436,7 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     if (usage.class === 'ident' && usage.refinements.some((r) => r.name === 'css')) cssIdent = true;
   }
   const contentClasses = new Set<string>([
-    'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+    'ident', 'number', 'hex', 'string', 'operator',
   ]);
   const hasContentClass = schema.classes.some((c) => contentClasses.has(c.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;

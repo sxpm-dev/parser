@@ -40,10 +40,7 @@ export class SpanNode {
   number(): SpanNode { return this.setClass('number'); }
   string(): SpanNode { return this.setClass('string'); }
   hex(): SpanNode { return this.setClass('hex'); }
-  regex(): SpanNode { return this.setClass('regex'); }
-  template(): SpanNode { return this.setClass('template'); }
   comment(): SpanNode { return this.setClass('comment'); }
-  whitespace(): SpanNode { return this.setClass('whitespace'); }
   operator(alts?: ReadonlyArray<string>): SpanNode {
     const next = this.withData({ class: 'operator' });
     return alts ? next.refine('alts', [alts]) : next;

@@ -54,14 +54,9 @@ export function computeKnownLeadingBytes(schema: InferredSchema): Uint8Array {
       bits[0x22] = 1; bits[0x27] = 1; // " '
     } else if (cls.class === 'comment') {
       bits[0x2f] = 1; // '/'
-    } else if (cls.class === 'regex') {
-      bits[0x2f] = 1; // '/'
-    } else if (cls.class === 'template') {
-      bits[0x60] = 1; // '`'
     }
-    // Other class kinds (whitespace, operator) are left permissive — their
-    // leading bytes arrive via the literalTypeByText loop above when used as
-    // tokens in productions.
+    // operator class is left permissive — its leading bytes arrive via
+    // the literalTypeByText loop above when used as tokens in productions.
   }
   return bits;
 }

@@ -38,7 +38,7 @@ import { findSpanModifier } from './modifiers.ts';
 // whitespace classes does not constrain what bytes may legitimately appear
 // at depth 0, so the guard would over-reject; gate on at least one of these.
 const CONTENT_CLASSES: ReadonlySet<string> = new Set<string>([
-  'ident', 'number', 'hex', 'string', 'regex', 'template', 'operator',
+  'ident', 'number', 'hex', 'string', 'operator',
 ]);
 
 export type FusedRenderOptions = {

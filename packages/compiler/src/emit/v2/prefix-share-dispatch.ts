@@ -201,7 +201,7 @@ export function emitPrefixShareDispatcher(
       }
     }
   }
-  const CONTENT_CLASSES = new Set(['ident', 'number', 'hex', 'string', 'regex', 'template', 'operator']);
+  const CONTENT_CLASSES = new Set(['ident', 'number', 'hex', 'string', 'operator']);
   const hasContentClass = schema.classes.some((cls) => CONTENT_CLASSES.has(cls.class));
   const emitUnknownCharsGuard = schema.unknownChars === 'reject' && hasContentClass;
   // Build a referenced-spans set that covers EVERY named prefix span so the

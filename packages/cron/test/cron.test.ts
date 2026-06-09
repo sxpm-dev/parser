@@ -78,3 +78,22 @@ test('cron stringify(render(input, ast), ast) round-trips for canonical inputs',
     assert.deepEqual(parseAst(src), ast, input);
   }
 });
+
+test('cron stringify(source) round-trips across all CronField shapes', () => {
+  // Exercises the source-target dispatcher for CronField (wildcard, step,
+  // value, range — the litTagged/keyword/valueTagged/range refactor lands
+  // here). Each input is rendered to source, then stringified back; the
+  // dispatcher must route each field's source-form to the correct
+  // production.
+  for (const input of [
+    '* * * * *',
+    '0 0 * * *',
+    '*/5 * * * *',
+    '0 1-3 * * *',
+    '0 9 7 8 1-5 npm test',
+  ]) {
+    const value = render(input, { target: 'source' });
+    const back = stringify(value, { target: 'source' });
+    assert.equal(back, value, `source-target round-trip drift on ${JSON.stringify(input)}`);
+  }
+});

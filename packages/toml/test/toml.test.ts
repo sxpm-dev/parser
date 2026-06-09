@@ -125,6 +125,24 @@ test('stringify(ast) rebuilds a TOML source for single-pair documents', () => {
   }
 });
 
+test('stringify(source) round-trips across Value, Pair, and document shapes', () => {
+  // Exercises the source-target dispatcher across every Value production
+  // (string / integer / boolean) plus Pair and Document. The boolean and
+  // wildcard productions land via litTagged; integer + string via
+  // valueTagged. The source-target dispatcher must route each shape
+  // correctly.
+  for (const input of [
+    'k = 1',
+    'k = "hello"',
+    'k = true',
+    'k = false',
+  ]) {
+    const value = render(input, { target: 'source' });
+    const back = stringify(value, { target: 'source' });
+    assert.equal(back, value, `source-target round-trip drift on ${JSON.stringify(input)}`);
+  }
+});
+
 test('validate accepts well-formed TOML and rejects malformed input', () => {
   assert.doesNotThrow(() => validate('k = 1'));
   assert.doesNotThrow(() => validate('[t]\nk = 1'));

@@ -18,3 +18,10 @@ for (const input of INPUTS) {
     assert.deepEqual(v2, v1);
   });
 }
+
+// No source-target round-trip test here. json's source target uses
+// `.coerce()` on JsonString and JsonNumber, so the rendered source-value
+// is the native JS string/number rather than the source slice
+// ('"hello"' becomes 'hello', the surrounding quotes drop). Round-tripping
+// that back via re-render fails for unquoted-string inputs. The AST-target
+// round-trip above is the contract that matters for JSON consumers.

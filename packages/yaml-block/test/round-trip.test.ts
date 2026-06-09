@@ -102,3 +102,20 @@ test('yaml-block round-trip: three-level nested mapping', () => {
   const ast2 = parseAst(source as string);
   assert.deepEqual(ast2, ast1, `round-trip mismatch for input:\n${input}`);
 });
+
+// Source-target round-trip — exercises the source-target dispatchers
+// for YamlScalar / YamlMappingEntry / YamlMapping / YamlSequenceItem /
+// YamlSequence across flat + nested + mixed shapes.
+test('yaml-block round-trip: source-target dispatcher routes every shape', () => {
+  for (const input of [
+    'name: my-project',
+    'foo: bar\nbaz: hello',
+    'items:\n  - a\n  - b',
+    'bar:\n  baz: 2\n  qux: 3',
+  ]) {
+    const v = render(input, { target: 'source' });
+    const back = stringify(v, { target: 'source' });
+    const v2 = render(back as string, { target: 'source' });
+    assert.deepEqual(v2, v, `source-target round-trip drift on ${JSON.stringify(input)}`);
+  }
+});

@@ -1,4 +1,5 @@
 import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { delimited } from './helpers.ts';
 
 // CommonMark-ish markdown schema. All block productions live under the
 // MarkdownLeaf umbrella role so MarkdownDocument's children loop dispatches
@@ -470,61 +471,10 @@ ${$.body} \`\`\``,
     // (`**bold**` alone on its line). Mid-paragraph occurrences fall into
     // Paragraph's `.until(...)` slice as raw text — round-tripping the
     // source but not producing a structured inline node.
-    relation('MarkdownLeaf', {
-      input: '**bold**',
-      encodings: {
-        parse: parse([
-          literal('**'),
-          span('text', 'bold').until('**', { balanced: false }),
-          literal('**'),
-        ]),
-        ast: { type: 'bold', text: $.text },
-        html: tpl`<strong>${$.text}</strong>`,
-        source: tpl`**${$.text}**`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '*italic*',
-      encodings: {
-        parse: parse([
-          literal('*'),
-          span('text', 'italic').until('*', { balanced: false }),
-          literal('*'),
-        ]),
-        ast: { type: 'italic', text: $.text },
-        html: tpl`<em>${$.text}</em>`,
-        source: tpl`*${$.text}*`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '~~removed~~',
-      encodings: {
-        parse: parse([
-          literal('~~'),
-          span('text', 'removed').until('~~', { balanced: false }),
-          literal('~~'),
-        ]),
-        ast: { type: 'strikethrough', text: $.text },
-        html: tpl`<s>${$.text}</s>`,
-        source: tpl`~~${$.text}~~`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '`code`',
-      encodings: {
-        parse: parse([
-          literal('`'),
-          span('text', 'code').until('`', { balanced: false }),
-          literal('`'),
-        ]),
-        ast: { type: 'inline-code', text: $.text },
-        html: tpl`<code>${$.text}</code>`,
-        source: tpl`\`${$.text}\``,
-      },
-    }),
+    delimited('MarkdownLeaf', '**', span('text', 'bold'), 'bold', 'strong'),
+    delimited('MarkdownLeaf', '*', span('text', 'italic'), 'italic', 'em'),
+    delimited('MarkdownLeaf', '~~', span('text', 'removed'), 'strikethrough', 's'),
+    delimited('MarkdownLeaf', '`', span('text', 'code'), 'inline-code', 'code'),
 
     // ---- Links and images ------------------------------------------------
     // The link-label captures via `.until(']', { balanced: false })`; the URL slice captures

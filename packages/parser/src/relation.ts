@@ -444,6 +444,66 @@ export function suffixed(
   });
 }
 
+// Phase 7 sugar: a production of shape `<prefix>value`, where `value` is a
+// captured span preceded by a fixed literal head. Mirror of suffixed().
+// Collapses the yaml-block sequence-item pattern:
+//
+//   relation('YamlSequenceItem', {
+//     input: '- foo',
+//     encodings: {
+//       parse: parse([literal('- '), span('value', 'foo').of('YamlNode')]),
+//       ast: { type: 'item', value: $.value },
+//       source: tpl`- ${$.value}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   prefixed('YamlSequenceItem', '- ', span('value', 'foo').of('YamlNode'), 'item')
+//
+// Same authoring contract as suffixed(): the valueSpan carries the AST
+// field name (via `.name`) and example text (via `.text`); modifiers on
+// the span pass through unchanged.
+export function prefixed(
+  nodeType: string,
+  prefix: string,
+  valueSpan: SpanNode,
+  astType: string,
+  options: { readonly input?: string } = {},
+): ExampleDef {
+  const def = valueSpan.toSpanDef();
+  if (!def.name) {
+    throw new Error(
+      `prefixed('${nodeType}', '${prefix}', ...): valueSpan must be a named span (use span('<field>', '<example>'))`,
+    );
+  }
+  const exampleText = options.input !== undefined
+    ? options.input.startsWith(prefix)
+      ? options.input.slice(prefix.length)
+      : def.text
+    : def.text;
+  if (exampleText === undefined) {
+    throw new Error(
+      `prefixed('${nodeType}', '${prefix}', ...): valueSpan must have an example text or options.input must be provided`,
+    );
+  }
+  const fieldName = def.name;
+  const valueRef: SpanValueRef = { __ref: 'span-value', name: fieldName };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: [prefix, ''],
+    slots: [{ kind: 'capture', ref: fieldName }],
+  };
+  return relation(nodeType, {
+    input: prefix + exampleText,
+    encodings: {
+      parse: parse([literal(prefix), valueSpan]),
+      ast: { type: astType, [fieldName]: valueRef },
+      source: sourceTpl,
+    },
+  });
+}
+
 // Phase 7 sugar: a production wrapping a single captured span in a
 // type-tagged single-field object. Collapses the toml / cron Value
 // pattern:
@@ -467,6 +527,7 @@ export function valueTagged(
   nodeType: string,
   valueSpan: SpanNode,
   astType: string,
+  options: { readonly input?: string } = {},
 ): ExampleDef {
   const def = valueSpan.toSpanDef();
   if (!def.name) {
@@ -474,9 +535,10 @@ export function valueTagged(
       `valueTagged('${nodeType}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
     );
   }
-  if (def.text === undefined) {
+  const input = options.input ?? def.text;
+  if (input === undefined) {
     throw new Error(
-      `valueTagged('${nodeType}'): valueSpan must have an example text`,
+      `valueTagged('${nodeType}'): valueSpan must have an example text or options.input must be provided`,
     );
   }
   const fieldName = def.name;
@@ -487,7 +549,7 @@ export function valueTagged(
     slots: [{ kind: 'capture', ref: fieldName }],
   };
   return relation(nodeType, {
-    input: def.text,
+    input,
     encodings: {
       parse: parse([valueSpan]),
       ast: { type: astType, [fieldName]: valueRef },
@@ -518,6 +580,7 @@ export function valueTagged(
 export function passthrough(
   nodeType: string,
   valueSpan: SpanNode,
+  options: { readonly input?: string } = {},
 ): ExampleDef {
   const def = valueSpan.toSpanDef();
   if (!def.name) {
@@ -525,9 +588,10 @@ export function passthrough(
       `passthrough('${nodeType}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
     );
   }
-  if (def.text === undefined) {
+  const input = options.input ?? def.text;
+  if (input === undefined) {
     throw new Error(
-      `passthrough('${nodeType}'): valueSpan must have an example text`,
+      `passthrough('${nodeType}'): valueSpan must have an example text or options.input must be provided`,
     );
   }
   const fieldName = def.name;
@@ -538,7 +602,7 @@ export function passthrough(
     slots: [{ kind: 'capture', ref: fieldName }],
   };
   return relation(nodeType, {
-    input: def.text,
+    input,
     encodings: {
       parse: parse([valueSpan]),
       ast: valueRef,
@@ -606,12 +670,24 @@ export function litTagged(
 // Both spans carry their field names (via `.name`) and example texts
 // (via `.text`); modifiers pass through unchanged. The sep literal
 // appears verbatim in the source template (no extra whitespace).
+//
+// When the source-form separator differs from the parse-form separator —
+// typically because the canonical source has whitespace around the sep
+// while the parse tolerates either form via standard-whitespace policy —
+// pass `options.sourceSep`. The parse-side still sees a single
+// `literal(sep)`; the source template's middle part becomes sourceSep
+// verbatim. Example: toml's `key = value` parses on `=` but the canonical
+// source has surrounding spaces, so `range('Pair', key, '=', value, 'pair',
+// { sourceSep: ' = ' })` desugars to the original `tpl`${$.key} = ${$.value}``
+// shape. The example input also switches to the sourceSep form so the
+// schema's `input` string is the canonical source.
 export function range(
   nodeType: string,
   leftSpan: SpanNode,
   sep: string,
   rightSpan: SpanNode,
   astType: string,
+  options: { readonly sourceSep?: string } = {},
 ): ExampleDef {
   const leftDef = leftSpan.toSpanDef();
   const rightDef = rightSpan.toSpanDef();
@@ -631,16 +707,17 @@ export function range(
   const rightField = rightDef.name;
   const leftRef: SpanValueRef = { __ref: 'span-value', name: leftField };
   const rightRef: SpanValueRef = { __ref: 'span-value', name: rightField };
+  const sourceSep = options.sourceSep ?? sep;
   const sourceTpl: Template = {
     __tpl: true,
-    parts: ['', sep, ''],
+    parts: ['', sourceSep, ''],
     slots: [
       { kind: 'capture', ref: leftField },
       { kind: 'capture', ref: rightField },
     ],
   };
   return relation(nodeType, {
-    input: leftDef.text + sep + rightDef.text,
+    input: leftDef.text + sourceSep + rightDef.text,
     encodings: {
       parse: parse([leftSpan, literal(sep), rightSpan]),
       ast: { type: astType, [leftField]: leftRef, [rightField]: rightRef },

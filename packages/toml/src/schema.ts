@@ -1,4 +1,4 @@
-import { $, defineSchema, litTagged, literal, parse, relation, span, tpl, valueTagged } from '@parser2/parser';
+import { $, defineSchema, litTagged, literal, parse, range, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 // TOML — a usefully-sized subset of v1.0.0. Implemented here:
 //
@@ -45,18 +45,14 @@ export default defineSchema({
     valueTagged('Value', span('value', '42').number().int(), 'integer'),
 
     // ---- Pair --------------------------------------------------------
-    relation('Pair', {
-      input: 'key = "hello"',
-      encodings: {
-        parse: parse([
-          span('key', 'key').ident().css(),
-          literal('='),
-          span('value', '"hello"').of('Value'),
-        ]),
-        ast: { type: 'pair', key: $.key, value: $.value },
-        source: tpl`${$.key} = ${$.value}`,
-      },
-    }),
+    range(
+      'Pair',
+      span('key', 'key').ident().css(),
+      '=',
+      span('value', '"hello"').of('Value'),
+      'pair',
+      { sourceSep: ' = ' },
+    ),
 
     // ---- Table -------------------------------------------------------
     // `pairs` repeats over Pair until the next dispatcher candidate

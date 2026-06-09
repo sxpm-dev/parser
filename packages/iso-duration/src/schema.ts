@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, suffixed, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, prefixed, relation, span, suffixed, tpl } from '@parser2/parser';
 
 // ISO 8601 duration. Forms:
 //   P[nY][nM][nW][nD][T[nH][nM][nS]]
@@ -56,17 +56,7 @@ export default defineSchema({
     // Inverse-direction discrimination:
     //   - ast: field-name set differs (`time` is present only in #2).
     //   - source: #2 contains a literal `T` segment that #1's segments don't.
-    relation('Duration', {
-      input: 'P1D',
-      encodings: {
-        parse: parse([
-          literal('P'),
-          span('date', '1D').of('DateUnit').repeats({ min: 1 }),
-        ]),
-        ast: { type: 'duration', date: $.date },
-        source: tpl`P${$.date}`,
-      },
-    }),
+    prefixed('Duration', 'P', span('date', '1D').of('DateUnit').repeats({ min: 1 }), 'duration'),
     relation('Duration', {
       input: 'P1DT1H',
       encodings: {

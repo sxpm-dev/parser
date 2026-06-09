@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, passthrough, prefixed, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 // YAML-block subset schema. Supports:
 //   - Scalars: bare one-line values (letters, digits, dots, hyphens, etc.)
@@ -32,16 +32,7 @@ export default defineSchema({
     // --- YamlScalar: a bare value — captures everything up to (not including)
     //     the next newline. EOF also terminates the capture. The trimming in
     //     parseUntilSpan strips trailing whitespace.
-    relation('YamlScalar', {
-      input: 'hello world',
-      encodings: {
-        parse: parse([
-          span('value', 'hello world').until('\n'),
-        ]),
-        ast: $.value,
-        source: tpl`${$.value}`,
-      },
-    }),
+    passthrough('YamlScalar', span('value', 'hello world').until('\n')),
 
     // --- YamlMappingEntry: `key: value` where value is any YamlNode.
     //     The space after the colon is optional (handles `key:value` too).
@@ -67,68 +58,32 @@ export default defineSchema({
     //     The span text is empty — `.of(roles).repeats({min:1})` is a
     //     required-recursive-repeats shape; synthesizePieces synthesizes
     //     its slot directly without needing the example text.
-    relation('YamlMapping', {
-      input: 'foo: 1\nbar: 2',
-      encodings: {
-        parse: parse([
-          span('entries').of('YamlMappingEntry').indent().repeats({ min: 1 }),
-        ]),
-        ast: { type: 'mapping', entries: $.entries },
-        source: tpl`${$.entries}`,
-      },
-    }),
+    valueTagged(
+      'YamlMapping',
+      span('entries').of('YamlMappingEntry').indent().repeats({ min: 1 }),
+      'mapping',
+      { input: 'foo: 1\nbar: 2' },
+    ),
 
     // --- YamlSequenceItem: `- value` where value is any YamlNode.
-    relation('YamlSequenceItem', {
-      input: '- foo',
-      encodings: {
-        parse: parse([
-          literal('- '),
-          span('value', 'foo').of('YamlMapping', 'YamlSequence', 'YamlScalar'),
-        ]),
-        ast: { type: 'item', value: $.value },
-        source: tpl`- ${$.value}`,
-      },
-    }),
+    prefixed('YamlSequenceItem', '- ', span('value', 'foo').of('YamlMapping', 'YamlSequence', 'YamlScalar'), 'item'),
 
     // --- YamlSequence: indented block of YamlSequenceItem lines. Same
     //     empty-text shape as YamlMapping above.
-    relation('YamlSequence', {
-      input: '- a\n- b',
-      encodings: {
-        parse: parse([
-          span('items').of('YamlSequenceItem').indent().repeats({ min: 1 }),
-        ]),
-        ast: { type: 'sequence', items: $.items },
-        source: tpl`${$.items}`,
-      },
-    }),
+    valueTagged(
+      'YamlSequence',
+      span('items').of('YamlSequenceItem').indent().repeats({ min: 1 }),
+      'sequence',
+      { input: '- a\n- b' },
+    ),
 
     // --- YamlNode: dispatches to Mapping > Sequence > Scalar.
     //     YamlMapping is tried first so `key: value` blocks (which start with
     //     letter bytes) are correctly recognized as mappings rather than scalars.
     //     YamlScalar is the final fallback.
-    relation('YamlNode', {
-      input: 'hello',
-      encodings: {
-        parse: parse([
-          span('node', 'hello').of('YamlMapping', 'YamlSequence', 'YamlScalar'),
-        ]),
-        ast: $.node,
-        source: tpl`${$.node}`,
-      },
-    }),
+    passthrough('YamlNode', span('node', 'hello').of('YamlMapping', 'YamlSequence', 'YamlScalar')),
 
     // --- YamlBlock: root — a single YamlNode (top-level mapping or sequence).
-    relation('YamlBlock', {
-      input: 'foo: bar',
-      encodings: {
-        parse: parse([
-          span('root', 'foo: bar').of('YamlNode'),
-        ]),
-        ast: $.root,
-        source: tpl`${$.root}`,
-      },
-    }),
+    passthrough('YamlBlock', span('root', 'foo: bar').of('YamlNode')),
   ],
 });

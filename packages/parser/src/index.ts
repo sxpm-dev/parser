@@ -1,6 +1,6 @@
 export { defineSchema } from './schema.ts';
 export { defineValidation } from './validation.ts';
-export { relation, parse, span, literal, withInverse, litEnum, keyword, suffixed, valueTagged, passthrough, litTagged, range } from './relation.ts';
+export { relation, parse, span, literal, withInverse, litEnum, keyword, suffixed, prefixed, valueTagged, passthrough, litTagged, range } from './relation.ts';
 export type { Literal, Span, ParseProgram, RelationBody, InvertibleEncoding } from './relation.ts';
 export { $, isStructureRef } from './ref.ts';
 export { tpl, isTemplate } from './template.ts';

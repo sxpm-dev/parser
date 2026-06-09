@@ -247,6 +247,131 @@ const rows: ReadonlyArray<ParityRow> = [
     expected: { interp: 'impl', v2: 'impl' },
   },
 
+  {
+    name: 'class:hex',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'FF',
+            encodings: {
+              src: parse([span('value', 'FF').hex()]),
+              ast: { type: 'hex', value: $.value },
+            },
+          }),
+        ],
+      }),
+    input: 'CAFE',
+    expectedAst: { type: 'hex', value: 'CAFE' },
+    // The hex class scans bare hex digits ([0-9a-fA-F]+). 0x-prefix forms
+    // are spelled `literal('0x') + span('v', ...).hex()`.
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'class:regex',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '/abc/',
+            encodings: {
+              src: parse([span('value', '/abc/').regex()]),
+              ast: { type: 'regex', value: $.value },
+            },
+          }),
+        ],
+      }),
+    input: '/foo/i',
+    expectedAst: { type: 'regex', value: '/foo/i' },
+    // Phase 1 gap: both backends throw `class 'regex' not yet supported`
+    // at codegen. Zero shipped schemas use `.regex()`. Per Phase 1 policy
+    // (bias to implement, but remove when zero users), the next session
+    // either lands a regex-literal scanner in both backends OR removes
+    // `regex` from SpanClass + the SpanNode .regex() method.
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'class:template',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '`hello`',
+            encodings: {
+              src: parse([span('value', '`hello`').template()]),
+              ast: { type: 'tpl', value: $.value },
+            },
+          }),
+        ],
+      }),
+    input: '`world`',
+    expectedAst: { type: 'tpl', value: '`world`' },
+    // Phase 1 gap (mirror of class:regex): both backends throw
+    // `class 'template' not yet supported`. Zero shipped schemas use
+    // `.template()`. Same decision pending: implement a backtick-bounded
+    // template-literal scanner OR remove from SpanClass + SpanNode.
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'class:comment',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '/* hi */',
+            encodings: {
+              src: parse([span('value', '/* hi */').comment().block('/*', '*/')]),
+              ast: { type: 'comment', value: $.value },
+            },
+          }),
+        ],
+      }),
+    input: '/* note */',
+    // v2 returns the interior with .block delimiters stripped; interp
+    // throws at runtime (the comment class isn't wired in interp's class
+    // scanner). When closing the gap, mirror v2's strip-delimiters
+    // behaviour in interp so the matrix flips to impl/impl.
+    expectedAst: { type: 'comment', value: 'note' },
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'class:whitespace',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '   ',
+            encodings: {
+              src: parse([span('ws', '   ').whitespace()]),
+              ast: { type: 'ws', value: $.ws },
+            },
+          }),
+        ],
+      }),
+    input: '\t \t',
+    expectedAst: { type: 'ws', value: '\t \t' },
+    // Phase 1 gap (mirror of class:regex / template): v2 throws
+    // `class 'whitespace' not yet supported`; interp throws too.
+    // Zero shipped schemas use `.whitespace()` — the schema-level
+    // `whitespace: 'preserve'` declaration is a separate feature.
+    // Implement explicit-whitespace span scan OR remove.
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
   // --- Modifiers -----------------------------------------------------------
 
   {
@@ -421,6 +546,328 @@ const rows: ReadonlyArray<ParityRow> = [
     expected: { interp: 'impl', v2: 'impl' },
   },
 
+  {
+    name: 'refinement:number-float',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '3.14',
+            encodings: {
+              src: parse([span('n', '3.14').number().float()]),
+              ast: { type: 'float', value: $.n },
+            },
+          }),
+        ],
+      }),
+    input: '2.71',
+    expectedAst: { type: 'float', value: '2.71' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-scientific',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '1e10',
+            encodings: {
+              src: parse([span('n', '1e10').number().scientific()]),
+              ast: { type: 'sci', value: $.n },
+            },
+          }),
+        ],
+      }),
+    input: '2.5e-3',
+    expectedAst: { type: 'sci', value: '2.5e-3' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-coerce',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '42',
+            encodings: {
+              src: parse([span('n', '42').number().int().coerce()]),
+              ast: { type: 'int', value: $.n },
+            },
+          }),
+        ],
+      }),
+    input: '99',
+    // .coerce() converts the captured slice to a JS number.
+    expectedAst: { type: 'int', value: 99 },
+    // Phase 1 deliberate gap (documented in roadmap Phase 5 design
+    // notes): interp keeps .coerce() captures as raw slices because
+    // mirroring coerce on the forward path would also require
+    // teaching interp/stringify to re-encode on the inverse direction
+    // (JSON-quote, etc.). Today schemas using .coerce() round-trip
+    // correctly because interp's render+stringify are self-consistent.
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:string-singleQuoted',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: "'hi'",
+            encodings: {
+              src: parse([span('s', "'hi'").string().singleQuoted()]),
+              ast: { type: 'str', value: $.s },
+            },
+          }),
+        ],
+      }),
+    input: "'world'",
+    expectedAst: { type: 'str', value: "'world'" },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:string-coerce',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '"hi"',
+            encodings: {
+              src: parse([span('s', '"hi"').string().doubleQuoted().coerce()]),
+              ast: { type: 'str', value: $.s },
+            },
+          }),
+        ],
+      }),
+    input: '"world"',
+    // .coerce() strips quotes and processes escapes on string class.
+    expectedAst: { type: 'str', value: 'world' },
+    // Phase 1 deliberate gap (see refinement:number-coerce note above).
+    expected: { interp: 'gap', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:ident-oneOf',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'left',
+            encodings: {
+              src: parse([span('dir', 'left').ident().oneOf(['left', 'right'])]),
+              ast: { type: 'dir', value: $.dir },
+            },
+          }),
+        ],
+      }),
+    input: 'right',
+    expectedAst: { type: 'dir', value: 'right' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:ident-js',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'name',
+            encodings: {
+              src: parse([span('n', 'name').ident().js()]),
+              ast: { type: 'jsId', value: $.n },
+            },
+          }),
+        ],
+      }),
+    input: '_id$',
+    expectedAst: { type: 'jsId', value: '_id$' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:ident-html',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'div',
+            encodings: {
+              src: parse([span('tag', 'div').ident().html()]),
+              ast: { type: 'htmlId', value: $.tag },
+            },
+          }),
+        ],
+      }),
+    input: 'my-element',
+    expectedAst: { type: 'htmlId', value: 'my-element' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Modifier options ---------------------------------------------------
+
+  {
+    name: 'modifier:until-balanced-false',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '[a (b) c]',
+            encodings: {
+              src: parse([
+                literal('['),
+                span('inner', 'a (b) c').until(']', { balanced: false }),
+                literal(']'),
+              ]),
+              ast: { type: 'block', inner: $.inner },
+            },
+          }),
+        ],
+      }),
+    input: '[x (y) z]',
+    expectedAst: { type: 'block', inner: 'x (y) z' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:until-nonEmpty',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'data;',
+            encodings: {
+              src: parse([
+                span('v', 'data').until(';', { nonEmpty: true }),
+                literal(';'),
+              ]),
+              ast: { type: 'x', value: $.v },
+            },
+          }),
+        ],
+      }),
+    input: 'hello;',
+    expectedAst: { type: 'x', value: 'hello' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:rawUntil',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'body</end>',
+            encodings: {
+              src: parse([
+                span('v', 'body').rawUntil('</'),
+                literal('</'),
+                span('tag', 'end').ident(),
+                literal('>'),
+              ]),
+              ast: { type: 'x', value: $.v, tag: $.tag },
+            },
+          }),
+        ],
+      }),
+    input: 'content</close>',
+    expectedAst: { type: 'x', value: 'content', tag: 'close' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:repeats-min',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { comma: ',' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ',', min: 0 }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    input: '',
+    expectedAst: { type: 'list', items: [] },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:repeats-trailing',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { comma: ',' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x,y,',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ',', trailing: 'allowed' }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    input: 'a,b,',
+    expectedAst: {
+      type: 'list',
+      items: [
+        { type: 'item', name: 'a' },
+        { type: 'item', name: 'b' },
+      ],
+    },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
   // --- Schema-level declarations -------------------------------------------
 
   {
@@ -450,6 +897,99 @@ const rows: ReadonlyArray<ParityRow> = [
   },
 
   // --- Structure refs ------------------------------------------------------
+
+  {
+    name: 'schemaDecl:operators',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        operators: { add: ['+', '-'], mul: ['*', '/'] },
+        examples: [
+          relation('X', {
+            input: 'a + b',
+            encodings: {
+              src: parse([
+                span('left', 'a').ident(),
+                span('op', '+').operator(),
+                span('right', 'b').ident(),
+              ]),
+              ast: { type: 'binop', op: $.op, left: $.left, right: $.right },
+            },
+          }),
+        ],
+      }),
+    input: 'x / y',
+    expectedAst: { type: 'binop', op: '/', left: 'x', right: 'y' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:defaultTarget',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        defaultTarget: 'ast',
+        examples: [
+          relation('X', {
+            input: 'hello',
+            encodings: {
+              src: parse([span('v', 'hello').ident()]),
+              ast: { type: 'x', value: $.v },
+            },
+          }),
+        ],
+      }),
+    input: 'world',
+    expectedAst: { type: 'x', value: 'world' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:unknownChars-tolerate',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        unknownChars: 'tolerate',
+        examples: [
+          relation('X', {
+            input: 'a',
+            encodings: {
+              src: parse([span('v', 'a').until('\n')]),
+              ast: { type: 'x', value: $.v },
+            },
+          }),
+        ],
+      }),
+    input: 'data!@#$%^',
+    expectedAst: { type: 'x', value: 'data!@#$%^' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  // --- Structure refs ------------------------------------------------------
+
+  {
+    name: 'structureRef:span-value',
+    category: 'structureRef',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'hello',
+            encodings: {
+              src: parse([span('greeting', 'hello').ident()]),
+              ast: { type: 'msg', text: $.greeting },
+            },
+          }),
+        ],
+      }),
+    input: 'hi',
+    expectedAst: { type: 'msg', text: 'hi' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 
   {
     name: 'structureRef:span-presence',

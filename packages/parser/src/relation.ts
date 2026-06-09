@@ -646,6 +646,86 @@ export function litTagged(
   });
 }
 
+// Phase 7 sugar: `<prefix>span1<sep>span2` — a prefixed range. Collapses
+// the iso-duration date+time pattern:
+//
+//   relation('Duration', {
+//     input: 'P1DT1H',
+//     encodings: {
+//       parse: parse([
+//         literal('P'),
+//         span('date', '1D').of('DateUnit').repeats({ min: 0 }),
+//         literal('T'),
+//         span('time', '1H').of('TimeUnit').repeats({ min: 1 }),
+//       ]),
+//       ast: { type: 'duration', date: $.date, time: $.time },
+//       source: tpl`P${$.date}T${$.time}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   prefixedRange('Duration', 'P',
+//     span('date', '1D').of('DateUnit').repeats({ min: 0 }),
+//     'T',
+//     span('time', '1H').of('TimeUnit').repeats({ min: 1 }),
+//     'duration')
+//
+// Same authoring contract as range(): both spans carry their field names
+// (via `.name`) and example texts (via `.text`); modifiers pass through
+// unchanged. The prefix and sep appear verbatim in the source template
+// (no extra whitespace). Pass `options.input` when either span has no
+// example text (typical for `.of(...).repeats()` shapes).
+export function prefixedRange(
+  nodeType: string,
+  prefix: string,
+  leftSpan: SpanNode,
+  sep: string,
+  rightSpan: SpanNode,
+  astType: string,
+  options: { readonly input?: string } = {},
+): ExampleDef {
+  const leftDef = leftSpan.toSpanDef();
+  const rightDef = rightSpan.toSpanDef();
+  if (!leftDef.name) {
+    throw new Error(`prefixedRange('${nodeType}'): leftSpan must be a named span`);
+  }
+  if (!rightDef.name) {
+    throw new Error(`prefixedRange('${nodeType}'): rightSpan must be a named span`);
+  }
+  const leftText = leftDef.text;
+  const rightText = rightDef.text;
+  const input = options.input
+    ?? (leftText !== undefined && rightText !== undefined
+      ? prefix + leftText + sep + rightText
+      : undefined);
+  if (input === undefined) {
+    throw new Error(
+      `prefixedRange('${nodeType}'): both spans must have example text or options.input must be provided`,
+    );
+  }
+  const leftField = leftDef.name;
+  const rightField = rightDef.name;
+  const leftRef: SpanValueRef = { __ref: 'span-value', name: leftField };
+  const rightRef: SpanValueRef = { __ref: 'span-value', name: rightField };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: [prefix, sep, ''],
+    slots: [
+      { kind: 'capture', ref: leftField },
+      { kind: 'capture', ref: rightField },
+    ],
+  };
+  return relation(nodeType, {
+    input,
+    encodings: {
+      parse: parse([literal(prefix), leftSpan, literal(sep), rightSpan]),
+      ast: { type: astType, [leftField]: leftRef, [rightField]: rightRef },
+      source: sourceTpl,
+    },
+  });
+}
+
 // Phase 7 sugar: a production capturing two spans separated by a fixed
 // literal — typical "range" or "binary" shape. Collapses the cron range
 // pattern:

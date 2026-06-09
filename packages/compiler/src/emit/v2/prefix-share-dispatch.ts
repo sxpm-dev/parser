@@ -234,7 +234,11 @@ export function emitPrefixShareDispatcher(
     preserveWs,
     wsCaptureMode,
     lineCommentMarkers,
+    // The dispatcher emits only the prefix spans, which are NEVER optional
+    // (shared prefix means non-optional by construction). An empty presence
+    // set is correct: no optional class span can appear here.
     referencedValueSpans,
+    referencedPresenceSpans: new Set<string>(),
   };
   const bindings: SpanBindings = {
     valueExpr: new Map(),

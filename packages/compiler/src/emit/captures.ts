@@ -79,11 +79,16 @@ export function emitCapturesExpr(
 // captures payload. A span's value is "referenced" when any (forward) render
 // body or any derived inverse IR reads it back:
 //   - $.name           (span-value)    →  captures.<name>
-//   - $.name.present   (span-presence) →  captures.<name> != null check
 //   - dynKey({key: $.k})              →  key string read from captures.k
 //   - merge($.arr)                    →  array read from captures.arr
 //   - Template slot for name           →  captures.<name>
 //   - inverseDerived references        →  rebuild reads captures.<name>
+//
+// Span-presence refs do NOT force the value slice — they only need a
+// nullable marker in captures, which the optional-class-span emit can
+// satisfy with a boolean ($.name.present → captures.<name> = true | null
+// rather than captures.<name> = string | null). See
+// computeReferencedSpanPresence below.
 //
 // Synthetic refs (span-gap / span-raw / span-tail / span-ends-with /
 // span-comment-left / span-comment-right) DO NOT pull a span's value —
@@ -105,11 +110,33 @@ export function computeReferencedSpanValues(production: Production): ReadonlySet
   return set;
 }
 
+// Phase 5a extension — lazy presence capture for OPTIONAL class spans.
+//
+// Returns the set of span names whose PRESENCE (but not necessarily value)
+// is read by some render body. When an optional class span's value is
+// unreferenced AND no value-dependent refinement gates it, the v2 emitter
+// can substitute a `<name>_present: boolean` local for the `<name>:
+// string | null` local — saving the input.slice() allocation. The captures
+// payload still surfaces a nullable marker (`presentVar ? true : null`)
+// so render-side span-presence checks (`captures.<name> != null`) work
+// unchanged.
+//
+// Walks span-presence refs only. Inverse IR's `presence` node writes
+// presence at rebuild time but doesn't read the forward capture, so it
+// does NOT contribute to this set.
+export function computeReferencedSpanPresence(production: Production): ReadonlySet<string> {
+  const set = new Set<string>();
+  for (const entry of production.renders.values()) {
+    walkBodyForPresence(entry.body, set);
+  }
+  return set;
+}
+
 function walkBodyForValues(body: RenderBody, set: Set<string>): void {
   if (body === null) return;
   if (typeof body !== 'object') return;
   if (isStructureRef(body)) {
-    if (body.__ref === 'span-value' || body.__ref === 'span-presence') {
+    if (body.__ref === 'span-value') {
       set.add(body.name);
     }
     return;
@@ -133,6 +160,30 @@ function walkBodyForValues(body: RenderBody, set: Set<string>): void {
   }
   for (const child of Object.values(body as Record<string, RenderBody>)) {
     walkBodyForValues(child, set);
+  }
+}
+
+function walkBodyForPresence(body: RenderBody, set: Set<string>): void {
+  if (body === null) return;
+  if (typeof body !== 'object') return;
+  if (isStructureRef(body)) {
+    if (body.__ref === 'span-presence') {
+      set.add(body.name);
+    }
+    return;
+  }
+  if (isTemplate(body)) return;
+  if (isDynKey(body)) {
+    walkBodyForPresence(body.value, set);
+    return;
+  }
+  if (isMerge(body)) return;
+  if (Array.isArray(body)) {
+    for (const item of body) walkBodyForPresence(item, set);
+    return;
+  }
+  for (const child of Object.values(body as Record<string, RenderBody>)) {
+    walkBodyForPresence(child, set);
   }
 }
 

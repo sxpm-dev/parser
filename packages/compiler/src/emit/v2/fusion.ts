@@ -25,7 +25,7 @@
 
 import { isTemplate, type Template } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
-import { computeReferencedSpanValues } from '../captures.ts';
+import { computeReferencedSpanPresence, computeReferencedSpanValues } from '../captures.ts';
 import { findSpanByName, isAbsentAllowedSpan, repeatsJoinDescriptor } from '../../span-helpers.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { classFirstBytes } from './role-ladder.ts';
@@ -974,6 +974,7 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     // not referenced by any (production, target) render body have the
     // value slice dropped.
     referencedValueSpans: computeReferencedSpanValues(production),
+    referencedPresenceSpans: computeReferencedSpanPresence(production),
   };
 }
 

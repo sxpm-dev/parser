@@ -141,6 +141,16 @@ export type SpanContext = {
   // behavior, kept as the default for callers (e.g. shared-dispatch
   // prefix bodies) that haven't been threaded.
   readonly referencedValueSpans?: ReadonlySet<string>;
+  // Phase 5a extension — lazy presence capture for OPTIONAL class spans.
+  // When set, names a span whose PRESENCE (but not value) is referenced
+  // by some render body. emitClassSpan's optional branch then substitutes
+  // a `<name>_present: boolean` local for the `<name>: string | null`
+  // local, eliding the input.slice() — the captures payload still carries
+  // a nullable marker (`presentVar ? true : null`) so render-side
+  // span-presence checks keep working. Undefined means "no presence info
+  // available" — caller-friendly default; emit falls back to the
+  // pre-optimization shape for optional spans.
+  readonly referencedPresenceSpans?: ReadonlySet<string>;
 };
 
 export type SpanBindings = {
@@ -272,13 +282,20 @@ function emitClassSpan(
   const startVar = `__${v}_start`, endVar = `__${v}_end`;
 
   if (isOptional) {
-    if (span.name) {
-      bindings.valueExpr.set(span.name, v);
-      bindings.presenceExpr.set(span.name, `(${v} !== null)`);
-      bindings.startOffExpr.set(span.name, startVar);
-      bindings.endOffExpr.set(span.name, endVar);
-    }
-    return `let ${v}: string | null = null;
+    // Phase 5a extension — three-way branch by what's actually referenced:
+    //
+    //   (a) value referenced OR refinement needs the slice
+    //       → keep the `string | null` local + input.slice() (legacy shape).
+    //   (b) presence referenced, value isn't
+    //       → boolean `<name>_present` local; captures.<name> carries
+    //         `(presentVar || null)` so render-side `!= null` checks work.
+    //   (c) neither referenced
+    //       → boolean for the parse-time gate only, no captures field.
+    //
+    // Conservative fallback: if either set is undefined (caller didn't
+    // thread Phase 5a info), behave as if the span is referenced.
+    if (!span.name) {
+      return `let ${v}: string | null = null;
 let ${startVar} = off;
 let ${endVar} = off;
 if (${startPredicate}) {
@@ -286,6 +303,44 @@ if (${startPredicate}) {
   ${scanBody}
   ${endVar} = off;
   ${v} = input.slice(${startVar}, ${endVar});
+}`;
+    }
+    const isReferenced =
+      ctx.referencedValueSpans === undefined || ctx.referencedValueSpans.has(span.name);
+    const needsValueForRefinement = hasValueDependentRefinement(span);
+    bindings.startOffExpr.set(span.name, startVar);
+    bindings.endOffExpr.set(span.name, endVar);
+    if (isReferenced || needsValueForRefinement) {
+      if (isReferenced) bindings.valueExpr.set(span.name, v);
+      bindings.presenceExpr.set(span.name, `(${v} !== null)`);
+      return `let ${v}: string | null = null;
+let ${startVar} = off;
+let ${endVar} = off;
+if (${startPredicate}) {
+  ${startVar} = off;
+  ${scanBody}
+  ${endVar} = off;
+  ${v} = input.slice(${startVar}, ${endVar});
+}`;
+    }
+    const presentVar = `${v}_present`;
+    const presenceReferenced =
+      ctx.referencedPresenceSpans !== undefined && ctx.referencedPresenceSpans.has(span.name);
+    bindings.presenceExpr.set(span.name, presentVar);
+    if (presenceReferenced) {
+      // Surface a nullable marker in captures so render-side
+      // `captures.<name> != null` checks distinguish present from absent.
+      // `presentVar || null` is `true` when present and `null` when not.
+      bindings.valueExpr.set(span.name, `(${presentVar} || null)`);
+    }
+    return `let ${presentVar} = false;
+let ${startVar} = off;
+let ${endVar} = off;
+if (${startPredicate}) {
+  ${startVar} = off;
+  ${scanBody}
+  ${endVar} = off;
+  ${presentVar} = true;
 }`;
   }
 

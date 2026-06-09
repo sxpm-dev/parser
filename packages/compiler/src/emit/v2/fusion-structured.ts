@@ -21,7 +21,7 @@
 import { isDynKey, isMerge, isStructureRef, isTemplate } from '@parser2/parser';
 import type { RenderBody } from '@parser2/parser';
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
-import { computeReferencedSpanValues } from '../captures.ts';
+import { computeReferencedSpanPresence, computeReferencedSpanValues } from '../captures.ts';
 import { detectSharedDispatch } from './shared-dispatch.ts';
 import { indent, jsIdent, jsString } from '../strings.ts';
 import { computeRoleFirstBytes } from './role-ladder.ts';
@@ -472,6 +472,7 @@ function buildSpanContext(schema: InferredSchema, production: Production): SpanC
     // bindings.valueExpr directly; spans not referenced by the body have
     // their value slice + captures field elided.
     referencedValueSpans: computeReferencedSpanValues(production),
+    referencedPresenceSpans: computeReferencedSpanPresence(production),
   };
 }
 

@@ -258,3 +258,178 @@ test('lazy capture: span referenced by sibling production keeps its value', () =
   // Production 0 references `value` → its slice is kept.
   assert.match(code, /const value = input\.slice/, 'production 0 keeps referenced value slice');
 });
+
+// ---------------------------------------------------------------------------
+// Phase 5a extension — lazy capture for OPTIONAL class spans.
+// Three cases by what each production's render bodies reference:
+//   (a) value referenced       → keep `string | null` local + slice()
+//   (b) presence only          → use `<name>_present: boolean` local
+//   (c) neither referenced     → boolean too, no captures field
+// ---------------------------------------------------------------------------
+
+test('lazy capture (optional): value referenced keeps `string | null` slice', () => {
+  const schema = defineSchema({
+    rootType: 'Tag',
+    examples: [
+      relation('Tag', {
+        input: 'name',
+        encodings: {
+          src: parse([span('id', 'name').ident().optional()]),
+          ast: { type: 'tag', id: $.id },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  assert.match(
+    code,
+    /let id: string \| null = null/,
+    'value-referenced optional span keeps the nullable string local',
+  );
+  assert.match(
+    code,
+    /id = input\.slice\(__id_start, __id_end\)/,
+    'value-referenced optional span keeps the slice extraction',
+  );
+  assert.match(code, /id: id/, 'captures payload still surfaces the value');
+});
+
+test('lazy capture (optional): presence only → boolean local, no slice', () => {
+  const schema = defineSchema({
+    rootType: 'Tag',
+    examples: [
+      relation('Tag', {
+        input: 'name',
+        encodings: {
+          src: parse([span('id', 'name').ident().optional()]),
+          // Only presence is checked — value is never read.
+          ast: { type: 'tag', hasId: $.id.present },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  assert.match(
+    code,
+    /let id_present = false/,
+    'presence-only optional span uses a boolean local',
+  );
+  assert.match(
+    code,
+    /id_present = true/,
+    'boolean local is flipped when the scan succeeds',
+  );
+  assert.doesNotMatch(
+    code,
+    /id = input\.slice/,
+    'presence-only optional span must skip the slice extraction',
+  );
+  assert.doesNotMatch(
+    code,
+    /let id: string \| null/,
+    'presence-only optional span must not allocate the string|null local',
+  );
+  // Captures field must carry a nullable marker so render-side
+  // `captures.id != null` works.
+  assert.match(
+    code,
+    /id: \(id_present \|\| null\)/,
+    'captures payload surfaces a true|null marker for presence checks',
+  );
+});
+
+test('lazy capture (optional): neither value nor presence → boolean + no captures field', () => {
+  const schema = defineSchema({
+    rootType: 'Tag',
+    examples: [
+      relation('Tag', {
+        input: 'name',
+        encodings: {
+          src: parse([span('id', 'name').ident().optional()]),
+          // No reference to $.id or $.id.present — span is purely structural.
+          ast: { type: 'tag' },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  assert.match(
+    code,
+    /let id_present = false/,
+    'optional span still needs a boolean to gate the conditional scan',
+  );
+  assert.doesNotMatch(
+    code,
+    /id = input\.slice/,
+    'unreferenced optional span must not allocate the slice',
+  );
+  assert.doesNotMatch(
+    code,
+    /let id: string \| null/,
+    'unreferenced optional span must not allocate the string|null local',
+  );
+  assert.doesNotMatch(
+    code,
+    /\bid: \(id_present/,
+    'no captures field for a fully-unreferenced optional span',
+  );
+});
+
+test('lazy capture (optional): oneOf refinement forces `string | null` even when value unreferenced', () => {
+  const schema = defineSchema({
+    rootType: 'Direction',
+    examples: [
+      relation('Direction', {
+        input: 'left',
+        encodings: {
+          src: parse([
+            span('dir', 'left').ident().oneOf(['left', 'right']).optional(),
+          ]),
+          // dir not surfaced — refinement guards acceptance when present.
+          ast: { type: 'dir' },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  assert.match(
+    code,
+    /let dir: string \| null = null/,
+    'oneOf refinement on optional span keeps the nullable string local for the refinement check',
+  );
+  assert.match(
+    code,
+    /dir = input\.slice/,
+    'oneOf refinement still needs the captured slice to evaluate the check',
+  );
+  // The value isn't referenced by any render body, so even though we
+  // allocated it for the refinement check, the captures payload drops it.
+  assert.doesNotMatch(
+    code,
+    /\bdir: dir\b/,
+    'unreferenced span must not appear in the captures payload even when scanned for refinement',
+  );
+});
+
+test('lazy capture (optional): forward parse still works on a presence-only span', async () => {
+  const schema = defineSchema({
+    rootType: 'Tag',
+    examples: [
+      relation('Tag', {
+        input: 'name',
+        encodings: {
+          parse: parse([
+            span('id', 'name').ident().optional(),
+          ]),
+          ast: { type: 'tag', hasId: $.id.present },
+        },
+      }),
+    ],
+  });
+  const code = generateParser(schema, undefined, {});
+  const { render } = await loadParser(code);
+  // Present case: hasId = true.
+  assert.deepEqual(render('name', { target: 'ast' }), { type: 'tag', hasId: true });
+  // Absent case: hasId = false (empty input — optional span scans nothing).
+  assert.deepEqual(render('', { target: 'ast' }), { type: 'tag', hasId: false });
+});

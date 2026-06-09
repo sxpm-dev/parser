@@ -17,7 +17,7 @@
 // update state.maxOff so the top-level error reports the deepest position.
 
 import type { InferredSchema, Production, ResolvedSpan } from '../../model.ts';
-import { computeReferencedSpanValues, emitCapturesExpr, type CapturesBindings } from '../captures.ts';
+import { computeReferencedSpanPresence, computeReferencedSpanValues, emitCapturesExpr, type CapturesBindings } from '../captures.ts';
 import { productionRoutingKey } from '../render.ts';
 import { indent, jsString } from '../strings.ts';
 import { computeKnownLeadingBytes, emitSpan, hasModifier, type SpanBindings, type SpanContext } from './span.ts';
@@ -127,6 +127,7 @@ export function emitProduction(
   // stay consistent — even though the prefix captures already supply
   // valueExpr for those names, the lookup is harmless when present.
   const referencedValueSpans = computeReferencedSpanValues(production);
+  const referencedPresenceSpans = computeReferencedSpanPresence(production);
   const ctx: SpanContext = {
     entryOffVar: 'entryOff',
     raws: false /* per-call-site */,
@@ -159,6 +160,7 @@ export function emitProduction(
     preserveWs: schema.whitespace === 'preserve',
     lineCommentMarkers,
     referencedValueSpans,
+    referencedPresenceSpans,
   };
 
   const lines: string[] = [];

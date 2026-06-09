@@ -1,4 +1,4 @@
-import { $, defineSchema, keyword, litEnum, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, keyword, litEnum, parse, passthrough, relation, span, tpl } from '@parser2/parser';
 
 // RFC 5545 §3.3.10 RRULE — the recurrence-rule value type used inside an
 // iCalendar RRULE property. Grammar (subset implemented here):
@@ -58,14 +58,7 @@ export default defineSchema({
     // Wrapper so BY* integer lists can be expressed as a recursive .repeats
     // span. The ast unwraps to the captured number string directly so
     // callers see a flat array of strings instead of {type, value} objects.
-    relation('NumValue', {
-      input: '6',
-      encodings: {
-        parse: parse([span('n', '6').number().int()]),
-        ast: $.n,
-        source: tpl`${$.n}`,
-      },
-    }),
+    passthrough('NumValue', span('n', '6').number().int()),
 
     // ---- Part productions --------------------------------------------
     // BYMONTHDAY must precede BYMONTH so the longest-match dispatcher

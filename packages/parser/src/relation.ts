@@ -444,6 +444,109 @@ export function suffixed(
   });
 }
 
+// Phase 7 sugar: a production wrapping a single captured span in a
+// type-tagged single-field object. Collapses the toml / cron Value
+// pattern:
+//
+//   relation('Value', {
+//     input: '"hello"',
+//     encodings: {
+//       parse: parse([span('value', '"hello"').string().doubleQuoted()]),
+//       ast: { type: 'string', value: $.value },
+//       source: tpl`${$.value}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   valueTagged('Value', span('value', '"hello"').string().doubleQuoted(), 'string')
+//
+// The valueSpan carries the AST field name (via `.name`) and example
+// text (via `.text`); modifiers pass through unchanged.
+export function valueTagged(
+  nodeType: string,
+  valueSpan: SpanNode,
+  astType: string,
+): ExampleDef {
+  const def = valueSpan.toSpanDef();
+  if (!def.name) {
+    throw new Error(
+      `valueTagged('${nodeType}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
+    );
+  }
+  if (def.text === undefined) {
+    throw new Error(
+      `valueTagged('${nodeType}'): valueSpan must have an example text`,
+    );
+  }
+  const fieldName = def.name;
+  const valueRef: SpanValueRef = { __ref: 'span-value', name: fieldName };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: ['', ''],
+    slots: [{ kind: 'capture', ref: fieldName }],
+  };
+  return relation(nodeType, {
+    input: def.text,
+    encodings: {
+      parse: parse([valueSpan]),
+      ast: { type: astType, [fieldName]: valueRef },
+      source: sourceTpl,
+    },
+  });
+}
+
+// Phase 7 sugar: a production that captures a single span and emits the
+// capture as the AST verbatim (no type tag). Collapses the rrule
+// NumValue / cron CommandWord pattern:
+//
+//   relation('NumValue', {
+//     input: '6',
+//     encodings: {
+//       parse: parse([span('n', '6').number().int()]),
+//       ast: $.n,
+//       source: tpl`${$.n}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   passthrough('NumValue', span('n', '6').number().int())
+//
+// Same authoring contract — valueSpan carries name + example text;
+// modifiers pass through unchanged.
+export function passthrough(
+  nodeType: string,
+  valueSpan: SpanNode,
+): ExampleDef {
+  const def = valueSpan.toSpanDef();
+  if (!def.name) {
+    throw new Error(
+      `passthrough('${nodeType}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
+    );
+  }
+  if (def.text === undefined) {
+    throw new Error(
+      `passthrough('${nodeType}'): valueSpan must have an example text`,
+    );
+  }
+  const fieldName = def.name;
+  const valueRef: SpanValueRef = { __ref: 'span-value', name: fieldName };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: ['', ''],
+    slots: [{ kind: 'capture', ref: fieldName }],
+  };
+  return relation(nodeType, {
+    input: def.text,
+    encodings: {
+      parse: parse([valueSpan]),
+      ast: valueRef,
+      source: sourceTpl,
+    },
+  });
+}
+
 export function relation(nodeType: string, body: RelationBody): ExampleDef {
   let parseProgram: ParseProgram | undefined;
   const renders: RenderTargetDef[] = [];

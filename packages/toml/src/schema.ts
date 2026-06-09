@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 // TOML — a usefully-sized subset of v1.0.0. Implemented here:
 //
@@ -36,14 +36,7 @@ export default defineSchema({
   tokens: ['number', 'string'],
   examples: [
     // ---- Value: string ------------------------------------------------
-    relation('Value', {
-      input: '"hello"',
-      encodings: {
-        parse: parse([span('value', '"hello"').string().doubleQuoted()]),
-        ast: { type: 'string', value: $.value },
-        source: tpl`${$.value}`,
-      },
-    }),
+    valueTagged('Value', span('value', '"hello"').string().doubleQuoted(), 'string'),
     // ---- Value: boolean ----------------------------------------------
     relation('Value', {
       input: 'true',
@@ -63,14 +56,7 @@ export default defineSchema({
     }),
     // ---- Value: integer (slot-only — declared LAST so the inverse
     // dispatcher's startsWith ladder tries the prefixed forms first) ---
-    relation('Value', {
-      input: '42',
-      encodings: {
-        parse: parse([span('value', '42').number().int()]),
-        ast: { type: 'integer', value: $.value },
-        source: tpl`${$.value}`,
-      },
-    }),
+    valueTagged('Value', span('value', '42').number().int(), 'integer'),
 
     // ---- Pair --------------------------------------------------------
     relation('Pair', {

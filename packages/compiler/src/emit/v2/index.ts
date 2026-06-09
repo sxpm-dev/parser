@@ -554,6 +554,17 @@ ${lineSkipFragment}
   // capture as a Comment child node).
   const rootInfo = schema.nodeTypes.get(schema.rootType);
   const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    // Case A: the root production's own first span is a comment-class
+    // capture (e.g. a single-production `relation('Comment', { parse:
+    // [span(...).comment()], ... })`). Eating the comment in the leading
+    // skip would leave nothing for the span to match — the fused fast
+    // path masks this because it runs without the leading skip, but the
+    // captures path (raws mode, recovery diagnostics) still routes
+    // through __parse and would fail without this guard.
+    const ownFirst = prod.spans[0];
+    if (ownFirst && ownFirst.class === 'comment') return true;
+    // Case B: the root production dispatches into a recursive role whose
+    // first-span is itself comment-class (CSS's Stylesheet → Comment).
     for (const span of prod.spans) {
       for (const roleName of span.recursiveRoles) {
         const info = schema.nodeTypes.get(roleName);

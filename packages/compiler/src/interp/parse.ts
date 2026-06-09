@@ -199,6 +199,15 @@ function skipWsAndCommentsTopLevel(schema: InferredSchema, state: State): void {
   // comments at the leading/trailing edge.
   const rootInfo = schema.nodeTypes.get(schema.rootType);
   const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    // Case A: the root production's own first span is a comment-class
+    // capture (e.g. a single-production `relation('Comment', { parse:
+    // [span(...).comment()], ... })`). Eating the comment in the leading
+    // skip would leave nothing for the span to match.
+    const ownFirst = prod.spans[0];
+    if (ownFirst && ownFirst.class === 'comment') return true;
+    // Case B: the root production dispatches into a recursive role that
+    // itself has a Comment-class first-span production (CSS's Stylesheet
+    // → Comment); same risk.
     for (const span of prod.spans) {
       for (const roleName of span.recursiveRoles) {
         const info = schema.nodeTypes.get(roleName);

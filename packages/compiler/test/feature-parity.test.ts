@@ -291,12 +291,11 @@ const rows: ReadonlyArray<ParityRow> = [
         ],
       }),
     input: '/* note */',
-    // v2 returns the interior with .block delimiters stripped; interp
-    // throws at runtime (the comment class isn't wired in interp's class
-    // scanner). When closing the gap, mirror v2's strip-delimiters
-    // behaviour in interp so the matrix flips to impl/impl.
+    // Both backends strip `/* ... */` delimiters and trim interior
+    // whitespace when the span carries the (implicit) .comment()
+    // refinement; the captured value is the interior text.
     expectedAst: { type: 'comment', value: 'note' },
-    expected: { interp: 'gap', v2: 'impl' },
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   // Note: class:whitespace was removed from the DSL during Phase 1

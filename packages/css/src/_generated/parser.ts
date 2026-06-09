@@ -4096,8 +4096,8 @@ function __dispatchInverse_Rule_source(value: any, __indentCol: number = 0): str
 
 function __dispatchInverse_AtRule_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("@")) return __invert_AtRule_0_source(value, __indentCol);
-    if (value.startsWith("@")) return __invert_AtRule_1_source(value, __indentCol);
+    if (value.indexOf(" {") >= 0) { try { return __invert_AtRule_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf(";") >= 0) { try { return __invert_AtRule_1_source(value, __indentCol); } catch (_e) { /* try next */ } }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }

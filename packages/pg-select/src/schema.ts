@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, litTagged, literal, parse, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 // Postgres SELECT — a small but useful subset. Grammar:
 //
@@ -50,40 +50,12 @@ export default defineSchema({
   tokens: ['number', 'string'],
   examples: [
     // ---- ColumnRef ---------------------------------------------------
-    relation('ColumnRef', {
-      input: '*',
-      encodings: {
-        parse: parse([literal('*')]),
-        ast: { type: 'wildcard' },
-        source: tpl`*`,
-      },
-    }),
-    relation('ColumnRef', {
-      input: 'name',
-      encodings: {
-        parse: parse([span('name', 'name').ident().js()]),
-        ast: { type: 'column', name: $.name },
-        source: tpl`${$.name}`,
-      },
-    }),
+    litTagged('ColumnRef', '*', { type: 'wildcard' }),
+    valueTagged('ColumnRef', span('name', 'name').ident().js(), 'column'),
 
     // ---- LiteralValue ------------------------------------------------
-    relation('LiteralValue', {
-      input: '42',
-      encodings: {
-        parse: parse([span('value', '42').number().int()]),
-        ast: { type: 'number', value: $.value },
-        source: tpl`${$.value}`,
-      },
-    }),
-    relation('LiteralValue', {
-      input: "'foo'",
-      encodings: {
-        parse: parse([span('value', "'foo'").string().singleQuoted()]),
-        ast: { type: 'string', value: $.value },
-        source: tpl`${$.value}`,
-      },
-    }),
+    valueTagged('LiteralValue', span('value', '42').number().int(), 'number'),
+    valueTagged('LiteralValue', span('value', "'foo'").string().singleQuoted(), 'string'),
 
     // ---- Predicate ---------------------------------------------------
     // `.operator()` scans the schema-level operator pool with longest-

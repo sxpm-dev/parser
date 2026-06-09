@@ -1,4 +1,4 @@
-import { $, defineSchema, keyword, litEnum, parse, passthrough, relation, span, tpl } from '@parser2/parser';
+import { defineSchema, keyword, litEnum, passthrough, span, valueTagged } from '@parser2/parser';
 
 // RFC 5545 §3.3.10 RRULE — the recurrence-rule value type used inside an
 // iCalendar RRULE property. Grammar (subset implemented here):
@@ -83,15 +83,10 @@ export default defineSchema({
     // (`.repeats({ sep: ';' })`) before per-element dispatch; before that
     // fix this had to be a single-part example or codegen round-trip
     // failed.
-    relation('Rule', {
-      input: 'FREQ=DAILY;COUNT=10',
-      encodings: {
-        parse: parse([
-          span('parts', 'FREQ=DAILY;COUNT=10').of('Part').repeats({ sep: ';', min: 1 }),
-        ]),
-        ast: { type: 'rule', parts: $.parts },
-        source: tpl`${$.parts}`,
-      },
-    }),
+    valueTagged(
+      'Rule',
+      span('parts', 'FREQ=DAILY;COUNT=10').of('Part').repeats({ sep: ';', min: 1 }),
+      'rule',
+    ),
   ],
 });

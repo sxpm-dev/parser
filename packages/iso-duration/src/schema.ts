@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, literal, parse, relation, span, suffixed, tpl } from '@parser2/parser';
 
 // ISO 8601 duration. Forms:
 //   P[nY][nM][nW][nD][T[nH][nM][nS]]
@@ -33,87 +33,20 @@ export default defineSchema({
   tokens: ['number'],
   examples: [
     // --- DateUnit: Y | M | W | D ---------------------------------------
-    relation('DateUnit', {
-      input: '1Y',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('Y'),
-        ]),
-        ast: { type: 'years', value: $.value },
-        source: tpl`${$.value}Y`,
-      },
-    }),
-    relation('DateUnit', {
-      input: '1M',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('M'),
-        ]),
-        ast: { type: 'months', value: $.value },
-        source: tpl`${$.value}M`,
-      },
-    }),
-    relation('DateUnit', {
-      input: '1W',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('W'),
-        ]),
-        ast: { type: 'weeks', value: $.value },
-        source: tpl`${$.value}W`,
-      },
-    }),
-    relation('DateUnit', {
-      input: '1D',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('D'),
-        ]),
-        ast: { type: 'days', value: $.value },
-        source: tpl`${$.value}D`,
-      },
-    }),
+    // Each unit production is `<digits><letter>` — collapsed via the
+    // `suffixed` Phase 7 helper. The expansion is identical to writing
+    // the relation() call by hand (verified by the byte-identity gate).
+    suffixed('DateUnit', span('value', '1').number().int(), 'Y', 'years'),
+    suffixed('DateUnit', span('value', '1').number().int(), 'M', 'months'),
+    suffixed('DateUnit', span('value', '1').number().int(), 'W', 'weeks'),
+    suffixed('DateUnit', span('value', '1').number().int(), 'D', 'days'),
 
     // --- TimeUnit: H | M | S -------------------------------------------
     // `M` here means minutes; the wrapping Duration production gates this
     // role list behind the `T` literal so the `M` ambiguity stays scoped.
-    relation('TimeUnit', {
-      input: '1H',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('H'),
-        ]),
-        ast: { type: 'hours', value: $.value },
-        source: tpl`${$.value}H`,
-      },
-    }),
-    relation('TimeUnit', {
-      input: '1M',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('M'),
-        ]),
-        ast: { type: 'minutes', value: $.value },
-        source: tpl`${$.value}M`,
-      },
-    }),
-    relation('TimeUnit', {
-      input: '1S',
-      encodings: {
-        parse: parse([
-          span('value', '1').number().int(),
-          literal('S'),
-        ]),
-        ast: { type: 'seconds', value: $.value },
-        source: tpl`${$.value}S`,
-      },
-    }),
+    suffixed('TimeUnit', span('value', '1').number().int(), 'H', 'hours'),
+    suffixed('TimeUnit', span('value', '1').number().int(), 'M', 'minutes'),
+    suffixed('TimeUnit', span('value', '1').number().int(), 'S', 'seconds'),
 
     // --- Duration root -------------------------------------------------
     // Two productions so source templates never have adjacent slots:

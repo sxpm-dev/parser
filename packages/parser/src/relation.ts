@@ -390,6 +390,60 @@ export function keyword(
   });
 }
 
+// Phase 7 sugar: a production of shape `value<suffix>`, where `value` is a
+// captured span followed by a fixed literal terminator. Collapses the
+// common iso-duration / time-unit shape:
+//
+//   relation('DateUnit', {
+//     input: '1Y',
+//     encodings: {
+//       parse: parse([span('value', '1').number().int(), literal('Y')]),
+//       ast: { type: 'years', value: $.value },
+//       source: tpl`${$.value}Y`,
+//     },
+//   })
+//
+// to one call:
+//
+//   suffixed('DateUnit', span('value', '1').number().int(), 'Y', 'years')
+//
+// Same authoring contract as keyword(): the valueSpan carries the AST
+// field name (via `.name`) and example text (via `.text`); modifiers on
+// the span pass through unchanged.
+export function suffixed(
+  nodeType: string,
+  valueSpan: SpanNode,
+  suffix: string,
+  astType: string,
+): ExampleDef {
+  const def = valueSpan.toSpanDef();
+  if (!def.name) {
+    throw new Error(
+      `suffixed('${nodeType}', ..., '${suffix}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
+    );
+  }
+  if (def.text === undefined) {
+    throw new Error(
+      `suffixed('${nodeType}', ..., '${suffix}'): valueSpan must have an example text`,
+    );
+  }
+  const fieldName = def.name;
+  const valueRef: SpanValueRef = { __ref: 'span-value', name: fieldName };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: ['', suffix],
+    slots: [{ kind: 'capture', ref: fieldName }],
+  };
+  return relation(nodeType, {
+    input: def.text + suffix,
+    encodings: {
+      parse: parse([valueSpan, literal(suffix)]),
+      ast: { type: astType, [fieldName]: valueRef },
+      source: sourceTpl,
+    },
+  });
+}
+
 export function relation(nodeType: string, body: RelationBody): ExampleDef {
   let parseProgram: ParseProgram | undefined;
   const renders: RenderTargetDef[] = [];

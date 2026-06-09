@@ -1,5 +1,5 @@
 import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
-import { implicitCloseElement } from './helpers.ts';
+import { implicitCloseElement, quotedAttribute } from './helpers.ts';
 
 const VOID_TAGS = [
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -416,53 +416,9 @@ export default defineSchema({
     // inverse dispatcher routes to the original quoting style. Production 4
     // (boolean attribute) is already distinguishable via its literal
     // `value: ''` (the other productions emit `value` as a non-literal capture).
-    //
-    // Production 1: double-quoted value. `class="hero"`.
-    relation('Attribute', {
-      input: 'class="hero"',
-      encodings: {
-        parse: parse([
-          span('name', 'class').ident().html(),
-          literal('='),
-          literal('"'),
-          span('value', 'hero').until('"', { requireStop: true }),
-          literal('"'),
-        ]),
-        ast: { _quote: 'double', name: $.name, value: $.value },
-        source: tpl`${$.name}="${$.value}"`,
-      },
-    }),
-
-    // Production 2: single-quoted value. `class='hero'`.
-    relation('Attribute', {
-      input: "class='hero'",
-      encodings: {
-        parse: parse([
-          span('name', 'class').ident().html(),
-          literal('='),
-          literal("'"),
-          span('value', 'hero').until("'", { requireStop: true }),
-          literal("'"),
-        ]),
-        ast: { _quote: 'single', name: $.name, value: $.value },
-        source: tpl`${$.name}='${$.value}'`,
-      },
-    }),
-
-    // Production 3: unquoted value containing any non-whitespace chars.
-    // `class=hero`, `lang=en-GB`, `href=https://x.test/y?z=1`.
-    relation('Attribute', {
-      input: 'class=hero',
-      encodings: {
-        parse: parse([
-          span('name', 'class').ident().html(),
-          literal('='),
-          span('value', 'hero').rawUntil(UNQUOTED_VALUE_STOPS, { nonEmpty: true }),
-        ]),
-        ast: { _quote: 'none', name: $.name, value: $.value },
-        source: tpl`${$.name}=${$.value}`,
-      },
-    }),
+    quotedAttribute('double'),
+    quotedAttribute('single'),
+    quotedAttribute('none'),
 
     // Production 4: boolean (presence-only) attribute. `disabled`.
     relation('Attribute', {

@@ -1,4 +1,4 @@
-import { $, defineSchema, keyword, litTagged, literal, parse, passthrough, relation, span, tpl, valueTagged } from '@parser2/parser';
+import { $, defineSchema, keyword, litTagged, literal, parse, passthrough, range, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Cron',
@@ -15,18 +15,7 @@ export default defineSchema({
 
     valueTagged('CronField', span('value', '9').number().int(), 'value'),
 
-    relation('CronField', {
-      input: '1-5',
-      encodings: {
-        parse: parse([
-          span('start', '1').number().int(),
-          literal('-'),
-          span('end', '5').number().int(),
-        ]),
-        ast: { type: 'range', start: $.start, end: $.end },
-        source: tpl`${$.start}-${$.end}`,
-      },
-    }),
+    range('CronField', span('start', '1').number().int(), '-', span('end', '5').number().int(), 'range'),
 
     passthrough('CommandWord', span('value', 'npm').ident().css()),
 

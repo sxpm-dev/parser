@@ -582,6 +582,73 @@ export function litTagged(
   });
 }
 
+// Phase 7 sugar: a production capturing two spans separated by a fixed
+// literal — typical "range" or "binary" shape. Collapses the cron range
+// pattern:
+//
+//   relation('CronField', {
+//     input: '1-5',
+//     encodings: {
+//       parse: parse([
+//         span('start', '1').number().int(),
+//         literal('-'),
+//         span('end', '5').number().int(),
+//       ]),
+//       ast: { type: 'range', start: $.start, end: $.end },
+//       source: tpl`${$.start}-${$.end}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   range('CronField', span('start', '1').number().int(), '-', span('end', '5').number().int(), 'range')
+//
+// Both spans carry their field names (via `.name`) and example texts
+// (via `.text`); modifiers pass through unchanged. The sep literal
+// appears verbatim in the source template (no extra whitespace).
+export function range(
+  nodeType: string,
+  leftSpan: SpanNode,
+  sep: string,
+  rightSpan: SpanNode,
+  astType: string,
+): ExampleDef {
+  const leftDef = leftSpan.toSpanDef();
+  const rightDef = rightSpan.toSpanDef();
+  if (!leftDef.name) {
+    throw new Error(`range('${nodeType}'): leftSpan must be a named span`);
+  }
+  if (!rightDef.name) {
+    throw new Error(`range('${nodeType}'): rightSpan must be a named span`);
+  }
+  if (leftDef.text === undefined) {
+    throw new Error(`range('${nodeType}'): leftSpan must have an example text`);
+  }
+  if (rightDef.text === undefined) {
+    throw new Error(`range('${nodeType}'): rightSpan must have an example text`);
+  }
+  const leftField = leftDef.name;
+  const rightField = rightDef.name;
+  const leftRef: SpanValueRef = { __ref: 'span-value', name: leftField };
+  const rightRef: SpanValueRef = { __ref: 'span-value', name: rightField };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: ['', sep, ''],
+    slots: [
+      { kind: 'capture', ref: leftField },
+      { kind: 'capture', ref: rightField },
+    ],
+  };
+  return relation(nodeType, {
+    input: leftDef.text + sep + rightDef.text,
+    encodings: {
+      parse: parse([leftSpan, literal(sep), rightSpan]),
+      ast: { type: astType, [leftField]: leftRef, [rightField]: rightRef },
+      source: sourceTpl,
+    },
+  });
+}
+
 export function relation(nodeType: string, body: RelationBody): ExampleDef {
   let parseProgram: ParseProgram | undefined;
   const renders: RenderTargetDef[] = [];

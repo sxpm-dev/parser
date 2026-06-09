@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, keyword, literal, parse, relation, span, tpl } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Cron',
@@ -20,18 +20,7 @@ export default defineSchema({
       },
     }),
 
-    relation('CronField', {
-      input: '*/5',
-      encodings: {
-        parse: parse([
-          literal('*'),
-          literal('/'),
-          span('step', '5').number().int(),
-        ]),
-        ast: { type: 'step', step: $.step },
-        source: tpl`*/${$.step}`,
-      },
-    }),
+    keyword('CronField', '*', '/', span('step', '5').number().int(), 'step'),
 
     relation('CronField', {
       input: '9',

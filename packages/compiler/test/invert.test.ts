@@ -857,6 +857,73 @@ test('inverse: unsafe substring dispatch falls through to sibling on inverter th
   assert.equal(back, 'x: red !foo;');
 });
 
+// Conjunction discriminator: when no single literal is unique to a
+// branch in a shared-prefix group, but a CONJUNCTION of discriminating
+// literals (each absent from at least one sibling) narrows it to a
+// unique row, the dispatcher emits `if (lit1 && lit2 && ...) try { ... }`
+// instead of a blind fallback. Mimics pg-select Select's four-production
+// `… WHERE … LIMIT …` matrix: no single literal is unique to any
+// production, but the (WHERE, LIMIT) presence/absence pair partitions
+// the candidates.
+test('inverse dispatcher: multi-literal conjunction routes shared-prefix siblings', async () => {
+  const { defineSchema, relation, parse, span, literal, $, tpl } = await import('@parser2/parser');
+  const schema = defineSchema({
+    rootType: 'Req',
+    examples: [
+      relation('Req', {
+        input: 'GET 1',
+        encodings: {
+          src: parse([literal('GET '), span('id', '1').number().int()]),
+          ast: { type: 'plain', id: $.id },
+          source: tpl`GET ${$.id}`,
+        },
+      }),
+      relation('Req', {
+        input: 'GET 1 filter x',
+        encodings: {
+          src: parse([
+            literal('GET '), span('id', '1').number().int(),
+            literal(' filter '), span('f', 'x').ident().js(),
+          ]),
+          ast: { type: 'filtered', id: $.id, f: $.f },
+          source: tpl`GET ${$.id} filter ${$.f}`,
+        },
+      }),
+      relation('Req', {
+        input: 'GET 1 order y',
+        encodings: {
+          src: parse([
+            literal('GET '), span('id', '1').number().int(),
+            literal(' order '), span('o', 'y').ident().js(),
+          ]),
+          ast: { type: 'ordered', id: $.id, o: $.o },
+          source: tpl`GET ${$.id} order ${$.o}`,
+        },
+      }),
+      relation('Req', {
+        input: 'GET 1 filter x order y',
+        encodings: {
+          src: parse([
+            literal('GET '), span('id', '1').number().int(),
+            literal(' filter '), span('f', 'x').ident().js(),
+            literal(' order '), span('o', 'y').ident().js(),
+          ]),
+          ast: { type: 'both', id: $.id, f: $.f, o: $.o },
+          source: tpl`GET ${$.id} filter ${$.f} order ${$.o}`,
+        },
+      }),
+    ],
+  });
+  const mod = await loadGenerated(schema, 'conjunction-dispatch');
+  // Each row exercises a distinct cell of the (filter, order) presence
+  // matrix — the conjunction dispatcher must route to the correct
+  // production for each.
+  assert.equal(mod.stringify('GET 1', { target: 'source' }), 'GET 1');
+  assert.equal(mod.stringify('GET 1 filter foo', { target: 'source' }), 'GET 1 filter foo');
+  assert.equal(mod.stringify('GET 1 order bar', { target: 'source' }), 'GET 1 order bar');
+  assert.equal(mod.stringify('GET 1 filter foo order bar', { target: 'source' }), 'GET 1 filter foo order bar');
+});
+
 // ---------- Helpers --------------------------------------------------------
 
 type GeneratedModule = {

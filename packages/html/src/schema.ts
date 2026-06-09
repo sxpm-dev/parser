@@ -1,4 +1,5 @@
 import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
+import { implicitCloseElement } from './helpers.ts';
 
 const VOID_TAGS = [
   'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
@@ -330,308 +331,37 @@ export default defineSchema({
     // sibling open or the enclosing list close (stopBefore literal prefixes).
 
     // <li>
-    relation('HtmlElement', {
-      input: '<li>x</li>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'li').ident().html().oneOf(['li']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: LI_STOPS }),
-          // Optional explicit close. The `</li>` punctuator is multi-char so
-          // .optional() either matches the whole `</li>` atomically or skips.
-          // When stopBefore matched a sibling/list-close trigger instead, the
-          // close is absent and we skip.
-          literal('</li>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-li',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</li>`,
-      },
-    }),
+    // Optional explicit close: the `</li>` punctuator is multi-char so
+    // .optional() either matches the whole `</li>` atomically or skips.
+    // When stopBefore matched a sibling/list-close trigger instead, the
+    // close is absent and we skip.
+    implicitCloseElement(['li'], 'element-li', LI_STOPS),
 
-    // <dt> / <dd>
-    relation('HtmlElement', {
-      input: '<dt>x</dt>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'dt').ident().html().oneOf(['dt', 'dd']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: DT_DD_STOPS }),
-          // Either </dt> or </dd> may close (or neither, for implicit close).
-          literal('</dt>').optional(),
-          literal('</dd>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-dt-dd',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</dt>`,
-      },
-    }),
+    // <dt> / <dd> — either </dt> or </dd> may close (or neither).
+    implicitCloseElement(['dt', 'dd'], 'element-dt-dd', DT_DD_STOPS),
 
     // <tr>
-    relation('HtmlElement', {
-      input: '<tr>x</tr>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'tr').ident().html().oneOf(['tr']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: TR_STOPS }),
-          literal('</tr>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-tr',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</tr>`,
-      },
-    }),
+    implicitCloseElement(['tr'], 'element-tr', TR_STOPS),
 
     // <td> / <th>
-    relation('HtmlElement', {
-      input: '<td>x</td>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'td').ident().html().oneOf(['td', 'th']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: TD_TH_STOPS }),
-          literal('</td>').optional(),
-          literal('</th>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-td-th',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</td>`,
-      },
-    }),
+    implicitCloseElement(['td', 'th'], 'element-td-th', TD_TH_STOPS),
 
     // <p>
-    relation('HtmlElement', {
-      input: '<p>x</p>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'p').ident().html().oneOf(['p']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: P_STOPS }),
-          literal('</p>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-p',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</p>`,
-      },
-    }),
+    implicitCloseElement(['p'], 'element-p', P_STOPS),
 
     // <option> / <optgroup>
-    relation('HtmlElement', {
-      input: '<option>x</option>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'option').ident().html().oneOf(['option', 'optgroup']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: OPTION_STOPS }),
-          literal('</option>').optional(),
-          literal('</optgroup>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-option',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</option>`,
-      },
-    }),
+    implicitCloseElement(['option', 'optgroup'], 'element-option', OPTION_STOPS),
 
     // <html> / <head> / <body> — close-tag can be omitted per HTML5.
-    relation('HtmlElement', {
-      input: '<html>x</html>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'html').ident().html().oneOf(['html']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: HTML_STOPS }),
-          literal('</html>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-html',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</html>`,
-      },
-    }),
-
-    relation('HtmlElement', {
-      input: '<head>x</head>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'head').ident().html().oneOf(['head']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: HEAD_STOPS }),
-          literal('</head>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-head',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</head>`,
-      },
-    }),
+    implicitCloseElement(['html'], 'element-html', HTML_STOPS),
+    implicitCloseElement(['head'], 'element-head', HEAD_STOPS),
 
     // <tbody> / <thead> / <tfoot> — implicit closes between table sections.
-    relation('HtmlElement', {
-      input: '<tbody>x</tbody>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'tbody').ident().html().oneOf(['tbody']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: TBODY_STOPS }),
-          literal('</tbody>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-tbody',
-          nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
-          attrs: $.attrs, childNodes: $.children, parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</tbody>`,
-      },
-    }),
+    implicitCloseElement(['tbody'], 'element-tbody', TBODY_STOPS),
+    implicitCloseElement(['thead'], 'element-thead', THEAD_STOPS),
+    implicitCloseElement(['tfoot'], 'element-tfoot', TFOOT_STOPS),
 
-    relation('HtmlElement', {
-      input: '<thead>x</thead>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'thead').ident().html().oneOf(['thead']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: THEAD_STOPS }),
-          literal('</thead>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-thead',
-          nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
-          attrs: $.attrs, childNodes: $.children, parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</thead>`,
-      },
-    }),
-
-    relation('HtmlElement', {
-      input: '<tfoot>x</tfoot>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'tfoot').ident().html().oneOf(['tfoot']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: TFOOT_STOPS }),
-          literal('</tfoot>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-tfoot',
-          nodeName: $.tag, tagName: $.tag, namespaceURI: HTML_NS,
-          attrs: $.attrs, childNodes: $.children, parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</tfoot>`,
-      },
-    }),
-
-    relation('HtmlElement', {
-      input: '<body>x</body>',
-      encodings: {
-        parse: parse([
-          literal('<'),
-          span('tag', 'body').ident().html().oneOf(['body']),
-          span('attrs', '').of('Attribute').repeats({ min: 0 }),
-          literal('>'),
-          span('children', 'x').of('Doctype', 'Comment', 'HtmlElement', 'TextNode')
-            .repeats({ min: 0, stopBefore: BODY_STOPS }),
-          literal('</body>').optional(),
-        ]),
-        ast: {
-          _kind: 'element-body',
-          nodeName: $.tag,
-          tagName: $.tag,
-          namespaceURI: HTML_NS,
-          attrs: $.attrs,
-          childNodes: $.children,
-          parentNode: null,
-        },
-        source: tpl`<${$.tag}>${$.children}</body>`,
-      },
-    }),
+    implicitCloseElement(['body'], 'element-body', BODY_STOPS),
 
     // Production: regular element with children and close tag.
     relation('HtmlElement', {

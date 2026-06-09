@@ -1,4 +1,4 @@
-import { $, defineSchema, literal, litEnum, parse, relation, span, tpl } from '@parser2/parser';
+import { $, defineSchema, keyword, litEnum, parse, relation, span, tpl } from '@parser2/parser';
 
 // RFC 5545 §3.3.10 RRULE — the recurrence-rule value type used inside an
 // iCalendar RRULE property. Grammar (subset implemented here):
@@ -70,127 +70,19 @@ export default defineSchema({
     // ---- Part productions --------------------------------------------
     // BYMONTHDAY must precede BYMONTH so the longest-match dispatcher
     // routes the prefix correctly (BYMONTH is a strict prefix of
-    // BYMONTHDAY).
-    relation('Part', {
-      input: 'BYMONTHDAY=15',
-      encodings: {
-        parse: parse([
-          literal('BYMONTHDAY'),
-          literal('='),
-          span('days', '15').of('NumValue').repeats({ sep: ',', min: 1 }),
-        ]),
-        ast: { type: 'bymonthday', days: $.days },
-        source: tpl`BYMONTHDAY=${$.days}`,
-      },
-    }),
-    relation('Part', {
-      input: 'BYMONTH=6',
-      encodings: {
-        parse: parse([
-          literal('BYMONTH'),
-          literal('='),
-          span('months', '6').of('NumValue').repeats({ sep: ',', min: 1 }),
-        ]),
-        ast: { type: 'bymonth', months: $.months },
-        source: tpl`BYMONTH=${$.months}`,
-      },
-    }),
-    relation('Part', {
-      input: 'BYMINUTE=30',
-      encodings: {
-        parse: parse([
-          literal('BYMINUTE'),
-          literal('='),
-          span('minutes', '30').of('NumValue').repeats({ sep: ',', min: 1 }),
-        ]),
-        ast: { type: 'byminute', minutes: $.minutes },
-        source: tpl`BYMINUTE=${$.minutes}`,
-      },
-    }),
-    relation('Part', {
-      input: 'BYHOUR=9',
-      encodings: {
-        parse: parse([
-          literal('BYHOUR'),
-          literal('='),
-          span('hours', '9').of('NumValue').repeats({ sep: ',', min: 1 }),
-        ]),
-        ast: { type: 'byhour', hours: $.hours },
-        source: tpl`BYHOUR=${$.hours}`,
-      },
-    }),
-    relation('Part', {
-      input: 'BYDAY=MO',
-      encodings: {
-        parse: parse([
-          literal('BYDAY'),
-          literal('='),
-          span('days', 'MO').of('Weekday').repeats({ sep: ',', min: 1 }),
-        ]),
-        ast: { type: 'byday', days: $.days },
-        source: tpl`BYDAY=${$.days}`,
-      },
-    }),
-    relation('Part', {
-      input: 'FREQ=DAILY',
-      encodings: {
-        parse: parse([
-          literal('FREQ'),
-          literal('='),
-          span('value', 'DAILY').of('FreqValue'),
-        ]),
-        ast: { type: 'freq', value: $.value },
-        source: tpl`FREQ=${$.value}`,
-      },
-    }),
-    relation('Part', {
-      input: 'COUNT=10',
-      encodings: {
-        parse: parse([
-          literal('COUNT'),
-          literal('='),
-          span('value', '10').number().int(),
-        ]),
-        ast: { type: 'count', value: $.value },
-        source: tpl`COUNT=${$.value}`,
-      },
-    }),
-    relation('Part', {
-      input: 'INTERVAL=2',
-      encodings: {
-        parse: parse([
-          literal('INTERVAL'),
-          literal('='),
-          span('value', '2').number().int(),
-        ]),
-        ast: { type: 'interval', value: $.value },
-        source: tpl`INTERVAL=${$.value}`,
-      },
-    }),
-    relation('Part', {
-      input: 'UNTIL=20211231',
-      encodings: {
-        parse: parse([
-          literal('UNTIL'),
-          literal('='),
-          span('value', '20211231').number().int(),
-        ]),
-        ast: { type: 'until', value: $.value },
-        source: tpl`UNTIL=${$.value}`,
-      },
-    }),
-    relation('Part', {
-      input: 'WKST=MO',
-      encodings: {
-        parse: parse([
-          literal('WKST'),
-          literal('='),
-          span('value', 'MO').of('Weekday'),
-        ]),
-        ast: { type: 'wkst', value: $.value },
-        source: tpl`WKST=${$.value}`,
-      },
-    }),
+    // BYMONTHDAY). Each `keyword()` call desugars to a `relation('Part',
+    // { input, encodings: { parse, ast: { type, [field]: $.<field> },
+    // source: tpl`KEY=${$.<field>}` } })` — see relation.ts for the shape.
+    keyword('Part', 'BYMONTHDAY', '=', span('days', '15').of('NumValue').repeats({ sep: ',', min: 1 }), 'bymonthday'),
+    keyword('Part', 'BYMONTH', '=', span('months', '6').of('NumValue').repeats({ sep: ',', min: 1 }), 'bymonth'),
+    keyword('Part', 'BYMINUTE', '=', span('minutes', '30').of('NumValue').repeats({ sep: ',', min: 1 }), 'byminute'),
+    keyword('Part', 'BYHOUR', '=', span('hours', '9').of('NumValue').repeats({ sep: ',', min: 1 }), 'byhour'),
+    keyword('Part', 'BYDAY', '=', span('days', 'MO').of('Weekday').repeats({ sep: ',', min: 1 }), 'byday'),
+    keyword('Part', 'FREQ', '=', span('value', 'DAILY').of('FreqValue'), 'freq'),
+    keyword('Part', 'COUNT', '=', span('value', '10').number().int(), 'count'),
+    keyword('Part', 'INTERVAL', '=', span('value', '2').number().int(), 'interval'),
+    keyword('Part', 'UNTIL', '=', span('value', '20211231').number().int(), 'until'),
+    keyword('Part', 'WKST', '=', span('value', 'MO').of('Weekday'), 'wkst'),
 
     // ---- Rule root ---------------------------------------------------
     // Natural multi-part example. Phase 2.1 fixed the list-slot inverter

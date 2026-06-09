@@ -7,6 +7,7 @@ import type {
   SpanClass,
   SpanDef,
   SpanModifier,
+  SpanValueRef,
   Template,
   TrailingPolicy,
 } from './types.ts';
@@ -327,6 +328,66 @@ export function litEnum(
 // shape (`__tpl: true`, `parts`, `slots`) the codegen walks.
 function asTemplate(text: string): Template {
   return { __tpl: true, parts: [text], slots: [] };
+}
+
+// Phase 7 sugar: a production of shape `KEY<sep>value`, where `value` is a
+// captured span and the AST is a tagged single-field object. Collapses the
+// common shape:
+//
+//   relation('Part', {
+//     input: 'FREQ=DAILY',
+//     encodings: {
+//       parse: parse([literal('FREQ'), literal('='), span('value', 'DAILY').of('FreqValue')]),
+//       ast: { type: 'freq', value: $.value },
+//       source: tpl`FREQ=${$.value}`,
+//     },
+//   })
+//
+// to one call:
+//
+//   keyword('Part', 'FREQ', '=', span('value', 'DAILY').of('FreqValue'), 'freq')
+//
+// The valueSpan carries the AST field name (via its `name`) and the example
+// text (via its `text`). Modifiers on the valueSpan (`.of(...)`, `.repeats()`,
+// `.number().int()`, etc.) are passed through unchanged — the helper is a
+// shape-only desugaring with no runtime behavior of its own.
+//
+// Default targets are 'ast' (`{ type: astType, [field]: $.<field> }`) and
+// 'source' (`tpl`${key}${sep}${$.<field>}``). Custom target sets are not
+// supported here — write a hand-rolled `relation()` if you need them.
+export function keyword(
+  nodeType: string,
+  key: string,
+  sep: string,
+  valueSpan: SpanNode,
+  astType: string,
+): ExampleDef {
+  const def = valueSpan.toSpanDef();
+  if (!def.name) {
+    throw new Error(
+      `keyword('${nodeType}', '${key}'): valueSpan must be a named span (use span('<field>', '<example>'))`,
+    );
+  }
+  if (def.text === undefined) {
+    throw new Error(
+      `keyword('${nodeType}', '${key}'): valueSpan must have an example text`,
+    );
+  }
+  const fieldName = def.name;
+  const valueRef: SpanValueRef = { __ref: 'span-value', name: fieldName };
+  const sourceTpl: Template = {
+    __tpl: true,
+    parts: [key + sep, ''],
+    slots: [{ kind: 'capture', ref: fieldName }],
+  };
+  return relation(nodeType, {
+    input: key + sep + def.text,
+    encodings: {
+      parse: parse([literal(key), literal(sep), valueSpan]),
+      ast: { type: astType, [fieldName]: valueRef },
+      source: sourceTpl,
+    },
+  });
 }
 
 export function relation(nodeType: string, body: RelationBody): ExampleDef {

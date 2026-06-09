@@ -4478,9 +4478,9 @@ function __dispatchInverse_HtmlElement_source(value: any, __indentCol: number = 
     if (value.indexOf("</td>") >= 0) { try { return __invert_HtmlElement_7_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.indexOf("</p>") >= 0) { try { return __invert_HtmlElement_8_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.indexOf(" />") >= 0) { try { return __invert_HtmlElement_2_source(value, __indentCol); } catch (_e) { /* try next */ } }
-    try { return __invert_HtmlElement_0_source(value, __indentCol); } catch (_e) { /* try next */ }
+    if (value.indexOf("</") >= 0) { try { return __invert_HtmlElement_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("/>") >= 0) { try { return __invert_HtmlElement_3_source(value, __indentCol); } catch (_e) { /* try next */ } }
     try { return __invert_HtmlElement_1_source(value, __indentCol); } catch (_e) { /* try next */ }
-    try { return __invert_HtmlElement_3_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -4496,7 +4496,7 @@ function __dispatchInverse_Attribute_source(value: any, __indentCol: number = 0)
   if (typeof value === "string") {
     if (value.indexOf("=\"") >= 0) { try { return __invert_Attribute_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.indexOf("='") >= 0) { try { return __invert_Attribute_1_source(value, __indentCol); } catch (_e) { /* try next */ } }
-    try { return __invert_Attribute_2_source(value, __indentCol); } catch (_e) { /* try next */ }
+    if (value.indexOf("=") >= 0) { try { return __invert_Attribute_2_source(value, __indentCol); } catch (_e) { /* try next */ } }
     try { return __invert_Attribute_3_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");

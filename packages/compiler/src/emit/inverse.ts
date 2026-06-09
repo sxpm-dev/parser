@@ -1417,7 +1417,7 @@ function emitNodeDispatcher(
     // try/catch so dispatcher → inverter → next-branch chains cleanly. The
     // safe-prefix branches still short-circuit (their inverters always
     // succeed when the prefix matches, by construction).
-    type PlanKind = 'safe-prefix' | 'substring' | 'fallback';
+    type PlanKind = 'safe-prefix' | 'substring' | 'conjunction' | 'fallback';
     type Plan = {
       readonly branch: TplBranch;
       readonly check: string | null; // null only when kind === 'fallback'
@@ -1470,16 +1470,44 @@ function emitNodeDispatcher(
           kind: 'substring',
         });
       } else {
-        // Fallback branches all have negative priority so the discriminating
-        // (safe-prefix / substring) plans win. Within fallback siblings, sort
-        // by descending segment count so the most-specific template is tried
-        // first — its inverter's scan throws fast on inputs missing one of
-        // its literals, but for inputs that DO have all the literals it
-        // captures correctly. Without this, a less-specific fallback (e.g.
-        // pg-select Select_0's `SELECT ... FROM ...`) silently swallows the
-        // remainder as its last capture, even on inputs that match a more-
-        // specific sibling (`... WHERE ... LIMIT ...`).
-        plans.push({ branch: b, check: null, priority: -1000 + b.ir.segments.length, kind: 'fallback' });
+        // No single literal is unique to this branch — but maybe a
+        // CONJUNCTION of discriminating literals is. A literal is
+        // "discriminating" when at least one sibling lacks it (i.e. its
+        // presence/absence partitions the sibling set). The conjunction
+        // `lit1 && lit2 && ...` then narrows the candidate set on each
+        // dimension simultaneously. pg-select Select is the canonical
+        // case: Select_3 has both ' WHERE ' and ' LIMIT ', neither unique
+        // alone (Select_1 has WHERE, Select_2 has LIMIT) — but the
+        // conjunction is unique.
+        const discriminating: string[] = [];
+        for (const lit of ourLiterals) {
+          const inAllSiblings = sameLeadingSiblings.every((sib) =>
+            sib.ir.segments.some((seg) => seg.includes(lit))
+          );
+          if (!inAllSiblings) discriminating.push(lit);
+        }
+        if (discriminating.length > 0) {
+          const checks = discriminating
+            .map((l) => `value.indexOf(${jsString(l)}) >= 0`)
+            .join(' && ');
+          const totalLen = discriminating.reduce((s, l) => s + l.length, 0);
+          // Priority space: conjunctions sit between substring (≥ 0) and
+          // fallback (≤ -1000). A more-specific conjunction (more literals,
+          // longer total) is tried first.
+          plans.push({
+            branch: b,
+            check: checks,
+            priority: -500 + totalLen + discriminating.length,
+            kind: 'conjunction',
+          });
+        } else {
+          // True fallback — no discriminating literals at all. Within
+          // fallback siblings, sort by descending segment count so the
+          // most-specific template is tried first; without this a
+          // less-specific fallback silently swallows the remainder as its
+          // last capture.
+          plans.push({ branch: b, check: null, priority: -1000 + b.ir.segments.length, kind: 'fallback' });
+        }
       }
     }
     // Order: discriminating branches first (longest discriminator first),
@@ -1495,9 +1523,11 @@ function emitNodeDispatcher(
       const call = inverterCall(p.branch);
       if (p.kind === 'safe-prefix') {
         lines.push(`  if (${p.check}) return ${call};`);
-      } else if (p.kind === 'substring') {
-        // Guard the try with the substring check so we skip the throw cost
-        // for values that obviously don't contain our discriminator.
+      } else if (p.kind === 'substring' || p.kind === 'conjunction') {
+        // Guard the try with the (multi-)literal check so we skip the
+        // throw cost for values that obviously don't contain our
+        // discriminator(s). The inverter still position-validates on
+        // success.
         lines.push(`  if (${p.check}) { try { return ${call}; } catch (_e) { /* try next */ } }`);
       } else {
         // Fallback: no discriminator. Try unconditionally; fall through on throw.

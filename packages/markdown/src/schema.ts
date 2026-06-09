@@ -1,5 +1,12 @@
 import { $, defineSchema, literal, parse, relation, span, tpl } from '@parser2/parser';
-import { delimited } from './helpers.ts';
+import {
+  atxHeading,
+  delimited,
+  setextHeading,
+  taskListItem,
+  thematicBreak,
+  unorderedListItem,
+} from './helpers.ts';
 
 // CommonMark-ish markdown schema. All block productions live under the
 // MarkdownLeaf umbrella role so MarkdownDocument's children loop dispatches
@@ -169,114 +176,20 @@ export default defineSchema({
     // ---- ATX headings ----------------------------------------------------
     // Each depth has its own production so the dispatcher routes by the
     // longest-match heading punctuator. Text captures until newline.
-    relation('MarkdownLeaf', {
-      input: '###### Tiny heading',
-      encodings: {
-        parse: parse([
-          literal('######'),
-          span('text', 'Tiny heading').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 6, text: $.text },
-        html: tpl`<h6>${$.text}</h6>`,
-        source: tpl`###### ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '##### Small section',
-      encodings: {
-        parse: parse([
-          literal('#####'),
-          span('text', 'Small section').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 5, text: $.text },
-        html: tpl`<h5>${$.text}</h5>`,
-        source: tpl`##### ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '#### Deep section',
-      encodings: {
-        parse: parse([
-          literal('####'),
-          span('text', 'Deep section').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 4, text: $.text },
-        html: tpl`<h4>${$.text}</h4>`,
-        source: tpl`#### ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '### API reference',
-      encodings: {
-        parse: parse([
-          literal('###'),
-          span('text', 'API reference').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 3, text: $.text },
-        html: tpl`<h3>${$.text}</h3>`,
-        source: tpl`### ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '## Installation guide',
-      encodings: {
-        parse: parse([
-          literal('##'),
-          span('text', 'Installation guide').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 2, text: $.text },
-        html: tpl`<h2>${$.text}</h2>`,
-        source: tpl`## ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '# Release notes',
-      encodings: {
-        parse: parse([
-          literal('#'),
-          span('text', 'Release notes').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'heading', depth: 1, text: $.text },
-        html: tpl`<h1>${$.text}</h1>`,
-        source: tpl`# ${$.text}`,
-      },
-    }),
+    atxHeading(6, 'Tiny heading'),
+    atxHeading(5, 'Small section'),
+    atxHeading(4, 'Deep section'),
+    atxHeading(3, 'API reference'),
+    atxHeading(2, 'Installation guide'),
+    atxHeading(1, 'Release notes'),
 
     // ---- Setext heading --------------------------------------------------
     // First line captures the text; the underline literal that follows
     // tells us depth (=== → h1, --- → h2). Listed BEFORE Paragraph so the
     // dispatcher's fallthrough chain tries Setext first; if no underline
     // follows the text Paragraph picks up.
-    relation('MarkdownLeaf', {
-      input: 'Setext heading\n===',
-      encodings: {
-        parse: parse([
-          span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false }),
-          literal('==='),
-        ]),
-        ast: { type: 'heading', depth: 1, text: $.text, style: 'setext' },
-        html: tpl`<h1>${$.text}</h1>`,
-        source: tpl`${$.text} ===`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: 'Setext heading\n---',
-      encodings: {
-        parse: parse([
-          span('text', 'Setext heading').until(HEADING_LINE_STOPS, { balanced: false }),
-          literal('---'),
-        ]),
-        ast: { type: 'heading', depth: 2, text: $.text, style: 'setext' },
-        html: tpl`<h2>${$.text}</h2>`,
-        source: tpl`${$.text} ---`,
-      },
-    }),
+    setextHeading(1),
+    setextHeading(2),
 
     // ---- Thematic breaks -------------------------------------------------
     // Listed BEFORE setext-with-`---` so the dispatcher's byte-prefix path
@@ -284,115 +197,25 @@ export default defineSchema({
     // require a preceding text line we don't have).
     // (Dispatch order enforced mechanically by `checkDispatch` in
     // packages/compiler/src/check/dispatch.ts.)
-    relation('MarkdownLeaf', {
-      input: '***',
-      encodings: {
-        parse: parse([
-          literal('***'),
-        ]),
-        ast: { type: 'thematic-break', marker: '*' },
-        html: tpl`<hr>`,
-        source: tpl`***`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '___',
-      encodings: {
-        parse: parse([
-          literal('___'),
-        ]),
-        ast: { type: 'thematic-break', marker: '_' },
-        html: tpl`<hr>`,
-        source: tpl`___`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '---',
-      encodings: {
-        parse: parse([
-          literal('---'),
-        ]),
-        ast: { type: 'thematic-break' },
-        html: tpl`<hr>`,
-        source: tpl`---`,
-      },
-    }),
+    thematicBreak('*'),
+    thematicBreak('_'),
+    thematicBreak('-'),
 
     // ---- Task list items -------------------------------------------------
     // Listed before plain list-item-dash so `- [x]` / `- [ ]` are tried
     // first when the dispatcher routes by `-`. The full marker (`- [x]`)
     // is a single punctuator so the dispatcher's longest-match peek wins.
-    relation('MarkdownLeaf', {
-      input: '- [x] completed task',
-      encodings: {
-        parse: parse([
-          literal('- [x]'),
-          span('text', 'completed task').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'task-list-item', checked: true, marker: 'x', text: $.text },
-        html: tpl`<li><input type="checkbox" checked>${$.text}</li>`,
-        source: tpl`- [x] ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '- [ ] pending task',
-      encodings: {
-        parse: parse([
-          literal('- [ ]'),
-          span('text', 'pending task').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'task-list-item', checked: false, text: $.text },
-        html: tpl`<li><input type="checkbox">${$.text}</li>`,
-        source: tpl`- [ ] ${$.text}`,
-      },
-    }),
+    taskListItem('x', 'completed task'),
+    taskListItem(' ', 'pending task'),
 
     // ---- Unordered list items --------------------------------------------
     // The `- ` / `+ ` / `* ` punctuators include the required space so
     // they don't collide with the thematic-break or bold/italic prefixes.
     // (Dispatch order enforced mechanically by `checkDispatch` in
     // packages/compiler/src/check/dispatch.ts.)
-    relation('MarkdownLeaf', {
-      input: '+ alternate marker',
-      encodings: {
-        parse: parse([
-          literal('+ '),
-          span('text', 'alternate marker').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'list-item', ordered: false, marker: '+', text: $.text },
-        html: tpl`<li>${$.text}</li>`,
-        source: tpl`+ ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '* star marker',
-      encodings: {
-        parse: parse([
-          literal('* '),
-          span('text', 'star marker').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'list-item', ordered: false, marker: '*', text: $.text },
-        html: tpl`<li>${$.text}</li>`,
-        source: tpl`* ${$.text}`,
-      },
-    }),
-
-    relation('MarkdownLeaf', {
-      input: '- first item',
-      encodings: {
-        parse: parse([
-          literal('- '),
-          span('text', 'first item').until(HEADING_LINE_STOPS, { balanced: false }),
-        ]),
-        ast: { type: 'list-item', ordered: false, text: $.text },
-        html: tpl`<li>${$.text}</li>`,
-        source: tpl`- ${$.text}`,
-      },
-    }),
+    unorderedListItem('+', 'alternate marker'),
+    unorderedListItem('*', 'star marker'),
+    unorderedListItem('-', 'first item'),
 
     // ---- Ordered list item -----------------------------------------------
     // Number-prefixed so the role dispatcher routes via the digit branch.

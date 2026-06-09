@@ -8,11 +8,11 @@
     },
     "html": {
       "path": "packages/html/src/_generated/parser.ts",
-      "sha256": "21f4fafe0f687ada6ee51ddba55bf7f92fe95b4a0493d48f4db5e777cca8b3ee"
+      "sha256": "13938504d4f81e24f3c7837bd553db011f9d0e923357527bc1f12bb60ac7a41e"
     },
     "markdown": {
       "path": "packages/markdown/src/_generated/parser.ts",
-      "sha256": "0a3e2b48452327d78cb2abbdc0c4912dec3daf0d4a30a8d123fcd1edaeb0058d"
+      "sha256": "361f79d4c739a255b38cff6e4b80d117093a24c22e7f6c767f25fa72031d0466"
     },
     "cron": {
       "path": "packages/cron/src/_generated/parser.ts",

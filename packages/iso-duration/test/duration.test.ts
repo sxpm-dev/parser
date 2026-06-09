@@ -129,6 +129,28 @@ test('stringify(ast) reconstructs a value-stable source string', () => {
   assert.equal(stringify(dtValue, { target: 'ast' }), 'P1DT1H');
 });
 
+test('stringify(source) round-trips multi-unit durations via no-sep list-slot scan', () => {
+  // Phase 2.1+: source-target stringify of multi-unit durations. The
+  // captured slot ('1Y 2M 3D' between literal 'P' and end-of-input) has no
+  // declared separator, so the inverter segments it by per-production
+  // trailing literals (Y/M/W/D for DateUnit, H/M/S for TimeUnit) before
+  // dispatch. Without the scanner the slot was wrapped as a single-element
+  // array and the per-element dispatcher threw on trailing content.
+  //
+  // Date+time cases exercise the companion dispatcher fix: Duration_0 and
+  // Duration_1 share the leading 'P' literal, so the source-target
+  // dispatcher now routes 'T'-containing values to Duration_1 via the
+  // unique-embedded-literal discrimination path.
+  for (const input of ['P1Y', 'P1Y2M3D', 'P1Y2M3W4D', 'P1DT1H', 'PT1H2M3S', 'P1Y2M3DT4H5M6S']) {
+    const value = render(input, { target: 'source' });
+    const back = stringify(value, { target: 'source' });
+    // The render step already canonicalizes inter-unit whitespace to a
+    // single space (sep-less .repeats() joins with ' '), so the round-
+    // trip target is the rendered form, not the original input bytes.
+    assert.equal(back, value, `source-target round-trip drift on ${JSON.stringify(input)}`);
+  }
+});
+
 test('raws-mode round-trip is byte-exact for multi-unit durations', () => {
   // iso-duration uses `.repeats()` without a `sep` (the interp loops
   // on zero-length sep sweeps). Standard whitespace policy means the

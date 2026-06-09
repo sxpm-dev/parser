@@ -1319,7 +1319,7 @@ function __invert_Duration_0_source(value: any, __indentCol: number = 0): string
     throw new Error("stringify: expected leading literal \"P\" in template body");
   }
   __pos += 1;
-  captures.date = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __dispatchInverse_DateUnit_source(__e, __indentCol)));
+  captures.date = (Array.isArray(__s.slice(__pos)) ? __s.slice(__pos).map((__e: any) => __dispatchInverse_DateUnit_source(__e, __indentCol)) : __scanRepeatsList_DateUnit_source(__s.slice(__pos), __indentCol));
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
@@ -1354,10 +1354,10 @@ function __invert_Duration_1_source(value: any, __indentCol: number = 0): string
     if (__end < 0) {
       throw new Error("stringify: expected separator \"T\" after capture date");
     }
-    captures.date = ((Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end) : [__s.slice(__pos, __end)]).map((__e: any) => __dispatchInverse_DateUnit_source(__e, __indentCol)));
+    captures.date = (Array.isArray(__s.slice(__pos, __end)) ? __s.slice(__pos, __end).map((__e: any) => __dispatchInverse_DateUnit_source(__e, __indentCol)) : __scanRepeatsList_DateUnit_source(__s.slice(__pos, __end), __indentCol));
     __pos = __end + 1;
   }
-  captures.time = ((Array.isArray(__s.slice(__pos)) ? __s.slice(__pos) : [__s.slice(__pos)]).map((__e: any) => __dispatchInverse_TimeUnit_source(__e, __indentCol)));
+  captures.time = (Array.isArray(__s.slice(__pos)) ? __s.slice(__pos).map((__e: any) => __dispatchInverse_TimeUnit_source(__e, __indentCol)) : __scanRepeatsList_TimeUnit_source(__s.slice(__pos), __indentCol));
   __pos = __s.length;
   if (__pos !== __s.length) {
     throw new Error("stringify: trailing content not described by template body (pos " + __pos + " of " + __s.length + ")");
@@ -1420,8 +1420,8 @@ function __dispatchInverse_TimeUnit_source(value: any, __indentCol: number = 0):
 
 function __dispatchInverse_Duration_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("P")) return __invert_Duration_0_source(value, __indentCol);
-    if (value.startsWith("P")) return __invert_Duration_1_source(value, __indentCol);
+    if (value.indexOf("T") >= 0) { try { return __invert_Duration_1_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    try { return __invert_Duration_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -1646,6 +1646,60 @@ function __invertSlotFor_Duration_source(v: any, __indentCol: number = 0): any {
   if (typeof v === "object") return __dispatchInverse_Duration_source(v, __indentCol);
   // Other primitives (number, boolean) — try dispatcher; fall back to String(v).
   try { return __dispatchInverse_Duration_source(v, __indentCol); } catch (_e) { return String(v); }
+}
+
+function __scanRepeatsList_DateUnit_source(__chunk: string, __indentCol: number = 0): string[] {
+  const __TERMS: readonly string[] = ["Y", "M", "W", "D"];
+  const __out: string[] = [];
+  let __pos = 0;
+  while (__pos < __chunk.length) {
+    while (__pos < __chunk.length && /\s/.test(__chunk.charAt(__pos))) __pos++;
+    if (__pos >= __chunk.length) break;
+    let __next = -1;
+    let __termLen = 0;
+    for (const __t of __TERMS) {
+      const __i = __chunk.indexOf(__t, __pos);
+      if (__i < 0) continue;
+      if (__next < 0 || __i < __next || (__i === __next && __t.length > __termLen)) {
+        __next = __i;
+        __termLen = __t.length;
+      }
+    }
+    if (__next < 0) {
+      throw new Error("stringify: __scanRepeatsList_DateUnit_source: no terminator literal found at pos " + __pos + " of " + __chunk.length);
+    }
+    const __slice = __chunk.slice(__pos, __next + __termLen);
+    __out.push(__dispatchInverse_DateUnit_source(__slice, __indentCol));
+    __pos = __next + __termLen;
+  }
+  return __out;
+}
+
+function __scanRepeatsList_TimeUnit_source(__chunk: string, __indentCol: number = 0): string[] {
+  const __TERMS: readonly string[] = ["H", "M", "S"];
+  const __out: string[] = [];
+  let __pos = 0;
+  while (__pos < __chunk.length) {
+    while (__pos < __chunk.length && /\s/.test(__chunk.charAt(__pos))) __pos++;
+    if (__pos >= __chunk.length) break;
+    let __next = -1;
+    let __termLen = 0;
+    for (const __t of __TERMS) {
+      const __i = __chunk.indexOf(__t, __pos);
+      if (__i < 0) continue;
+      if (__next < 0 || __i < __next || (__i === __next && __t.length > __termLen)) {
+        __next = __i;
+        __termLen = __t.length;
+      }
+    }
+    if (__next < 0) {
+      throw new Error("stringify: __scanRepeatsList_TimeUnit_source: no terminator literal found at pos " + __pos + " of " + __chunk.length);
+    }
+    const __slice = __chunk.slice(__pos, __next + __termLen);
+    __out.push(__dispatchInverse_TimeUnit_source(__slice, __indentCol));
+    __pos = __next + __termLen;
+  }
+  return __out;
 }
 
 function __invertSlotLeaf_source(v: any): any {

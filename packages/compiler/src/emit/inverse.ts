@@ -75,6 +75,14 @@ export function emitInverse(schema: InferredSchema, options: EmitInverseOptions 
   // calls one per-node dispatcher directly, avoiding the per-entry
   // try/catch chain the multi-role helper uses.
   const mergeCombos = collectMergeCombos(schema, targets);
+  // Phase 2.1+ — sep-less .repeats() list-slot scanners. See the docs above
+  // `collectScannerCombos` for eligibility.
+  const scannerCombos = collectScannerCombos(schema, targets);
+  const registry = new Set<string>();
+  for (const specs of scannerCombos.values()) {
+    for (const spec of specs) registry.add(spec.key);
+  }
+  _scannerRegistry = registry;
 
   for (const target of targets) {
     for (const info of schema.nodeTypes.values()) {
@@ -148,6 +156,12 @@ export function emitInverse(schema: InferredSchema, options: EmitInverseOptions 
     for (const roles of mergeCombos.get(target) ?? []) {
       slotHelpers.push(emitMergeSlotHelper(roles, target, schema));
     }
+    // Phase 2.1+ — emit list-slot scanners for sep-less .repeats() captures
+    // whose role productions all end in a literal. The scanner segments the
+    // captured chunk by trailing literals and dispatches each segment.
+    for (const spec of scannerCombos.get(target) ?? []) {
+      slotHelpers.push(emitListSlotScanner(spec));
+    }
     // Generic leaf slot helper (per target) for non-recursive captures.
     // Non-recursive captures are primitives or arrays of primitives — no
     // dispatching needed; the helper just unboxes shapes for rebuild.
@@ -159,13 +173,15 @@ export function emitInverse(schema: InferredSchema, options: EmitInverseOptions 
   const dispatchTable = emitDispatchTable(targets);
   const publicStringify = emitPublicStringify(options.stringifyOverloads ?? '', schema.whitespace === 'preserve');
 
-  return [
+  const result = [
     inverters.join('\n\n'),
     dispatchers.join('\n\n'),
     slotHelpers.join('\n\n'),
     dispatchTable,
     publicStringify,
   ].filter((p) => p !== '').join('\n\n');
+  _scannerRegistry = null;
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -995,6 +1011,24 @@ function slotHelperCall(
     // change tracked under Phase 2.1+ (see iso-duration's schema note).
     if (isRepeats) {
       const sep = repeatsMod!.kind === 'repeats' ? repeatsMod!.sep : undefined;
+      // Sep-less path: prefer the emitted terminator scanner when this
+      // (roles, target) pair is eligible (every role's productions end in a
+      // literal). The scanner segments the chunk and dispatches each piece,
+      // so multi-element values round-trip correctly. Falls back to the
+      // legacy wrap-as-single-element expression otherwise — that still
+      // works for single-element values via the dispatcher, and throws on
+      // trailing content for multi-element values (matching prior behavior).
+      if (sep === undefined || sep.length === 0) {
+        const key = scannerKey(roles, target);
+        if (_scannerRegistry?.has(key)) {
+          const scanCall = `${scannerName(roles, target)}(${valueExpr}, ${childColExpr})`;
+          return `(Array.isArray(${valueExpr}) ? ${valueExpr}.map((__e: any) => ${
+            roles.length === 1
+              ? `${nodeDispatcherName(roles[0]!, target)}(__e, ${childColExpr})`
+              : `${multiRoleSlotHelperName(roles, target)}(__e, ${childColExpr})`
+          }) : ${scanCall})`;
+        }
+      }
       const arrayExpr = sep !== undefined && sep.length > 0
         ? `(Array.isArray(${valueExpr}) ? ${valueExpr} : ${valueExpr}.split(${jsString(sep)}).map((__s: string) => __s.trim()).filter((__s: string) => __s.length > 0))`
         : `(Array.isArray(${valueExpr}) ? ${valueExpr} : [${valueExpr}])`;
@@ -1393,7 +1427,15 @@ function emitNodeDispatcher(
     const plans: Plan[] = [];
     for (const b of tpls) {
       const prefix = b.ir.segments[0] ?? '';
-      if (prefix.length > 0) {
+      // A leading literal prefix is "safe" only when no sibling shares it
+      // — otherwise both branches would emit the same startsWith() check
+      // and the second is dead code (see Duration_0/Duration_1's shared 'P'
+      // prefix). When the prefix is shared (or empty), fall through to the
+      // unique-embedded-literal search so the more-specific branch wins.
+      const sameLeadingSiblings = tpls.filter((other) =>
+        other !== b && (other.ir.segments[0] ?? '') === prefix
+      );
+      if (prefix.length > 0 && sameLeadingSiblings.length === 0) {
         plans.push({
           branch: b,
           check: `value.startsWith(${jsString(prefix)})`,
@@ -1402,12 +1444,9 @@ function emitNodeDispatcher(
         });
         continue;
       }
-      // Empty leading prefix: search for a unique embedded literal — a
-      // non-empty segment present in our segments but not appearing in any
-      // segment of any sibling with the same (empty) leading prefix.
-      const sameLeadingSiblings = tpls.filter((other) =>
-        other !== b && (other.ir.segments[0] ?? '') === prefix
-      );
+      // Shared or empty leading prefix: search for a unique embedded literal
+      // — a non-empty segment present in our segments but not appearing in
+      // any segment of any sibling with the same leading prefix.
       const ourLiterals = b.ir.segments.filter((s) => s.length > 0);
       // Pick the longest unique literal so the check is most-specific.
       let bestLit: string | null = null;
@@ -1431,7 +1470,16 @@ function emitNodeDispatcher(
           kind: 'substring',
         });
       } else {
-        plans.push({ branch: b, check: null, priority: -1, kind: 'fallback' });
+        // Fallback branches all have negative priority so the discriminating
+        // (safe-prefix / substring) plans win. Within fallback siblings, sort
+        // by descending segment count so the most-specific template is tried
+        // first — its inverter's scan throws fast on inputs missing one of
+        // its literals, but for inputs that DO have all the literals it
+        // captures correctly. Without this, a less-specific fallback (e.g.
+        // pg-select Select_0's `SELECT ... FROM ...`) silently swallows the
+        // remainder as its last capture, even on inputs that match a more-
+        // specific sibling (`... WHERE ... LIMIT ...`).
+        plans.push({ branch: b, check: null, priority: -1000 + b.ir.segments.length, kind: 'fallback' });
       }
     }
     // Order: discriminating branches first (longest discriminator first),
@@ -1938,6 +1986,134 @@ function collectTargets(schema: InferredSchema): ReadonlyArray<string> {
 export function inverterName(nodeName: string, prodIdx: number, target: string): string {
   return `__invert_${jsIdent(nodeName)}_${prodIdx}_${jsIdent(target)}`;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 2.1+ — sep-less .repeats() list-slot scanner
+// ---------------------------------------------------------------------------
+//
+// When an outer template captures a `.repeats()` slot with NO sep declared,
+// the inverse template scanner slices out the whole inter-literal chunk and
+// hands it to the per-element dispatcher. With no sep, the dispatcher would
+// either match only the first element or throw on trailing content. The
+// scanner below segments the chunk by per-production trailing literals
+// (each production's source template ends in a fixed terminator), skipping
+// any standard-ws between elements.
+//
+// Eligibility: every production of every role in the slot must declare the
+// chosen target AND its inverseDerived must be a `template` whose last
+// segment is non-empty (the terminator literal). When that holds we emit
+// __scanRepeatsList_<roles>_<target>(chunk, indentCol) and route the
+// sep-less branch of slotHelperCall through it. Otherwise the call falls
+// back to the legacy wrap-as-single-element behavior (single-element slots
+// still round-trip via the dispatcher; multi-element slots throw).
+
+type ScannerSpec = {
+  readonly key: string;
+  readonly roles: ReadonlyArray<string>;
+  readonly target: string;
+  readonly terminators: ReadonlyArray<string>;
+};
+
+function scannerKey(roles: ReadonlyArray<string>, target: string): string {
+  return roles.join('|') + ':' + target;
+}
+
+function scannerName(roles: ReadonlyArray<string>, target: string): string {
+  return `__scanRepeatsList_${roles.map((r) => jsIdent(r)).join('_')}_${jsIdent(target)}`;
+}
+
+function collectTrailingLiterals(
+  roles: ReadonlyArray<string>,
+  target: string,
+  schema: InferredSchema,
+): ReadonlyArray<string> | null {
+  const terms = new Set<string>();
+  for (const role of roles) {
+    const info = schema.nodeTypes.get(role);
+    if (!info) return null;
+    for (const prod of info.productions) {
+      const entry = prod.renders.get(target);
+      if (!entry) return null;
+      const ir = entry.inverseDerived;
+      if (!ir) return null;
+      if (ir.kind !== 'template') return null;
+      const lastSeg = ir.segments[ir.segments.length - 1];
+      if (lastSeg === undefined || lastSeg.length === 0) return null;
+      terms.add(lastSeg);
+    }
+  }
+  return [...terms].sort((a, b) => b.length - a.length);
+}
+
+function collectScannerCombos(
+  schema: InferredSchema,
+  targets: ReadonlyArray<string>,
+): ReadonlyMap<string, ReadonlyArray<ScannerSpec>> {
+  const out = new Map<string, ScannerSpec[]>();
+  for (const target of targets) out.set(target, []);
+  for (const target of targets) {
+    if (target === 'ast') continue;
+    const seen = new Map<string, ScannerSpec>();
+    for (const info of schema.nodeTypes.values()) {
+      for (const production of info.productions) {
+        if (!production.renders.has(target)) continue;
+        for (const span of production.spans) {
+          const repeats = span.modifiers.find((m) => m.kind === 'repeats');
+          if (!repeats) continue;
+          if (repeats.kind === 'repeats' && repeats.sep !== undefined && repeats.sep.length > 0) continue;
+          if (span.recursiveRoles.length === 0) continue;
+          const roles = [...span.recursiveRoles];
+          const key = scannerKey(roles, target);
+          if (seen.has(key)) continue;
+          const terms = collectTrailingLiterals(roles, target, schema);
+          if (terms === null) continue;
+          seen.set(key, { key, roles, target, terminators: terms });
+        }
+      }
+    }
+    out.set(target, [...seen.values()]);
+  }
+  return out;
+}
+
+function emitListSlotScanner(spec: ScannerSpec): string {
+  const fn = scannerName(spec.roles, spec.target);
+  const dispatchCall = spec.roles.length === 1
+    ? `${nodeDispatcherName(spec.roles[0]!, spec.target)}(__slice, __indentCol)`
+    : `${multiRoleSlotHelperName(spec.roles, spec.target)}(__slice, __indentCol)`;
+  const termsArr = `[${spec.terminators.map((t) => jsString(t)).join(', ')}]`;
+  return `function ${fn}(__chunk: string, __indentCol: number = 0): string[] {
+  const __TERMS: readonly string[] = ${termsArr};
+  const __out: string[] = [];
+  let __pos = 0;
+  while (__pos < __chunk.length) {
+    while (__pos < __chunk.length && /\\s/.test(__chunk.charAt(__pos))) __pos++;
+    if (__pos >= __chunk.length) break;
+    let __next = -1;
+    let __termLen = 0;
+    for (const __t of __TERMS) {
+      const __i = __chunk.indexOf(__t, __pos);
+      if (__i < 0) continue;
+      if (__next < 0 || __i < __next || (__i === __next && __t.length > __termLen)) {
+        __next = __i;
+        __termLen = __t.length;
+      }
+    }
+    if (__next < 0) {
+      throw new Error("stringify: ${fn}: no terminator literal found at pos " + __pos + " of " + __chunk.length);
+    }
+    const __slice = __chunk.slice(__pos, __next + __termLen);
+    __out.push(${dispatchCall});
+    __pos = __next + __termLen;
+  }
+  return __out;
+}`;
+}
+
+// Module-level registry of (roles, target) keys that have an emitted scanner.
+// Populated at the start of emitInverse and cleared on exit so slotHelperCall
+// can consult it without threading state through every emit fn signature.
+let _scannerRegistry: ReadonlySet<string> | null = null;
 
 function jsLiteral(value: string | number | boolean | null): string {
   if (value === null) return 'null';

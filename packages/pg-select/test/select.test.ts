@@ -141,6 +141,27 @@ test('stringify(ast) rebuilds a SELECT for single-column ASTs', () => {
   }
 });
 
+test('stringify(source) round-trips SELECT across WHERE/LIMIT variants', () => {
+  // The Select node's four productions all share the leading
+  // `SELECT … FROM …` literals AND none has a unique embedded literal vs
+  // siblings (WHERE appears in two, LIMIT in two), so they all classify as
+  // dispatcher fallbacks. The fallback sort now orders by descending
+  // segment count so the most-specific template (Select_3, WHERE+LIMIT) is
+  // tried first — without that, Select_0's table-remainder capture would
+  // silently swallow the WHERE/LIMIT suffix and the round-trip would still
+  // be byte-stable but route through the wrong production.
+  for (const input of [
+    'SELECT * FROM users',
+    'SELECT * FROM users WHERE name = 42',
+    'SELECT * FROM users LIMIT 10',
+    'SELECT * FROM users WHERE name = 42 LIMIT 10',
+  ]) {
+    const value = render(input, { target: 'source' });
+    const back = stringify(value, { target: 'source' });
+    assert.equal(back, value, `source-target round-trip drift on ${JSON.stringify(input)}`);
+  }
+});
+
 test('raws-mode round-trip preserves inter-prefix-span trivia byte-exactly', () => {
   // pg-select's Select node routes through the prefix-share dispatcher
   // (shared `[SELECT, columns, FROM, table]` prefix across the four

@@ -7562,6 +7562,8 @@ function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number =
     if (value.startsWith("___")) return __invert_MarkdownLeaf_9_source(value, __indentCol);
     if (value.startsWith("---")) return __invert_MarkdownLeaf_10_source(value, __indentCol);
     if (value.startsWith("```")) return __invert_MarkdownLeaf_18_source(value, __indentCol);
+    if (value.indexOf("]: ") >= 0) { try { return __invert_MarkdownLeaf_32_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("]: ") >= 0) { try { return __invert_MarkdownLeaf_33_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.startsWith("# ")) return __invert_MarkdownLeaf_5_source(value, __indentCol);
     if (value.startsWith("+ ")) return __invert_MarkdownLeaf_13_source(value, __indentCol);
     if (value.startsWith("* ")) return __invert_MarkdownLeaf_14_source(value, __indentCol);
@@ -7570,19 +7572,17 @@ function __dispatchInverse_MarkdownLeaf_source(value: any, __indentCol: number =
     if (value.startsWith("> ")) return __invert_MarkdownLeaf_17_source(value, __indentCol);
     if (value.startsWith("**")) return __invert_MarkdownLeaf_20_source(value, __indentCol);
     if (value.startsWith("~~")) return __invert_MarkdownLeaf_22_source(value, __indentCol);
-    if (value.startsWith("![")) return __invert_MarkdownLeaf_26_source(value, __indentCol);
-    if (value.startsWith("![")) return __invert_MarkdownLeaf_27_source(value, __indentCol);
+    if (value.indexOf("](") >= 0) { try { return __invert_MarkdownLeaf_24_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("][") >= 0) { try { return __invert_MarkdownLeaf_25_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("](") >= 0) { try { return __invert_MarkdownLeaf_26_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("][") >= 0) { try { return __invert_MarkdownLeaf_27_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.startsWith("| ")) return __invert_MarkdownLeaf_31_source(value, __indentCol);
-    if (value.startsWith("[^")) return __invert_MarkdownLeaf_33_source(value, __indentCol);
-    if (value.startsWith("[^")) return __invert_MarkdownLeaf_34_source(value, __indentCol);
+    if (value.indexOf("</") >= 0) { try { return __invert_MarkdownLeaf_35_source(value, __indentCol); } catch (_e) { /* try next */ } }
     if (value.startsWith("*")) return __invert_MarkdownLeaf_21_source(value, __indentCol);
     if (value.startsWith("`")) return __invert_MarkdownLeaf_23_source(value, __indentCol);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_24_source(value, __indentCol);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_25_source(value, __indentCol);
     if (value.startsWith("&")) return __invert_MarkdownLeaf_28_source(value, __indentCol);
-    if (value.startsWith("[")) return __invert_MarkdownLeaf_32_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_MarkdownLeaf_35_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_MarkdownLeaf_36_source(value, __indentCol);
+    try { return __invert_MarkdownLeaf_34_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_MarkdownLeaf_36_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }

@@ -4450,8 +4450,8 @@ function __dispatchInverse_HtmlDocument_source(value: any, __indentCol: number =
 
 function __dispatchInverse_Doctype_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<!")) return __invert_Doctype_0_source(value, __indentCol);
-    if (value.startsWith("<!")) return __invert_Doctype_1_source(value, __indentCol);
+    if (value.indexOf(">") >= 0) { try { return __invert_Doctype_0_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    try { return __invert_Doctype_1_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }
@@ -4465,22 +4465,22 @@ function __dispatchInverse_Comment_source(value: any, __indentCol: number = 0): 
 
 function __dispatchInverse_HtmlElement_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("<")) return __invert_HtmlElement_0_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_1_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_2_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_3_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_4_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_5_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_6_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_7_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_8_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_9_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_10_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_11_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_12_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_13_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_14_source(value, __indentCol);
-    if (value.startsWith("<")) return __invert_HtmlElement_15_source(value, __indentCol);
+    if (value.indexOf("</option>") >= 0) { try { return __invert_HtmlElement_9_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</tbody>") >= 0) { try { return __invert_HtmlElement_12_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</thead>") >= 0) { try { return __invert_HtmlElement_13_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</tfoot>") >= 0) { try { return __invert_HtmlElement_14_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</html>") >= 0) { try { return __invert_HtmlElement_10_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</head>") >= 0) { try { return __invert_HtmlElement_11_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</body>") >= 0) { try { return __invert_HtmlElement_15_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</li>") >= 0) { try { return __invert_HtmlElement_4_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</dt>") >= 0) { try { return __invert_HtmlElement_5_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</tr>") >= 0) { try { return __invert_HtmlElement_6_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</td>") >= 0) { try { return __invert_HtmlElement_7_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf("</p>") >= 0) { try { return __invert_HtmlElement_8_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    if (value.indexOf(" />") >= 0) { try { return __invert_HtmlElement_2_source(value, __indentCol); } catch (_e) { /* try next */ } }
+    try { return __invert_HtmlElement_0_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_HtmlElement_1_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_HtmlElement_3_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }

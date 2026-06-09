@@ -1483,10 +1483,10 @@ function __dispatchInverse_Predicate_source(value: any, __indentCol: number = 0)
 
 function __dispatchInverse_Select_source(value: any, __indentCol: number = 0): string {
   if (typeof value === "string") {
-    if (value.startsWith("SELECT ")) return __invert_Select_0_source(value, __indentCol);
-    if (value.startsWith("SELECT ")) return __invert_Select_1_source(value, __indentCol);
-    if (value.startsWith("SELECT ")) return __invert_Select_2_source(value, __indentCol);
-    if (value.startsWith("SELECT ")) return __invert_Select_3_source(value, __indentCol);
+    try { return __invert_Select_3_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_Select_1_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_Select_2_source(value, __indentCol); } catch (_e) { /* try next */ }
+    try { return __invert_Select_0_source(value, __indentCol); } catch (_e) { /* try next */ }
   }
   throw new Error("stringify: no production matches for target 'source' (value: " + JSON.stringify(value) + ")");
 }

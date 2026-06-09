@@ -1,4 +1,4 @@
-import { $, defineSchema, keyword, literal, parse, passthrough, relation, span, tpl, valueTagged } from '@parser2/parser';
+import { $, defineSchema, keyword, litTagged, literal, parse, passthrough, relation, span, tpl, valueTagged } from '@parser2/parser';
 
 export default defineSchema({
   rootType: 'Cron',
@@ -9,16 +9,7 @@ export default defineSchema({
   },
   tokens: ['number'],
   examples: [
-    relation('CronField', {
-      input: '*',
-      encodings: {
-        parse: parse([
-          literal('*'),
-        ]),
-        ast: { type: 'wildcard' },
-        source: tpl`*`,
-      },
-    }),
+    litTagged('CronField', '*', { type: 'wildcard' }),
 
     keyword('CronField', '*', '/', span('step', '5').number().int(), 'step'),
 

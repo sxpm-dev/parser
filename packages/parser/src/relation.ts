@@ -547,6 +547,41 @@ export function passthrough(
   });
 }
 
+// Phase 7 sugar: a production that's a single literal token mapped to a
+// hardcoded AST shape (no captured values). Collapses the cron '*'
+// wildcard / toml 'true'/'false' boolean pattern:
+//
+//   relation('CronField', {
+//     input: '*',
+//     encodings: {
+//       parse: parse([literal('*')]),
+//       ast: { type: 'wildcard' },
+//       source: tpl`*`,
+//     },
+//   })
+//
+// to one call:
+//
+//   litTagged('CronField', '*', { type: 'wildcard' })
+//
+// The `ast` argument is any RenderBody — literal scalar, object, array,
+// $.name ref, etc. The source template is the literal text verbatim
+// (no slots).
+export function litTagged(
+  nodeType: string,
+  lit: string,
+  ast: RenderBody,
+): ExampleDef {
+  return relation(nodeType, {
+    input: lit,
+    encodings: {
+      parse: parse([literal(lit)]),
+      ast,
+      source: asTemplate(lit),
+    },
+  });
+}
+
 export function relation(nodeType: string, body: RelationBody): ExampleDef {
   let parseProgram: ParseProgram | undefined;
   const renders: RenderTargetDef[] = [];

@@ -73,6 +73,15 @@ export enum Op {
   // requested trim:true (the default). The trim is byte-level (skips
   // 0x20 / 0x09 / 0x0a / 0x0d on both ends).
   CAPTURE_TRIMMED_SLICE = 0x16,
+  // operands: u8 startSlot, u8 endSlot, u32 stringPool index (capture name)
+  // → like CAPTURE_TRIMMED_SLICE, but ALSO excises any frame-recorded
+  // comment ranges that fall within the trim region and have whitespace
+  // adjacent on at least one side. Emitted instead of
+  // CAPTURE_TRIMMED_SLICE for .until() spans in schemas that declare
+  // `comment` as a token class. Mirrors v2 emit/v2/span.ts L1445+ —
+  // closes the CSS .until() value/selector ws-adjacent comment
+  // excision (e.g. `/* */ b` → `b`).
+  CAPTURE_UNTIL_EXCISE_COMMENTS = 0x18,
 
   // --- Scan primitives -----------------------------------------------------
   // operands: u8 class-kind enum, u32 refinement-key stringPool index
@@ -293,6 +302,7 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.CAPTURE_VALUE_APPEND]: [4],
   [Op.CAPTURE_COMMENT_INTERIOR]: [1, 1, 4],
   [Op.CAPTURE_TRIMMED_SLICE]: [1, 1, 4],
+  [Op.CAPTURE_UNTIL_EXCISE_COMMENTS]: [1, 1, 4],
   [Op.CAPTURE_INIT_ARRAY]: [4],
 
   [Op.SCAN_CLASS]: [1, 4],

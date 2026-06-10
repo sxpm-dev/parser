@@ -42,6 +42,12 @@ export type RuntimeState = {
   // as empty for backward compat with state objects built by callers
   // that predate operator-class support.
   readonly operatorLiterals?: ReadonlyArray<string>;
+  // Comment-range scratch used by SCAN_UNTIL when skipComments flag is
+  // set, then consumed by CAPTURE_UNTIL_EXCISE_COMMENTS to excise
+  // ws-adjacent comments from the captured slice. Flat array of
+  // (start, end, start, end, …) byte offsets. Cleared at SCAN_UNTIL
+  // entry. Mirrors v2 emit/v2/span.ts's `__comments` local.
+  commentRanges?: number[];
 };
 
 // Per-production locals. Allocated when a CALL_PRODUCTION (or the top-level
@@ -384,6 +390,58 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.CAPTURE_UNTIL_EXCISE_COMMENTS: {
+      const startSlot = readU8(state);
+      const endSlot = readU8(state);
+      const nameIdx = readU32(state);
+      const frame = frames[frames.length - 1]!;
+      const startRaw = frame.slots[startSlot]!;
+      const endRaw = frame.slots[endSlot]!;
+      const name = state.stringPool[nameIdx]!;
+      const captures = frame.captures;
+      if (captures === null) throw new Error(`bytecode runtime: CAPTURE_UNTIL_EXCISE_COMMENTS before PUSH_NEW_CAPTURES`);
+      // Trim whitespace from both ends.
+      let ts = startRaw;
+      let te = endRaw;
+      while (ts < te) {
+        const c = state.input.charCodeAt(ts);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        ts++;
+      }
+      while (te > ts) {
+        const c = state.input.charCodeAt(te - 1);
+        if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+        te--;
+      }
+      const ranges = state.commentRanges;
+      if (ranges === undefined || ranges.length === 0) {
+        captures[name] = state.input.slice(ts, te);
+      } else {
+        // Walk recorded comment ranges; excise those fully within [ts, te]
+        // with whitespace adjacent on at least one side. Mirrors v2
+        // emit/v2/span.ts L1445+.
+        let buf = '';
+        let cursor = ts;
+        const len = state.input.length;
+        for (let i = 0; i < ranges.length; i += 2) {
+          const cs = ranges[i]!;
+          const ce = ranges[i + 1]!;
+          if (ce > te) break;
+          if (cs < ts) continue;
+          const before = cs > 0 ? state.input.charCodeAt(cs - 1) : -1;
+          const after = ce < len ? state.input.charCodeAt(ce) : -1;
+          const isWsBefore = before === 0x20 || before === 0x09 || before === 0x0a || before === 0x0d;
+          const isWsAfter = after === 0x20 || after === 0x09 || after === 0x0a || after === 0x0d;
+          if (!(isWsBefore || isWsAfter)) continue;
+          buf += state.input.slice(cursor, cs);
+          cursor = ce;
+        }
+        buf += state.input.slice(cursor, te);
+        captures[name] = buf;
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.CAPTURE_COMMENT_INTERIOR: {
       // Like CAPTURE_SLICE, but strips the wrapping /* and */ then trims
       // interior whitespace. Mirrors v2's emitClassSpanValueExpr arm
@@ -480,20 +538,31 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       const balanced = (flags & 1) !== 0;
       const skipStrings = (flags & 2) !== 0;
       const skipComments = (flags & 4) !== 0;
+      // Reset comment-ranges scratch for THIS scan. The capture op
+      // consumes them; subsequent SCAN_UNTILs start fresh.
+      if (skipComments) {
+        if (state.commentRanges === undefined) state.commentRanges = [];
+        else state.commentRanges.length = 0;
+      }
       const input = state.input;
       const len = input.length;
       let depth = 0;
       scan: while (state.off < len) {
         const c = input.charCodeAt(state.off);
         if (skipComments && c === 0x2f && state.off + 1 < len && input.charCodeAt(state.off + 1) === 0x2a) {
+          const __cs = state.off;
           state.off += 2;
           while (state.off < len) {
             if (input.charCodeAt(state.off) === 0x2a && state.off + 1 < len && input.charCodeAt(state.off + 1) === 0x2f) {
               state.off += 2;
+              if (state.commentRanges === undefined) state.commentRanges = [];
+              state.commentRanges.push(__cs, state.off);
               continue scan;
             }
             state.off++;
           }
+          if (state.commentRanges === undefined) state.commentRanges = [];
+          state.commentRanges.push(__cs, state.off);
           continue;
         }
         if (skipStrings && (c === 0x22 || c === 0x27)) {

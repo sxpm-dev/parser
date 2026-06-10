@@ -519,8 +519,13 @@ function emitUntilSpan(
     // modifier.trim — every emitted .until() rewinds `off` to the last
     // non-ws byte"). Matches v1 across all packages and produces
     // HTML `<!-- hello -->` data='hello' (not 'hello ').
+    // When the schema declares `comment` as a token class, ALSO excise
+    // ws-adjacent comments from the captured slice (mirrors v2
+    // emit/v2/span.ts L1445+) — closes the CSS selector / value
+    // diffs where bcode kept `/* ... */` inside the capture.
     void modifier.trim;
-    writeOp(state, Op.CAPTURE_TRIMMED_SLICE);
+    const captureOp = skipComments ? Op.CAPTURE_UNTIL_EXCISE_COMMENTS : Op.CAPTURE_TRIMMED_SLICE;
+    writeOp(state, captureOp);
     writeU8(state, startSlot);
     writeU8(state, endSlot);
     writeU32(state, internString(state, span.name));

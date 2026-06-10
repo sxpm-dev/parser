@@ -1831,6 +1831,137 @@ const rows: ReadonlyArray<ParityRow> = [
     expectedAst: { type: 'x', v: 'xyz' },
     expected: { interp: 'impl', v2: 'impl' },
   },
+
+  // --- Seventh pass (2026-06-10) -------------------------------------------
+
+  {
+    name: 'modifier:repeats-default-allowed',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { semi: ';' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x;y',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ';' }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // Default trailing policy is 'allowed' — trailing sep is acceptable.
+    input: 'a;b;',
+    expectedAst: {
+      type: 'list',
+      items: [{ type: 'item', name: 'a' }, { type: 'item', name: 'b' }],
+    },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'refinement:number-float',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '3.14',
+            encodings: {
+              src: parse([span('v', '3.14').number().float()]),
+              ast: { type: 'f', v: $.v },
+            },
+          }),
+        ],
+      }),
+    input: '2.5',
+    expectedAst: { type: 'f', v: '2.5' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'class:operator-longest-match',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        operators: { cmp: ['==', '=', '!=', '!'] },
+        examples: [
+          relation('X', {
+            input: '==',
+            encodings: {
+              src: parse([span('op', '==').operator()]),
+              ast: { type: 'op', op: $.op },
+            },
+          }),
+        ],
+      }),
+    // .operator() longest-match scan picks `==` over `=` when both
+    // are declared in the operators pool.
+    input: '!=',
+    expectedAst: { type: 'op', op: '!=' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:optional-literal-presence',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'foo;',
+            encodings: {
+              src: parse([
+                span('n', 'foo').ident(),
+                literal(';').optional(),
+              ]),
+              ast: { type: 'x', n: $.n },
+            },
+          }),
+        ],
+      }),
+    // Optional literal: present in some inputs, absent in others.
+    // Both backends accept both.
+    input: 'bar',
+    expectedAst: { type: 'x', n: 'bar' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'class:hex-with-prefix',
+    category: 'class',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: '0xFF',
+            encodings: {
+              src: parse([literal('0x'), span('v', 'FF').hex()]),
+              ast: { type: 'h', v: $.v },
+            },
+          }),
+        ],
+      }),
+    // Hex class scans bare hex digits. 0x-prefix forms compose via
+    // literal + hex span.
+    input: '0xCAFE',
+    expectedAst: { type: 'h', v: 'CAFE' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

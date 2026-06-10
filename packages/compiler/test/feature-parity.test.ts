@@ -539,13 +539,11 @@ const rows: ReadonlyArray<ParityRow> = [
     input: '99',
     // .coerce() converts the captured slice to a JS number.
     expectedAst: { type: 'int', value: 99 },
-    // Phase 1 deliberate gap (documented in roadmap Phase 5 design
-    // notes): interp keeps .coerce() captures as raw slices because
-    // mirroring coerce on the forward path would also require
-    // teaching interp/stringify to re-encode on the inverse direction
-    // (JSON-quote, etc.). Today schemas using .coerce() round-trip
-    // correctly because interp's render+stringify are self-consistent.
-    expected: { interp: 'gap', v2: 'impl' },
+    // interp/parse.ts now mirrors v2's `Number(slice)` for
+    // `.number().coerce()`. .string().coerce() remains a gap (string
+    // coerce wants JSON-decode + re-encode plumbing on the inverse
+    // direction — bigger surface area).
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   {
@@ -2199,11 +2197,11 @@ const rows: ReadonlyArray<ParityRow> = [
           }),
         ],
       }),
-    // .coerce() converts the captured string to a JS number.
-    // v2 honors this; interp keeps the raw slice (documented gap).
+    // .coerce() converts the captured string to a JS number.  interp now
+    // mirrors v2's `Number(slice)` (see refinement:number-coerce above).
     input: '123',
     expectedAst: { type: 'n', v: 123 },
-    expected: { interp: 'gap', v2: 'impl' },
+    expected: { interp: 'impl', v2: 'impl' },
   },
 ];
 

@@ -763,30 +763,36 @@ function parseClassSpan(
   // and trims interior whitespace when the span carries the (implicit)
   // .comment() refinement — we mirror that here.
   //
-  // NOTE: interp deliberately keeps `.number()/.string().coerce()` captures
-  // as raw slices (not Number-coerced / not decoded). v2 DOES coerce, so
-  // interp ≡ v2 doesn't hold for coerced captures. The round-trip check
-  // and the differential fuzzer both call interp's render + interp's
-  // stringify in lockstep, so as long as interp is self-consistent the
-  // checks succeed. Mirroring v2's coerce behavior in interp would also
-  // require teaching interp/stringify to re-encode (JSON-quote, etc.) on
-  // the inverse direction — bigger surface area, deferred.
+  // For .number().coerce(): convert the captured slice to a JS number
+  // (Number(slice)) so interp matches v2's behavior. interp's stringify
+  // already handles numeric capture values via String(v). The
+  // .string().coerce() variant (JSON-string decode) is still deferred:
+  // it requires interp/stringify to round-trip the decoded string
+  // through a JSON re-encode on the inverse direction, which is a
+  // larger surface area.
   const rawSlice = state.input.slice(start, state.pos);
-  let value: string;
+  const refSet = new Set(span.refinements.map((r) => r.name));
+  let value: string | number;
   if (span.class === 'comment') {
     value = trimWs(stripCommentDelimiters(rawSlice));
+  } else if (span.class === 'number' && refSet.has('coerce')) {
+    value = Number(rawSlice);
   } else {
     value = rawSlice;
   }
   // Post-scan refinement checks (.oneOf / .lengths). Mirror of the codegen
   // path in emit/v2/span.ts:emitRefinementChecks — kept in lockstep so
-  // interp and emit agree on accepted captures.
+  // interp and emit agree on accepted captures.  Both checks operate on
+  // the captured-byte slice; for .coerce() values the slice (rawSlice)
+  // is the right input — we re-check the raw text rather than the
+  // coerced value's toString form so oneOf/lengths semantics stay
+  // byte-level.
   for (const ref of span.refinements) {
     if (ref.name === 'oneOf') {
       const values = ref.args?.[0];
       if (Array.isArray(values) && values.every((x) => typeof x === 'string')) {
         const lowered = (values as string[]).map((v) => v.toLowerCase());
-        if (!lowered.includes(value.toLowerCase())) {
+        if (!lowered.includes(rawSlice.toLowerCase())) {
           state.pos = start;
           return false;
         }
@@ -796,7 +802,7 @@ function parseClassSpan(
       const values = ref.args?.[0];
       if (Array.isArray(values) && values.every((x) => typeof x === 'number')) {
         const lens = new Set((values as number[]).map((n) => n | 0));
-        if (!lens.has(value.length)) {
+        if (!lens.has(rawSlice.length)) {
           state.pos = start;
           return false;
         }

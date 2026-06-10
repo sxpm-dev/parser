@@ -970,6 +970,28 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.ASSERT_CAPTURE_NOT_ENDS_WITH: {
+      const nameIdx = readU32(state);
+      const count = readU32(state);
+      const suffixes: string[] = new Array(count);
+      for (let i = 0; i < count; i++) {
+        suffixes[i] = state.stringPool[readU32(state)]!;
+      }
+      const name = state.stringPool[nameIdx]!;
+      const frame = frames[frames.length - 1]!;
+      if (frame.captures === null) throw new Error(`bytecode runtime: ASSERT_CAPTURE_NOT_ENDS_WITH before captures init`);
+      const value = frame.captures[name];
+      if (typeof value === 'string') {
+        for (const sfx of suffixes) {
+          if (value.endsWith(sfx)) {
+            if (failProduction(state, frames)) return { kind: 'return', value: null };
+            return { kind: 'continue' };
+          }
+        }
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.POP: {
       if (state.valueStack.length > 0) state.valueStack.pop();
       return { kind: 'continue' };

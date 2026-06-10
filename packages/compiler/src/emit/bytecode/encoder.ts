@@ -489,6 +489,8 @@ function emitUntilSpan(
     readonly stops: ReadonlyArray<string>;
     readonly balanced: boolean;
     readonly trim: boolean;
+    readonly rejectSuffix?: ReadonlyArray<string>;
+    readonly nonEmpty?: boolean;
   },
   nextSlot: number,
 ): number {
@@ -529,6 +531,20 @@ function emitUntilSpan(
     writeU8(state, startSlot);
     writeU8(state, endSlot);
     writeU32(state, internString(state, span.name));
+    // .until({ rejectSuffix: [...] }) — fail the production when the
+    // captured value ends with any of the suffixes. Mirrors v2's post-
+    // trim rejection emit (`if (selector.endsWith(":") ...) return null`).
+    // Without this CSS Rule swallows `--x: { ... }` declarations as a
+    // rule whose selector ends with ':'; the schema's selector reject
+    // suffixes [':', ',', '>', '+', '~'] should reject and fall through
+    // to Declaration.
+    const rejectSuffix = modifier.rejectSuffix;
+    if (rejectSuffix !== undefined && rejectSuffix.length > 0) {
+      writeOp(state, Op.ASSERT_CAPTURE_NOT_ENDS_WITH);
+      writeU32(state, internString(state, span.name));
+      writeU32(state, rejectSuffix.length);
+      for (const sfx of rejectSuffix) writeU32(state, internString(state, sfx));
+    }
   }
   return nextSlot + 2;
 }

@@ -223,6 +223,14 @@ export enum Op {
   // Mirrors v2's case-insensitive oneOf check (toLowerCase on both
   // sides). The set values are pre-lowered at encode time.
   ASSERT_CAPTURE_IN_LOWERED_SET = 0x92,
+  // operands: u32 captureNameIdx, u32 count, count × u32 suffix-string
+  // pool indices. Reads frame.captures[name] (must be a string) and
+  // fails the current production if the value ends with ANY of the
+  // suffixes (case-sensitive endsWith). Mirrors v2's .until({rejectSuffix})
+  // post-trim rejection — closes CSS Rule's selector validation, e.g.
+  // `--x: { ... }` would otherwise match Rule with selector "--x:"
+  // before the colon-rejecting check kicks in.
+  ASSERT_CAPTURE_NOT_ENDS_WITH = 0x93,
   // No operands — pop top of value stack. Used to discard values after
   // assertions / discriminator probes.
   POP = 0x8c,
@@ -346,6 +354,9 @@ export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   // count × u32 string indices. OPERAND_SIZES records only the fixed
   // prefix; the runtime + encoder both read `count` extra u32s.
   [Op.ASSERT_CAPTURE_IN_LOWERED_SET]: [4, 4],
+  // Same shape: u32 captureNameIdx + u32 count, then count × u32 suffix
+  // string indices.
+  [Op.ASSERT_CAPTURE_NOT_ENDS_WITH]: [4, 4],
   [Op.POP]: [],
 
   // numSegs + numCaps + targetIdx fixed prefix; variable tail computed

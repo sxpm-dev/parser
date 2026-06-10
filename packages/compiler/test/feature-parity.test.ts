@@ -2118,11 +2118,11 @@ const rows: ReadonlyArray<ParityRow> = [
     // .until() captures with comment-token-class declared excise
     // whitespace-adjacent block comments from the captured slice.
     // Mirrors v2 emit/v2/span.ts L1445+ and the rust + bcode ports.
-    // GAP on interp: the reference interpreter doesn't excise
-    // comments from .until() captures (keeps the raw slice).
+    // interp now mirrors via comment-skip + ws-adjacent excise in
+    // parseUntilSpan.
     input: 'a /* note */ b;',
     expectedAst: { type: 'x', v: 'a  b' },
-    expected: { interp: 'gap', v2: 'impl' },
+    expected: { interp: 'impl', v2: 'impl' },
   },
 
   {

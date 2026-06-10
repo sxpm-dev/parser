@@ -1026,16 +1026,33 @@ function parseUntilSpan(
   const balanced = until.balanced;
   const input = state.input;
   const len = state.len;
+  const tokenClasses = new Set(schema.classes.map((c) => c.class));
+  const hasComments = tokenClasses.has('comment');
+  const hasStrings = tokenClasses.has('string');
 
-  // Skip leading whitespace from the capture's view. Mirrors v2's
-  // emitUntilSpan which trims leading ws (and comments when the schema
-  // declares the `comment` token class — that case is unused in markdown's
-  // current schema; we honor it via the tokens set on the schema).
-  while (state.pos < len && isWs(input.charCodeAt(state.pos))) state.pos++;
+  // Skip leading whitespace + comments from the capture's view. Mirrors
+  // v2's emitUntilSpan leading skip (which trims ws and `/* ... */` when
+  // the schema declares the `comment` token class).
+  while (state.pos < len) {
+    const c = input.charCodeAt(state.pos);
+    if (isWs(c)) { state.pos++; continue; }
+    if (hasComments && c === 0x2f && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a) {
+      state.pos += 2;
+      while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+      if (state.pos < len) state.pos += 2;
+      continue;
+    }
+    break;
+  }
 
   const start = state.pos;
   let depth = 0;
   let lastNonWs = state.pos;
+  // Track comment ranges encountered during the scan so the captured-
+  // slice builder can excise ws-adjacent ones. Mirrors v2's __comments
+  // array (emit/v2/span.ts:1253, 1360-1369) and the bcode runtime's
+  // state.commentRanges scratch.
+  const comments: Array<[number, number]> = [];
   while (state.pos < len) {
     if (depth === 0 && matchesAnyStop(input, state.pos, stops)) break;
     if (balanced) {
@@ -1051,6 +1068,32 @@ function parseUntilSpan(
         depth--;
         state.pos++;
         lastNonWs = state.pos;
+        continue;
+      }
+      // String-skip (when schema declares string token). Mirrors v2
+      // emitUntilSpan's string arm.
+      if (hasStrings && (c === 0x22 || c === 0x27)) {
+        const q = c;
+        state.pos++;
+        while (state.pos < len) {
+          const sc = input.charCodeAt(state.pos);
+          if (sc === 0x5c && state.pos + 1 < len) { state.pos += 2; continue; }
+          if (sc === q) { state.pos++; break; }
+          if (sc === 0x0a || sc === 0x0d) break;
+          state.pos++;
+        }
+        lastNonWs = state.pos;
+        continue;
+      }
+      // Comment skip (when schema declares comment token). Record the
+      // range for downstream ws-adjacent excise; do NOT advance
+      // lastNonWs — the comment content lives outside the captured slice.
+      if (hasComments && c === 0x2f && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2a) {
+        const cstart = state.pos;
+        state.pos += 2;
+        while (state.pos < len && !(input.charCodeAt(state.pos) === 0x2a && state.pos + 1 < len && input.charCodeAt(state.pos + 1) === 0x2f)) state.pos++;
+        if (state.pos < len) state.pos += 2;
+        comments.push([cstart, state.pos]);
         continue;
       }
       // CSS-style escape pair — only meaningful when the schema declares an
@@ -1093,7 +1136,28 @@ function parseUntilSpan(
     endOff = start;
   } else {
     state.pos = trimEnd;
-    value = input.slice(start, trimEnd);
+    if (comments.length === 0) {
+      value = input.slice(start, trimEnd);
+    } else {
+      // Excise ws-adjacent comments from the captured slice. Mirrors v2
+      // emit/v2/span.ts L1445-1465 and the rust + bcode ports. A
+      // comment range counts as ws-adjacent when at least one side has a
+      // ws byte; otherwise it stays in the slice.
+      let buf = '';
+      let cursor = start;
+      for (const [cs, ce] of comments) {
+        if (ce > trimEnd) break;
+        const before = cs > 0 ? input.charCodeAt(cs - 1) : -1;
+        const after = ce < len ? input.charCodeAt(ce) : -1;
+        const wsBefore = before === 0x20 || before === 0x09 || before === 0x0a || before === 0x0d;
+        const wsAfter = after === 0x20 || after === 0x09 || after === 0x0a || after === 0x0d;
+        if (!(wsBefore || wsAfter)) continue;
+        buf += input.slice(cursor, cs);
+        cursor = ce;
+      }
+      buf += input.slice(cursor, trimEnd);
+      value = buf;
+    }
     endOff = trimEnd;
   }
 

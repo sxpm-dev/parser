@@ -131,6 +131,10 @@ export const LENGTH_PROPS = [
   "word-spacing",
 ] as const;
 
+// Body-union members shared by Rule, AtRule, and Stylesheet. Declared once
+// so dispatch-order intent ("Rule before Declaration") lives in one place.
+const NODE = ['Comment', 'AtRule', 'Rule', 'Declaration'] as const;
+
 const cssSchema = defineSchema({
   rootType: "Stylesheet",
   punctuators: {
@@ -297,7 +301,7 @@ const cssSchema = defineSchema({
           // round-trip would then drop the braces. Unnamed spans contribute
           // their text directly at compile time and never require a capture.
           literal('{'),
-          span('nodes', 'color: red').of('Comment', 'AtRule', 'Rule', 'Declaration')
+          span('nodes', 'color: red').of(NODE)
             .repeats({ sep: ';', trailing: 'allowed' }),
           literal('}'),
         ]),
@@ -330,7 +334,7 @@ const cssSchema = defineSchema({
           // the rebuild contributes their text directly without needing a
           // capture that the AST body doesn't surface.
           literal('{'),
-          span('nodes', 'color: red').of('Comment', 'AtRule', 'Rule', 'Declaration')
+          span('nodes', 'color: red').of(NODE)
             .repeats({ sep: ';', trailing: 'allowed' }),
           literal('}'),
         ]),
@@ -388,7 +392,7 @@ const cssSchema = defineSchema({
       input: '.foo { color: red }',
       encodings: {
         parse: parse([
-          span('nodes', '.foo { color: red }').of('Comment', 'AtRule', 'Rule', 'Declaration')
+          span('nodes', '.foo { color: red }').of(NODE)
             .repeats({ min: 0, sep: ';', trailing: 'allowed' }),
         ]),
         ast: {

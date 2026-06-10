@@ -152,9 +152,14 @@ export class SpanNode {
   indent(): SpanNode {
     return this.addModifier({ kind: 'indent' });
   }
-  of(...roles: ReadonlyArray<string>): SpanNode {
+  of(roles: ReadonlyArray<string>): SpanNode;
+  of(...roles: ReadonlyArray<string>): SpanNode;
+  of(...roles: ReadonlyArray<string | ReadonlyArray<string>>): SpanNode {
+    // Array form: `.of(NODE_KINDS)` where the union is declared once at
+    // schema level — same semantics as spreading, kinder to read.
+    const flat = roles.flatMap((r) => (Array.isArray(r) ? r : [r])) as string[];
     return this.withData({
-      recursiveRoles: [...this.data.recursiveRoles, ...roles],
+      recursiveRoles: [...this.data.recursiveRoles, ...flat],
     });
   }
 

@@ -40,3 +40,31 @@ Same gates as the parent plan: compiler suite, all-package regen + tests,
 css conformance/round-trip (raws mode is the byte-fidelity path — round-trip
 tests are the hard gate here), golden-hash refresh, A/B bench with
 `mode:'raws'`, baselines updated at the end.
+
+## Outcomes (2026-06-11)
+
+Tasks 1–3 landed (commits `96c341d`, `2b4ca2d`):
+
+- Task 1 counters confirmed the fast-mode waste shape verbatim (22,326
+  parseRule / 18,267 parseDeclaration__alt0 wasted attempts).
+- Task 2 (role-ladder guard, shared `until-guard.ts`): parseRule 22,326 →
+  4,059. raws bench NEUTRAL — the failed-attempt scan was replaced by an
+  equally-sized guard scan; the win was allocation-light, not scan-light.
+- Task 3 (multi-segment alt-viability gating in speculation chains):
+  parseDeclaration__alt0 18,267 → 0. raws A/B 30.94 → 28.18 ms/iter (~9%).
+
+Post-gating raws profile (500KB): GC 27%, parseDeclaration__alt1 16.7%,
+__untilTerminator 10.6%, __untilAltViable 5.7%, computeLineStarts 4.9%,
+parseRule 9.8%. Task 4's GC hypothesis is CONFIRMED as the dominant cost,
+and the two guards together now cost 16% in redundant captureless scans.
+
+**Decision:** stop incremental gating here. The remaining principled win is
+a **fused raws path** — extend structured fusion to emit raws fields
+inline (eliminating the captures envelope + builder walk entirely, the
+way fast mode already works) — which subsumes both the GC cost and the
+guard double-scan (the fused dispatcher's merged-divergence scan replaces
+both guards). That is a separate design effort; see also
+`docs/superpowers/plans/2026-06-08-raws-sidecar.md` for the related raws
+architecture context. Lazy `__ws`/`__litPres` allocation and line-start
+laziness are micro-wins (<5% each) not worth taking before the fused-raws
+decision.

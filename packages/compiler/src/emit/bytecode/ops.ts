@@ -22,6 +22,14 @@ export enum Op {
   // operand: stringPool index (u32) → require input.startsWith(s) at off;
   // advance off+=s.length; on miss: fail.
   CONSUME_LITERAL = 0x01,
+  // operand: stringPool index (u32) → if input.startsWith(s) at off,
+  // advance off+=s.length; otherwise do nothing. Always succeeds (no
+  // production fail). Used for `.optional()` literal spans where the
+  // schema author marked the literal as optional (e.g. CSS Declaration's
+  // trailing `;` literal: `literal(';').optional()`). Without this op,
+  // bcode silently emitted CONSUME_LITERAL for optional literals and
+  // any input lacking the literal failed to parse.
+  CONSUME_LITERAL_OPTIONAL = 0x04,
   // operand: 256-bit bitset (32 bytes inline) → require input[off] in set;
   // advance off. Reserved for Task 6.3; encoder currently doesn't emit this.
   CONSUME_BYTE_IN_SET = 0x02,
@@ -274,6 +282,7 @@ export enum ScanClassKind {
 // `count` extra u32s after the first.
 export const OPERAND_SIZES: Readonly<Record<Op, ReadonlyArray<number>>> = {
   [Op.CONSUME_LITERAL]: [4],
+  [Op.CONSUME_LITERAL_OPTIONAL]: [4],
   [Op.CONSUME_BYTE_IN_SET]: [32],
   [Op.SKIP_WS]: [],
 

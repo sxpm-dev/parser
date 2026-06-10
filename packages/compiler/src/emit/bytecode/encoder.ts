@@ -543,22 +543,13 @@ function emitLiteralSpan(
   writeOp(state, Op.SAVE_OFF);
   writeU8(state, startSlot);
 
-  // Optional literal: try to match; if not present, push null on the value
-  // stack and skip forward past the capture block. The runtime treats a null
-  // top-of-stack at JUMP_IF_NULL as "branch taken". For literals, the
-  // "match present" path is reflected by the CONSUME succeeding (no branch
-  // needed — the byte cursor simply advances).
-  //
-  // For Task 6.3, optional LITERAL spans aren't exercised by cron (cron's
-  // only optional span is the recursive `command` span). We still emit the
-  // SAVE_OFF marker so structurally the production block looks the same as
-  // the non-optional path. The runtime's CONSUME_LITERAL falls through to
-  // RETURN_NULL on a miss when this span is required; optional literals
-  // are emitted with a peek-and-skip pattern handled here when the encoder
-  // grows that case. Marker reserved.
-  void isOptional;
-
-  writeOp(state, Op.CONSUME_LITERAL);
+  // Optional literal: emit CONSUME_LITERAL_OPTIONAL — the runtime tries
+  // to match; on miss, leaves state.off unchanged and continues (no
+  // production fail). Required literal: emit CONSUME_LITERAL — on miss
+  // the production fails via RETURN_NULL. Closes CSS Declaration's
+  // optional trailing `;`, so inputs like `a{color:black}` (no
+  // trailing `;`) parse correctly through bcode.
+  writeOp(state, isOptional ? Op.CONSUME_LITERAL_OPTIONAL : Op.CONSUME_LITERAL);
   writeU32(state, internString(state, span.text));
 
   // If the literal carries a capture name, emit CAPTURE_SLICE so the runtime

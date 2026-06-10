@@ -310,6 +310,16 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
       return { kind: 'continue' };
     }
 
+    case Op.CONSUME_LITERAL_OPTIONAL: {
+      const idx = readU32(state);
+      const lit = state.stringPool[idx]!;
+      if (state.input.startsWith(lit, state.off)) {
+        state.off += lit.length;
+        if (state.off > state.maxOff) state.maxOff = state.off;
+      }
+      return { kind: 'continue' };
+    }
+
     case Op.SKIP_WS: {
       while (state.off < state.input.length) {
         const c = state.input.charCodeAt(state.off);

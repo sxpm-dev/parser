@@ -1030,8 +1030,22 @@ function classScanCode(
     };
   }
   if (cls === 'string') {
+    // The string class accepts " (0x22) and ' (0x27) by default. The
+    // .backtick() refinement opts ` (0x60) in as an additional opener;
+    // it is NOT a restriction (the rust backend treats it as the SOLE
+    // opener via stringQuoteChar — a known cross-backend asymmetry).
+    // Newline-in-string is rejected for "/'; backtick strings allow
+    // newlines, matching the JS template-literal convention.
+    const refSet = new Set(span.refinements.map((r) => r.name));
+    const hasBacktick = refSet.has('backtick');
+    const startPredicate = hasBacktick
+      ? `off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27 || input.charCodeAt(off) === 0x60)`
+      : `off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)`;
+    const newlineBreak = hasBacktick
+      ? `if (__q !== 0x60 && (__c === 0x0a || __c === 0x0d)) break;`
+      : `if (__c === 0x0a || __c === 0x0d) break;`;
     return {
-      startPredicate: `off < len && (input.charCodeAt(off) === 0x22 || input.charCodeAt(off) === 0x27)`,
+      startPredicate,
       scanBody: `{
   const __q = input.charCodeAt(off);
   off++;
@@ -1039,7 +1053,7 @@ function classScanCode(
     const __c = input.charCodeAt(off);
     if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
     if (__c === __q) { off++; break; }
-    if (__c === 0x0a || __c === 0x0d) break;
+    ${newlineBreak}
     off++;
   }
 }`,

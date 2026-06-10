@@ -326,12 +326,24 @@ pub struct Diagnostic {
     pub end: usize,
 }
 
+// Phase 6 raws-mode (first slice). Fast = caller asked for the AST only;
+// Raws = attach byte-offset source ranges to every object-shaped AST node
+// so callers can light up format-preserving transforms.  Other trivia
+// (inter-span ws, optional-literal presence, per-iteration ws inside
+// repeats) deferred to follow-up sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseMode {
+    Fast,
+    Raws,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
     diagnostics: Vec<Diagnostic>,
+    mode: ParseMode,
 }
 
 impl<'a> State<'a> {
@@ -342,8 +354,39 @@ impl<'a> State<'a> {
             pos: 0,
             max_pos: 0,
             diagnostics: Vec::new(),
+            mode: ParseMode::Fast,
         }
     }
+    fn new_with_mode(src: &'a str, mode: ParseMode) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+            diagnostics: Vec::new(),
+            mode,
+        }
+    }
+}
+
+// Attach a source range field to an Object Value when the state's mode is
+// Raws.  Non-object values pass through unchanged -- only outer production
+// payloads get a range (mirrors v2's makeSource attach point).
+fn attach_source(value: Value, mode: ParseMode, start: usize, end: usize) -> Value {
+    if mode != ParseMode::Raws {
+        return value;
+    }
+    if let Value::Object(mut fields) = value {
+        fields.push((
+            "source".to_string(),
+            Value::Object(vec![
+                ("start".to_string(), Value::Number(start as f64)),
+                ("end".to_string(), Value::Number(end as f64)),
+            ]),
+        ));
+        return Value::Object(fields);
+    }
+    value
 }
 
 fn skip_ws(state: &mut State) {
@@ -529,7 +572,7 @@ function emitProductionFn(
         `rust backend: span-less recovery production for '${production.nodeType}' has no render body`,
       );
     }
-    lines.push(`    Some(${emitRenderBody(renderBody, production)})`);
+    lines.push(`    Some(attach_source(${emitRenderBody(renderBody, production)}, state.mode, entry_pos, state.pos))`);
     lines.push(`}`);
     return lines.join('\n');
   }
@@ -558,7 +601,7 @@ function emitProductionFn(
       `    state.diagnostics.push(Diagnostic { code: "recovered".to_string(), drop: ${rustString(production.recovery!.drop)}.to_string(), start: entry_pos, end: state.pos });`,
     );
   }
-  lines.push(`    Some(${emitRenderBody(renderBody, production)})`);
+  lines.push(`    Some(attach_source(${emitRenderBody(renderBody, production)}, state.mode, entry_pos, state.pos))`);
   lines.push(`}`);
   // Failure-return rewrite. Every rust failure path is the exact 4-line
   // `state.pos = entry_pos; return None;` sequence emitted by helpers
@@ -2535,7 +2578,45 @@ function emitStringifyEntry(schema: InferredSchema): string {
 function emitRenderEntry(schema: InferredSchema): string {
   const root = rustIdent(schema.rootType);
   return `${emitRenderImpl(schema, root)}
+${emitRenderRaws(schema, root)}
 ${emitRenderDiagnostics(schema, root)}`;
+}
+
+function emitRenderRaws(schema: InferredSchema, root: string): string {
+  // Phase 6 raws-mode first slice. Same scan path as render(), but the
+  // per-production fns observe state.mode and append `source: {start, end}`
+  // to every object-shaped AST node they emit. Other trivia (`__ws`,
+  // `__litPres`, `<name>_iws`) deferred — see roadmap Phase 6 raws-mode
+  // hand-off for the staged plan to thread those through every span emit.
+  const hasComment = schemaHasCommentClass(schema);
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    const ownFirst = prod.spans[0];
+    if (ownFirst && ownFirst.class === 'comment') return true;
+    for (const span of prod.spans) {
+      for (const roleName of span.recursiveRoles) {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) continue;
+        for (const rolePr of info.productions) {
+          const firstSpan = rolePr.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+      }
+    }
+    return false;
+  });
+  const leadingFn = hasComment && !rootConsumesComments ? 'skip_ws_and_comments' : 'skip_ws';
+  const trailingFn = hasComment ? 'skip_ws_and_comments' : 'skip_ws';
+  return `pub fn render_raws(input: &str) -> Result<Value, String> {
+    let mut state = State::new_with_mode(input, ParseMode::Raws);
+    ${leadingFn}(&mut state);
+    let result = parse_${root}(&mut state).ok_or_else(|| syntax_error(&state))?;
+    ${trailingFn}(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}`;
 }
 
 function emitRenderDiagnostics(schema: InferredSchema, root: string): string {

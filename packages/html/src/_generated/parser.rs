@@ -68,12 +68,24 @@ pub struct Diagnostic {
     pub end: usize,
 }
 
+// Phase 6 raws-mode (first slice). Fast = caller asked for the AST only;
+// Raws = attach byte-offset source ranges to every object-shaped AST node
+// so callers can light up format-preserving transforms.  Other trivia
+// (inter-span ws, optional-literal presence, per-iteration ws inside
+// repeats) deferred to follow-up sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseMode {
+    Fast,
+    Raws,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
     diagnostics: Vec<Diagnostic>,
+    mode: ParseMode,
 }
 
 impl<'a> State<'a> {
@@ -84,8 +96,39 @@ impl<'a> State<'a> {
             pos: 0,
             max_pos: 0,
             diagnostics: Vec::new(),
+            mode: ParseMode::Fast,
         }
     }
+    fn new_with_mode(src: &'a str, mode: ParseMode) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+            diagnostics: Vec::new(),
+            mode,
+        }
+    }
+}
+
+// Attach a source range field to an Object Value when the state's mode is
+// Raws.  Non-object values pass through unchanged -- only outer production
+// payloads get a range (mirrors v2's makeSource attach point).
+fn attach_source(value: Value, mode: ParseMode, start: usize, end: usize) -> Value {
+    if mode != ParseMode::Raws {
+        return value;
+    }
+    if let Value::Object(mut fields) = value {
+        fields.push((
+            "source".to_string(),
+            Value::Object(vec![
+                ("start".to_string(), Value::Number(start as f64)),
+                ("end".to_string(), Value::Number(end as f64)),
+            ]),
+        ));
+        return Value::Object(fields);
+    }
+    value
 }
 
 fn skip_ws(state: &mut State) {
@@ -224,7 +267,7 @@ fn parse_HtmlDocument__alt0(state: &mut State) -> Option<Value> {
         }
         if state.pos == __loop_start { break; }
     }
-    Some(Value::Object(vec![("nodeName".to_string(), Value::String("#document".to_string())), ("mode".to_string(), Value::String("no-quirks".to_string())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("nodeName".to_string(), Value::String("#document".to_string())), ("mode".to_string(), Value::String("no-quirks".to_string())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlDocument(state: &mut State) -> Option<Value> {
@@ -259,13 +302,13 @@ fn parse_Doctype__alt0(state: &mut State, entry_pos: usize, keyword: String, nam
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("doctype".to_string())), ("_keyword".to_string(), Value::String(keyword.clone())), ("nodeName".to_string(), Value::String("#documentType".to_string())), ("name".to_string(), Value::String(name.clone())), ("publicId".to_string(), Value::String("".to_string())), ("systemId".to_string(), Value::String("".to_string())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("doctype".to_string())), ("_keyword".to_string(), Value::String(keyword.clone())), ("nodeName".to_string(), Value::String("#documentType".to_string())), ("name".to_string(), Value::String(name.clone())), ("publicId".to_string(), Value::String("".to_string())), ("systemId".to_string(), Value::String("".to_string())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Doctype__alt1(state: &mut State, entry_pos: usize, keyword: String, name: String) -> Option<Value> {
     let __diag_snap = state.diagnostics.len();
     state.diagnostics.push(Diagnostic { code: "recovered".to_string(), drop: "incomplete-doctype".to_string(), start: entry_pos, end: state.pos });
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("doctype-incomplete".to_string())), ("_keyword".to_string(), Value::String(keyword.clone())), ("nodeName".to_string(), Value::String("#documentType".to_string())), ("name".to_string(), Value::String(name.clone())), ("publicId".to_string(), Value::String("".to_string())), ("systemId".to_string(), Value::String("".to_string())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("doctype-incomplete".to_string())), ("_keyword".to_string(), Value::String(keyword.clone())), ("nodeName".to_string(), Value::String("#documentType".to_string())), ("name".to_string(), Value::String(name.clone())), ("publicId".to_string(), Value::String("".to_string())), ("systemId".to_string(), Value::String("".to_string())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Doctype(state: &mut State) -> Option<Value> {
@@ -414,7 +457,7 @@ fn parse_Comment__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("nodeName".to_string(), Value::String("#comment".to_string())), ("data".to_string(), Value::String(data.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("nodeName".to_string(), Value::String("#comment".to_string())), ("data".to_string(), Value::String(data.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Comment(state: &mut State) -> Option<Value> {
@@ -536,7 +579,7 @@ fn parse_HtmlElement__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-rawtext".to_string())), ("_closeTag".to_string(), Value::String(closeTag.clone())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![Value::Object(vec![("nodeName".to_string(), Value::String("#text".to_string())), ("value".to_string(), Value::String(children.clone())), ("parentNode".to_string(), Value::Null)])])), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-rawtext".to_string())), ("_closeTag".to_string(), Value::String(closeTag.clone())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![Value::Object(vec![("nodeName".to_string(), Value::String("#text".to_string())), ("value".to_string(), Value::String(children.clone())), ("parentNode".to_string(), Value::Null)])])), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt1(state: &mut State) -> Option<Value> {
@@ -593,7 +636,7 @@ fn parse_HtmlElement__alt1(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-void".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-void".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt2(state: &mut State) -> Option<Value> {
@@ -650,7 +693,7 @@ fn parse_HtmlElement__alt2(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-void-selfclose".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-void-selfclose".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt3(state: &mut State) -> Option<Value> {
@@ -700,7 +743,7 @@ fn parse_HtmlElement__alt3(state: &mut State) -> Option<Value> {
         state.pos = entry_pos; state.diagnostics.truncate(__diag_snap); return None;
     }
     state.diagnostics.push(Diagnostic { code: "recovered".to_string(), drop: "self-closing-element".to_string(), start: entry_pos, end: state.pos });
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-selfclose-recovery".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-selfclose-recovery".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(vec![])), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt4(state: &mut State) -> Option<Value> {
@@ -796,7 +839,7 @@ fn parse_HtmlElement__alt4(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</li>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-li".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-li".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt5(state: &mut State) -> Option<Value> {
@@ -894,7 +937,7 @@ fn parse_HtmlElement__alt5(state: &mut State) -> Option<Value> {
     let _ = match_literal(state, "</dt>");
     skip_ws(state);
     let _ = match_literal(state, "</dd>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-dt-dd".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-dt-dd".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt6(state: &mut State) -> Option<Value> {
@@ -990,7 +1033,7 @@ fn parse_HtmlElement__alt6(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</tr>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-tr".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-tr".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt7(state: &mut State) -> Option<Value> {
@@ -1088,7 +1131,7 @@ fn parse_HtmlElement__alt7(state: &mut State) -> Option<Value> {
     let _ = match_literal(state, "</td>");
     skip_ws(state);
     let _ = match_literal(state, "</th>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-td-th".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-td-th".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt8(state: &mut State) -> Option<Value> {
@@ -1184,7 +1227,7 @@ fn parse_HtmlElement__alt8(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</p>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-p".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-p".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt9(state: &mut State) -> Option<Value> {
@@ -1282,7 +1325,7 @@ fn parse_HtmlElement__alt9(state: &mut State) -> Option<Value> {
     let _ = match_literal(state, "</option>");
     skip_ws(state);
     let _ = match_literal(state, "</optgroup>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-option".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-option".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt10(state: &mut State) -> Option<Value> {
@@ -1378,7 +1421,7 @@ fn parse_HtmlElement__alt10(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</html>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-html".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-html".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt11(state: &mut State) -> Option<Value> {
@@ -1474,7 +1517,7 @@ fn parse_HtmlElement__alt11(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</head>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-head".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-head".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt12(state: &mut State) -> Option<Value> {
@@ -1570,7 +1613,7 @@ fn parse_HtmlElement__alt12(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</tbody>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-tbody".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-tbody".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt13(state: &mut State) -> Option<Value> {
@@ -1666,7 +1709,7 @@ fn parse_HtmlElement__alt13(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</thead>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-thead".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-thead".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt14(state: &mut State) -> Option<Value> {
@@ -1762,7 +1805,7 @@ fn parse_HtmlElement__alt14(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</tfoot>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-tfoot".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-tfoot".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt15(state: &mut State) -> Option<Value> {
@@ -1858,7 +1901,7 @@ fn parse_HtmlElement__alt15(state: &mut State) -> Option<Value> {
     }
     skip_ws(state);
     let _ = match_literal(state, "</body>");
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element-body".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element-body".to_string())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement__alt16(state: &mut State) -> Option<Value> {
@@ -1967,7 +2010,7 @@ fn parse_HtmlElement__alt16(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_kind".to_string(), Value::String("element".to_string())), ("_closeTag".to_string(), Value::String(closeTag.clone())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("_kind".to_string(), Value::String("element".to_string())), ("_closeTag".to_string(), Value::String(closeTag.clone())), ("nodeName".to_string(), Value::String(tag.clone())), ("tagName".to_string(), Value::String(tag.clone())), ("namespaceURI".to_string(), Value::String("http://www.w3.org/1999/xhtml".to_string())), ("attrs".to_string(), Value::Array(attrs.clone())), ("childNodes".to_string(), Value::Array(children.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_HtmlElement(state: &mut State) -> Option<Value> {
@@ -2390,7 +2433,7 @@ fn parse_TextNode__alt0(state: &mut State) -> Option<Value> {
     }
     let __value_end = state.pos;
     let value: String = state.src[__value_start..__value_end].to_string();
-    Some(Value::Object(vec![("nodeName".to_string(), Value::String("#text".to_string())), ("value".to_string(), Value::String(value.clone())), ("parentNode".to_string(), Value::Null)]))
+    Some(attach_source(Value::Object(vec![("nodeName".to_string(), Value::String("#text".to_string())), ("value".to_string(), Value::String(value.clone())), ("parentNode".to_string(), Value::Null)]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_TextNode(state: &mut State) -> Option<Value> {
@@ -2489,7 +2532,7 @@ fn parse_Attribute__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_quote".to_string(), Value::String("double".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("_quote".to_string(), Value::String("double".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Attribute__alt1(state: &mut State) -> Option<Value> {
@@ -2564,7 +2607,7 @@ fn parse_Attribute__alt1(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("_quote".to_string(), Value::String("single".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("_quote".to_string(), Value::String("single".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Attribute__alt2(state: &mut State) -> Option<Value> {
@@ -2598,7 +2641,7 @@ fn parse_Attribute__alt2(state: &mut State) -> Option<Value> {
     let __value_end = state.pos;
     if __value_end == __value_start { if state.pos > state.max_pos { state.max_pos = state.pos; } state.pos = entry_pos; return None; }
     let value: String = state.src[__value_start..__value_end].to_string();
-    Some(Value::Object(vec![("_quote".to_string(), Value::String("none".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("_quote".to_string(), Value::String("none".to_string())), ("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Attribute__alt3(state: &mut State) -> Option<Value> {
@@ -2615,7 +2658,7 @@ fn parse_Attribute__alt3(state: &mut State) -> Option<Value> {
     }
     let __name_end = state.pos;
     let name: String = state.src[__name_start..__name_end].to_string();
-    Some(Value::Object(vec![("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String("".to_string()))]))
+    Some(attach_source(Value::Object(vec![("name".to_string(), Value::String(name.clone())), ("value".to_string(), Value::String("".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Attribute(state: &mut State) -> Option<Value> {
@@ -2703,6 +2746,16 @@ fn stringify_Attribute(value: &Value) -> String {
 
 pub fn render(input: &str) -> Result<Value, String> {
     let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_HtmlDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}
+pub fn render_raws(input: &str) -> Result<Value, String> {
+    let mut state = State::new_with_mode(input, ParseMode::Raws);
     skip_ws(&mut state);
     let result = parse_HtmlDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
     skip_ws(&mut state);

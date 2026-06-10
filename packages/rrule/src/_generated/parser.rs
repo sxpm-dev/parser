@@ -68,12 +68,24 @@ pub struct Diagnostic {
     pub end: usize,
 }
 
+// Phase 6 raws-mode (first slice). Fast = caller asked for the AST only;
+// Raws = attach byte-offset source ranges to every object-shaped AST node
+// so callers can light up format-preserving transforms.  Other trivia
+// (inter-span ws, optional-literal presence, per-iteration ws inside
+// repeats) deferred to follow-up sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseMode {
+    Fast,
+    Raws,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
     diagnostics: Vec<Diagnostic>,
+    mode: ParseMode,
 }
 
 impl<'a> State<'a> {
@@ -84,8 +96,39 @@ impl<'a> State<'a> {
             pos: 0,
             max_pos: 0,
             diagnostics: Vec::new(),
+            mode: ParseMode::Fast,
         }
     }
+    fn new_with_mode(src: &'a str, mode: ParseMode) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+            diagnostics: Vec::new(),
+            mode,
+        }
+    }
+}
+
+// Attach a source range field to an Object Value when the state's mode is
+// Raws.  Non-object values pass through unchanged -- only outer production
+// payloads get a range (mirrors v2's makeSource attach point).
+fn attach_source(value: Value, mode: ParseMode, start: usize, end: usize) -> Value {
+    if mode != ParseMode::Raws {
+        return value;
+    }
+    if let Value::Object(mut fields) = value {
+        fields.push((
+            "source".to_string(),
+            Value::Object(vec![
+                ("start".to_string(), Value::Number(start as f64)),
+                ("end".to_string(), Value::Number(end as f64)),
+            ]),
+        ));
+        return Value::Object(fields);
+    }
+    value
 }
 
 fn skip_ws(state: &mut State) {
@@ -197,7 +240,7 @@ fn parse_FreqValue__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("SECONDLY".to_string()))
+    Some(attach_source(Value::String("SECONDLY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt1(state: &mut State) -> Option<Value> {
@@ -207,7 +250,7 @@ fn parse_FreqValue__alt1(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("MINUTELY".to_string()))
+    Some(attach_source(Value::String("MINUTELY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt2(state: &mut State) -> Option<Value> {
@@ -217,7 +260,7 @@ fn parse_FreqValue__alt2(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("HOURLY".to_string()))
+    Some(attach_source(Value::String("HOURLY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt3(state: &mut State) -> Option<Value> {
@@ -227,7 +270,7 @@ fn parse_FreqValue__alt3(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("DAILY".to_string()))
+    Some(attach_source(Value::String("DAILY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt4(state: &mut State) -> Option<Value> {
@@ -237,7 +280,7 @@ fn parse_FreqValue__alt4(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("WEEKLY".to_string()))
+    Some(attach_source(Value::String("WEEKLY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt5(state: &mut State) -> Option<Value> {
@@ -247,7 +290,7 @@ fn parse_FreqValue__alt5(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("MONTHLY".to_string()))
+    Some(attach_source(Value::String("MONTHLY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue__alt6(state: &mut State) -> Option<Value> {
@@ -257,7 +300,7 @@ fn parse_FreqValue__alt6(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("YEARLY".to_string()))
+    Some(attach_source(Value::String("YEARLY".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_FreqValue(state: &mut State) -> Option<Value> {
@@ -366,7 +409,7 @@ fn parse_Weekday__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("SU".to_string()))
+    Some(attach_source(Value::String("SU".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt1(state: &mut State) -> Option<Value> {
@@ -376,7 +419,7 @@ fn parse_Weekday__alt1(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("MO".to_string()))
+    Some(attach_source(Value::String("MO".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt2(state: &mut State) -> Option<Value> {
@@ -386,7 +429,7 @@ fn parse_Weekday__alt2(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("TU".to_string()))
+    Some(attach_source(Value::String("TU".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt3(state: &mut State) -> Option<Value> {
@@ -396,7 +439,7 @@ fn parse_Weekday__alt3(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("WE".to_string()))
+    Some(attach_source(Value::String("WE".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt4(state: &mut State) -> Option<Value> {
@@ -406,7 +449,7 @@ fn parse_Weekday__alt4(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("TH".to_string()))
+    Some(attach_source(Value::String("TH".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt5(state: &mut State) -> Option<Value> {
@@ -416,7 +459,7 @@ fn parse_Weekday__alt5(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("FR".to_string()))
+    Some(attach_source(Value::String("FR".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday__alt6(state: &mut State) -> Option<Value> {
@@ -426,7 +469,7 @@ fn parse_Weekday__alt6(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::String("SA".to_string()))
+    Some(attach_source(Value::String("SA".to_string()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Weekday(state: &mut State) -> Option<Value> {
@@ -542,7 +585,7 @@ fn parse_NumValue__alt0(state: &mut State) -> Option<Value> {
     }
     let __n_end = state.pos;
     let n: String = state.src[__n_start..__n_end].to_string();
-    Some(Value::String(n.clone()))
+    Some(attach_source(Value::String(n.clone()), state.mode, entry_pos, state.pos))
 }
 
 fn parse_NumValue(state: &mut State) -> Option<Value> {
@@ -611,7 +654,7 @@ fn parse_Part__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("bymonthday".to_string())), ("days".to_string(), Value::Array(days.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("bymonthday".to_string())), ("days".to_string(), Value::Array(days.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt1(state: &mut State) -> Option<Value> {
@@ -662,7 +705,7 @@ fn parse_Part__alt1(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("bymonth".to_string())), ("months".to_string(), Value::Array(months.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("bymonth".to_string())), ("months".to_string(), Value::Array(months.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt2(state: &mut State) -> Option<Value> {
@@ -713,7 +756,7 @@ fn parse_Part__alt2(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("byminute".to_string())), ("minutes".to_string(), Value::Array(minutes.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("byminute".to_string())), ("minutes".to_string(), Value::Array(minutes.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt3(state: &mut State) -> Option<Value> {
@@ -764,7 +807,7 @@ fn parse_Part__alt3(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("byhour".to_string())), ("hours".to_string(), Value::Array(hours.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("byhour".to_string())), ("hours".to_string(), Value::Array(hours.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt4(state: &mut State) -> Option<Value> {
@@ -815,7 +858,7 @@ fn parse_Part__alt4(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("byday".to_string())), ("days".to_string(), Value::Array(days.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("byday".to_string())), ("days".to_string(), Value::Array(days.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt5(state: &mut State) -> Option<Value> {
@@ -836,7 +879,7 @@ fn parse_Part__alt5(state: &mut State) -> Option<Value> {
         Some(v) => v,
         None => { state.pos = entry_pos; return None; }
     };
-    Some(Value::Object(vec![("type".to_string(), Value::String("freq".to_string())), ("value".to_string(), value.clone())]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("freq".to_string())), ("value".to_string(), value.clone())]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt6(state: &mut State) -> Option<Value> {
@@ -865,7 +908,7 @@ fn parse_Part__alt6(state: &mut State) -> Option<Value> {
     }
     let __value_end = state.pos;
     let value: String = state.src[__value_start..__value_end].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("count".to_string())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("count".to_string())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt7(state: &mut State) -> Option<Value> {
@@ -894,7 +937,7 @@ fn parse_Part__alt7(state: &mut State) -> Option<Value> {
     }
     let __value_end = state.pos;
     let value: String = state.src[__value_start..__value_end].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("interval".to_string())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("interval".to_string())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt8(state: &mut State) -> Option<Value> {
@@ -923,7 +966,7 @@ fn parse_Part__alt8(state: &mut State) -> Option<Value> {
     }
     let __value_end = state.pos;
     let value: String = state.src[__value_start..__value_end].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("until".to_string())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("until".to_string())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part__alt9(state: &mut State) -> Option<Value> {
@@ -944,7 +987,7 @@ fn parse_Part__alt9(state: &mut State) -> Option<Value> {
         Some(v) => v,
         None => { state.pos = entry_pos; return None; }
     };
-    Some(Value::Object(vec![("type".to_string(), Value::String("wkst".to_string())), ("value".to_string(), value.clone())]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("wkst".to_string())), ("value".to_string(), value.clone())]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Part(state: &mut State) -> Option<Value> {
@@ -1191,7 +1234,7 @@ fn parse_Rule__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("rule".to_string())), ("parts".to_string(), Value::Array(parts.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("rule".to_string())), ("parts".to_string(), Value::Array(parts.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Rule(state: &mut State) -> Option<Value> {
@@ -1219,6 +1262,16 @@ fn stringify_Rule(value: &Value) -> String {
 
 pub fn render(input: &str) -> Result<Value, String> {
     let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Rule(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}
+pub fn render_raws(input: &str) -> Result<Value, String> {
+    let mut state = State::new_with_mode(input, ParseMode::Raws);
     skip_ws(&mut state);
     let result = parse_Rule(&mut state).ok_or_else(|| syntax_error(&state))?;
     skip_ws(&mut state);

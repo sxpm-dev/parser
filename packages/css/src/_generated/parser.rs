@@ -68,12 +68,24 @@ pub struct Diagnostic {
     pub end: usize,
 }
 
+// Phase 6 raws-mode (first slice). Fast = caller asked for the AST only;
+// Raws = attach byte-offset source ranges to every object-shaped AST node
+// so callers can light up format-preserving transforms.  Other trivia
+// (inter-span ws, optional-literal presence, per-iteration ws inside
+// repeats) deferred to follow-up sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseMode {
+    Fast,
+    Raws,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
     diagnostics: Vec<Diagnostic>,
+    mode: ParseMode,
 }
 
 impl<'a> State<'a> {
@@ -84,8 +96,39 @@ impl<'a> State<'a> {
             pos: 0,
             max_pos: 0,
             diagnostics: Vec::new(),
+            mode: ParseMode::Fast,
         }
     }
+    fn new_with_mode(src: &'a str, mode: ParseMode) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+            diagnostics: Vec::new(),
+            mode,
+        }
+    }
+}
+
+// Attach a source range field to an Object Value when the state's mode is
+// Raws.  Non-object values pass through unchanged -- only outer production
+// payloads get a range (mirrors v2's makeSource attach point).
+fn attach_source(value: Value, mode: ParseMode, start: usize, end: usize) -> Value {
+    if mode != ParseMode::Raws {
+        return value;
+    }
+    if let Value::Object(mut fields) = value {
+        fields.push((
+            "source".to_string(),
+            Value::Object(vec![
+                ("start".to_string(), Value::Number(start as f64)),
+                ("end".to_string(), Value::Number(end as f64)),
+            ]),
+        ));
+        return Value::Object(fields);
+    }
+    value
 }
 
 fn skip_ws(state: &mut State) {
@@ -220,7 +263,7 @@ fn parse_Comment__alt0(state: &mut State) -> Option<Value> {
         __text_te -= 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("comment".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("comment".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Comment(state: &mut State) -> Option<Value> {
@@ -424,7 +467,7 @@ fn parse_Declaration__alt0(state: &mut State) -> Option<Value> {
     let important: String = state.src[__important_start..__important_end].to_string();
     skip_ws(state);
     let _ = match_literal(state, ";");
-    Some(Value::Object(vec![("type".to_string(), Value::String("decl".to_string())), ("prop".to_string(), Value::String(prop.clone())), ("value".to_string(), Value::String(value.clone())), ("important".to_string(), Value::Bool(true)), ("_important".to_string(), Value::String(important.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("decl".to_string())), ("prop".to_string(), Value::String(prop.clone())), ("value".to_string(), Value::String(value.clone())), ("important".to_string(), Value::Bool(true)), ("_important".to_string(), Value::String(important.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Declaration__alt1(state: &mut State) -> Option<Value> {
@@ -584,7 +627,7 @@ fn parse_Declaration__alt1(state: &mut State) -> Option<Value> {
     };
     skip_ws(state);
     let _ = match_literal(state, ";");
-    Some(Value::Object(vec![("type".to_string(), Value::String("decl".to_string())), ("prop".to_string(), Value::String(prop.clone())), ("value".to_string(), Value::String(value.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("decl".to_string())), ("prop".to_string(), Value::String(prop.clone())), ("value".to_string(), Value::String(value.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Declaration(state: &mut State) -> Option<Value> {
@@ -780,7 +823,7 @@ fn parse_Rule__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("rule".to_string())), ("selector".to_string(), Value::String(selector.clone())), ("nodes".to_string(), Value::Array(nodes.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("rule".to_string())), ("selector".to_string(), Value::String(selector.clone())), ("nodes".to_string(), Value::Array(nodes.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Rule(state: &mut State) -> Option<Value> {
@@ -958,7 +1001,7 @@ fn parse_AtRule__alt0(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("atrule".to_string())), ("name".to_string(), Value::String(name.clone())), ("params".to_string(), Value::String(params.clone())), ("nodes".to_string(), Value::Array(nodes.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("atrule".to_string())), ("name".to_string(), Value::String(name.clone())), ("params".to_string(), Value::String(params.clone())), ("nodes".to_string(), Value::Array(nodes.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_AtRule__alt1(state: &mut State) -> Option<Value> {
@@ -1057,7 +1100,7 @@ fn parse_AtRule__alt1(state: &mut State) -> Option<Value> {
     };
     skip_ws(state);
     let _ = match_literal(state, ";");
-    Some(Value::Object(vec![("type".to_string(), Value::String("atrule".to_string())), ("name".to_string(), Value::String(name.clone())), ("params".to_string(), Value::String(params.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("atrule".to_string())), ("name".to_string(), Value::String(name.clone())), ("params".to_string(), Value::String(params.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_AtRule(state: &mut State) -> Option<Value> {
@@ -1157,7 +1200,7 @@ fn parse_Stylesheet__alt0(state: &mut State) -> Option<Value> {
         }
         if state.pos == __loop_start { break; }
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("root".to_string())), ("nodes".to_string(), Value::Array(nodes.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("root".to_string())), ("nodes".to_string(), Value::Array(nodes.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_Stylesheet(state: &mut State) -> Option<Value> {
@@ -1185,6 +1228,16 @@ fn stringify_Stylesheet(value: &Value) -> String {
 
 pub fn render(input: &str) -> Result<Value, String> {
     let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Stylesheet(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws_and_comments(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}
+pub fn render_raws(input: &str) -> Result<Value, String> {
+    let mut state = State::new_with_mode(input, ParseMode::Raws);
     skip_ws(&mut state);
     let result = parse_Stylesheet(&mut state).ok_or_else(|| syntax_error(&state))?;
     skip_ws_and_comments(&mut state);

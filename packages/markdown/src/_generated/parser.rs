@@ -68,12 +68,24 @@ pub struct Diagnostic {
     pub end: usize,
 }
 
+// Phase 6 raws-mode (first slice). Fast = caller asked for the AST only;
+// Raws = attach byte-offset source ranges to every object-shaped AST node
+// so callers can light up format-preserving transforms.  Other trivia
+// (inter-span ws, optional-literal presence, per-iteration ws inside
+// repeats) deferred to follow-up sessions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParseMode {
+    Fast,
+    Raws,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
     diagnostics: Vec<Diagnostic>,
+    mode: ParseMode,
 }
 
 impl<'a> State<'a> {
@@ -84,8 +96,39 @@ impl<'a> State<'a> {
             pos: 0,
             max_pos: 0,
             diagnostics: Vec::new(),
+            mode: ParseMode::Fast,
         }
     }
+    fn new_with_mode(src: &'a str, mode: ParseMode) -> Self {
+        Self {
+            input: src.as_bytes(),
+            src,
+            pos: 0,
+            max_pos: 0,
+            diagnostics: Vec::new(),
+            mode,
+        }
+    }
+}
+
+// Attach a source range field to an Object Value when the state's mode is
+// Raws.  Non-object values pass through unchanged -- only outer production
+// payloads get a range (mirrors v2's makeSource attach point).
+fn attach_source(value: Value, mode: ParseMode, start: usize, end: usize) -> Value {
+    if mode != ParseMode::Raws {
+        return value;
+    }
+    if let Value::Object(mut fields) = value {
+        fields.push((
+            "source".to_string(),
+            Value::Object(vec![
+                ("start".to_string(), Value::Number(start as f64)),
+                ("end".to_string(), Value::Number(end as f64)),
+            ]),
+        ));
+        return Value::Object(fields);
+    }
+    value
 }
 
 fn skip_ws(state: &mut State) {
@@ -220,7 +263,7 @@ fn parse_MarkdownDocument__alt0(state: &mut State) -> Option<Value> {
         }
         if state.pos == __loop_start { break; }
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("document".to_string())), ("children".to_string(), Value::Array(children.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("document".to_string())), ("children".to_string(), Value::Array(children.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownDocument(state: &mut State) -> Option<Value> {
@@ -282,7 +325,7 @@ fn parse_MarkdownLeaf__alt0(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(6_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(6_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt1(state: &mut State) -> Option<Value> {
@@ -321,7 +364,7 @@ fn parse_MarkdownLeaf__alt1(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(5_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(5_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt2(state: &mut State) -> Option<Value> {
@@ -360,7 +403,7 @@ fn parse_MarkdownLeaf__alt2(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(4_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(4_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt3(state: &mut State) -> Option<Value> {
@@ -399,7 +442,7 @@ fn parse_MarkdownLeaf__alt3(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(3_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(3_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt4(state: &mut State) -> Option<Value> {
@@ -438,7 +481,7 @@ fn parse_MarkdownLeaf__alt4(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(2_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(2_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt5(state: &mut State) -> Option<Value> {
@@ -477,7 +520,7 @@ fn parse_MarkdownLeaf__alt5(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(1_f64)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(1_f64)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt6(state: &mut State) -> Option<Value> {
@@ -516,7 +559,7 @@ fn parse_MarkdownLeaf__alt6(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(1_f64)), ("text".to_string(), Value::String(text.clone())), ("style".to_string(), Value::String("setext".to_string()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(1_f64)), ("text".to_string(), Value::String(text.clone())), ("style".to_string(), Value::String("setext".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt7(state: &mut State) -> Option<Value> {
@@ -555,7 +598,7 @@ fn parse_MarkdownLeaf__alt7(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(2_f64)), ("text".to_string(), Value::String(text.clone())), ("style".to_string(), Value::String("setext".to_string()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("heading".to_string())), ("depth".to_string(), Value::Number(2_f64)), ("text".to_string(), Value::String(text.clone())), ("style".to_string(), Value::String("setext".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt8(state: &mut State) -> Option<Value> {
@@ -565,7 +608,7 @@ fn parse_MarkdownLeaf__alt8(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string())), ("marker".to_string(), Value::String("*".to_string()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string())), ("marker".to_string(), Value::String("*".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt9(state: &mut State) -> Option<Value> {
@@ -575,7 +618,7 @@ fn parse_MarkdownLeaf__alt9(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string())), ("marker".to_string(), Value::String("_".to_string()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string())), ("marker".to_string(), Value::String("_".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt10(state: &mut State) -> Option<Value> {
@@ -585,7 +628,7 @@ fn parse_MarkdownLeaf__alt10(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("thematic-break".to_string()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt11(state: &mut State) -> Option<Value> {
@@ -624,7 +667,7 @@ fn parse_MarkdownLeaf__alt11(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(true)), ("marker".to_string(), Value::String("x".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(true)), ("marker".to_string(), Value::String("x".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt12(state: &mut State) -> Option<Value> {
@@ -663,7 +706,7 @@ fn parse_MarkdownLeaf__alt12(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("task-list-item".to_string())), ("checked".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt13(state: &mut State) -> Option<Value> {
@@ -702,7 +745,7 @@ fn parse_MarkdownLeaf__alt13(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("+".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("+".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt14(state: &mut State) -> Option<Value> {
@@ -741,7 +784,7 @@ fn parse_MarkdownLeaf__alt14(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("*".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("marker".to_string(), Value::String("*".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt15(state: &mut State) -> Option<Value> {
@@ -780,7 +823,7 @@ fn parse_MarkdownLeaf__alt15(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(false)), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt16(state: &mut State) -> Option<Value> {
@@ -832,7 +875,7 @@ fn parse_MarkdownLeaf__alt16(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(true)), ("index".to_string(), Value::String(index.clone())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("list-item".to_string())), ("ordered".to_string(), Value::Bool(true)), ("index".to_string(), Value::String(index.clone())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt17(state: &mut State) -> Option<Value> {
@@ -871,7 +914,7 @@ fn parse_MarkdownLeaf__alt17(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("blockquote".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("blockquote".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt18(state: &mut State) -> Option<Value> {
@@ -929,7 +972,7 @@ fn parse_MarkdownLeaf__alt18(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("code-block".to_string())), ("lang".to_string(), Value::String(lang.clone())), ("text".to_string(), Value::String(body.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("code-block".to_string())), ("lang".to_string(), Value::String(lang.clone())), ("text".to_string(), Value::String(body.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt19(state: &mut State) -> Option<Value> {
@@ -974,7 +1017,7 @@ fn parse_MarkdownLeaf__alt19(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("code-block".to_string())), ("text".to_string(), Value::String(body.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("code-block".to_string())), ("text".to_string(), Value::String(body.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt20(state: &mut State) -> Option<Value> {
@@ -1019,7 +1062,7 @@ fn parse_MarkdownLeaf__alt20(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("bold".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("bold".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt21(state: &mut State) -> Option<Value> {
@@ -1064,7 +1107,7 @@ fn parse_MarkdownLeaf__alt21(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("italic".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("italic".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt22(state: &mut State) -> Option<Value> {
@@ -1109,7 +1152,7 @@ fn parse_MarkdownLeaf__alt22(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("strikethrough".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("strikethrough".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt23(state: &mut State) -> Option<Value> {
@@ -1154,7 +1197,7 @@ fn parse_MarkdownLeaf__alt23(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("inline-code".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("inline-code".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt24(state: &mut State) -> Option<Value> {
@@ -1240,7 +1283,7 @@ fn parse_MarkdownLeaf__alt24(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("link".to_string())), ("label".to_string(), Value::String(label.clone())), ("url".to_string(), Value::String(url.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("link".to_string())), ("label".to_string(), Value::String(label.clone())), ("url".to_string(), Value::String(url.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt25(state: &mut State) -> Option<Value> {
@@ -1320,7 +1363,7 @@ fn parse_MarkdownLeaf__alt25(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("reference-link".to_string())), ("label".to_string(), Value::String(label.clone())), ("id".to_string(), Value::String(id.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("reference-link".to_string())), ("label".to_string(), Value::String(label.clone())), ("id".to_string(), Value::String(id.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt26(state: &mut State) -> Option<Value> {
@@ -1412,7 +1455,7 @@ fn parse_MarkdownLeaf__alt26(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("image".to_string())), ("alt".to_string(), Value::String(alt.clone())), ("url".to_string(), Value::String(url.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("image".to_string())), ("alt".to_string(), Value::String(alt.clone())), ("url".to_string(), Value::String(url.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt27(state: &mut State) -> Option<Value> {
@@ -1498,7 +1541,7 @@ fn parse_MarkdownLeaf__alt27(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("reference-image".to_string())), ("alt".to_string(), Value::String(alt.clone())), ("id".to_string(), Value::String(id.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("reference-image".to_string())), ("alt".to_string(), Value::String(alt.clone())), ("id".to_string(), Value::String(id.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt28(state: &mut State) -> Option<Value> {
@@ -1527,7 +1570,7 @@ fn parse_MarkdownLeaf__alt28(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("entity".to_string())), ("name".to_string(), Value::String(name.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("entity".to_string())), ("name".to_string(), Value::String(name.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt29(state: &mut State) -> Option<Value> {
@@ -1561,7 +1604,7 @@ fn parse_MarkdownLeaf__alt29(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("table-delimiter".to_string())), ("variant".to_string(), Value::String("plain".to_string())), ("align".to_string(), Value::Array(vec![Value::String("default".to_string()), Value::String("default".to_string())]))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("table-delimiter".to_string())), ("variant".to_string(), Value::String("plain".to_string())), ("align".to_string(), Value::Array(vec![Value::String("default".to_string()), Value::String("default".to_string())]))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt30(state: &mut State) -> Option<Value> {
@@ -1607,7 +1650,7 @@ fn parse_MarkdownLeaf__alt30(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("table-delimiter".to_string())), ("variant".to_string(), Value::String("aligned".to_string())), ("align".to_string(), Value::Array(vec![Value::String("left".to_string()), Value::String("right".to_string())]))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("table-delimiter".to_string())), ("variant".to_string(), Value::String("aligned".to_string())), ("align".to_string(), Value::Array(vec![Value::String("left".to_string()), Value::String("right".to_string())]))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt31(state: &mut State) -> Option<Value> {
@@ -1687,7 +1730,7 @@ fn parse_MarkdownLeaf__alt31(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("table-row".to_string())), ("cells".to_string(), Value::Array(vec![Value::String(first.clone()), Value::String(second.clone())]))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("table-row".to_string())), ("cells".to_string(), Value::Array(vec![Value::String(first.clone()), Value::String(second.clone())]))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt32(state: &mut State) -> Option<Value> {
@@ -1767,7 +1810,7 @@ fn parse_MarkdownLeaf__alt32(state: &mut State) -> Option<Value> {
         __url_ts += 1;
     }
     let url: String = state.src[__url_ts..__url_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("url".to_string(), Value::String(url.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("url".to_string(), Value::String(url.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt33(state: &mut State) -> Option<Value> {
@@ -1847,7 +1890,7 @@ fn parse_MarkdownLeaf__alt33(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("footnote-definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("footnote-definition".to_string())), ("id".to_string(), Value::String(id.clone())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt34(state: &mut State) -> Option<Value> {
@@ -1892,7 +1935,7 @@ fn parse_MarkdownLeaf__alt34(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("footnote-reference".to_string())), ("id".to_string(), Value::String(id.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("footnote-reference".to_string())), ("id".to_string(), Value::String(id.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt35(state: &mut State) -> Option<Value> {
@@ -1960,7 +2003,7 @@ fn parse_MarkdownLeaf__alt35(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("html".to_string())), ("tag".to_string(), Value::String(tag.clone())), ("text".to_string(), Value::String(body.clone())), ("closingTag".to_string(), Value::String(closingTag.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("html".to_string())), ("tag".to_string(), Value::String(tag.clone())), ("text".to_string(), Value::String(body.clone())), ("closingTag".to_string(), Value::String(closingTag.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf__alt36(state: &mut State) -> Option<Value> {
@@ -2005,7 +2048,7 @@ fn parse_MarkdownLeaf__alt36(state: &mut State) -> Option<Value> {
         state.pos = entry_pos;
         return None;
     }
-    Some(Value::Object(vec![("type".to_string(), Value::String("autolink".to_string())), ("url".to_string(), Value::String(url.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("autolink".to_string())), ("url".to_string(), Value::String(url.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownLeaf(state: &mut State) -> Option<Value> {
@@ -3312,7 +3355,7 @@ fn parse_MarkdownParagraph__alt0(state: &mut State) -> Option<Value> {
         __text_ts += 1;
     }
     let text: String = state.src[__text_ts..__text_te].to_string();
-    Some(Value::Object(vec![("type".to_string(), Value::String("paragraph".to_string())), ("text".to_string(), Value::String(text.clone()))]))
+    Some(attach_source(Value::Object(vec![("type".to_string(), Value::String("paragraph".to_string())), ("text".to_string(), Value::String(text.clone()))]), state.mode, entry_pos, state.pos))
 }
 
 fn parse_MarkdownParagraph(state: &mut State) -> Option<Value> {
@@ -3342,6 +3385,16 @@ fn stringify_MarkdownParagraph(value: &Value) -> String {
 
 pub fn render(input: &str) -> Result<Value, String> {
     let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_MarkdownDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok(result)
+}
+pub fn render_raws(input: &str) -> Result<Value, String> {
+    let mut state = State::new_with_mode(input, ParseMode::Raws);
     skip_ws(&mut state);
     let result = parse_MarkdownDocument(&mut state).ok_or_else(|| syntax_error(&state))?;
     skip_ws(&mut state);

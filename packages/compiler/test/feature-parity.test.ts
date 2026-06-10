@@ -1602,6 +1602,106 @@ const rows: ReadonlyArray<ParityRow> = [
     expectedAst: { type: 'expr', args: '(x; y)' },
     expected: { interp: 'impl', v2: 'impl' },
   },
+
+  // --- Fifth pass (2026-06-10) ---------------------------------------------
+
+  {
+    name: 'refinement:ident-oneOf-rejects-mismatch',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'DOCTYPE',
+            encodings: {
+              src: parse([span('kw', 'DOCTYPE').ident().oneOf(['DOCTYPE', 'doctype'])]),
+              ast: { type: 'kw', kw: $.kw },
+            },
+          }),
+        ],
+      }),
+    // .oneOf() is case-insensitive: lowercase the captured value and the
+    // allowed set, compare. Inputs not in the set reject.
+    input: 'HTML',
+    expectedAst: null,
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'refinement:ident-oneOf-case-insensitive',
+    category: 'refinement',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'DOCTYPE',
+            encodings: {
+              src: parse([span('kw', 'DOCTYPE').ident().oneOf(['DOCTYPE'])]),
+              ast: { type: 'kw', kw: $.kw },
+            },
+          }),
+        ],
+      }),
+    // Lowercase variant matches because oneOf is case-insensitive.
+    input: 'doctype',
+    expectedAst: { type: 'kw', kw: 'doctype' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'modifier:rawUntil-stops-at-first',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'data</end>',
+            encodings: {
+              src: parse([
+                span('v', 'data').rawUntil('</'),
+                literal('</'),
+                span('tag', 'end').ident(),
+                literal('>'),
+              ]),
+              ast: { type: 'x', v: $.v, tag: $.tag },
+            },
+          }),
+        ],
+      }),
+    // Confirms .rawUntil() captures arbitrary bytes (no balance, no
+    // string/comment skip) and stops at the first match of any stop.
+    input: 'a < b > c</close>',
+    expectedAst: { type: 'x', v: 'a < b > c', tag: 'close' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
+
+  {
+    name: 'schemaDecl:operators-precedence',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        operators: { add: ['+'], mul: ['*'] },
+        examples: [
+          relation('X', {
+            input: '+',
+            encodings: {
+              src: parse([span('op', '+').operator()]),
+              ast: { type: 'op', op: $.op },
+            },
+          }),
+        ],
+      }),
+    // operators map declares layered precedence. .operator() span scans
+    // the schema's combined operator literal pool. Confirms layered
+    // declaration produces a working operator scanner.
+    input: '*',
+    expectedAst: { type: 'op', op: '*' },
+    expected: { interp: 'impl', v2: 'impl' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

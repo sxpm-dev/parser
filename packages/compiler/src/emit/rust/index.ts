@@ -313,11 +313,25 @@ impl fmt::Display for Value {
     }
 }
 
+// Phase 6 -- recovery diagnostics. Productions marked .recovers({syncAt,
+// drop}) push a Diagnostic on successful match; speculative rollback
+// truncates the vector back to its entry-time length so a discarded
+// recovery alt leaves no spurious entry. The public render() returns
+// (Value, Vec<Diagnostic>) so callers can observe partial parses.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Diagnostic {
+    pub code: String,
+    pub drop: String,
+    pub start: usize,
+    pub end: usize,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> State<'a> {
@@ -327,6 +341,7 @@ impl<'a> State<'a> {
             src,
             pos: 0,
             max_pos: 0,
+            diagnostics: Vec::new(),
         }
     }
 }
@@ -339,6 +354,53 @@ fn skip_ws(state: &mut State) {
         } else {
             break;
         }
+    }
+}
+
+// Phase 6 -- comment-class support. Scans block comments delimited by
+// slash-star and star-slash. Returns true and advances state.pos past
+// the closing delimiter on hit; returns false without advancing on
+// miss. Unterminated comments (no closing delimiter before EOF) consume
+// to EOF and return true -- mirrors the v2 emit's commentSkip behavior
+// so byte-level positions stay in lockstep across backends.
+fn match_block_comment(state: &mut State) -> bool {
+    if state.pos + 1 < state.input.len()
+        && state.input[state.pos] == b'/'
+        && state.input[state.pos + 1] == b'*'
+    {
+        state.pos += 2;
+        while state.pos < state.input.len() {
+            if state.input[state.pos] == b'*'
+                && state.pos + 1 < state.input.len()
+                && state.input[state.pos + 1] == b'/'
+            {
+                state.pos += 2;
+                return true;
+            }
+            state.pos += 1;
+        }
+        return true;
+    }
+    false
+}
+
+fn skip_ws_and_comments(state: &mut State) {
+    loop {
+        let before = state.pos;
+        while state.pos < state.input.len() {
+            let b = state.input[state.pos];
+            if b == b' ' || b == b'\\t' || b == b'\\n' || b == b'\\r' {
+                state.pos += 1;
+            } else {
+                break;
+            }
+        }
+        if !match_block_comment(state) {
+            if state.pos == before { break; }
+            // We consumed only ws this pass; nothing more to do.
+            break;
+        }
+        // We consumed a comment; loop to eat any following ws / comments.
     }
 }
 
@@ -414,6 +476,64 @@ function emitProductionFn(
     lines.push(`    let entry_pos = state.pos;`);
   }
 
+  // Phase 6 — recovery alts snapshot the diagnostics-vec length at entry.
+  // Failure-return paths truncate back to the snapshot so a speculative
+  // rollback leaves state.diagnostics identical to its pre-entry shape.
+  // The post-emit rewrite at the bottom of this function injects the
+  // truncate into every `state.pos = entry_pos; return None;` site.
+  const isRecovery = production.recovery !== undefined;
+  if (isRecovery) {
+    lines.push(`    let __diag_snap = state.diagnostics.len();`);
+  }
+
+  // Phase 6 — span-less recovery. `.recovers({ syncAt, drop })` on a
+  // production with zero spans acts as a fall-through alt: scan forward
+  // (tracking bracket depth) until a syncAt literal appears at depth 0,
+  // push a diagnostic, and return synthetic captures. Mirrors v2's
+  // production.ts L196+.
+  const isSpanlessRecovery = isRecovery && production.spans.length === 0;
+  if (isSpanlessRecovery && prefixCaps === null) {
+    const syncSet = production.recovery!.syncAt.filter((s) => s.length > 0);
+    if (syncSet.length === 0) {
+      throw new CompilerError(
+        `rust backend: span-less recovery production for '${production.nodeType}' has empty syncAt — would scan to EOF.`,
+      );
+    }
+    const sortedSync = [...syncSet].sort((a, b) => b.length - a.length);
+    const syncChecks = sortedSync
+      .map((s) =>
+        s.length === 1
+          ? `c == ${s.charCodeAt(0)}`
+          : `state.input[state.pos..].starts_with(${rustString(s)}.as_bytes())`,
+      )
+      .join(' || ');
+    lines.push(`    let mut __depth: i32 = 0;`);
+    lines.push(`    let __rec_start = state.pos;`);
+    lines.push(`    while state.pos < state.input.len() {`);
+    lines.push(`        let c = state.input[state.pos];`);
+    lines.push(`        if __depth == 0 && (${syncChecks}) { break; }`);
+    lines.push(`        if c == b'(' || c == b'[' || c == b'{' { __depth += 1; }`);
+    lines.push(`        else if c == b')' || c == b']' || c == b'}' { if __depth > 0 { __depth -= 1; } }`);
+    lines.push(`        state.pos += 1;`);
+    lines.push(`    }`);
+    lines.push(
+      `    if state.pos == __rec_start { state.pos = entry_pos; state.diagnostics.truncate(__diag_snap); return None; }`,
+    );
+    lines.push(`    if state.pos > state.max_pos { state.max_pos = state.pos; }`);
+    lines.push(
+      `    state.diagnostics.push(Diagnostic { code: "recovered".to_string(), drop: ${rustString(production.recovery!.drop)}.to_string(), start: __rec_start, end: state.pos });`,
+    );
+    const renderBody = pickRenderBody(production);
+    if (renderBody === undefined) {
+      throw new CompilerError(
+        `rust backend: span-less recovery production for '${production.nodeType}' has no render body`,
+      );
+    }
+    lines.push(`    Some(${emitRenderBody(renderBody, production)})`);
+    lines.push(`}`);
+    return lines.join('\n');
+  }
+
   const startIdx = prefixCaps ? prefixCaps.skipCount : 0;
   for (let i = startIdx; i < production.spans.length; i++) {
     const span = production.spans[i]!;
@@ -422,7 +542,7 @@ function emitProductionFn(
     // consuming the inter-span ws into the suffix, so the alt tail still
     // needs to skip ws before its first own span. Matches the TS-backend
     // emit/v2/production.ts loop shape.
-    if (i > 0) lines.push(`    skip_ws(state);`);
+    if (i > 0) lines.push(`    ${interSpanSkipFn(span, schema)}(state);`);
     emitSpan(lines, span, schema);
   }
 
@@ -432,16 +552,34 @@ function emitProductionFn(
       `rust backend: production for '${production.nodeType}' has no render bodies`,
     );
   }
+  // Recovery push runs just before the captures payload is returned.
+  if (isRecovery) {
+    lines.push(
+      `    state.diagnostics.push(Diagnostic { code: "recovered".to_string(), drop: ${rustString(production.recovery!.drop)}.to_string(), start: entry_pos, end: state.pos });`,
+    );
+  }
   lines.push(`    Some(${emitRenderBody(renderBody, production)})`);
   lines.push(`}`);
-  return lines.join('\n');
+  // Failure-return rewrite. Every rust failure path is the exact 4-line
+  // `state.pos = entry_pos; return None;` sequence emitted by helpers
+  // (preceded by `if state.pos > state.max_pos { state.max_pos = state.pos; }`).
+  // Inject the diagnostics-truncate so a rolled-back recovery alt leaves
+  // state.diagnostics identical to its entry length.
+  let source = lines.join('\n');
+  if (isRecovery) {
+    source = source.replace(
+      /state\.pos = entry_pos;\s*return None;/g,
+      'state.pos = entry_pos; state.diagnostics.truncate(__diag_snap); return None;',
+    );
+  }
+  return source;
 }
 
 function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): void {
   // Phase 6.2/6.3: optional/until/repeats supported on leaf + recursive
-  // spans. Other modifiers (ws / line-terminator policies, indent) still
-  // out of scope.
-  const supported = new Set(['optional', 'until', 'repeats']);
+  // spans. Phase 6 (this session) adds rawUntil. Other modifiers (ws /
+  // line-terminator policies, indent) still out of scope.
+  const supported = new Set(['optional', 'until', 'repeats', 'rawUntil']);
   const unsupportedMods = span.modifiers.filter((m) => !supported.has(m.kind));
   if (unsupportedMods.length > 0) {
     throw new CompilerError(
@@ -452,6 +590,7 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
   const isOptional = span.modifiers.some((m) => m.kind === 'optional');
   const repeatsMod = span.modifiers.find((m) => m.kind === 'repeats');
   const untilMod = span.modifiers.find((m) => m.kind === 'until');
+  const rawUntilMod = span.modifiers.find((m) => m.kind === 'rawUntil');
   // Phase 6.3 — repeats on a recursive span: collect a Vec<Value>.
   if (repeatsMod !== undefined) {
     if (!isRecursive) {
@@ -464,7 +603,7 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
         `rust backend (Phase 6.3): .repeats() combined with other modifiers not yet supported`,
       );
     }
-    emitRepeatsRecursiveSpan(lines, span, repeatsMod as RepeatsModifier);
+    emitRepeatsRecursiveSpan(lines, span, repeatsMod as RepeatsModifier, schema);
     return;
   }
   // Phase 6.3 — plain recursive span (single or multi role).
@@ -488,6 +627,20 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
       );
     }
     emitUntilSpan(lines, span, untilMod as { stops: ReadonlyArray<string>; balanced: boolean; trim: boolean });
+    return;
+  }
+  if (rawUntilMod !== undefined) {
+    if (isOptional) {
+      throw new CompilerError(
+        `rust backend: .rawUntil() + .optional() combo not yet supported`,
+      );
+    }
+    emitRawUntilSpan(lines, span, rawUntilMod as {
+      readonly stops: ReadonlyArray<string>;
+      readonly caseInsensitive: boolean;
+      readonly requireStop?: boolean;
+      readonly nonEmpty?: boolean;
+    });
     return;
   }
   if (isOptional) {
@@ -540,9 +693,107 @@ function emitSpan(lines: string[], span: ResolvedSpan, schema: InferredSchema): 
     emitOperatorSpan(lines, span, schema);
     return;
   }
+  if (span.class === 'comment') {
+    emitCommentSpan(lines, span);
+    return;
+  }
   throw new CompilerError(
     `rust backend (Phase 6.0): span class '${span.class}' not yet supported`,
   );
+}
+
+// Phase 6 — block-comment span. Scans `/* … */`. If the span carries a
+// name (and a render body references it), captures the comment's INTERIOR
+// with surrounding ws trimmed, matching v2's emitClassSpanValueExpr arm
+// for class='comment'. Anonymous comment spans just consume the bytes.
+function emitCommentSpan(lines: string[], span: ResolvedSpan): void {
+  const name = span.name ?? 'anon';
+  const startVar = `__${rustIdent(name)}_start`;
+  const endVar = `__${rustIdent(name)}_end`;
+  lines.push(
+    `    let ${startVar} = state.pos;\n` +
+      `    if !(state.pos + 1 < state.input.len() && state.input[state.pos] == b'/' && state.input[state.pos + 1] == b'*') {\n` +
+      `        if state.pos > state.max_pos { state.max_pos = state.pos; }\n` +
+      `        state.pos = entry_pos;\n` +
+      `        return None;\n` +
+      `    }\n` +
+      `    state.pos += 2;\n` +
+      `    while state.pos < state.input.len() {\n` +
+      `        if state.input[state.pos] == b'*' && state.pos + 1 < state.input.len() && state.input[state.pos + 1] == b'/' {\n` +
+      `            state.pos += 2;\n` +
+      `            break;\n` +
+      `        }\n` +
+      `        state.pos += 1;\n` +
+      `    }\n` +
+      `    let ${endVar} = state.pos;`,
+  );
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    // Strip the wrapping /* */ then trim interior whitespace. Mirror of
+    // v2's emitClassSpanValueExpr arm for class='comment'. The interior
+    // slice is `[start+2, end-2]`; the trim walks inward from both ends
+    // skipping ASCII ws bytes.
+    lines.push(
+      `    let mut __${v}_ts = ${startVar} + 2;\n` +
+        `    let mut __${v}_te = ${endVar} - 2;\n` +
+        `    while __${v}_ts < __${v}_te {\n` +
+        `        let __lc = state.input[__${v}_ts];\n` +
+        `        if __lc != b' ' && __lc != b'\\t' && __lc != b'\\n' && __lc != b'\\r' { break; }\n` +
+        `        __${v}_ts += 1;\n` +
+        `    }\n` +
+        `    while __${v}_te > __${v}_ts {\n` +
+        `        let __tc = state.input[__${v}_te - 1];\n` +
+        `        if __tc != b' ' && __tc != b'\\t' && __tc != b'\\n' && __tc != b'\\r' { break; }\n` +
+        `        __${v}_te -= 1;\n` +
+        `    }\n` +
+        `    let ${v}: String = state.src[__${v}_ts..__${v}_te].to_string();`,
+    );
+  }
+}
+
+// Phase 6 — schema-level helpers for selecting between `skip_ws` and
+// `skip_ws_and_comments` at inter-span gaps. These mirror the v2 emit's
+// `tokenClasses.has('comment')` + `spanConsumesComments` logic in
+// emit/v2/production.ts (around L294–L313).
+
+function schemaHasCommentClass(schema: InferredSchema): boolean {
+  for (const cls of schema.classes) {
+    if (cls.class === 'comment') return true;
+  }
+  return false;
+}
+
+// True iff the upcoming span is itself a comment-capturing span — either
+// directly (class='comment') or recursively (one of its roles starts
+// with a comment-class span). In those cases an inter-span gap that
+// ate comments would silently consume what the upcoming span is meant
+// to capture, so we fall back to plain ws-skip.
+function rustSpanConsumesComments(span: ResolvedSpan, schema: InferredSchema): boolean {
+  if (span.class === 'comment') return true;
+  if (span.recursiveRoles.length === 0) return false;
+  for (const roleName of span.recursiveRoles) {
+    const info = schema.nodeTypes.get(roleName);
+    if (!info) continue;
+    for (const prod of info.productions) {
+      const firstSpan = prod.spans[0];
+      if (firstSpan && firstSpan.class === 'comment') return true;
+    }
+  }
+  return false;
+}
+
+// Returns the Rust skip helper name to call before `span`. Returns
+// `skip_ws_and_comments` when (a) the schema declares `comment` as a
+// token class, (b) the upcoming span isn't itself a comment-capturing
+// span, and (c) the upcoming span is required (not .optional()). The
+// optional gate matches v2 (production.ts L302+): v2's optional spans
+// don't rewind through the gap, so eating a comment before an optional
+// miss would lose the comment for whoever follows.
+function interSpanSkipFn(span: ResolvedSpan, schema: InferredSchema): string {
+  if (!schemaHasCommentClass(schema)) return 'skip_ws';
+  if (rustSpanConsumesComments(span, schema)) return 'skip_ws';
+  if (span.modifiers.some((m) => m.kind === 'optional')) return 'skip_ws';
+  return 'skip_ws_and_comments';
 }
 
 // .operator() scan — longest-match dispatch over schema.operatorLiterals
@@ -758,7 +1009,39 @@ type RepeatsModifier = {
   readonly trailing?: 'allowed' | 'required' | 'forbidden';
   readonly min?: number;
   readonly max?: number;
+  readonly stopBefore?: ReadonlyArray<string>;
 };
+
+// Phase 6 — emit a rust stopBefore check that breaks the repeats loop when
+// the upcoming bytes start with any of the listed literal prefixes. Bucketed
+// by first byte so the JIT lowers each branch to one byte compare + an
+// optional starts_with for multi-char literals. Mirrors emit/v2/span.ts:
+// emitStopBeforeCheck.
+function emitRustStopBeforeCheck(stopBefore: ReadonlyArray<string> | undefined): string {
+  if (!stopBefore || stopBefore.length === 0) return '';
+  const stops = stopBefore.filter((s) => s.length > 0);
+  if (stops.length === 0) return '';
+  const byFirstByte = new Map<number, string[]>();
+  for (const s of stops) {
+    const c = s.charCodeAt(0);
+    const bucket = byFirstByte.get(c) ?? [];
+    bucket.push(s);
+    byFirstByte.set(c, bucket);
+  }
+  const branches: string[] = [];
+  for (const [code, bucket] of [...byFirstByte.entries()].sort(([a], [b]) => a - b)) {
+    bucket.sort((a, b) => b.length - a.length);
+    const tests = bucket.map((s) => {
+      if (s.length === 1) return 'true';
+      return `state.input[state.pos..].starts_with(${rustString(s)}.as_bytes())`;
+    });
+    branches.push(`            if __sb == ${code} && (${tests.join(' || ')}) { break; }`);
+  }
+  return `        if state.pos < state.input.len() {
+            let __sb = state.input[state.pos];
+${branches.join('\n')}
+        }`;
+}
 
 // Phase 6.3 — plain recursive span: call into the role's parser. For
 // multi-role spans, try each role in declaration order, rolling back
@@ -822,21 +1105,73 @@ function emitRepeatsRecursiveSpan(
   lines: string[],
   span: ResolvedSpan,
   modifier: RepeatsModifier,
+  schema: InferredSchema,
 ): void {
   const captureName = span.name ? rustIdent(span.name) : `__anon_${anonCounter()}`;
   const min = modifier.min ?? 0;
   const max = modifier.max ?? null;
   const sep = modifier.sep;
-  const trailing = modifier.trailing ?? 'forbidden';
+  const trailing = modifier.trailing ?? 'allowed';
+  // Phase 6 — sep-sweep / pre-item gap comment awareness. When the schema
+  // declares `comment` as a token class AND none of the repeats' roles
+  // themselves start with a comment-class span, the gap between iterations
+  // (and around the separator) is allowed to swallow `/* … */` comments
+  // alongside whitespace. Mirrors v2's emitRepeatsSpan logic
+  // (emit/v2/span.ts L575+).
+  const rolesConsumeComments = span.recursiveRoles.some((roleName) => {
+    const info = schema.nodeTypes.get(roleName);
+    if (!info) return false;
+    return info.productions.some((prod) => {
+      const firstSpan = prod.spans[0];
+      return firstSpan !== undefined && firstSpan.class === 'comment';
+    });
+  });
+  const sweepFn = schemaHasCommentClass(schema) && !rolesConsumeComments
+    ? 'skip_ws_and_comments'
+    : 'skip_ws';
+  // v2's emitRepeatsSpan layout:
+  //   loop {
+  //     __loopStart = off                          // infinite-loop guard
+  //     __preSweep = off                           // (sep mode only)
+  //     sweepWs                                    // ws-skip
+  //     while (sep matches) { off += sep.len; sweepWs }   // zero-or-more
+  //     try item via role-ladder
+  //     if (__cand === null) break
+  //     list.push(__cand)
+  //     if (off === __loopStart) break
+  //   }
+  //   if (!__sepConsumed) off = __preSweep        // rewind ws-only sweep
+  //   trailing checks
+  //   min/max checks
+  // The "sep is zero-or-more" semantics is critical for CSS where rules
+  // are usually separated by `}<ws>` and the schema-declared `;` is
+  // optional. The prior rust impl required `;` to continue iterating,
+  // which broke `a { ... } b { ... }`.
   const body: string[] = [];
   body.push(`    let mut ${captureName}: Vec<Value> = Vec::new();`);
+  if (sep !== undefined && sep !== '') {
+    body.push(`    let mut __sep_consumed = false;`);
+    body.push(`    let mut __pre_sweep = state.pos;`);
+  }
+  const stopBeforeBlock = emitRustStopBeforeCheck(modifier.stopBefore);
   body.push(`    loop {`);
   if (max !== null) {
     body.push(`        if ${captureName}.len() >= ${max} { break; }`);
   }
+  body.push(`        let __loop_start = state.pos;`);
+  if (sep !== undefined && sep !== '') {
+    body.push(`        __pre_sweep = state.pos;`);
+    body.push(`        __sep_consumed = false;`);
+    body.push(`        ${sweepFn}(state);`);
+    body.push(`        while match_literal(state, ${rustString(sep)}) {`);
+    body.push(`            __sep_consumed = true;`);
+    body.push(`            ${sweepFn}(state);`);
+    body.push(`        }`);
+  } else {
+    body.push(`        ${sweepFn}(state);`);
+  }
+  if (stopBeforeBlock !== '') body.push(stopBeforeBlock);
   body.push(`        let __iter_snapshot = state.pos;`);
-  body.push(`        skip_ws(state);`);
-  // Try one of the recursive roles.
   if (span.recursiveRoles.length === 1) {
     const role = rustIdent(span.recursiveRoles[0]!);
     body.push(`        let __item = parse_${role}(state);`);
@@ -845,7 +1180,6 @@ function emitRepeatsRecursiveSpan(
     for (const role of span.recursiveRoles) {
       const r = rustIdent(role);
       body.push(`            state.pos = __iter_snapshot;`);
-      body.push(`            skip_ws(state);`);
       body.push(`            if let Some(v) = parse_${r}(state) { break 'role Some(v); }`);
     }
     body.push(`            state.pos = __iter_snapshot;`);
@@ -854,34 +1188,36 @@ function emitRepeatsRecursiveSpan(
   }
   body.push(`        match __item {`);
   body.push(`            Some(v) => ${captureName}.push(v),`);
-  body.push(`            None => { state.pos = __iter_snapshot; break; }`);
-  body.push(`        }`);
-  // Separator handling. Without a sep, iterations are space-separated.
+  body.push(`            None => {`);
+  // No item — rewind to before the sweep so the parent's next span sees
+  // any unconsumed trivia.
   if (sep !== undefined && sep !== '') {
-    body.push(`        let __sep_snapshot = state.pos;`);
-    body.push(`        skip_ws(state);`);
-    body.push(`        if !match_literal(state, ${rustString(sep)}) {`);
-    body.push(`            state.pos = __sep_snapshot;`);
-    body.push(`            break;`);
-    body.push(`        }`);
-    if (trailing === 'forbidden') {
-      // Trailing-sep forbidden: peek for another item; if none, roll back
-      // the sep we just consumed and exit the loop.
-      body.push(`        let __peek_snapshot = state.pos;`);
-      body.push(`        skip_ws(state);`);
-      const probe = span.recursiveRoles
-        .map((r) => `parse_${rustIdent(r)}(state).is_some()`)
-        .join(' || ');
-      body.push(`        let __can_continue = ${probe};`);
-      body.push(`        state.pos = __peek_snapshot;`);
-      body.push(`        if !__can_continue {`);
-      body.push(`            state.pos = __sep_snapshot;`);
-      body.push(`            break;`);
-      body.push(`        }`);
-    }
-    // 'allowed' / 'required' — keep the consumed sep; loop continues.
+    body.push(`                state.pos = __pre_sweep;`);
+  } else {
+    body.push(`                state.pos = __loop_start;`);
   }
+  body.push(`                break;`);
+  body.push(`            }`);
+  body.push(`        }`);
+  body.push(`        if state.pos == __loop_start { break; }`);
   body.push(`    }`);
+  // Trailing-policy enforcement. For sep mode:
+  //   'forbidden' — if the last sweep consumed a sep but no item followed,
+  //                  rewind so the trailing sep is left unconsumed for the
+  //                  parent. We don't track "did the most recent sweep
+  //                  consume a sep AFTER the last item" — the simpler
+  //                  approximation: if __sep_consumed is true at loop exit
+  //                  AND the loop exited via None, the sep is trailing.
+  //                  The None-exit already rewound to __pre_sweep, so this
+  //                  is naturally enforced.
+  //   'required' — every item must be followed by a sep. Not handled in
+  //                rust yet (it isn't used by any in-scope schema using
+  //                rust emit).
+  if (sep !== undefined && sep !== '' && trailing === 'required') {
+    body.push(
+      `    if !${captureName}.is_empty() && !__sep_consumed { if state.pos > state.max_pos { state.max_pos = state.pos; } state.pos = entry_pos; return None; }`,
+    );
+  }
   if (min > 0) {
     body.push(`    if ${captureName}.len() < ${min} {`);
     body.push(`        if state.pos > state.max_pos { state.max_pos = state.pos; }`);
@@ -963,6 +1299,108 @@ function emitUntilSpan(
     } else {
       body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
     }
+  }
+  lines.push(body.join('\n'));
+}
+
+// Phase 6 — rawUntil span. Plain literal-stop scan with no bracket /
+// string / comment awareness. The capture is the raw byte slice from
+// state.pos to the first occurrence of any stop literal (the stop is
+// NOT consumed — the next span owns it). Empty stops list captures to
+// EOF.
+//
+// caseInsensitive: when true, single-byte ASCII letter stops fold to
+// lower case before comparison; multi-char stops are not currently
+// folded (none of the in-scope schemas use a CI multi-char stop —
+// matches the minimum needed to compile HTML / markdown).
+// requireStop: when true, the production fails if the scan reaches
+// EOF without matching any stop.
+// nonEmpty: when true, the production fails when the captured slice is
+// empty (zero bytes consumed).
+function emitRawUntilSpan(
+  lines: string[],
+  span: ResolvedSpan,
+  modifier: {
+    readonly stops: ReadonlyArray<string>;
+    readonly caseInsensitive: boolean;
+    readonly requireStop?: boolean;
+    readonly nonEmpty?: boolean;
+  },
+): void {
+  const name = span.name ?? 'anon';
+  const startVar = `__${rustIdent(name)}_start`;
+  const endVar = `__${rustIdent(name)}_end`;
+  const stops = modifier.stops;
+  const ci = modifier.caseInsensitive;
+  const body: string[] = [];
+  body.push(`    let ${startVar} = state.pos;`);
+  if (stops.length === 0) {
+    body.push(`    state.pos = state.input.len();`);
+  } else {
+    // Build the per-byte stop check. Single-char stops collapse to a
+    // disjunction of byte compares; multi-char stops use starts_with at the
+    // current position. Ordering: try multi-char first (longest-first),
+    // then single-char, so e.g. `</li>` matches before `<`.
+    const sorted = [...stops].sort((a, b) => b.length - a.length);
+    body.push(`    while state.pos < state.input.len() {`);
+    if (sorted.some((s) => s.length >= 2)) {
+      // Multi-char stops checked via starts_with. Bucketing by first byte
+      // would be a perf win; skipped here for simplicity since no schema
+      // bundles many multi-char stops.
+      for (const s of sorted.filter((s) => s.length >= 2)) {
+        if (ci) {
+          // Multi-char case-insensitive: lowercase the prefix slice and
+          // compare against the lowercase stop. Allocates per check; only
+          // used when ci=true (HTML attributes rarely).
+          body.push(
+            `        if state.pos + ${s.length} <= state.input.len() && state.input[state.pos..state.pos + ${s.length}].eq_ignore_ascii_case(${rustString(s)}.as_bytes()) { break; }`,
+          );
+        } else {
+          body.push(
+            `        if state.input[state.pos..].starts_with(${rustString(s)}.as_bytes()) { break; }`,
+          );
+        }
+      }
+    }
+    const singles = sorted.filter((s) => s.length === 1);
+    if (singles.length > 0) {
+      const singleBytes = singles.map((s) => s.charCodeAt(0));
+      // ASCII letters fold to lowercase under ci; others compare verbatim.
+      const ciFolded = ci
+        ? singleBytes.filter((c) => (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)).map((c) => c | 0x20)
+        : [];
+      const literals = ci
+        ? singleBytes.filter((c) => !((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)))
+        : singleBytes;
+      const checks: string[] = [];
+      if (literals.length > 0) {
+        checks.push(literals.map((c) => `__c == ${c}`).join(' || '));
+      }
+      if (ciFolded.length > 0) {
+        const fold = `(if __c >= b'A' && __c <= b'Z' { __c | 0x20 } else { __c })`;
+        const folded = [...new Set(ciFolded)];
+        checks.push(`(${folded.map((c) => `${fold} == ${c}`).join(' || ')})`);
+      }
+      body.push(`        let __c = state.input[state.pos];`);
+      body.push(`        if ${checks.join(' || ')} { break; }`);
+    }
+    body.push(`        state.pos += 1;`);
+    body.push(`    }`);
+  }
+  body.push(`    let ${endVar} = state.pos;`);
+  if (modifier.requireStop) {
+    body.push(
+      `    if ${endVar} >= state.input.len() { if state.pos > state.max_pos { state.max_pos = state.pos; } state.pos = entry_pos; return None; }`,
+    );
+  }
+  if (modifier.nonEmpty) {
+    body.push(
+      `    if ${endVar} == ${startVar} { if state.pos > state.max_pos { state.max_pos = state.pos; } state.pos = entry_pos; return None; }`,
+    );
+  }
+  if (span.name !== undefined) {
+    const v = rustIdent(span.name);
+    body.push(`    let ${v}: String = state.src[${startVar}..${endVar}].to_string();`);
   }
   lines.push(body.join('\n'));
 }
@@ -1122,7 +1560,7 @@ function emitPrefixShareDispatcherRust(
   // match anywhere".
   for (let i = 0; i < share.prefixLen; i++) {
     const span = prefixProd.spans[i]!;
-    if (i > 0) lines.push(`    skip_ws(state);`);
+    if (i > 0) lines.push(`    ${interSpanSkipFn(span, schema)}(state);`);
     emitSpan(lines, span, schema);
   }
 
@@ -1364,7 +1802,11 @@ function emitStringifyAltFn(
   }
 
   const lines: string[] = [];
-  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  // Parameter named `__value` (double-underscore) so a schema capture named
+  // `value` (CSS Declaration's value span, common pattern) doesn't shadow
+  // the param. Without this, `let value = __value.obj_get("value")` would
+  // shadow and any subsequent `value.obj_get(...)` would fail to compile.
+  lines.push(`fn ${fnName}(__value: &Value) -> Option<String> {`);
   for (const dl of discrimLines) lines.push(`    ${dl}`);
   // Extract each named-span capture as a local binding.
   const extracted = new Set<string>();
@@ -1375,7 +1817,7 @@ function emitStringifyAltFn(
     const fieldKey = findFieldForCapture(obj, span.name);
     if (fieldKey === null) continue;
     const v = rustIdent(span.name);
-    lines.push(`    let ${v} = value.obj_get(${rustString(fieldKey)});`);
+    lines.push(`    let ${v} = __value.obj_get(${rustString(fieldKey)});`);
   }
   lines.push(`    let mut __out = String::new();`);
   let firstEmit = true;
@@ -1415,7 +1857,9 @@ function emitTemplateStringifyBody(
   discrimLines: ReadonlyArray<string>,
 ): string {
   const lines: string[] = [];
-  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  // See emitStringifyAltFn note: parameter is `__value` so schema span
+  // captures named `value` don't shadow it.
+  lines.push(`fn ${fnName}(__value: &Value) -> Option<String> {`);
   for (const dl of discrimLines) lines.push(`    ${dl}`);
   // Bind every slot's ast field once. Slots may reuse the same capture; only
   // emit the local once per unique name.
@@ -1432,7 +1876,7 @@ function emitTemplateStringifyBody(
     if (fieldKey === null) {
       lines.push(`    let ${v}: Option<&Value> = None;`);
     } else {
-      lines.push(`    let ${v} = value.obj_get(${rustString(fieldKey)});`);
+      lines.push(`    let ${v} = __value.obj_get(${rustString(fieldKey)});`);
     }
   }
   // Materialize each slot into a positional String local (`__s0`, `__s1`,
@@ -1588,15 +2032,15 @@ function emitScalarStringifyAlt(
   production: Production,
 ): string {
   const lines: string[] = [];
-  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  lines.push(`fn ${fnName}(__value: &Value) -> Option<String> {`);
   if (body === null) {
-    lines.push(`    if !matches!(value, Value::Null) { return None; }`);
+    lines.push(`    if !matches!(__value, Value::Null) { return None; }`);
   } else if (typeof body === 'boolean') {
-    lines.push(`    if let Value::Bool(b) = value { if *b != ${body} { return None; } } else { return None; }`);
+    lines.push(`    if let Value::Bool(b) = __value { if *b != ${body} { return None; } } else { return None; }`);
   } else if (typeof body === 'number') {
-    lines.push(`    if let Value::Number(n) = value { if *n != ${body}_f64 { return None; } } else { return None; }`);
+    lines.push(`    if let Value::Number(n) = __value { if *n != ${body}_f64 { return None; } } else { return None; }`);
   } else {
-    lines.push(`    if let Value::String(s) = value { if s != ${rustString(body)} { return None; } } else { return None; }`);
+    lines.push(`    if let Value::String(s) = __value { if s != ${rustString(body)} { return None; } } else { return None; }`);
   }
   lines.push(`    let mut __out = String::new();`);
   for (const span of production.spans) {
@@ -1623,7 +2067,7 @@ function emitRefStringifyAlt(
   production: Production,
 ): string {
   const lines: string[] = [];
-  lines.push(`fn ${fnName}(value: &Value) -> Option<String> {`);
+  lines.push(`fn ${fnName}(__value: &Value) -> Option<String> {`);
   if (body.__ref !== 'span-value') {
     // span-presence / synthetic refs as bare ast aren't a real schema shape;
     // bail conservatively rather than emit code that won't compile.
@@ -1639,15 +2083,15 @@ function emitRefStringifyAlt(
   }
   if (span.recursiveRoles.length === 1) {
     const role = rustIdent(span.recursiveRoles[0]!);
-    lines.push(`    Some(stringify_${role}(value))`);
+    lines.push(`    Some(stringify_${role}(__value))`);
   } else if (span.recursiveRoles.length > 1) {
     // Multi-role: fall back to the first role's stringify alt0 as a best-
     // effort — the schema author can always extend this later.
     const role = rustIdent(span.recursiveRoles[0]!);
-    lines.push(`    Some(stringify_${role}(value))`);
+    lines.push(`    Some(stringify_${role}(__value))`);
   } else {
     // Class capture: value must be a String. Output it verbatim.
-    lines.push(`    if let Value::String(s) = value { Some(s.clone()) } else { None }`);
+    lines.push(`    if let Value::String(s) = __value { Some(s.clone()) } else { None }`);
   }
   lines.push(`}`);
   return lines.join('\n');
@@ -1765,19 +2209,19 @@ function buildDiscriminatorChecks(
     const key = rustString(k);
     if (typeof v === 'string') {
       lines.push(
-        `match value.obj_get(${key}) { Some(Value::String(s)) if s == ${rustString(v)} => (), _ => return None }`,
+        `match __value.obj_get(${key}) { Some(Value::String(s)) if s == ${rustString(v)} => (), _ => return None }`,
       );
     } else if (typeof v === 'boolean') {
       lines.push(
-        `match value.obj_get(${key}) { Some(Value::Bool(b)) if *b == ${v} => (), _ => return None }`,
+        `match __value.obj_get(${key}) { Some(Value::Bool(b)) if *b == ${v} => (), _ => return None }`,
       );
     } else if (typeof v === 'number') {
       lines.push(
-        `match value.obj_get(${key}) { Some(Value::Number(n)) if *n == ${v}_f64 => (), _ => return None }`,
+        `match __value.obj_get(${key}) { Some(Value::Number(n)) if *n == ${v}_f64 => (), _ => return None }`,
       );
     } else if (v === null) {
       lines.push(
-        `match value.obj_get(${key}) { None | Some(Value::Null) => (), _ => return None }`,
+        `match __value.obj_get(${key}) { None | Some(Value::Null) => (), _ => return None }`,
       );
     }
     // Refs / nested objects / arrays / templates: not scalar discrim, skip.
@@ -1800,7 +2244,7 @@ function buildDiscriminatorChecks(
   }
   for (const k of mustBeAbsent) {
     lines.push(
-      `match value.obj_get(${rustString(k)}) { None | Some(Value::Null) => (), _ => return None }`,
+      `match __value.obj_get(${rustString(k)}) { None | Some(Value::Null) => (), _ => return None }`,
     );
   }
   return lines;
@@ -1840,11 +2284,86 @@ function emitStringifyEntry(schema: InferredSchema): string {
 
 function emitRenderEntry(schema: InferredSchema): string {
   const root = rustIdent(schema.rootType);
+  return `${emitRenderImpl(schema, root)}
+${emitRenderDiagnostics(schema, root)}`;
+}
+
+function emitRenderDiagnostics(schema: InferredSchema, root: string): string {
+  // Phase 6 -- partial raws-mode API. Returns the rendered Value alongside
+  // any Diagnostic entries pushed by .recovers() productions during parse.
+  // The Value itself is identical to render()'s output; future raws-mode
+  // work will layer trivia (__ws, __litPres, <name>_iws, source ranges)
+  // onto the AST nodes. Today, callers who need to observe partial
+  // parses on schemas with recovery alts get the diagnostic vec through
+  // this entry point.
+  const hasComment = schemaHasCommentClass(schema);
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    const ownFirst = prod.spans[0];
+    if (ownFirst && ownFirst.class === 'comment') return true;
+    for (const span of prod.spans) {
+      for (const roleName of span.recursiveRoles) {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) continue;
+        for (const rolePr of info.productions) {
+          const firstSpan = rolePr.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+      }
+    }
+    return false;
+  });
+  const leadingFn = hasComment && !rootConsumesComments ? 'skip_ws_and_comments' : 'skip_ws';
+  const trailingFn = hasComment ? 'skip_ws_and_comments' : 'skip_ws';
+  return `pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    ${leadingFn}(&mut state);
+    let result = parse_${root}(&mut state).ok_or_else(|| syntax_error(&state))?;
+    ${trailingFn}(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
+}`;
+}
+
+function emitRenderImpl(schema: InferredSchema, root: string): string {
+  // Phase 6 — leading and trailing comment-aware skip. Mirror of v2's
+  // __parse in emit/v2/index.ts (L498+):
+  //   - The trailing skip eats ws + comments when the schema declares
+  //     `comment` as a token class; otherwise plain ws-only. This makes
+  //     `42 /* trailing */` parse instead of erroring at the slash.
+  //   - The leading skip eats ws + comments UNLESS the root production
+  //     consumes comments itself (rootConsumesComments). When the root
+  //     dispatches into a Comment-producing role, eating the comment
+  //     here would silently consume what that role is supposed to
+  //     capture as a child node (CSS Stylesheet → Comment).
+  const hasComment = schemaHasCommentClass(schema);
+  const rootInfo = schema.nodeTypes.get(schema.rootType);
+  const rootConsumesComments = rootInfo !== undefined && rootInfo.productions.some((prod) => {
+    // Case A: root's own first span is comment-class.
+    const ownFirst = prod.spans[0];
+    if (ownFirst && ownFirst.class === 'comment') return true;
+    // Case B: root dispatches to a role whose first span is comment-class.
+    for (const span of prod.spans) {
+      for (const roleName of span.recursiveRoles) {
+        const info = schema.nodeTypes.get(roleName);
+        if (!info) continue;
+        for (const rolePr of info.productions) {
+          const firstSpan = rolePr.spans[0];
+          if (firstSpan && firstSpan.class === 'comment') return true;
+        }
+      }
+    }
+    return false;
+  });
+  const leadingFn = hasComment && !rootConsumesComments ? 'skip_ws_and_comments' : 'skip_ws';
+  const trailingFn = hasComment ? 'skip_ws_and_comments' : 'skip_ws';
   return `pub fn render(input: &str) -> Result<Value, String> {
     let mut state = State::new(input);
-    skip_ws(&mut state);
+    ${leadingFn}(&mut state);
     let result = parse_${root}(&mut state).ok_or_else(|| syntax_error(&state))?;
-    skip_ws(&mut state);
+    ${trailingFn}(&mut state);
     if state.pos != state.input.len() {
         return Err(syntax_error(&state));
     }

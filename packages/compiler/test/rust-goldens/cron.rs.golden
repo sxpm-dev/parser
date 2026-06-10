@@ -55,11 +55,25 @@ impl fmt::Display for Value {
     }
 }
 
+// Phase 6 -- recovery diagnostics. Productions marked .recovers({syncAt,
+// drop}) push a Diagnostic on successful match; speculative rollback
+// truncates the vector back to its entry-time length so a discarded
+// recovery alt leaves no spurious entry. The public render() returns
+// (Value, Vec<Diagnostic>) so callers can observe partial parses.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Diagnostic {
+    pub code: String,
+    pub drop: String,
+    pub start: usize,
+    pub end: usize,
+}
+
 struct State<'a> {
     input: &'a [u8],
     src: &'a str,
     pos: usize,
     max_pos: usize,
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> State<'a> {
@@ -69,6 +83,7 @@ impl<'a> State<'a> {
             src,
             pos: 0,
             max_pos: 0,
+            diagnostics: Vec::new(),
         }
     }
 }
@@ -81,6 +96,53 @@ fn skip_ws(state: &mut State) {
         } else {
             break;
         }
+    }
+}
+
+// Phase 6 -- comment-class support. Scans block comments delimited by
+// slash-star and star-slash. Returns true and advances state.pos past
+// the closing delimiter on hit; returns false without advancing on
+// miss. Unterminated comments (no closing delimiter before EOF) consume
+// to EOF and return true -- mirrors the v2 emit's commentSkip behavior
+// so byte-level positions stay in lockstep across backends.
+fn match_block_comment(state: &mut State) -> bool {
+    if state.pos + 1 < state.input.len()
+        && state.input[state.pos] == b'/'
+        && state.input[state.pos + 1] == b'*'
+    {
+        state.pos += 2;
+        while state.pos < state.input.len() {
+            if state.input[state.pos] == b'*'
+                && state.pos + 1 < state.input.len()
+                && state.input[state.pos + 1] == b'/'
+            {
+                state.pos += 2;
+                return true;
+            }
+            state.pos += 1;
+        }
+        return true;
+    }
+    false
+}
+
+fn skip_ws_and_comments(state: &mut State) {
+    loop {
+        let before = state.pos;
+        while state.pos < state.input.len() {
+            let b = state.input[state.pos];
+            if b == b' ' || b == b'\t' || b == b'\n' || b == b'\r' {
+                state.pos += 1;
+            } else {
+                break;
+            }
+        }
+        if !match_block_comment(state) {
+            if state.pos == before { break; }
+            // We consumed only ws this pass; nothing more to do.
+            break;
+        }
+        // We consumed a comment; loop to eat any following ws / comments.
     }
 }
 
@@ -244,23 +306,23 @@ fn parse_CronField(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_CronField__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "wildcard" => (), _ => return None }
-    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
+fn stringify_CronField__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "wildcard" => (), _ => return None }
+    match __value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
     let mut __out = String::new();
     __out.push_str("*");
     Some(__out)
 }
 
-fn stringify_CronField__alt1(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "step" => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
-    let step = value.obj_get("step");
+fn stringify_CronField__alt1(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "step" => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
+    let step = __value.obj_get("step");
     let __s0: String = if let Some(Value::String(s)) = step { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str("*/");
@@ -268,24 +330,24 @@ fn stringify_CronField__alt1(value: &Value) -> Option<String> {
     Some(__out)
 }
 
-fn stringify_CronField__alt2(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "value" => (), _ => return None }
-    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
-    let value = value.obj_get("value");
+fn stringify_CronField__alt2(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "value" => (), _ => return None }
+    match __value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("start") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("end") { None | Some(Value::Null) => (), _ => return None }
+    let value = __value.obj_get("value");
     let __s0: String = if let Some(Value::String(s)) = value { s.clone() } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
     Some(__out)
 }
 
-fn stringify_CronField__alt3(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "range" => (), _ => return None }
-    match value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
-    match value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
-    let start = value.obj_get("start");
-    let end = value.obj_get("end");
+fn stringify_CronField__alt3(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "range" => (), _ => return None }
+    match __value.obj_get("step") { None | Some(Value::Null) => (), _ => return None }
+    match __value.obj_get("value") { None | Some(Value::Null) => (), _ => return None }
+    let start = __value.obj_get("start");
+    let end = __value.obj_get("end");
     let __s0: String = if let Some(Value::String(s)) = start { s.clone() } else { String::new() };
     let __s1: String = if let Some(Value::String(s)) = end { s.clone() } else { String::new() };
     let mut __out = String::new();
@@ -329,8 +391,8 @@ fn parse_CommandWord(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_CommandWord__alt0(value: &Value) -> Option<String> {
-    if let Value::String(s) = value { Some(s.clone()) } else { None }
+fn stringify_CommandWord__alt0(__value: &Value) -> Option<String> {
+    if let Value::String(s) = __value { Some(s.clone()) } else { None }
 }
 
 fn stringify_CommandWord(value: &Value) -> String {
@@ -342,13 +404,18 @@ fn parse_Command__alt0(state: &mut State) -> Option<Value> {
     let entry_pos = state.pos;
     let mut words: Vec<Value> = Vec::new();
     loop {
-        let __iter_snapshot = state.pos;
+        let __loop_start = state.pos;
         skip_ws(state);
+        let __iter_snapshot = state.pos;
         let __item = parse_CommandWord(state);
         match __item {
             Some(v) => words.push(v),
-            None => { state.pos = __iter_snapshot; break; }
+            None => {
+                state.pos = __loop_start;
+                break;
+            }
         }
+        if state.pos == __loop_start { break; }
     }
     if words.len() < 1 {
         if state.pos > state.max_pos { state.max_pos = state.pos; }
@@ -367,9 +434,9 @@ fn parse_Command(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Command__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "command" => (), _ => return None }
-    let words = value.obj_get("words");
+fn stringify_Command__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "command" => (), _ => return None }
+    let words = __value.obj_get("words");
     let __s0: String = if let Some(Value::Array(items)) = words { let mut __t = String::new(); for (i, item) in items.iter().enumerate() { if i > 0 { __t.push_str(" "); } __t.push_str(&stringify_CommandWord(item)); } __t } else { String::new() };
     let mut __out = String::new();
     __out.push_str(&__s0);
@@ -427,14 +494,14 @@ fn parse_Cron(state: &mut State) -> Option<Value> {
     None
 }
 
-fn stringify_Cron__alt0(value: &Value) -> Option<String> {
-    match value.obj_get("type") { Some(Value::String(s)) if s == "cron" => (), _ => return None }
-    let minute = value.obj_get("minute");
-    let hour = value.obj_get("hour");
-    let dayOfMonth = value.obj_get("dayOfMonth");
-    let month = value.obj_get("month");
-    let dayOfWeek = value.obj_get("dayOfWeek");
-    let command = value.obj_get("command");
+fn stringify_Cron__alt0(__value: &Value) -> Option<String> {
+    match __value.obj_get("type") { Some(Value::String(s)) if s == "cron" => (), _ => return None }
+    let minute = __value.obj_get("minute");
+    let hour = __value.obj_get("hour");
+    let dayOfMonth = __value.obj_get("dayOfMonth");
+    let month = __value.obj_get("month");
+    let dayOfWeek = __value.obj_get("dayOfWeek");
+    let command = __value.obj_get("command");
     let __s0: String = if let Some(inner) = minute { stringify_CronField(inner) } else { String::new() };
     let __s1: String = if let Some(inner) = hour { stringify_CronField(inner) } else { String::new() };
     let __s2: String = if let Some(inner) = dayOfMonth { stringify_CronField(inner) } else { String::new() };
@@ -470,6 +537,16 @@ pub fn render(input: &str) -> Result<Value, String> {
         return Err(syntax_error(&state));
     }
     Ok(result)
+}
+pub fn render_with_diagnostics(input: &str) -> Result<(Value, Vec<Diagnostic>), String> {
+    let mut state = State::new(input);
+    skip_ws(&mut state);
+    let result = parse_Cron(&mut state).ok_or_else(|| syntax_error(&state))?;
+    skip_ws(&mut state);
+    if state.pos != state.input.len() {
+        return Err(syntax_error(&state));
+    }
+    Ok((result, state.diagnostics))
 }
 
 pub fn stringify(value: &Value) -> String {

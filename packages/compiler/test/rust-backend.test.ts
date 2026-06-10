@@ -408,7 +408,12 @@ test('rust backend (6.3): .repeats({sep}) collects Vec<Value>', () => {
   assert.match(code, /let __item = parse_Item\(state\);/);
   assert.match(code, /match __item \{/);
   assert.match(code, /Some\(v\) => items\.push\(v\),/);
-  assert.match(code, /if !match_literal\(state, ","\) \{/);
+  // The repeats loop uses a `while match_literal(state, ",") { ... }` block
+  // (zero-or-more separators between items, matching v2 semantics). The old
+  // `if !match_literal(...) { break }` form was wrong — it required a sep to
+  // continue, breaking schemas where the sep is conventionally optional at
+  // the item boundary (e.g. CSS rules separated by `} `).
+  assert.match(code, /while match_literal\(state, ","\) \{/);
   // Render body: Value::Array(items.clone()).
   assert.match(code, /Value::Array\(items\.clone\(\)\)/);
 });
@@ -455,15 +460,15 @@ test('rust backend (6.4): per-production stringify fn + dispatcher + public entr
     ],
   });
   const code = generateParser(schema, undefined, { backend: RUST_BACKEND });
-  assert.match(code, /fn stringify_X__alt0\(value: &Value\) -> Option<String> \{/);
+  assert.match(code, /fn stringify_X__alt0\(__value: &Value\) -> Option<String> \{/);
   assert.match(code, /fn stringify_X\(value: &Value\) -> String \{/);
   assert.match(code, /pub fn stringify\(value: &Value\) -> String \{/);
   // Type discriminator check (match-based since the discriminator
   // strengthening pass — equality on every scalar field, absence on
   // sibling-only fields).
-  assert.match(code, /match value\.obj_get\("type"\) \{ Some\(Value::String\(s\)\) if s == "x" => \(\), _ => return None \}/);
+  assert.match(code, /match __value\.obj_get\("type"\) \{ Some\(Value::String\(s\)\) if s == "x" => \(\), _ => return None \}/);
   // Capture extraction.
-  assert.match(code, /let name = value\.obj_get\("name"\);/);
+  assert.match(code, /let name = __value\.obj_get\("name"\);/);
   // String emission.
   assert.match(code, /if let Some\(Value::String\(s\)\) = name \{ __out\.push_str\(s\); \}/);
 });

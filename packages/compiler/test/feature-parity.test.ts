@@ -1363,6 +1363,138 @@ const rows: ReadonlyArray<ParityRow> = [
     // codegen throws before either backend runs.
     expected: { interp: 'gap', v2: 'gap' },
   },
+
+  // --- Third pass (2026-06-10) ---------------------------------------------
+
+  {
+    name: 'schemaDecl:whitespace-significant',
+    category: 'schemaDecl',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        whitespace: 'significant',
+        examples: [
+          relation('X', {
+            input: 'a b',
+            encodings: {
+              src: parse([
+                span('l', 'a').ident(),
+                literal(' '),
+                span('r', 'b').ident(),
+              ]),
+              ast: { type: 'pair', l: $.l, r: $.r },
+            },
+          }),
+        ],
+      }),
+    // whitespace:significant treats every byte as parse-relevant. The
+    // SHIPPED behavior diverges from the naive "literal ' ' bridges
+    // identifiers" reading — both backends reject `x y` even with the
+    // explicit space literal. Gap row left in place so a future
+    // behavior-tightening (or a documented semantics correction)
+    // flips it visibly. The current declared semantics in
+    // parser/src/types.ts and shipped schemas don't fully exercise
+    // 'significant'.
+    input: 'x y',
+    expectedAst: { type: 'pair', l: 'x', r: 'y' },
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'modifier:until-rejectSuffix-fail',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'name : value',
+            encodings: {
+              src: parse([
+                span('sel', 'name').until([':'], { rejectSuffix: [','] }),
+                literal(':'),
+                span('val', 'value').until(['\n']),
+              ]),
+              ast: { type: 'kv', sel: $.sel, val: $.val },
+            },
+          }),
+        ],
+      }),
+    // The selector capture ends with `,` (rejectSuffix), so the
+    // production rejects at parse time. The matrix runner catches the
+    // throw as 'gap' — but here that's the EXPECTED behavior, not a
+    // backend gap. Both backends should reject identically.
+    input: 'name,:val',
+    expectedAst: null,
+    // Both backends throw parse errors; classify() returns 'gap'. The
+    // row asserts both backends reject SAME input — a regression where
+    // either backend silently accepted it would flip to 'impl'.
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'modifier:repeats-max',
+    category: 'modifier',
+    schema: () =>
+      defineSchema({
+        rootType: 'List',
+        punctuators: { comma: ',' },
+        examples: [
+          relation('Item', {
+            input: 'x',
+            encodings: {
+              src: parse([span('name', 'x').ident()]),
+              ast: { type: 'item', name: $.name },
+            },
+          }),
+          relation('List', {
+            input: 'x,y',
+            encodings: {
+              src: parse([
+                span('items', 'x').of('Item').repeats({ sep: ',', max: 3 }),
+              ]),
+              ast: { type: 'list', items: $.items },
+            },
+          }),
+        ],
+      }),
+    // max:3 caps iterations. The input has 4 ident-comma pairs; only
+    // the first 3 are consumed. The 4th remains in the source — the
+    // top-level EOF check fails, so the parse rejects.
+    input: 'a,b,c,d',
+    expectedAst: null,
+    expected: { interp: 'gap', v2: 'gap' },
+  },
+
+  {
+    name: 'structureRef:span-tail',
+    category: 'structureRef',
+    schema: () =>
+      defineSchema({
+        rootType: 'X',
+        examples: [
+          relation('X', {
+            input: 'hello world',
+            encodings: {
+              src: parse([
+                span('greeting', 'hello').ident(),
+                literal(' '),
+                span('target', 'world').ident(),
+              ]),
+              // $.tail('greeting') reads the source slice from $.greeting's
+              // END to the production's END. Not invertible in 'ast' bodies
+              // — documented gap.
+              ast: { type: 'msg', g: $.greeting, t: $.tail('greeting') },
+            },
+          }),
+        ],
+      }),
+    input: 'hi world',
+    expectedAst: { type: 'msg', g: 'hi', t: ' world' },
+    // GAP on both: $.tail() refs in 'ast' bodies fail inverse-derivation
+    // (same family as $.raw / $.gap / $.endsWith).
+    expected: { interp: 'gap', v2: 'gap' },
+  },
 ];
 
 // ---------------------------------------------------------------------------

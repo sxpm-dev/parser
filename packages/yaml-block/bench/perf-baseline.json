@@ -1,16 +1,16 @@
 {
   "parse:5KB": {
-    "hz": 1388,
+    "hz": 1296,
     "inputHash": "6834dd3d",
     "bytes": 5152
   },
   "parse:20KB": {
-    "hz": 216,
+    "hz": 215,
     "inputHash": "14962ea5",
     "bytes": 20608
   },
   "parse:100KB": {
-    "hz": 45,
+    "hz": 43,
     "inputHash": "5efec907",
     "bytes": 102488
   }

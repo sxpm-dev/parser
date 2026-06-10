@@ -1,31 +1,31 @@
 {
   "parse:5KB": {
-    "hz": 143,
+    "hz": 1201,
     "inputHash": "02cadb1e",
     "bytes": 5588
   },
   "render:5KB": {
-    "hz": 131,
+    "hz": 1046,
     "inputHash": "02cadb1e",
     "bytes": 5588
   },
   "parse:20KB": {
-    "hz": 40,
+    "hz": 238,
     "inputHash": "373d9e02",
     "bytes": 20828
   },
   "render:20KB": {
-    "hz": 35,
+    "hz": 249,
     "inputHash": "373d9e02",
     "bytes": 20828
   },
   "parse:100KB": {
-    "hz": 8,
+    "hz": 48,
     "inputHash": "85879de9",
     "bytes": 102616
   },
   "render:100KB": {
-    "hz": 7,
+    "hz": 47,
     "inputHash": "85879de9",
     "bytes": 102616
   }

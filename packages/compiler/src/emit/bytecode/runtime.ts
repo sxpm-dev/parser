@@ -414,6 +414,60 @@ function stepOpcode(state: RuntimeState, frames: Frame[], op: number): StepResul
         te--;
       }
       const ranges = state.commentRanges;
+      // Trim trailing comments from the captured region, then re-trim ws.
+      // Mirrors v2's __lastNonWs semantics inside a .until() scan: comment
+      // skips never update lastNonWs, so a comment running up to the stop
+      // position lives OUTSIDE the captured slice. We don't rewind
+      // state.off here — that would force subsequent inter-span literals
+      // to land before the comment (matching v2's NON-fused path); v2's
+      // fused-ast path already advances past the comment via its WS-only
+      // inter-span skip, and the captured slice it produces is "value
+      // without the trailing comment" via the lastNonWs trick. This trim
+      // gives bcode the same slice without re-architecting SCAN_UNTIL or
+      // perturbing where the next op picks up.
+      if (ranges !== undefined && ranges.length > 0) {
+        let progressed = true;
+        while (progressed && te > ts) {
+          progressed = false;
+          for (let i = ranges.length - 2; i >= 0; i -= 2) {
+            const ce = ranges[i + 1]!;
+            if (ce === te) {
+              te = ranges[i]!;
+              while (te > ts) {
+                const c = state.input.charCodeAt(te - 1);
+                if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+                te--;
+              }
+              progressed = true;
+              break;
+            }
+          }
+        }
+        // Symmetric leading trim: drop leading comments and the ws between
+        // them. Mirrors v2's __value_start = post-skip-ws-and-comments
+        // (lines 1230-1249 in emit/v2/span.ts). Bcode's pre-scan SKIP_WS
+        // is WS-only, so leading comments end up inside the [ts, te]
+        // capture. Without this trim the params slice for
+        // `@-moz-document/* near */ url(...)` keeps the leading
+        // "  " between the trimmed comment and `url(...)`.
+        progressed = true;
+        while (progressed && ts < te) {
+          progressed = false;
+          for (let i = 0; i < ranges.length; i += 2) {
+            const cs = ranges[i]!;
+            if (cs === ts) {
+              ts = ranges[i + 1]!;
+              while (ts < te) {
+                const c = state.input.charCodeAt(ts);
+                if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d) break;
+                ts++;
+              }
+              progressed = true;
+              break;
+            }
+          }
+        }
+      }
       if (ranges === undefined || ranges.length === 0) {
         captures[name] = state.input.slice(ts, te);
       } else {

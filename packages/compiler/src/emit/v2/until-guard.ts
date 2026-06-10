@@ -23,7 +23,7 @@
 // collection is open, untilGuardSpec returns null and no guards are emitted
 // — paths that don't opt in are unaffected.
 
-import type { InferredSchema, NodeTypeInfo } from '../../model.ts';
+import type { InferredSchema, NodeTypeInfo, Production } from '../../model.ts';
 import type { SpanModifier } from '@parser2/parser';
 import { computeKnownLeadingBytes, type SpanContext } from './span.ts';
 
@@ -127,22 +127,22 @@ export function untilGuardSpec(role: string, env: GuardEnv): UntilGuardSpec | nu
   return { helperName, litCode: lit.charCodeAt(0) };
 }
 
-function emitTerminatorHelper(name: string, stopChars: string, env: GuardEnv): string {
+// Emit one terminator scan loop. `onStop(expr)` renders the action taken
+// when the scan reaches a depth-0 stop char / unbalanced closer / unknown
+// byte — `return __c;` for the single-segment helper, `__t = __c; break;`
+// for multi-segment chains. The loop body mirrors the until kernel's skip
+// machinery exactly (see module header).
+function emitScanLoop(stopChars: string, env: GuardEnv, onStop: (expr: string) => string): string[] {
   const stopCond = [...stopChars]
     .map((s) => `__c === ${s.charCodeAt(0)}`)
     .join(' || ');
   const lines: string[] = [];
-  lines.push(`function ${name}(input: string, off: number, len: number): number {`);
-  lines.push(`  let __depth = 0;`);
-  if (env.unknownGuard) {
-    lines.push(`  const __KB = [${Array.from(env.knownBytes).join(',')}];`);
-  }
   lines.push(`  while (off < len) {`);
   lines.push(`    const __c = input.charCodeAt(off);`);
-  lines.push(`    if (__depth === 0 && (${stopCond})) return __c;`);
+  lines.push(`    if (__depth === 0 && (${stopCond})) { ${onStop('__c')} }`);
   lines.push(`    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; off++; continue; }`);
   lines.push(`    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {`);
-  lines.push(`      if (__depth === 0) return __c;`);
+  lines.push(`      if (__depth === 0) { ${onStop('__c')} }`);
   lines.push(`      __depth--; off++; continue;`);
   lines.push(`    }`);
   if (env.hasStrings) {
@@ -196,11 +196,105 @@ function emitTerminatorHelper(name: string, stopChars: string, env: GuardEnv): s
   }
   lines.push(`    if (__c === 0x5c && off + 1 < len) { off += 2; continue; }`);
   if (env.unknownGuard) {
-    lines.push(`    if (__depth === 0 && __KB[__c] === 0) return __c;`);
+    lines.push(`    if (__depth === 0 && __KB[__c] === 0) { ${onStop('__c')} }`);
   }
   lines.push(`    off++;`);
   lines.push(`  }`);
+  return lines;
+}
+
+function emitTerminatorHelper(name: string, stopChars: string, env: GuardEnv): string {
+  const lines: string[] = [];
+  lines.push(`function ${name}(input: string, off: number, len: number): number {`);
+  lines.push(`  let __depth = 0;`);
+  if (env.unknownGuard) {
+    lines.push(`  const __KB = [${Array.from(env.knownBytes).join(',')}];`);
+  }
+  lines.push(...emitScanLoop(stopChars, env, (c) => `return ${c};`));
   lines.push(`  return -1;`);
+  lines.push(`}`);
+  return lines.join('\n');
+}
+
+// --- multi-segment alt viability -------------------------------------------
+// An alternative whose spans begin with a CHAIN of (until-scan, literal L_i)
+// pairs can only succeed when EVERY segment's first depth-0 terminator is
+// its L_i. The helper simulates the chain captureless: scan segment 0's
+// stops; mismatch → false; otherwise step past the single-char literal and
+// scan the next segment from there. Depth is 0 at every depth-0 stop by
+// definition, so the depth local resets cleanly between segments.
+//
+// Used by the captures-path speculation chain to skip doomed alts (the
+// css-shaped case: the !important alt requires ':' then '!'; a plain
+// declaration's pre-scan fails at the second segment and alt0 is skipped).
+
+export type SegmentChain = ReadonlyArray<{ readonly stops: string; readonly lit: string }>;
+
+export function collectSegmentChain(prod: Production): SegmentChain {
+  const chain: Array<{ stops: string; lit: string }> = [];
+  for (let i = 0; i + 1 < prod.spans.length; i += 2) {
+    const s0 = prod.spans[i]!;
+    const s1 = prod.spans[i + 1]!;
+    if (s0.recursiveRoles.length > 0) break;
+    if (s0.modifiers.length !== 1) break;
+    const until = s0.modifiers[0]!;
+    if (until.kind !== 'until' || !until.balanced) break;
+    if (until.stops.some((s) => s.length !== 1)) break;
+    if (s1.class !== 'literal' || typeof s1.text !== 'string' || s1.text.length !== 1) break;
+    if (s1.modifiers.length > 0 || s1.recursiveRoles.length > 0) break;
+    if (!until.stops.includes(s1.text)) break;
+    chain.push({ stops: [...until.stops].sort().join(''), lit: s1.text });
+  }
+  return chain;
+}
+
+function chainKey(chain: SegmentChain): string {
+  return chain.map((s) => `(${s.stops}>${s.lit})`).join('');
+}
+
+export function untilAltViabilitySpec(
+  prod: Production,
+  laterProds: ReadonlyArray<Production>,
+  env: GuardEnv,
+): { readonly helperName: string } | null {
+  if (registry === null) return null;
+  const chain = collectSegmentChain(prod);
+  // Single-segment chains rarely discriminate between alts of one node (the
+  // alts usually share their first until+literal pair) — and every guard is
+  // a real pre-scan on the hot path. Require a 2+ segment chain AND at
+  // least one later alt with a different chain, so the guard can actually
+  // veto this alt for inputs some later alt accepts.
+  if (chain.length < 2) return null;
+  const key = chainKey(chain);
+  if (!laterProds.some((p) => chainKey(collectSegmentChain(p)) !== key)) return null;
+
+  const kbKey = env.unknownGuard ? fnvHash(Array.from(env.knownBytes).join(',')) : '0';
+  const flags = `s${env.hasStrings ? 1 : 0}c${env.hasComments ? 1 : 0}u${env.useUrlRaw ? 1 : 0}k${env.unknownGuard ? 1 : 0}`;
+  const helperName = `__untilAltViable_${fnvHash(`${key}|${flags}|${kbKey}`)}`;
+  if (!registry.has(helperName)) {
+    registry.set(helperName, emitAltViableHelper(helperName, chain, env));
+  }
+  return { helperName };
+}
+
+function emitAltViableHelper(name: string, chain: SegmentChain, env: GuardEnv): string {
+  const lines: string[] = [];
+  lines.push(`function ${name}(input: string, off: number, len: number): boolean {`);
+  lines.push(`  let __depth = 0;`);
+  lines.push(`  let __t = -1;`);
+  if (env.unknownGuard) {
+    lines.push(`  const __KB = [${Array.from(env.knownBytes).join(',')}];`);
+  }
+  for (let i = 0; i < chain.length; i++) {
+    const seg = chain[i]!;
+    if (i > 0) {
+      lines.push(`  off++;`);
+      lines.push(`  __t = -1;`);
+    }
+    lines.push(...emitScanLoop(seg.stops, env, (c) => `__t = ${c}; break;`));
+    lines.push(`  if (__t !== ${seg.lit.charCodeAt(0)}) return false;`);
+  }
+  lines.push(`  return true;`);
   lines.push(`}`);
   return lines.join('\n');
 }

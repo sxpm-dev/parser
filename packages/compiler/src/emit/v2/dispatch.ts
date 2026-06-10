@@ -16,6 +16,7 @@ import { jsString } from '../strings.ts';
 import { detectSharedDispatch, emitSharedDispatcher } from './shared-dispatch.ts';
 import { detectPrefixShare, emitPrefixShareDispatcher } from './prefix-share-dispatch.ts';
 import { findModifier, hasModifier } from './span.ts';
+import { guardEnvFromSchema, untilAltViabilitySpec } from './until-guard.ts';
 
 type FirstToken =
   | { kind: 'literal'; text: string }
@@ -61,7 +62,7 @@ export function emitDispatcher(
   if (bytePrefix !== null) return bytePrefix;
 
   // Fall back to sentinel speculation chain.
-  return emitSpeculationChain(info, prods, fnName);
+  return emitSpeculationChain(info, prods, fnName, schema);
 }
 
 // --- byte-prefix dispatch --------------------------------------------------
@@ -210,6 +211,7 @@ function emitSpeculationChain(
   _info: NodeTypeInfo,
   prods: ReadonlyArray<Production>,
   fnName: string,
+  schema: InferredSchema,
 ): string {
   // Stable reorder: any group of alts whose first span is a literal with
   // the SAME first byte gets reordered so the longer literal prefix is
@@ -228,9 +230,22 @@ function emitSpeculationChain(
   // parses as the no-lang form (lang absent) instead of alt18 eating the
   // newline as inter-span ws and then matching `plain` as the ident-lang.
   const order = computeSpeculationOrder(prods);
+  // Until-alt viability gating: a non-last alt whose spans begin with a 2+
+  // segment (until, literal) chain that differs from a later alt's chain
+  // gets a captureless pre-scan — when the chain's terminators can't match,
+  // the whole alt attempt (and its captures/raws allocations) is skipped.
+  // The last alt stays ungated, preserving failure semantics and maxOff.
+  const env = guardEnvFromSchema(schema);
   const lines: string[] = [];
   for (let i = 0; i < order.length - 1; i++) {
-    lines.push(`  { const r = ${fnName}__alt${order[i]}(state); if (r !== null) return r; }`);
+    const idx = order[i]!;
+    const later = order.slice(i + 1).map((j) => prods[j]!);
+    const viable = untilAltViabilitySpec(prods[idx]!, later, env);
+    if (viable !== null) {
+      lines.push(`  if (${viable.helperName}(state.input, state.pos, state.len)) { const r = ${fnName}__alt${idx}(state); if (r !== null) return r; }`);
+    } else {
+      lines.push(`  { const r = ${fnName}__alt${idx}(state); if (r !== null) return r; }`);
+    }
   }
   lines.push(`  return ${fnName}__alt${order[order.length - 1]}(state);`);
   return `function ${fnName}(state: State): unknown {

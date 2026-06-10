@@ -251,15 +251,16 @@ ${gutter} | ${source}
 ${' '.repeat(gutter.length)} | ${' '.repeat(column)}^`);
 }
 
-function __untilTerminator_f01eb5d5(input: string, off: number, len: number): number {
+function __untilAltViable_cae99625(input: string, off: number, len: number): boolean {
   let __depth = 0;
+  let __t = -1;
   const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
   while (off < len) {
     const __c = input.charCodeAt(off);
-    if (__depth === 0 && (__c === 59 || __c === 123)) return __c;
+    if (__depth === 0 && (__c === 58 || __c === 59 || __c === 125)) { __t = __c; break; }
     if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; off++; continue; }
     if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
-      if (__depth === 0) return __c;
+      if (__depth === 0) { __t = __c; break; }
       __depth--; off++; continue;
     }
     if (__c === 0x22 || __c === 0x27) {
@@ -306,7 +307,127 @@ function __untilTerminator_f01eb5d5(input: string, off: number, len: number): nu
       if (__ce < len) { off = __ce + 2; continue; }
     }
     if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
-    if (__depth === 0 && __KB[__c] === 0) return __c;
+    if (__depth === 0 && __KB[__c] === 0) { __t = __c; break; }
+    off++;
+  }
+  if (__t !== 58) return false;
+  off++;
+  __t = -1;
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__depth === 0 && (__c === 33 || __c === 59 || __c === 125)) { __t = __c; break; }
+    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; off++; continue; }
+    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+      if (__depth === 0) { __t = __c; break; }
+      __depth--; off++; continue;
+    }
+    if (__c === 0x22 || __c === 0x27) {
+      const __q = __c;
+      off++;
+      while (off < len) {
+        const __sc = input.charCodeAt(off);
+        if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__sc === __q) { off++; break; }
+        if (__sc === 0x0a || __sc === 0x0d) break;
+        off++;
+      }
+      continue;
+    }
+    if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+      && off + 3 < len
+      && (input.charCodeAt(off + 1) | 32) === 0x72
+      && (input.charCodeAt(off + 2) | 32) === 0x6c
+      && input.charCodeAt(off + 3) === 0x28) {
+      off += 4;
+      while (off < len) {
+        const __uc = input.charCodeAt(off);
+        if (__uc === 0x29) { off++; break; }
+        if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__uc === 0x22 || __uc === 0x27) {
+          const __uq = __uc;
+          off++;
+          while (off < len) {
+            const __usc = input.charCodeAt(off);
+            if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__usc === __uq) { off++; break; }
+            if (__usc === 0x0a || __usc === 0x0d) break;
+            off++;
+          }
+          continue;
+        }
+        off++;
+      }
+      continue;
+    }
+    if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      let __ce = off + 2;
+      while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+      if (__ce < len) { off = __ce + 2; continue; }
+    }
+    if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+    if (__depth === 0 && __KB[__c] === 0) { __t = __c; break; }
+    off++;
+  }
+  if (__t !== 33) return false;
+  return true;
+}
+
+function __untilTerminator_f01eb5d5(input: string, off: number, len: number): number {
+  let __depth = 0;
+  const __KB = [0,0,0,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+  while (off < len) {
+    const __c = input.charCodeAt(off);
+    if (__depth === 0 && (__c === 59 || __c === 123)) { return __c; }
+    if (__c === 0x28 || __c === 0x5b || __c === 0x7b) { __depth++; off++; continue; }
+    if (__c === 0x29 || __c === 0x5d || __c === 0x7d) {
+      if (__depth === 0) { return __c; }
+      __depth--; off++; continue;
+    }
+    if (__c === 0x22 || __c === 0x27) {
+      const __q = __c;
+      off++;
+      while (off < len) {
+        const __sc = input.charCodeAt(off);
+        if (__sc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__sc === __q) { off++; break; }
+        if (__sc === 0x0a || __sc === 0x0d) break;
+        off++;
+      }
+      continue;
+    }
+    if (__depth === 0 && (__c === 0x75 || __c === 0x55)
+      && off + 3 < len
+      && (input.charCodeAt(off + 1) | 32) === 0x72
+      && (input.charCodeAt(off + 2) | 32) === 0x6c
+      && input.charCodeAt(off + 3) === 0x28) {
+      off += 4;
+      while (off < len) {
+        const __uc = input.charCodeAt(off);
+        if (__uc === 0x29) { off++; break; }
+        if (__uc === 0x5c && off + 1 < len) { off += 2; continue; }
+        if (__uc === 0x22 || __uc === 0x27) {
+          const __uq = __uc;
+          off++;
+          while (off < len) {
+            const __usc = input.charCodeAt(off);
+            if (__usc === 0x5c && off + 1 < len) { off += 2; continue; }
+            if (__usc === __uq) { off++; break; }
+            if (__usc === 0x0a || __usc === 0x0d) break;
+            off++;
+          }
+          continue;
+        }
+        off++;
+      }
+      continue;
+    }
+    if (__c === 0x2f && off + 1 < len && input.charCodeAt(off + 1) === 0x2a) {
+      let __ce = off + 2;
+      while (__ce < len && !(input.charCodeAt(__ce) === 0x2a && __ce + 1 < len && input.charCodeAt(__ce + 1) === 0x2f)) __ce++;
+      if (__ce < len) { off = __ce + 2; continue; }
+    }
+    if (__c === 0x5c && off + 1 < len) { off += 2; continue; }
+    if (__depth === 0 && __KB[__c] === 0) { return __c; }
     off++;
   }
   return -1;
@@ -2402,7 +2523,7 @@ function parseDeclaration__alt1(state: State): unknown {
 }
 
 function parseDeclaration(state: State): unknown {
-  { const r = parseDeclaration__alt0(state); if (r !== null) return r; }
+  if (__untilAltViable_cae99625(state.input, state.pos, state.len)) { const r = parseDeclaration__alt0(state); if (r !== null) return r; }
   return parseDeclaration__alt1(state);
 }
 

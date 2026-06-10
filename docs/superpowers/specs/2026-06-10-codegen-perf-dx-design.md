@@ -148,3 +148,36 @@ any gap discovered gets a new compiler test before the optimization lands.
 P1 (five items, independent commits) → re-profile → P2 (only if warranted)
 → D1–D3. Performance and DX get separate implementation plans derived from
 this spec.
+
+## Outcomes (updated 2026-06-11)
+
+Implementation plan: `docs/superpowers/plans/2026-06-10-codegen-scan-waste-perf.md`.
+Measurement reshaped the plan before any emitter work:
+
+- **P1.1 (hoist `__KB` stop-tables): investigated, measured neutral, dropped.**
+  A hand-hoisted prototype on the generated css parser benched within noise
+  of baseline (10.46 vs 10.86 ms/iter medians) — V8's copy-on-write
+  boilerplate already makes the per-call constant array literal cheap.
+- **P1.2 (FIRST-set dispatch): already implemented pre-spec** in
+  `emitFusedStructuredRoleDispatch` (`/`→Comment, `@`→AtRule byte gates).
+- **P1.3 landed as until-divergence merged dispatch**
+  (`detect-until-divergence.ts` + `emitFusedUntilDivergencePair`): one scan
+  serves both sibling alts; long tail tried only when the scan stops at the
+  extra stop char, with a rare-path rescan fallback. css 500KB fast-mode:
+  **10.46 → 4.82 ms/iter (2.17×, 47 → 101 MB/s)**; Declaration probe-chain
+  double scans eliminated (18,267 wasted attempts → 0).
+- **P2 landed in lightweight form as the until-viability guard**
+  (`untilGuardSpec` + `__untilTerminator_*` helpers): captureless
+  terminator pre-scan gates all but the last fallthrough probe in until-led
+  unions. css counters: Rule attempts 22,326 → 4,059 (zero mispredictions);
+  interleaved A/B ~12% over merged-dispatch-only. Full scan-extent reuse
+  (feeding the guard's endpoint into the chosen production) remains
+  deferred — counters show zero misprediction, so the remaining headroom is
+  the guard pass itself, not wasted full parses.
+- **P1.4 (lazy comment lists) landed**: ~6% on the css bench (A/B 6.60 →
+  6.22 ms/iter).
+- **P1.5 (raws gap)**: pending — next item.
+- All 12 parser packages regenerate cleanly and pass tests;
+  html/markdown/json generated output is byte-identical (their schemas
+  trigger none of the new codegen paths), confirming the changes are
+  structurally gated, not domain-gated.

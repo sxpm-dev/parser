@@ -19,6 +19,8 @@
 //   - recovery productions (skipped in dispatch; rare in current schemas).
 
 import {
+  isDynKey,
+  isMerge,
   isStructureRef,
   isTemplate,
   type Diagnostic,
@@ -865,7 +867,8 @@ function scanClass(schema: InferredSchema, span: ResolvedSpan, state: State): bo
   if (cls === 'string') {
     if (state.pos >= len) return false;
     const q = input.charCodeAt(state.pos);
-    if (q !== 0x22 && q !== 0x27) return false;
+    const hasBacktick = span.refinements.some((r) => r.name === 'backtick');
+    if (q !== 0x22 && q !== 0x27 && !(hasBacktick && q === 0x60)) return false;
     state.pos++;
     while (state.pos < len) {
       const c = input.charCodeAt(state.pos);
@@ -877,7 +880,9 @@ function scanClass(schema: InferredSchema, span: ResolvedSpan, state: State): bo
         state.pos++;
         break;
       }
-      if (c === 0x0a || c === 0x0d) break;
+      // Backtick strings allow newlines (template-literal convention);
+      // " and ' do not.
+      if (q !== 0x60 && (c === 0x0a || c === 0x0d)) break;
       state.pos++;
     }
     return true;
@@ -1614,6 +1619,35 @@ function walkBody(
   if (t === 'string' || t === 'number' || t === 'boolean') return body;
   if (isStructureRef(body)) return readRef(schema, body, captures, target);
   if (isTemplate(body)) return walkTemplate(schema, body, captures, target);
+  // dynKey($.k, $.v) — produces `{ [readRef(k)]: walkBody(v) }`. The key
+  // ref evaluates to a string (captured ident / class slice).
+  if (isDynKey(body)) {
+    const keyVal = readRef(schema, body.key, captures, target);
+    const valueVal = walkBody(schema, body.value, captures, target);
+    if (typeof keyVal !== 'string') {
+      throw new Error(
+        `interp render: dynKey key must resolve to a string (got ${typeof keyVal})`,
+      );
+    }
+    return { [keyVal]: valueVal };
+  }
+  // merge($.arr) — produces Object.assign({}, ...arr.filter(o => o && typeof o === 'object')).
+  // Mirrors emit/render.ts:emitMerge.
+  if (isMerge(body)) {
+    const arr = readRef(schema, body.array, captures, target);
+    if (!Array.isArray(arr)) {
+      throw new Error(
+        `interp render: merge target must resolve to an array (got ${typeof arr})`,
+      );
+    }
+    const out: Record<string, unknown> = {};
+    for (const entry of arr) {
+      if (entry !== null && typeof entry === 'object' && !Array.isArray(entry)) {
+        Object.assign(out, entry as Record<string, unknown>);
+      }
+    }
+    return out;
+  }
   if (Array.isArray(body)) {
     return body.map((child) => walkBody(schema, child, captures, target));
   }
